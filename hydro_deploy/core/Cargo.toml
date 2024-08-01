@@ -22,6 +22,7 @@ futures = "0.3.26"
 futures-core = "0.3.26"
 hydroflow_cli_integration = { path = "../hydroflow_cli_integration", version = "^0.5.2" }
 indicatif = "0.17.8"
+inferno = "0.11.20"
 memo-map = "0.3.2"
 nanoid = "0.4.0"
 nix = "0.26.2"
@@ -31,4 +32,4 @@ shell-escape = "0.1.5"
 tempfile = "3.3.0"
 tokio = { version = "1.16", features = [ "full" ] }
 tokio-stream = { version = "0.1.15", default-features = false }
-tokio-util = { version = "0.7.7" }
+tokio-util = { version = "0.7.7", features = [ "io-util" ] }

@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use hydro_deploy::gcp::GcpNetwork;
@@ -50,10 +49,10 @@ async fn main() {
         &DeployProcessSpec::new(|| {
             let mut deployment = deployment.borrow_mut();
             let host = create_host(&mut deployment);
-            let perf_options = PerfOptions {
-                output_file: PathBuf::from("leader.perf"),
-                frequency: 5,
-            };
+            let perf_options = PerfOptions::builder()
+                .output_file("leader.svg")
+                .frequency(5)
+                .build();
             deployment.add_service(
                 HydroflowCrate::new(".", host.clone())
                     .bin("compute_pi")
@@ -67,10 +66,10 @@ async fn main() {
             (0..8)
                 .map(|idx| {
                     let host = create_host(&mut deployment);
-                    let perf_options = PerfOptions {
-                        output_file: PathBuf::from(format!("cluster{}.perf", idx)),
-                        frequency: 5,
-                    };
+                    let perf_options = PerfOptions::builder()
+                        .output_file(format!("cluster{}.svg", idx))
+                        .frequency(5)
+                        .build();
                     deployment.add_service(
                         HydroflowCrate::new(".", host.clone())
                             .bin("compute_pi")

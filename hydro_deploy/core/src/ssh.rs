@@ -5,18 +5,22 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use async_ssh2_lite::ssh2::ErrorCode;
 use async_ssh2_lite::{AsyncChannel, AsyncSession, Error, SessionConfiguration};
 use async_trait::async_trait;
-use futures::io::BufReader;
+use futures::io::BufReader as FuturesBufReader;
 use futures::{AsyncBufReadExt, AsyncWriteExt};
 use hydroflow_cli_integration::ServerBindConfig;
+use inferno::collapse::perf::Folder;
+use inferno::collapse::Collapse;
 use nanoid::nanoid;
+use tokio::io::BufReader as TokioBufReader;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::runtime::Handle;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::StreamExt;
+use tokio_util::io::SyncIoBridge;
 
 use super::progress::ProgressTracker;
 use super::util::async_retry;
@@ -88,65 +92,103 @@ impl LaunchedBinary for LaunchedSshBinary {
     }
 
     async fn stop(&mut self) -> Result<()> {
-        if !self.channel.eof() {
-            self.channel.write_all(b"\x03").await?; // `^C`
-            self.channel.send_eof().await?;
-            self.channel.wait_eof().await?;
-            // `exit_status()`
-            self.channel.wait_close().await?;
-        }
-
-        // Run perf post-processing and download perf output.
-        if let Some(perf) = &self.perf {
-            let local_file = perf.output_file.to_str().unwrap();
-            let mut local_file = tokio::fs::File::create(local_file).await?;
-            {
-                let mut script_channel = self.session.as_ref().unwrap().channel_session().await?;
-                let mut stderr_lines = BufReader::new(script_channel.stderr()).lines();
-                let mut stdout = script_channel.stream(0);
-                tokio::try_join!(
-                    async move {
-                        // Log stderr.
-                        while let Some(Ok(s)) = stderr_lines.next().await {
-                            ProgressTracker::println(&format!("[perf stderr] {s}"));
-                        }
-                        Ok(()) as Result<_>
-                    },
-                    async move {
-                        // Download output via stdout.
-                        // Writing to a file and downloading via `sftp` may be faster as it can download non-sequentially.
-                        Ok(tokio::io::copy(&mut stdout, &mut local_file).await?)
-                    },
-                    async move {
-                        // Run command (last!).
-                        Ok(script_channel
-                            .exec(&format!("perf script --symfs=/ -i {PERF_OUTFILE}"))
-                            .await?)
-                    },
-                )?;
+        ProgressTracker::rich_leaf("stopping".to_owned(), |set_progress, set_msg| async move {
+            if !self.channel.eof() {
+                self.channel.write_all(b"\x03").await?; // `^C`
+                self.channel.send_eof().await?;
+                self.channel.wait_eof().await?;
+                // `exit_status()`
+                self.channel.wait_close().await?;
             }
 
-            // TODO(mingwei): re-use this code to download `dtrace` data.
-            // let sftp = self.session.as_ref().unwrap().sftp().await?;
-            // // Check if perf.data exists
-            // match sftp.open(&PathBuf::from(output_file)).await {
-            //     Ok(perf_data) => {
-            //         // download perf.data
-            //         let mut perf_data_local = tokio::fs::File::create(output_file).await?;
-            //         tokio::io::copy(&mut perf_data, &mut perf_data_local).await?;
-            //     }
-            //     Err(Error::Ssh2(ssh2_err)) if ErrorCode::SFTP(2) == ssh2_err.code() => {
-            //         // File not found, probably due to some other previous error.
-            //         ProgressTracker::println(&format!(
-            //             "perf output file {:?} not found on remote machine (SFTP error 2).",
-            //             output_file
-            //         ));
-            //     }
-            //     Err(unexpected_err) => Err(unexpected_err)?,
-            // }
-        };
+            // Run perf post-processing and download perf output.
+            if let Some(perf) = &mut self.perf {
+                {
+                    let set_msg = &set_msg;
+                    let set_progress = &set_progress;
+                    (set_msg)("perf script".to_owned());
+                    (set_progress)(10);
 
-        Ok(())
+                    let mut script_channel =
+                        self.session.as_ref().unwrap().channel_session().await?;
+                    let mut stderr_lines = FuturesBufReader::new(script_channel.stderr()).lines();
+                    let stdout = script_channel.stream(0);
+                    let mut fold_er = Folder::from(perf.fold_options.clone().unwrap_or_default());
+                    let (fold_send, graph_recv) = tokio::io::duplex(8 * 1024);
+                    let local_file =
+                        tokio::fs::File::create(perf.output_file.to_str().unwrap()).await?;
+
+                    // Pattern on `()` to make sure no `Result`s are ignored.
+                    let ((), (), (), ()) = tokio::try_join!(
+                        async move {
+                            // Log stderr.
+                            while let Some(Ok(s)) = stderr_lines.next().await {
+                                ProgressTracker::println(&format!("[perf stderr] {s}"));
+                            }
+                            Ok(()) as Result<_>
+                        },
+                        async move {
+                            // Download perf output and fold.
+                            tokio::task::spawn_blocking(move || {
+                                fold_er.collapse(
+                                    SyncIoBridge::new(TokioBufReader::new(stdout)),
+                                    SyncIoBridge::new(fold_send),
+                                )
+                            })
+                            .await??;
+                            (set_msg)("rendering flamegraph".to_owned());
+                            (set_progress)(60);
+                            Ok(())
+                        },
+                        async move {
+                            // Take folded output and create a flamegraph.
+                            let mut options =
+                                perf.flamegraph_options.map(|f| (f)()).unwrap_or_default();
+                            tokio::task::spawn_blocking(move || {
+                                inferno::flamegraph::from_reader(
+                                    &mut options,
+                                    SyncIoBridge::new(TokioBufReader::new(graph_recv)),
+                                    SyncIoBridge::new(local_file),
+                                )
+                            })
+                            .await??;
+                            Ok(())
+                        },
+                        async move {
+                            // Run command (last!).
+                            script_channel
+                                .exec(&format!("perf script --symfs=/ -i {PERF_OUTFILE}"))
+                                .await?;
+                            (set_msg)("downloading perf data".to_owned());
+                            (set_progress)(20);
+                            Ok(())
+                        },
+                    )?;
+                }
+
+                // TODO(mingwei): re-use this code to download `dtrace` data.
+                // let sftp = self.session.as_ref().unwrap().sftp().await?;
+                // // Check if perf.data exists
+                // match sftp.open(&PathBuf::from(output_file)).await {
+                //     Ok(perf_data) => {
+                //         // download perf.data
+                //         let mut perf_data_local = tokio::fs::File::create(output_file).await?;
+                //         tokio::io::copy(&mut perf_data, &mut perf_data_local).await?;
+                //     }
+                //     Err(Error::Ssh2(ssh2_err)) if ErrorCode::SFTP(2) == ssh2_err.code() => {
+                //         // File not found, probably due to some other previous error.
+                //         ProgressTracker::println(&format!(
+                //             "perf output file {:?} not found on remote machine (SFTP error 2).",
+                //             output_file
+                //         ));
+                //     }
+                //     Err(unexpected_err) => Err(unexpected_err)?,
+                // }
+            };
+
+            Ok(())
+        })
+        .await
     }
 }
 
@@ -397,11 +439,11 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
 
         let id_clone = id.clone();
         let (stdout_cli_receivers, stdout_receivers) =
-            prioritized_broadcast(BufReader::new(channel.stream(0)).lines(), move |s| {
+            prioritized_broadcast(FuturesBufReader::new(channel.stream(0)).lines(), move |s| {
                 ProgressTracker::println(&format!("[{id_clone}] {s}"));
             });
         let (_, stderr_receivers) =
-            prioritized_broadcast(BufReader::new(channel.stderr()).lines(), move |s| {
+            prioritized_broadcast(FuturesBufReader::new(channel.stderr()).lines(), move |s| {
                 ProgressTracker::println(&format!("[{id} stderr] {s}"));
             });
 
@@ -445,3 +487,54 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
         Ok(local_addr)
     }
 }
+
+// struct SyncReader<R> {
+//     reader: R,
+//     waker: std::task::Waker,
+//     recv: std::sync::mpsc::Receiver<()>,
+// }
+// impl<R> SyncReader<R> {
+//     pub fn new(reader: R) -> Self {
+//         use std::sync::mpsc;
+//         struct SendWaker(mpsc::SyncSender<()>);
+//         impl SendWaker {
+//             fn create() -> (std::task::Waker, mpsc::Receiver<()>) {
+//                 let (send, recv) = mpsc::sync_channel(1);
+//                 (futures::task::waker(Arc::new(Self(send))), recv)
+//             }
+//         }
+//         impl ArcWake for SendWaker {
+//             fn wake_by_ref(arc_self: &Arc<Self>) {
+//                 let _ = arc_self.0.try_send(());
+//             }
+//         }
+//         let (waker, recv) = SendWaker::create();
+//         Self {
+//             reader,
+//             waker,
+//             recv,
+//         }
+//     }
+// }
+// impl<R> Read for SyncReader<R>
+// where
+//     R: Unpin + AsyncRead,
+// {
+//     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+//         use std::task::{Context, Poll};
+
+//         let mut readbuf = ReadBuf::new(buf);
+
+//         loop {
+//             match std::pin::Pin::new(&mut self.reader)
+//                 .poll_read(&mut Context::from_waker(&self.waker), &mut readbuf)
+//             {
+//                 Poll::Ready(Ok(())) => return Ok(readbuf.filled().len()),
+//                 Poll::Ready(Err(e)) => return Err(e),
+//                 Poll::Pending => {
+//                     let _ = self.recv.recv_timeout(Duration::from_secs(1));
+//                 }
+//             }
+//         }
+//     }
+// }
