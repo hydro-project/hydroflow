@@ -320,6 +320,15 @@ impl Service for HydroflowCrateService {
             ),
         )
         .await;
+        match timeout_result {
+            Err(e) => {} // `wait()` timed out, but stop will force quit.
+            Ok(Err(e)) => return Err(e),
+            Ok(Ok(_exit_status)) => {},
+        }
+
+        }
+        // If `wait` timed out, stop will force quit.
+
         // TODO(mingwei): if `timeout_result` is `Err` then force stop via:
         // LaunchedSshBinary.channel.write_all(b"\x03").await?; // `^C`
         // LaunchedSshBinary.channel.send_eof().await?;

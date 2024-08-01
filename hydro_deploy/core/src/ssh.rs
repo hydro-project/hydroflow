@@ -76,10 +76,22 @@ impl LaunchedBinary for LaunchedSshBinary {
         }
     }
 
-    async fn wait(&mut self) -> Result<Option<i32>> {
+    async fn wait(&mut self) -> Result<i32> {
         self.channel.wait_eof().await.unwrap();
-        let ret = self.exit_code();
+        let exit_code = self.channel.exit_status()?;
         self.channel.wait_close().await.unwrap();
+
+        Ok(exit_code)
+    }
+
+    async fn stop(&mut self) -> Result<()> {
+        if !self.channel.eof() {
+            self.channel.write_all(b"\x03").await?;
+            self.channel.send_eof().await?;
+            self.channel.wait_eof().await?;
+            // `exit_status()`
+            self.channel.wait_close().await?;
+        }
 
         // Copy perf file down, if perf was set.
         if let Some(perf) = &self.perf {
@@ -114,7 +126,7 @@ impl LaunchedBinary for LaunchedSshBinary {
             }
         };
 
-        Ok(ret)
+        Ok(())
     }
 }
 
@@ -342,11 +354,6 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
                 // Launch with perf if specified, also copy local binary to expected place for perf report to work
                 if let Some(perf) = perf.clone() {
                     let output_file = perf.output_file.to_str().unwrap();
-                    // let local_binary = PathBuf::from(format!(
-                    //     "{output_file}.bins/home/{user}/hydro-{unique_name}"
-                    // ));
-                    // fs::create_dir_all(local_binary.parent().unwrap()).unwrap();
-                    // fs::write(local_binary, &binary.bin_data).unwrap();
                     // Attach perf to the command
                     command = format!("perf record -F {freq} --call-graph dwarf,64000 -o {data_file} {cmd}; perf script --symfs=/ -i {data_file} > {out_file}",
                         freq = perf.frequency,

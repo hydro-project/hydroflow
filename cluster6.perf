@@ -1,0 +1,485 @@
+hydro-kbWo-kTG  2149    82.472531:  200000000 cpu-clock:pppH: 
+	    7f89c5612f9c <core::ptr::non_null::NonNull<T> as core::cmp::PartialEq>::eq+0x16c (inlined)
+	    7f89c5612f9c <core::slice::iter::Iter<T> as core::iter::traits::iterator::Iterator>::next+0x16c (inlined)
+	    7f89c5612f9c <alloc::vec::drain::Drain<T,A> as core::iter::traits::iterator::Iterator>::next+0x16c (inlined)
+	    7f89c5612f9c core::iter::traits::iterator::Iterator::fold+0x16c (inlined)
+	    7f89c5612f9c core::iter::traits::iterator::Iterator::for_each+0x16c (inlined)
+	    7f89c5612f9c compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}+0x16c (inlined)
+	    7f89c5612f9c hydroflow::scheduled::graph::Hydroflow::add_subgraph_stratified::{{closure}}+0x16c (inlined)
+	    7f89c5612f9c <F as hydroflow::scheduled::subgraph::Subgraph>::run+0x16c (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    82.672513:  200000000 cpu-clock:pppH: 
+	    7f89c5601918 core::cmp::impls::<impl core::cmp::PartialOrd for usize>::lt+0x58 (inlined)
+	    7f89c5601918 <core::ops::range::Range<T> as core::iter::range::RangeIteratorImpl>::spec_next+0x58 (inlined)
+	    7f89c5601918 core::iter::range::<impl core::iter::traits::iterator::Iterator for core::ops::range::Range<A>>::next+0x58 (inlined)
+	    7f89c5601918 core::ops::function::FnOnce::call_once+0x58 (inlined)
+	    7f89c5601918 core::iter::adapters::flatten::and_then_or_clear+0x58 (inlined)
+	    7f89c5601918 <core::iter::adapters::flatten::FlattenCompat<I,U> as core::iter::traits::iterator::Iterator>::next+0x58 (inlined)
+	    7f89c5601918 <core::iter::adapters::flatten::FlatMap<I,U,F> as core::iter::traits::iterator::Iterator>::next+0x58 (inlined)
+	    7f89c5601918 <compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::op_2v1__flat_map__loc_unknown_start_0_0_end_0_0::Pull<Item,Input> as core::iter::traits::iterator::Iterator>::next+0x58 (inlined)
+	    7f89c5601918 <core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::next+0x58 (inlined)
+	    7f89c5601918 <compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::op_3v1__map__loc_unknown_start_0_0_end_0_0::Pull<Item,Input> as core::iter::traits::iterator::Iterator>::next+0x58 (inlined)
+	    7f89c5601918 <core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::next+0x58 (inlined)
+	    7f89c5601918 <compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::op_4v1__map__loc_unknown_start_0_0_end_0_0::Pull<Item,Input> as core::iter::traits::iterator::Iterator>::next+0x58 (inlined)
+	    7f89c5601918 <core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::next+0x58 (inlined)
+	    7f89c5601918 <compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::op_5v1__map__loc_unknown_start_0_0_end_0_0::Pull<Item,Input> as core::iter::traits::iterator::Iterator>::next+0x58 (inlined)
+	    7f89c5601918 <&mut I as core::iter::traits::iterator::Iterator>::next+0x58 (inlined)
+	    7f89c5601918 pusherator::pivot::Pivot<I,P>::run+0x58 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    82.872495:  200000000 cpu-clock:pppH: 
+	    7f89c55ddda4 alloc::raw_vec::RawVec<T,A>::ptr+0x34 (inlined)
+	    7f89c55ddda4 alloc::vec::Vec<T,A>::as_mut_ptr+0x34 (inlined)
+	    7f89c55ddda4 alloc::vec::Vec<T,A>::push+0x34 (inlined)
+	    7f89c55ddda4 <hydroflow::scheduled::handoff::vector::VecHandoff<T> as hydroflow::scheduled::handoff::CanReceive<core::option::Option<T>>>::give+0x34 (/home/hydro/hydro-kbWo-kTG)
+	    555555cdf99f [unknown] (//anon)
+
+hydro-kbWo-kTG  2149    83.072478:  200000000 cpu-clock:pppH: 
+	    7f89c561c100 rand::rngs::thread::thread_rng+0x0 (/home/hydro/hydro-kbWo-kTG)
+	    555555cdf99f [unknown] (//anon)
+
+hydro-kbWo-kTG  2149    83.272492:  200000000 cpu-clock:pppH: 
+	    7f89c55ddd86 core::ptr::write+0x16 (inlined)
+	    7f89c55ddd86 core::mem::replace+0x16 (inlined)
+	    7f89c55ddd86 core::cell::Cell<T>::replace+0x16 (inlined)
+	    7f89c55ddd86 core::cell::Cell<T>::set+0x16 (inlined)
+	    7f89c55ddd86 core::cell::BorrowRefMut::new+0x16 (inlined)
+	    7f89c55ddd86 core::cell::RefCell<T>::try_borrow_mut+0x16 (inlined)
+	    7f89c55ddd86 core::cell::RefCell<T>::borrow_mut+0x16 (inlined)
+	    7f89c55ddd86 <hydroflow::scheduled::handoff::vector::VecHandoff<T> as hydroflow::scheduled::handoff::CanReceive<core::option::Option<T>>>::give+0x16 (/home/hydro/hydro-kbWo-kTG)
+	    555555cdf99f [unknown] (//anon)
+
+hydro-kbWo-kTG  2149    83.472474:  200000000 cpu-clock:pppH: 
+	    7f89c560d11f rand::rng::Rng::gen+0x1f (inlined)
+	    7f89c560d11f rand::distributions::other::<impl rand::distributions::distribution::Distribution<(A,B)> for rand::distributions::Standard>::sample+0x1f (inlined)
+	    7f89c560d11f rand::rng::Rng::gen+0x1f (inlined)
+	    7f89c560d11f rand::random+0x1f (inlined)
+	    7f89c560d11f compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0x1f (inlined)
+	    7f89c560d11f core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &mut F>::call_once+0x1f (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    83.672469:  200000000 cpu-clock:pppH: 
+	    7f89c560cee8 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0x18 (inlined)
+	    7f89c560cee8 core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &mut F>::call_once+0x18 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    83.872471:  200000000 cpu-clock:pppH: 
+	    7f89c56038ba rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x7a (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    84.072464:  200000000 cpu-clock:pppH: 
+	    7f89c560d100 rand::random+0x0 (inlined)
+	    7f89c560d100 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0x0 (inlined)
+	    7f89c560d100 core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &mut F>::call_once+0x0 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    84.272459:  200000000 cpu-clock:pppH: 
+	    7f89c56038b5 <f64 as rand::distributions::utils::FloatSIMDUtils>::cast_from_int+0x75 (inlined)
+	    7f89c56038b5 rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x75 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    84.472454:  200000000 cpu-clock:pppH: 
+	    7f89c5603858 <rand_core::block::BlockRng<R> as rand_core::RngCore>::next_u64+0x18 (inlined)
+	    7f89c5603858 <rand::rngs::adapter::reseeding::ReseedingRng<R,Rsdr> as rand_core::RngCore>::next_u64+0x18 (inlined)
+	    7f89c5603858 <rand::rngs::thread::ThreadRng as rand_core::RngCore>::next_u64+0x18 (inlined)
+	    7f89c5603858 rand::distributions::integer::<impl rand::distributions::distribution::Distribution<u64> for rand::distributions::Standard>::sample+0x18 (inlined)
+	    7f89c5603858 rand::rng::Rng::gen+0x18 (inlined)
+	    7f89c5603858 rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x18 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    84.672456:  200000000 cpu-clock:pppH: 
+	    7f89c5603840 rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x0 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    84.872439:  200000000 cpu-clock:pppH: 
+	ffffffffa23835d3 tcp_ack+0xfb3 ([kernel.kallsyms])
+	ffffffffa23854d2 tcp_rcv_established+0x1a2 ([kernel.kallsyms])
+	ffffffffa23931cd tcp_v4_do_rcv+0x13d ([kernel.kallsyms])
+	ffffffffa239531f tcp_v4_rcv+0xd1f ([kernel.kallsyms])
+	ffffffffa23643ba ip_protocol_deliver_rcu+0x2a ([kernel.kallsyms])
+	ffffffffa2364594 ip_local_deliver_finish+0x44 ([kernel.kallsyms])
+	ffffffffa2363d54 ip_sublist_rcv_finish+0x54 ([kernel.kallsyms])
+	ffffffffa23641e3 ip_sublist_rcv+0x1a3 ([kernel.kallsyms])
+	ffffffffa23648f5 ip_list_rcv+0x135 ([kernel.kallsyms])
+	ffffffffa22d39e0 __netif_receive_skb_list_core+0x2b0 ([kernel.kallsyms])
+	ffffffffa22d3bc7 netif_receive_skb_list_internal+0x1b7 ([kernel.kallsyms])
+	ffffffffa22d4bcf napi_complete_done+0x6f ([kernel.kallsyms])
+	ffffffffc037fd52 virtnet_poll+0x2f2 ([virtio_net])
+	ffffffffa22d4e42 net_rx_action+0x142 ([kernel.kallsyms])
+	ffffffffa28000c2 __softirqentry_text_start+0xc2 ([kernel.kallsyms])
+	ffffffffa26010ef asm_call_sysvec_on_stack+0xf ([kernel.kallsyms])
+	ffffffffa1c2d497 do_softirq_own_stack+0x37 ([kernel.kallsyms])
+	ffffffffa1c89062 irq_exit_rcu+0x92 ([kernel.kallsyms])
+	ffffffffa24a4cb4 common_interrupt+0x74 ([kernel.kallsyms])
+	ffffffffa2600d5e asm_common_interrupt+0x1e ([kernel.kallsyms])
+	    7f89c5612f90 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}::call_comb_type+0x160 (inlined)
+	    7f89c5612f90 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 core::iter::traits::iterator::Iterator::for_each::call::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 core::iter::traits::iterator::Iterator::fold+0x160 (inlined)
+	    7f89c5612f90 core::iter::traits::iterator::Iterator::for_each+0x160 (inlined)
+	    7f89c5612f90 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 hydroflow::scheduled::graph::Hydroflow::add_subgraph_stratified::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 <F as hydroflow::scheduled::subgraph::Subgraph>::run+0x160 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    85.072439:  200000000 cpu-clock:pppH: 
+	    7f89c561c100 rand::rngs::thread::thread_rng+0x0 (/home/hydro/hydro-kbWo-kTG)
+	    555555cdf99f [unknown] (//anon)
+
+hydro-kbWo-kTG  2149    85.272441:  200000000 cpu-clock:pppH: 
+	    7f89c561d383 core::core_arch::x86::avx2::_mm256_or_si256+0x233 (inlined)
+	    7f89c561d383 <ppv_lite86::x86_64::sse2::avx2::u32x4x2_avx2<NI> as ppv_lite86::types::RotateEachWord32>::rotate_each_word_right25+0x233 (inlined)
+	    7f89c561d383 <ppv_lite86::soft::x2<W,G> as ppv_lite86::types::RotateEachWord32>::rotate_each_word_right25+0x233 (inlined)
+	    7f89c561d383 rand_chacha::guts::round+0x233 (inlined)
+	    7f89c561d383 rand_chacha::guts::refill_wide_impl+0x233 (inlined)
+	    7f89c561d383 rand_chacha::guts::refill_wide::fn_impl+0x233 (inlined)
+	    7f89c561d383 rand_chacha::guts::refill_wide::impl_avx2+0x233 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    85.472423:  200000000 cpu-clock:pppH: 
+	    7f89c5612fbc compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}::{{closure}}+0x18c (inlined)
+	    7f89c5612fbc compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}::call_comb_type+0x18c (inlined)
+	    7f89c5612fbc compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0x18c (inlined)
+	    7f89c5612fbc core::iter::traits::iterator::Iterator::for_each::call::{{closure}}+0x18c (inlined)
+	    7f89c5612fbc core::iter::traits::iterator::Iterator::fold+0x18c (inlined)
+	    7f89c5612fbc core::iter::traits::iterator::Iterator::for_each+0x18c (inlined)
+	    7f89c5612fbc compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}+0x18c (inlined)
+	    7f89c5612fbc hydroflow::scheduled::graph::Hydroflow::add_subgraph_stratified::{{closure}}+0x18c (inlined)
+	    7f89c5612fbc <F as hydroflow::scheduled::subgraph::Subgraph>::run+0x18c (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    85.672425:  200000000 cpu-clock:pppH: 
+	    7f89c561f686 <core::iter::adapters::zip::Zip<A,B> as core::iter::adapters::zip::ZipImpl<A,B>>::new+0x16 (/home/hydro/hydro-kbWo-kTG)
+	    555555cdf99f [unknown] (//anon)
+
+hydro-kbWo-kTG  2149    85.872419:  200000000 cpu-clock:pppH: 
+	    7f89c5612faa compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}::{{closure}}+0x17a (inlined)
+	    7f89c5612faa compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}::call_comb_type+0x17a (inlined)
+	    7f89c5612faa compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0x17a (inlined)
+	    7f89c5612faa core::iter::traits::iterator::Iterator::for_each::call::{{closure}}+0x17a (inlined)
+	    7f89c5612faa core::iter::traits::iterator::Iterator::fold+0x17a (inlined)
+	    7f89c5612faa core::iter::traits::iterator::Iterator::for_each+0x17a (inlined)
+	    7f89c5612faa compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}+0x17a (inlined)
+	    7f89c5612faa hydroflow::scheduled::graph::Hydroflow::add_subgraph_stratified::{{closure}}+0x17a (inlined)
+	    7f89c5612faa <F as hydroflow::scheduled::subgraph::Subgraph>::run+0x17a (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    86.072414:  200000000 cpu-clock:pppH: 
+	    7f89c561d293 core::core_arch::x86::avx2::_mm256_add_epi32+0x143 (inlined)
+	    7f89c561d293 <ppv_lite86::x86_64::sse2::avx2::u32x4x2_avx2<NI> as core::ops::arith::Add>::add+0x143 (inlined)
+	    7f89c561d293 <ppv_lite86::x86_64::sse2::avx2::u32x4x2_avx2<NI> as core::ops::arith::AddAssign>::add_assign+0x143 (inlined)
+	    7f89c561d293 <ppv_lite86::soft::x2<W,G> as core::ops::arith::AddAssign>::add_assign+0x143 (inlined)
+	    7f89c561d293 rand_chacha::guts::round+0x143 (inlined)
+	    7f89c561d293 rand_chacha::guts::refill_wide_impl+0x143 (inlined)
+	    7f89c561d293 rand_chacha::guts::refill_wide::fn_impl+0x143 (inlined)
+	    7f89c561d293 rand_chacha::guts::refill_wide::impl_avx2+0x143 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    86.272409:  200000000 cpu-clock:pppH: 
+	    7f89c561f686 <core::iter::adapters::zip::Zip<A,B> as core::iter::adapters::zip::ZipImpl<A,B>>::new+0x16 (/home/hydro/hydro-kbWo-kTG)
+	    555555cdf99f [unknown] (//anon)
+
+hydro-kbWo-kTG  2149    86.472413:  200000000 cpu-clock:pppH: 
+	    7f89c5603896 rand_core::block::BlockRng<R>::generate_and_set+0x56 (inlined)
+	    7f89c5603896 <rand_core::block::BlockRng<R> as rand_core::RngCore>::next_u64+0x56 (inlined)
+	    7f89c5603896 <rand::rngs::adapter::reseeding::ReseedingRng<R,Rsdr> as rand_core::RngCore>::next_u64+0x56 (inlined)
+	    7f89c5603896 <rand::rngs::thread::ThreadRng as rand_core::RngCore>::next_u64+0x56 (inlined)
+	    7f89c5603896 rand::distributions::integer::<impl rand::distributions::distribution::Distribution<u64> for rand::distributions::Standard>::sample+0x56 (inlined)
+	    7f89c5603896 rand::rng::Rng::gen+0x56 (inlined)
+	    7f89c5603896 rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x56 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    86.672395:  200000000 cpu-clock:pppH: 
+	    7f89c55dddb9 <hydroflow::scheduled::handoff::vector::VecHandoff<T> as hydroflow::scheduled::handoff::CanReceive<core::option::Option<T>>>::give+0x49 (/home/hydro/hydro-kbWo-kTG)
+	    555555cdf99f [unknown] (//anon)
+
+hydro-kbWo-kTG  2149    86.872386:  200000000 cpu-clock:pppH: 
+	    7f89c56018e7 core::option::Option<T>::map+0x27 (inlined)
+	    7f89c56018e7 <core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::next+0x27 (inlined)
+	    7f89c56018e7 <compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::op_3v1__map__loc_unknown_start_0_0_end_0_0::Pull<Item,Input> as core::iter::traits::iterator::Iterator>::next+0x27 (inlined)
+	    7f89c56018e7 <core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::next+0x27 (inlined)
+	    7f89c56018e7 <compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::op_4v1__map__loc_unknown_start_0_0_end_0_0::Pull<Item,Input> as core::iter::traits::iterator::Iterator>::next+0x27 (inlined)
+	    7f89c56018e7 <core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::next+0x27 (inlined)
+	    7f89c56018e7 <compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::op_5v1__map__loc_unknown_start_0_0_end_0_0::Pull<Item,Input> as core::iter::traits::iterator::Iterator>::next+0x27 (inlined)
+	    7f89c56018e7 <&mut I as core::iter::traits::iterator::Iterator>::next+0x27 (inlined)
+	    7f89c56018e7 pusherator::pivot::Pivot<I,P>::run+0x27 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    87.072370:  200000000 cpu-clock:pppH: 
+	    7f89c561d57a core::core_arch::x86::sse2::_mm_add_epi32+0x42a (inlined)
+	    7f89c561d57a <ppv_lite86::x86_64::sse2::u32x4_sse2<S3,S4,NI> as core::ops::arith::Add>::add+0x42a (inlined)
+	    7f89c561d57a rand_chacha::guts::refill_wide_impl+0x42a (inlined)
+	    7f89c561d57a rand_chacha::guts::refill_wide::fn_impl+0x42a (inlined)
+	    7f89c561d57a rand_chacha::guts::refill_wide::impl_avx2+0x42a (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    87.272389:  200000000 cpu-clock:pppH: 
+	    7f89c560cedc compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0xc (inlined)
+	    7f89c560cedc core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &mut F>::call_once+0xc (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    87.472369:  200000000 cpu-clock:pppH: 
+	    7f89c56038c9 rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x89 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    87.672372:  200000000 cpu-clock:pppH: 
+	    7f89c560ceeb core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &mut F>::call_once+0x1b (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    87.872356:  200000000 cpu-clock:pppH: 
+	    7f89c56038c2 rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x82 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    88.072337:  200000000 cpu-clock:pppH: 
+	    7f89c560385c <rand_core::block::BlockRng<R> as rand_core::RngCore>::next_u64+0x1c (inlined)
+	    7f89c560385c <rand::rngs::adapter::reseeding::ReseedingRng<R,Rsdr> as rand_core::RngCore>::next_u64+0x1c (inlined)
+	    7f89c560385c <rand::rngs::thread::ThreadRng as rand_core::RngCore>::next_u64+0x1c (inlined)
+	    7f89c560385c rand::distributions::integer::<impl rand::distributions::distribution::Distribution<u64> for rand::distributions::Standard>::sample+0x1c (inlined)
+	    7f89c560385c rand::rng::Rng::gen+0x1c (inlined)
+	    7f89c560385c rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x1c (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    88.272348:  200000000 cpu-clock:pppH: 
+	    7f89c561c10d std::sys::thread_local::fast_local::lazy::Storage<T,D>::get_or_init+0xd (inlined)
+	    7f89c561c10d rand::rngs::thread::THREAD_RNG_KEY::{{constant}}::{{closure}}+0xd (inlined)
+	    7f89c561c10d core::ops::function::FnOnce::call_once+0xd (inlined)
+	    7f89c561c10d std::thread::local::LocalKey<T>::try_with+0xd (inlined)
+	    7f89c561c10d std::thread::local::LocalKey<T>::with+0xd (inlined)
+	    7f89c561c10d rand::rngs::thread::thread_rng+0xd (/home/hydro/hydro-kbWo-kTG)
+	    555555cdf99f [unknown] (//anon)
+
+hydro-kbWo-kTG  2149    88.472337:  200000000 cpu-clock:pppH: 
+	    7f89c561d24d core::core_arch::x86::avx2::_mm256_or_si256+0xfd (inlined)
+	    7f89c561d24d <ppv_lite86::x86_64::sse2::avx2::u32x4x2_avx2<NI> as ppv_lite86::types::RotateEachWord32>::rotate_each_word_right20+0xfd (inlined)
+	    7f89c561d24d <ppv_lite86::soft::x2<W,G> as ppv_lite86::types::RotateEachWord32>::rotate_each_word_right20+0xfd (inlined)
+	    7f89c561d24d rand_chacha::guts::round+0xfd (inlined)
+	    7f89c561d24d rand_chacha::guts::refill_wide_impl+0xfd (inlined)
+	    7f89c561d24d rand_chacha::guts::refill_wide::fn_impl+0xfd (inlined)
+	    7f89c561d24d rand_chacha::guts::refill_wide::impl_avx2+0xfd (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    88.672350:  200000000 cpu-clock:pppH: 
+	    7f89c58b0ce5 __syscall6+0x9e (inlined)
+	    7f89c58b0ce5 syscall+0x9e (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    88.872333:  200000000 cpu-clock:pppH: 
+	    7f89c560385c <rand_core::block::BlockRng<R> as rand_core::RngCore>::next_u64+0x1c (inlined)
+	    7f89c560385c <rand::rngs::adapter::reseeding::ReseedingRng<R,Rsdr> as rand_core::RngCore>::next_u64+0x1c (inlined)
+	    7f89c560385c <rand::rngs::thread::ThreadRng as rand_core::RngCore>::next_u64+0x1c (inlined)
+	    7f89c560385c rand::distributions::integer::<impl rand::distributions::distribution::Distribution<u64> for rand::distributions::Standard>::sample+0x1c (inlined)
+	    7f89c560385c rand::rng::Rng::gen+0x1c (inlined)
+	    7f89c560385c rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x1c (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    89.072315:  200000000 cpu-clock:pppH: 
+	    7f89c561d23f core::core_arch::x86::avx2::_mm256_add_epi32+0xef (inlined)
+	    7f89c561d23f <ppv_lite86::x86_64::sse2::avx2::u32x4x2_avx2<NI> as core::ops::arith::Add>::add+0xef (inlined)
+	    7f89c561d23f <ppv_lite86::x86_64::sse2::avx2::u32x4x2_avx2<NI> as core::ops::arith::AddAssign>::add_assign+0xef (inlined)
+	    7f89c561d23f <ppv_lite86::soft::x2<W,G> as core::ops::arith::AddAssign>::add_assign+0xef (inlined)
+	    7f89c561d23f rand_chacha::guts::round+0xef (inlined)
+	    7f89c561d23f rand_chacha::guts::refill_wide_impl+0xef (inlined)
+	    7f89c561d23f rand_chacha::guts::refill_wide::fn_impl+0xef (inlined)
+	    7f89c561d23f rand_chacha::guts::refill_wide::impl_avx2+0xef (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    89.272333:  200000000 cpu-clock:pppH: 
+	    7f89c56038c2 rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x82 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    89.472321:  200000000 cpu-clock:pppH: 
+	    7f89c560384b <rand_core::block::BlockRng<R> as rand_core::RngCore>::next_u64+0xb (inlined)
+	    7f89c560384b <rand::rngs::adapter::reseeding::ReseedingRng<R,Rsdr> as rand_core::RngCore>::next_u64+0xb (inlined)
+	    7f89c560384b <rand::rngs::thread::ThreadRng as rand_core::RngCore>::next_u64+0xb (inlined)
+	    7f89c560384b rand::distributions::integer::<impl rand::distributions::distribution::Distribution<u64> for rand::distributions::Standard>::sample+0xb (inlined)
+	    7f89c560384b rand::rng::Rng::gen+0xb (inlined)
+	    7f89c560384b rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0xb (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    89.672317:  200000000 cpu-clock:pppH: 
+	    7f89c5612f90 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}::call_comb_type+0x160 (inlined)
+	    7f89c5612f90 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 core::iter::traits::iterator::Iterator::for_each::call::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 core::iter::traits::iterator::Iterator::fold+0x160 (inlined)
+	    7f89c5612f90 core::iter::traits::iterator::Iterator::for_each+0x160 (inlined)
+	    7f89c5612f90 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 hydroflow::scheduled::graph::Hydroflow::add_subgraph_stratified::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 <F as hydroflow::scheduled::subgraph::Subgraph>::run+0x160 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    89.872316:  200000000 cpu-clock:pppH: 
+	    7f89c561d5cf core::ptr::mut_ptr::<impl *mut T>::add+0x47f (inlined)
+	    7f89c561d5cf <core::slice::iter::Iter<T> as core::iter::traits::iterator::Iterator>::__iterator_get_unchecked+0x47f (inlined)
+	    7f89c561d5cf <core::iter::adapters::zip::Zip<A,B> as core::iter::adapters::zip::ZipImpl<A,B>>::get_unchecked+0x47f (inlined)
+	    7f89c561d5cf <core::iter::adapters::zip::Zip<A,B> as core::iter::traits::iterator::Iterator>::__iterator_get_unchecked+0x47f (inlined)
+	    7f89c561d5cf <core::iter::adapters::zip::Zip<A,B> as core::iter::adapters::zip::ZipImpl<A,B>>::next+0x47f (inlined)
+	    7f89c561d5cf <core::iter::adapters::zip::Zip<A,B> as core::iter::traits::iterator::Iterator>::next+0x47f (inlined)
+	    7f89c561d5cf rand_chacha::guts::refill_wide_impl+0x47f (inlined)
+	    7f89c561d5cf rand_chacha::guts::refill_wide::fn_impl+0x47f (inlined)
+	    7f89c561d5cf rand_chacha::guts::refill_wide::impl_avx2+0x47f (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    90.072298:  200000000 cpu-clock:pppH: 
+	    7f89c5603842 rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x2 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    90.272322:  200000000 cpu-clock:pppH: 
+	    7f89c561d654 <core::iter::adapters::zip::Zip<A,B> as core::iter::adapters::zip::ZipImpl<A,B>>::get_unchecked+0x504 (inlined)
+	    7f89c561d654 <core::iter::adapters::zip::Zip<A,B> as core::iter::traits::iterator::Iterator>::__iterator_get_unchecked+0x504 (inlined)
+	    7f89c561d654 <core::iter::adapters::zip::Zip<A,B> as core::iter::adapters::zip::ZipImpl<A,B>>::get_unchecked+0x504 (inlined)
+	    7f89c561d654 <core::iter::adapters::zip::Zip<A,B> as core::iter::traits::iterator::Iterator>::__iterator_get_unchecked+0x504 (inlined)
+	    7f89c561d654 <core::iter::adapters::zip::Zip<A,B> as core::iter::adapters::zip::ZipImpl<A,B>>::get_unchecked+0x504 (inlined)
+	    7f89c561d654 <core::iter::adapters::zip::Zip<A,B> as core::iter::traits::iterator::Iterator>::__iterator_get_unchecked+0x504 (inlined)
+	    7f89c561d654 <core::iter::adapters::zip::Zip<A,B> as core::iter::adapters::zip::ZipImpl<A,B>>::next+0x504 (inlined)
+	    7f89c561d654 <core::iter::adapters::zip::Zip<A,B> as core::iter::traits::iterator::Iterator>::next+0x504 (inlined)
+	    7f89c561d654 rand_chacha::guts::refill_wide_impl+0x504 (inlined)
+	    7f89c561d654 rand_chacha::guts::refill_wide::fn_impl+0x504 (inlined)
+	    7f89c561d654 rand_chacha::guts::refill_wide::impl_avx2+0x504 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    90.472348:  200000000 cpu-clock:pppH: 
+	    7f89c560d100 rand::random+0x0 (inlined)
+	    7f89c560d100 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0x0 (inlined)
+	    7f89c560d100 core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &mut F>::call_once+0x0 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    90.798962:  200000000 cpu-clock:pppH: 
+	    7f89c560385c <rand_core::block::BlockRng<R> as rand_core::RngCore>::next_u64+0x1c (inlined)
+	    7f89c560385c <rand::rngs::adapter::reseeding::ReseedingRng<R,Rsdr> as rand_core::RngCore>::next_u64+0x1c (inlined)
+	    7f89c560385c <rand::rngs::thread::ThreadRng as rand_core::RngCore>::next_u64+0x1c (inlined)
+	    7f89c560385c rand::distributions::integer::<impl rand::distributions::distribution::Distribution<u64> for rand::distributions::Standard>::sample+0x1c (inlined)
+	    7f89c560385c rand::rng::Rng::gen+0x1c (inlined)
+	    7f89c560385c rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x1c (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    90.998944:  200000000 cpu-clock:pppH: 
+	    7f89c5603858 <rand_core::block::BlockRng<R> as rand_core::RngCore>::next_u64+0x18 (inlined)
+	    7f89c5603858 <rand::rngs::adapter::reseeding::ReseedingRng<R,Rsdr> as rand_core::RngCore>::next_u64+0x18 (inlined)
+	    7f89c5603858 <rand::rngs::thread::ThreadRng as rand_core::RngCore>::next_u64+0x18 (inlined)
+	    7f89c5603858 rand::distributions::integer::<impl rand::distributions::distribution::Distribution<u64> for rand::distributions::Standard>::sample+0x18 (inlined)
+	    7f89c5603858 rand::rng::Rng::gen+0x18 (inlined)
+	    7f89c5603858 rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x18 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    91.198937:  200000000 cpu-clock:pppH: 
+	    7f89c560cedc compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0xc (inlined)
+	    7f89c560cedc core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &mut F>::call_once+0xc (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    91.399017:  200000000 cpu-clock:pppH: 
+	    7f89c56038ba rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x7a (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    91.599002:  200000000 cpu-clock:pppH: 
+	    7f89c560ced0 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0x0 (inlined)
+	    7f89c560ced0 core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &mut F>::call_once+0x0 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    91.798984:  200000000 cpu-clock:pppH: 
+	    7f89c561d35d core::core_arch::x86::avx2::_mm256_add_epi32+0x20d (inlined)
+	    7f89c561d35d <ppv_lite86::x86_64::sse2::avx2::u32x4x2_avx2<NI> as core::ops::arith::Add>::add+0x20d (inlined)
+	    7f89c561d35d <ppv_lite86::x86_64::sse2::avx2::u32x4x2_avx2<NI> as core::ops::arith::AddAssign>::add_assign+0x20d (inlined)
+	    7f89c561d35d <ppv_lite86::soft::x2<W,G> as core::ops::arith::AddAssign>::add_assign+0x20d (inlined)
+	    7f89c561d35d rand_chacha::guts::round+0x20d (inlined)
+	    7f89c561d35d rand_chacha::guts::refill_wide_impl+0x20d (inlined)
+	    7f89c561d35d rand_chacha::guts::refill_wide::fn_impl+0x20d (inlined)
+	    7f89c561d35d rand_chacha::guts::refill_wide::impl_avx2+0x20d (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    91.998981:  200000000 cpu-clock:pppH: 
+	    7f89c5603847 core::cell::UnsafeCell<T>::get+0x7 (inlined)
+	    7f89c5603847 <rand::rngs::thread::ThreadRng as rand_core::RngCore>::next_u64+0x7 (inlined)
+	    7f89c5603847 rand::distributions::integer::<impl rand::distributions::distribution::Distribution<u64> for rand::distributions::Standard>::sample+0x7 (inlined)
+	    7f89c5603847 rand::rng::Rng::gen+0x7 (inlined)
+	    7f89c5603847 rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x7 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    92.198964:  200000000 cpu-clock:pppH: 
+	    7f89c5603863 <rand_core::block::BlockRng<R> as rand_core::RngCore>::next_u64::{{closure}}+0x23 (inlined)
+	    7f89c5603863 <rand_core::block::BlockRng<R> as rand_core::RngCore>::next_u64+0x23 (inlined)
+	    7f89c5603863 <rand::rngs::adapter::reseeding::ReseedingRng<R,Rsdr> as rand_core::RngCore>::next_u64+0x23 (inlined)
+	    7f89c5603863 <rand::rngs::thread::ThreadRng as rand_core::RngCore>::next_u64+0x23 (inlined)
+	    7f89c5603863 rand::distributions::integer::<impl rand::distributions::distribution::Distribution<u64> for rand::distributions::Standard>::sample+0x23 (inlined)
+	    7f89c5603863 rand::rng::Rng::gen+0x23 (inlined)
+	    7f89c5603863 rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x23 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    92.399061:  200000000 cpu-clock:pppH: 
+	    7f89c561d275 core::core_arch::x86::avx2::_mm256_shuffle_epi8+0x125 (inlined)
+	    7f89c561d275 <ppv_lite86::x86_64::sse2::avx2::u32x4x2_avx2<NI> as ppv_lite86::types::RotateEachWord32>::rotate_each_word_right24+0x125 (inlined)
+	    7f89c561d275 <ppv_lite86::soft::x2<W,G> as ppv_lite86::types::RotateEachWord32>::rotate_each_word_right24+0x125 (inlined)
+	    7f89c561d275 rand_chacha::guts::round+0x125 (inlined)
+	    7f89c561d275 rand_chacha::guts::refill_wide_impl+0x125 (inlined)
+	    7f89c561d275 rand_chacha::guts::refill_wide::fn_impl+0x125 (inlined)
+	    7f89c561d275 rand_chacha::guts::refill_wide::impl_avx2+0x125 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    92.599060:  200000000 cpu-clock:pppH: 
+	    7f89c5612f94 <core::ptr::non_null::NonNull<T> as core::cmp::PartialEq>::eq+0x164 (inlined)
+	    7f89c5612f94 <core::slice::iter::Iter<T> as core::iter::traits::iterator::Iterator>::next+0x164 (inlined)
+	    7f89c5612f94 <alloc::vec::drain::Drain<T,A> as core::iter::traits::iterator::Iterator>::next+0x164 (inlined)
+	    7f89c5612f94 core::iter::traits::iterator::Iterator::fold+0x164 (inlined)
+	    7f89c5612f94 core::iter::traits::iterator::Iterator::for_each+0x164 (inlined)
+	    7f89c5612f94 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}+0x164 (inlined)
+	    7f89c5612f94 hydroflow::scheduled::graph::Hydroflow::add_subgraph_stratified::{{closure}}+0x164 (inlined)
+	    7f89c5612f94 <F as hydroflow::scheduled::subgraph::Subgraph>::run+0x164 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    92.799122:  200000000 cpu-clock:pppH: 
+	    7f89c560cedc compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0xc (inlined)
+	    7f89c560cedc core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &mut F>::call_once+0xc (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    92.999056:  200000000 cpu-clock:pppH: 
+	    7f89c56179f3 <rand::rngs::adapter::reseeding::ReseedingCore<R,Rsdr> as rand_core::block::BlockRngCore>::generate+0x3 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    93.199054:  200000000 cpu-clock:pppH: 
+	    7f89c561c10d std::sys::thread_local::fast_local::lazy::Storage<T,D>::get_or_init+0xd (inlined)
+	    7f89c561c10d rand::rngs::thread::THREAD_RNG_KEY::{{constant}}::{{closure}}+0xd (inlined)
+	    7f89c561c10d core::ops::function::FnOnce::call_once+0xd (inlined)
+	    7f89c561c10d std::thread::local::LocalKey<T>::try_with+0xd (inlined)
+	    7f89c561c10d std::thread::local::LocalKey<T>::with+0xd (inlined)
+	    7f89c561c10d rand::rngs::thread::thread_rng+0xd (/home/hydro/hydro-kbWo-kTG)
+	    555555cdf99f [unknown] (//anon)
+
+hydro-kbWo-kTG  2149    93.399157:  200000000 cpu-clock:pppH: 
+	    7f89c560384b <rand_core::block::BlockRng<R> as rand_core::RngCore>::next_u64+0xb (inlined)
+	    7f89c560384b <rand::rngs::adapter::reseeding::ReseedingRng<R,Rsdr> as rand_core::RngCore>::next_u64+0xb (inlined)
+	    7f89c560384b <rand::rngs::thread::ThreadRng as rand_core::RngCore>::next_u64+0xb (inlined)
+	    7f89c560384b rand::distributions::integer::<impl rand::distributions::distribution::Distribution<u64> for rand::distributions::Standard>::sample+0xb (inlined)
+	    7f89c560384b rand::rng::Rng::gen+0xb (inlined)
+	    7f89c560384b rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0xb (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    93.599138:  200000000 cpu-clock:pppH: 
+	    7f89c5603840 rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x0 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    93.799120:  200000000 cpu-clock:pppH: 
+	    7f89c561d289 core::core_arch::x86::avx2::_mm256_shuffle_epi8+0x139 (inlined)
+	    7f89c561d289 <ppv_lite86::x86_64::sse2::avx2::u32x4x2_avx2<NI> as ppv_lite86::types::RotateEachWord32>::rotate_each_word_right24+0x139 (inlined)
+	    7f89c561d289 <ppv_lite86::soft::x2<W,G> as ppv_lite86::types::RotateEachWord32>::rotate_each_word_right24+0x139 (inlined)
+	    7f89c561d289 rand_chacha::guts::round+0x139 (inlined)
+	    7f89c561d289 rand_chacha::guts::refill_wide_impl+0x139 (inlined)
+	    7f89c561d289 rand_chacha::guts::refill_wide::fn_impl+0x139 (inlined)
+	    7f89c561d289 rand_chacha::guts::refill_wide::impl_avx2+0x139 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    93.999113:  200000000 cpu-clock:pppH: 
+	    7f89c5612f90 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}::call_comb_type+0x160 (inlined)
+	    7f89c5612f90 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 core::iter::traits::iterator::Iterator::for_each::call::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 core::iter::traits::iterator::Iterator::fold+0x160 (inlined)
+	    7f89c5612f90 core::iter::traits::iterator::Iterator::for_each+0x160 (inlined)
+	    7f89c5612f90 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 hydroflow::scheduled::graph::Hydroflow::add_subgraph_stratified::{{closure}}+0x160 (inlined)
+	    7f89c5612f90 <F as hydroflow::scheduled::subgraph::Subgraph>::run+0x160 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    94.199122:  200000000 cpu-clock:pppH: 
+	    7f89c56038ba rand::distributions::float::<impl rand::distributions::distribution::Distribution<f64> for rand::distributions::Standard>::sample+0x7a (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    94.399169:  200000000 cpu-clock:pppH: 
+	    7f89c56018e7 core::option::Option<T>::map+0x27 (inlined)
+	    7f89c56018e7 <core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::next+0x27 (inlined)
+	    7f89c56018e7 <compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::op_3v1__map__loc_unknown_start_0_0_end_0_0::Pull<Item,Input> as core::iter::traits::iterator::Iterator>::next+0x27 (inlined)
+	    7f89c56018e7 <core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::next+0x27 (inlined)
+	    7f89c56018e7 <compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::op_4v1__map__loc_unknown_start_0_0_end_0_0::Pull<Item,Input> as core::iter::traits::iterator::Iterator>::next+0x27 (inlined)
+	    7f89c56018e7 <core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::next+0x27 (inlined)
+	    7f89c56018e7 <compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::op_5v1__map__loc_unknown_start_0_0_end_0_0::Pull<Item,Input> as core::iter::traits::iterator::Iterator>::next+0x27 (inlined)
+	    7f89c56018e7 <&mut I as core::iter::traits::iterator::Iterator>::next+0x27 (inlined)
+	    7f89c56018e7 pusherator::pivot::Pivot<I,P>::run+0x27 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    94.599151:  200000000 cpu-clock:pppH: 
+	    7f89c55dddac alloc::vec::Vec<T,A>::push+0x3c (inlined)
+	    7f89c55dddac <hydroflow::scheduled::handoff::vector::VecHandoff<T> as hydroflow::scheduled::handoff::CanReceive<core::option::Option<T>>>::give+0x3c (/home/hydro/hydro-kbWo-kTG)
+	    555555cdf99f [unknown] (//anon)
+
+hydro-kbWo-kTG  2149    94.799148:  200000000 cpu-clock:pppH: 
+	    7f89c55ddd70 <hydroflow::scheduled::handoff::vector::VecHandoff<T> as hydroflow::scheduled::handoff::CanReceive<core::option::Option<T>>>::give+0x0 (/home/hydro/hydro-kbWo-kTG)
+	    555555cdf99f [unknown] (//anon)
+
+hydro-kbWo-kTG  2149    94.999131:  200000000 cpu-clock:pppH: 
+	    7f89c560cee8 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0x18 (inlined)
+	    7f89c560cee8 core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &mut F>::call_once+0x18 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    95.199113:  200000000 cpu-clock:pppH: 
+	    7f89c561d3b0 core::cmp::impls::<impl core::cmp::PartialOrd for u32>::lt+0x260 (inlined)
+	    7f89c561d3b0 <core::ops::range::Range<T> as core::iter::range::RangeIteratorImpl>::spec_next+0x260 (inlined)
+	    7f89c561d3b0 core::iter::range::<impl core::iter::traits::iterator::Iterator for core::ops::range::Range<A>>::next+0x260 (inlined)
+	    7f89c561d3b0 rand_chacha::guts::refill_wide_impl+0x260 (inlined)
+	    7f89c561d3b0 rand_chacha::guts::refill_wide::fn_impl+0x260 (inlined)
+	    7f89c561d3b0 rand_chacha::guts::refill_wide::impl_avx2+0x260 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    95.399319:  200000000 cpu-clock:pppH: 
+	    7f89c56018ef core::option::Option<T>::map+0x2f (inlined)
+	    7f89c56018ef <core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::next+0x2f (inlined)
+	    7f89c56018ef <compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::op_4v1__map__loc_unknown_start_0_0_end_0_0::Pull<Item,Input> as core::iter::traits::iterator::Iterator>::next+0x2f (inlined)
+	    7f89c56018ef <core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::next+0x2f (inlined)
+	    7f89c56018ef <compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::op_5v1__map__loc_unknown_start_0_0_end_0_0::Pull<Item,Input> as core::iter::traits::iterator::Iterator>::next+0x2f (inlined)
+	    7f89c56018ef <&mut I as core::iter::traits::iterator::Iterator>::next+0x2f (inlined)
+	    7f89c56018ef pusherator::pivot::Pivot<I,P>::run+0x2f (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    95.599319:  200000000 cpu-clock:pppH: 
+	    7f89c565ae92 hydroflow::scheduled::context::Context::spawn_tasks+0x2 (/home/hydro/hydro-kbWo-kTG)
+
+hydro-kbWo-kTG  2149    95.799299:  200000000 cpu-clock:pppH: 
+	    7f89c560cee8 compute_pi::main::{{closure}}::{{closure}}::{{closure}}::expand_staged::{{closure}}::{{closure}}+0x18 (inlined)
+	    7f89c560cee8 core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &mut F>::call_once+0x18 (/home/hydro/hydro-kbWo-kTG)
+
