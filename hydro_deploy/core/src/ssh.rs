@@ -103,22 +103,27 @@ impl LaunchedBinary for LaunchedSshBinary {
             {
                 let mut script_channel = self.session.as_ref().unwrap().channel_session().await?;
                 let mut stderr_lines = BufReader::new(script_channel.stderr()).lines();
-                let stderr_task = tokio::task::spawn(async move {
-                    while let Some(Ok(s)) = stderr_lines.next().await {
-                        ProgressTracker::println(&format!("[perf stderr] {s}"));
-                    }
-                });
                 let mut stdout = script_channel.stream(0);
-                let stdout_task = tokio::task::spawn(async move {
-                    // Download output via stdout.
-                    // Writing to a file and downloading via `sftp` may be faster as it can download non-sequentially.
-                    tokio::io::copy(&mut stdout, &mut local_file).await
-                });
-                script_channel
-                    .exec(&format!("perf script --symfs=/ -i {PERF_OUTFILE}"))
-                    .await?;
-                stderr_task.await?;
-                stdout_task.await??;
+                tokio::try_join!(
+                    async move {
+                        // Log stderr.
+                        while let Some(Ok(s)) = stderr_lines.next().await {
+                            ProgressTracker::println(&format!("[perf stderr] {s}"));
+                        }
+                        Ok(()) as Result<_>
+                    },
+                    async move {
+                        // Download output via stdout.
+                        // Writing to a file and downloading via `sftp` may be faster as it can download non-sequentially.
+                        Ok(tokio::io::copy(&mut stdout, &mut local_file).await?)
+                    },
+                    async move {
+                        // Run command (last!).
+                        Ok(script_channel
+                            .exec(&format!("perf script --symfs=/ -i {PERF_OUTFILE}"))
+                            .await?)
+                    },
+                )?;
             }
 
             // TODO(mingwei): re-use this code to download `dtrace` data.
