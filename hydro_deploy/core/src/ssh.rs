@@ -386,7 +386,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
 
         let (stdin_sender, mut stdin_receiver) = mpsc::unbounded_channel::<String>();
         let mut stdin = channel.stream(0); // stream 0 is stdout/stdin, we use it for stdin
-        let _ = tokio::spawn(async move {
+        tokio::spawn(async move {
             while let Some(line) = stdin_receiver.recv().await {
                 if stdin.write_all(line.as_bytes()).await.is_err() {
                     break;
