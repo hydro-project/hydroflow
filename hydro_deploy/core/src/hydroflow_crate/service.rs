@@ -13,6 +13,7 @@ use tokio::sync::{mpsc, RwLock};
 use super::build::{build_crate_memoized, BuildError, BuildOutput, BuildParams};
 use super::perf_options::PerfOptions;
 use super::ports::{self, HydroflowPortConfig, HydroflowSink, SourcePath};
+use crate::localhost::launched_binary;
 use crate::progress::ProgressTracker;
 use crate::{
     Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
@@ -303,21 +304,15 @@ impl Service for HydroflowCrateService {
     }
 
     async fn stop(&mut self) -> Result<()> {
-        self.launched_binary
-            .as_ref()
-            .unwrap()
-            .stdin()
-            .send("stop\n".to_string())?;
+        let launched_binary = self.launched_binary.as_mut().unwrap();
+        launched_binary.stdin().send("stop\n".to_string())?;
 
         let timeout_result = ProgressTracker::leaf(
             self.display_id
                 .clone()
                 .unwrap_or_else(|| format!("service/{}", self.id))
                 + ": waiting for exit",
-            tokio::time::timeout(
-                Duration::from_secs(60),
-                self.launched_binary.as_mut().unwrap().wait(),
-            ),
+            tokio::time::timeout(Duration::from_secs(60), launched_binary.wait()),
         )
         .await;
         match timeout_result {
@@ -325,7 +320,7 @@ impl Service for HydroflowCrateService {
             Ok(Err(unexpected_error)) => return Err(unexpected_error), // `wait()` errored.
             Ok(Ok(_exit_status)) => {}
         }
-        self.launched_binary.as_mut().unwrap().stop().await?;
+        launched_binary.stop().await?;
 
         Ok(())
     }

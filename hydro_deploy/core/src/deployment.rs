@@ -1,8 +1,9 @@
 use std::collections::HashMap;
+use std::future::Future;
 use std::sync::{Arc, Weak};
 
 use anyhow::Result;
-use futures::{StreamExt, TryStreamExt};
+use futures::{FutureExt, StreamExt, TryStreamExt};
 use tokio::sync::RwLock;
 
 use super::gcp::GcpNetwork;
@@ -41,14 +42,19 @@ impl Deployment {
         self.add_service(|id| CustomService::new(id, on, external_ports))
     }
 
-    // TODO(mingwei): generalize to `run_until(fut: impl Future)`?
-    /// Runs `deploy()`, and `start()`, waits for CTRL+C, then runs `stop()`.
-    pub async fn run_ctrl_c(&mut self) -> Result<()> {
+    /// Runs `deploy()`, and `start()`, waits for the trigger future, then runs `stop()`.
+    pub async fn run_until(&mut self, trigger: impl Future<Output = ()>) -> Result<()> {
+        // TODO(mingwei): should `trigger` interrupt `deploy()` and `start()`? If so make sure shutdown works as expected.
         self.deploy().await?;
         self.start().await?;
-        tokio::signal::ctrl_c().await?;
+        trigger.await;
         self.stop().await?;
         Ok(())
+    }
+
+    /// Runs `deploy()`, and `start()`, waits for CTRL+C, then runs `stop()`.
+    pub async fn run_ctrl_c(&mut self) -> Result<()> {
+        self.run_until(tokio::signal::ctrl_c().map(|_| ())).await
     }
 
     pub async fn deploy(&mut self) -> Result<()> {
