@@ -322,9 +322,10 @@ impl Service for HydroflowCrateService {
         .await;
         match timeout_result {
             Err(e) => {} // `wait()` timed out, but stop will force quit.
-            Ok(Err(e)) => return Err(e),
+            Ok(Err(e)) => return Err(e), // `wait()` errored.
             Ok(Ok(_exit_status)) => {},
         }
+        self.launched_binary.as_mut().unwrap().stop().await;
 
         }
         // If `wait` timed out, stop will force quit.
