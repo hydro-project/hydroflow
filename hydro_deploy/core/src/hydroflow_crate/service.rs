@@ -13,7 +13,6 @@ use tokio::sync::{mpsc, RwLock};
 use super::build::{build_crate_memoized, BuildError, BuildOutput, BuildParams};
 use super::perf_options::PerfOptions;
 use super::ports::{self, HydroflowPortConfig, HydroflowSink, SourcePath};
-use crate::localhost::launched_binary;
 use crate::progress::ProgressTracker;
 use crate::{
     Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
