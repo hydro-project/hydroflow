@@ -102,12 +102,7 @@ impl LaunchedBinary for LaunchedSshBinary {
             let local_file = perf.output_file.to_str().unwrap();
             let mut local_file = tokio::fs::File::create(local_file).await?;
             {
-                let mut script_channel = async_retry(
-                    || async { Ok(self.session.as_ref().unwrap().channel_session().await?) },
-                    10,
-                    Duration::from_secs(1),
-                )
-                .await?;
+                let mut script_channel = self.session.as_ref().unwrap().channel_session().await?;
                 let mut stderr_lines = BufReader::new(script_channel.stderr()).lines();
                 let stderr_task = tokio::task::spawn(async move {
                     while let Some(Ok(s)) = stderr_lines.next().await {
