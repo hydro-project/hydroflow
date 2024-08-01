@@ -17,7 +17,6 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::runtime::Handle;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::StreamExt;
-use tokio_util::compat::FuturesAsyncReadCompatExt;
 
 use super::progress::ProgressTracker;
 use super::util::async_retry;
@@ -109,7 +108,7 @@ impl LaunchedBinary for LaunchedSshBinary {
                         ProgressTracker::println(&format!("[perf stderr] {s}"));
                     }
                 });
-                let mut stdout = script_channel.stream(0).compat();
+                let mut stdout = script_channel.stream(0);
                 let stdout_task = tokio::task::spawn(async move {
                     // Download output via stdout.
                     // Writing to a file and downloading via `sftp` may be faster as it can download non-sequentially.
@@ -129,7 +128,7 @@ impl LaunchedBinary for LaunchedSshBinary {
             //     Ok(perf_data) => {
             //         // download perf.data
             //         let mut perf_data_local = tokio::fs::File::create(output_file).await?;
-            //         tokio::io::copy(&mut perf_data.compat(), &mut perf_data_local).await?;
+            //         tokio::io::copy(&mut perf_data, &mut perf_data_local).await?;
             //     }
             //     Err(Error::Ssh2(ssh2_err)) if ErrorCode::SFTP(2) == ssh2_err.code() => {
             //         // File not found, probably due to some other previous error.
