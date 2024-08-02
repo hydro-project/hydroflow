@@ -290,7 +290,7 @@ impl Service for HydroflowCrateService {
             self.display_id
                 .clone()
                 .unwrap_or_else(|| format!("service/{}", self.id))
-                + ": waiting for ack start",
+                + " / waiting for ack start",
             tokio::time::timeout(Duration::from_secs(60), stdout_receiver),
         )
         .await??;
@@ -310,7 +310,7 @@ impl Service for HydroflowCrateService {
             self.display_id
                 .clone()
                 .unwrap_or_else(|| format!("service/{}", self.id))
-                + ": waiting for exit",
+                + " / waiting for exit",
             tokio::time::timeout(Duration::from_secs(60), launched_binary.wait()),
         )
         .await;
