@@ -126,6 +126,16 @@ pub trait VariadicExt: Variadic {
     /// Reverses this variadic value.
     fn reverse(self) -> Self::Reverse;
 
+    /// The length of this variadic type
+    fn len(&self) -> usize {
+        Self::LEN
+    }
+
+    /// Checks if this variadic type is empty.
+    fn is_empty(&self) -> bool {
+        Self::LEN == 0
+    }
+
     /// This as a variadic of references.
     type AsRefVar<'a>: RefVariadic<
         UnRefVar = Self,
@@ -488,7 +498,7 @@ pub trait PartialEqVariadic: VariadicExt {
     fn eq(&self, other: &Self) -> bool;
 
     /// `PartialEq` for the `AsRefVar` version op `Self`.
-    fn eq_ref<'a>(this: Self::AsRefVar<'a>, other: Self::AsRefVar<'a>) -> bool;
+    fn eq_ref(this: Self::AsRefVar<'_>, other: Self::AsRefVar<'_>) -> bool;
 }
 #[sealed]
 impl<Item, Rest> PartialEqVariadic for (Item, Rest)
@@ -502,9 +512,9 @@ where
         item_self == item_other && rest_self.eq(rest_other)
     }
 
-    fn eq_ref<'a>(
-        this: <Self as VariadicExt>::AsRefVar<'a>,
-        other: <Self as VariadicExt>::AsRefVar<'a>,
+    fn eq_ref(
+        this: <Self as VariadicExt>::AsRefVar<'_>,
+        other: <Self as VariadicExt>::AsRefVar<'_>,
     ) -> bool {
         let var_args!(item_self, ...rest_self) = this;
         let var_args!(item_other, ...rest_other) = other;
@@ -517,9 +527,9 @@ impl PartialEqVariadic for () {
         true
     }
 
-    fn eq_ref<'a>(
-        _this: <Self as VariadicExt>::AsRefVar<'a>,
-        _other: <Self as VariadicExt>::AsRefVar<'a>,
+    fn eq_ref(
+        _this: <Self as VariadicExt>::AsRefVar<'_>,
+        _other: <Self as VariadicExt>::AsRefVar<'_>,
     ) -> bool {
         true
     }

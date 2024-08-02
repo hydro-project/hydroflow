@@ -4,8 +4,9 @@ use ref_cast::RefCast;
 use sealed::sealed;
 use variadics::{var_expr, var_type, RefVariadic, VariadicExt};
 
-use crate::ght::{GeneralizedHashTrieNode, GhtHasChildren, GhtInner, GhtLeaf, HtPrefixIter};
-use crate::{GhtNodeType, Merge};
+use crate::ght::{
+    GeneralizedHashTrie, GeneralizedHashTrieNode, GhtHasChildren, GhtInner, GhtLeaf, HtPrefixIter,
+};
 
 /// COLT from Wang/Willsey/Suciu
 pub trait ColumnLazyTrieNode: GeneralizedHashTrieNode {
@@ -92,29 +93,77 @@ where
 }
 
 #[macro_export]
+/// Constructs a forest (variadic list) of Ght structs,
+/// one for each height from 1 to length of the schema
 macro_rules! GhtForestType {
     ($a:tt, $( $b:tt ),* => ()) => {
         ()
     };
     ($a:tt => $c:tt, $( $d:tt ),* ) => {
-        (GhtNodeType!($a => $c, $( $d ),*), GhtForestType!($a, $c => $( $d ),*))
+        (GhtType!($a => $c, $( $d ),*), GhtForestType!($a, $c => $( $d ),*))
     };
     ($a:tt, $( $b:tt ),* => $c:tt) => {
-        (GhtNodeType!($a, $( $b ),* => $c), ())
+        (GhtType!($a, $( $b ),* => $c), ())
     };
 
     ($a:tt, $( $b:tt ),* => $c:tt, $( $d:tt ),* ) => {
-        (GhtNodeType!($a, $( $b ),* => $c, $( $d ),*), GhtForestType!($a, $( $b ),* , $c => $( $d ),*))
+        (GhtType!($a, $( $b ),* => $c, $( $d ),*), GhtForestType!($a, $( $b ),* , $c => $( $d ),*))
     };
 
     ($a:tt, $( $b:tt ),* ) => {
         GhtForestType!($a => $( $b ),*)
     };
 
-    ($head:tt, ($rest:tt)) => {
-        GhtForestType!($head => $rest )
-    };
+    // ($head:tt, ($rest:tt)) => {
+    //     GhtForestType!($head => $rest )
+    // };
 }
+
+// #[macro_export]
+// macro_rules! GhtLeafTypes {
+//     ($a:tt, $( $b:tt ),* => ()) => {
+//         ()
+//     };
+//     ($a:tt => $c:tt, $( $d:tt ),* ) => {
+//         (var_expr!($c, $( $d ),*), GhtLeafTypes!($a, $c => $( $d ),*))
+//     };
+//     ($a:tt, $( $b:tt ),* => $c:tt) => {
+//         (var_expr!($c), ())
+//     };
+
+//     ($a:tt, $( $b:tt ),* => $c:tt, $( $d:tt ),* ) => {
+//         (var_expr!($c, $( $d ),*), GhtLeafTypes!($a, $( $b ),* , $c => $( $d ),*))
+//     };
+
+//     ($a:tt, $( $b:tt ),* ) => {
+//         GhtLeafTypes!($a => $( $b ),*)
+//     };
+// }
+
+// #[macro_export]
+// macro_rules! GhtForestAndLeafTypes {
+//     ($a:tt, $( $b:tt ),* => ()) => {
+//         ((),())
+//     };
+//     ($a:tt => $c:tt, $( $d:tt ),* ) => {
+//         ((GhtNodeType!($a => $c, $( $d ),*), var_expr!($c, $( $d ),*)),
+//          GhtForestAndLeafTypes!($a, $c => $( $d ),*))
+//     };
+//     ($a:tt, $( $b:tt ),* => $c:tt) => {
+//         ((GhtNodeType!($a, $( $b ),* => $c),
+//          var_expr!($c)), ())
+//     };
+
+//     ($a:tt, $( $b:tt ),* => $c:tt, $( $d:tt ),* ) => {
+//         ((GhtNodeType!($a, $( $b ),* => $c, $( $d ),*), var_expr!($c, $( $d ),*)),
+//          GhtForestAndLeafTypes!($a, $( $b ),* , $c => $( $d ),*)
+//         )
+//     };
+
+//     ($a:tt, $( $b:tt ),* ) => {
+//         GhtForestAndLeafTypes!($a => $( $b ),*)
+//     };
+// }
 
 // #[sealed]
 // pub trait ColtForest<'a, Prefix> {
@@ -285,11 +334,11 @@ where
     // where
     //     for<'a> <Self::Schema as VariadicExt>::AsRefVar<'a>: Split<Prefix>;
 
-    // fn force_and_merge(self, key: !) -> !;
     fn find_matching_trie<'a>(&self, search_key: Prefix, count: usize) -> Option<usize>;
+    fn force_and_merge<'a>(&self, search_key: Prefix) -> bool;
 }
 
-/// GhtForestStruct is a metadata node pointing to a variadic list of Tries
+/// GhtForestStruct is a metadata node pointing to a variadic list of (Trie, LeafType) pairs
 #[derive(RefCast)]
 #[repr(transparent)]
 pub struct GhtForestStruct<T>
@@ -299,11 +348,48 @@ where
     pub(crate) forest: T,
 }
 
+// #[sealed]
+// impl<TrieFirst, TrieRest, Prefix> GhtForest<Prefix>
+//     for GhtForestStruct<var_type!(TrieFirst, ...TrieRest)>
+// where
+//     TrieFirst: GeneralizedHashTrieNode,
+//     TrieRest: VariadicExt,
+//     TrieFirst: HtPrefixIter<Prefix>,
+//     GhtForestStruct<TrieRest>: GhtForest<Prefix>,
+//     Prefix: VariadicExt + RefVariadic,
+// {
+//     fn find_matching_trie<'a>(&self, search_key: Prefix, count: usize) -> Option<usize> {
+//         let var_expr!(first, ...rest) = &self.forest;
+//         if first.prefix_iter(search_key).next().is_some() {
+//             Some(count)
+//         } else {
+//             let remainder = GhtForestStruct::<TrieRest>::ref_cast(rest);
+//             GhtForest::find_matching_trie(remainder, search_key, count + 1)
+//         }
+//     }
+//     fn force_and_merge<'a>(&self, search_key: Prefix) -> bool {
+//         let var_expr!(first, ...rest) = &self.forest;
+//         if first.prefix_iter(search_key).next().is_some() {
+//             // this is the trie!
+//             if search_key.len() <= first.height().unwrap() {
+//                 // no need to force anything!
+//                 false
+//             } else {
+//                 todo!();
+//                 true
+//             }
+//         } else {
+//             let remainder = GhtForestStruct::<TrieRest>::ref_cast(rest);
+//             GhtForest::force_and_merge(remainder, search_key)
+//         }
+//     }
+// }
+
 #[sealed]
 impl<TrieFirst, TrieRest, Prefix> GhtForest<Prefix>
     for GhtForestStruct<var_type!(TrieFirst, ...TrieRest)>
 where
-    TrieFirst: GeneralizedHashTrieNode,
+    TrieFirst: GeneralizedHashTrie,
     TrieRest: VariadicExt,
     TrieFirst: HtPrefixIter<Prefix>,
     GhtForestStruct<TrieRest>: GhtForest<Prefix>,
@@ -318,6 +404,22 @@ where
             GhtForest::find_matching_trie(remainder, search_key, count + 1)
         }
     }
+    fn force_and_merge<'a>(&self, search_key: Prefix) -> bool {
+        let var_expr!(first, ...rest) = &self.forest;
+        if first.prefix_iter(search_key).next().is_some() {
+            // this is the trie!
+            if search_key.len() <= first.height().unwrap() {
+                // no need to force anything!
+                false
+            } else {
+                todo!();
+                true
+            }
+        } else {
+            let remainder = GhtForestStruct::<TrieRest>::ref_cast(rest);
+            GhtForest::force_and_merge(remainder, search_key)
+        }
+    }
 }
 
 #[sealed]
@@ -328,12 +430,37 @@ where
     fn find_matching_trie<'a>(&self, _search_key: Prefix, _count: usize) -> Option<usize> {
         None
     }
+    fn force_and_merge<'a>(&self, _search_key: Prefix) -> bool {
+        false
+    }
 }
+
+// impl<TrieFirst, TrieRest> Default for GhtForestStruct<var_type!(TrieFirst, ...TrieRest)>
+// where
+//     // T: VariadicExt,
+//     TrieFirst: Default + GeneralizedHashTrieNode,
+//     TrieRest: VariadicExt,
+//     GhtForestStruct<TrieRest>: Default,
+//     // for<'a> <TrieRest as VariadicExt>::AsRefVar<'a>: PartialEq,
+//     // <TrieFirst as GhtHasChildren>::Node: Eq + Hash,
+//     // GhtLeaf<TrieFirst::Node>: GeneralizedHashTrieNode,
+//     // need something like TrieFirst::Schema = TrieRest.0::Schema?
+// {
+//     fn default() -> Self {
+//         let first_trie = TrieFirst::default();
+//         let rest = GhtForestStruct::<TrieRest>::default();
+//         let rest_forest: TrieRest = rest.forest;
+
+//         Self {
+//             forest: var_expr!(first_trie, ...rest_forest),
+//         }
+//     }
+// }
 
 impl<TrieFirst, TrieRest> Default for GhtForestStruct<var_type!(TrieFirst, ...TrieRest)>
 where
     // T: VariadicExt,
-    TrieFirst: Default + GeneralizedHashTrieNode,
+    TrieFirst: Default + GeneralizedHashTrie,
     TrieRest: VariadicExt,
     GhtForestStruct<TrieRest>: Default,
     // for<'a> <TrieRest as VariadicExt>::AsRefVar<'a>: PartialEq,
@@ -358,35 +485,4 @@ impl Default for GhtForestStruct<var_type!()> {
             forest: var_expr!(),
         }
     }
-}
-
-#[test]
-fn test_build_forest() {
-    type MyForest = GhtForestStruct<GhtForestType!(u8, u16, u32, u64)>;
-    let mut forest = MyForest::default();
-    forest.forest.0.insert(var_expr!(1, 1, 1, 1));
-    forest.forest.1 .0.insert(var_expr!(2, 2, 2, 2));
-    forest.forest.1 .1 .0.insert(var_expr!(3, 3, 3, 3));
-
-    let i = <MyForest as GhtForest<<var_type!(u8, u16, u32, u64) as VariadicExt>::AsRefVar<'_>>>::find_matching_trie(&forest, var_expr!(1, 1, 1, 1).as_ref_var(), 0);
-
-    assert_eq!(
-        forest
-            .find_matching_trie(var_expr!(1, 1, 1, 1).as_ref_var(), 0)
-            .unwrap(),
-        0
-    );
-    assert_eq!(
-        forest
-            .find_matching_trie(var_expr!(2, 2, 2, 2).as_ref_var(), 1)
-            .unwrap(),
-        1
-    );
-    assert_eq!(
-        forest
-            .find_matching_trie(var_expr!(3, 3, 3, 3).as_ref_var(), 2)
-            .unwrap(),
-        2
-    );
-    println!("{:?}", forest.forest);
 }

@@ -7,7 +7,7 @@ use hydroflow::variadics::{var_expr, var_type}; // Import the Insert trait
 
 #[test]
 fn test_basic() {
-    type MyGHT = GhtType!(u16, u32 => u64);
+    type MyGht = GhtType!(u16, u32 => u64);
     type FlatTup = var_type!(u16, u32, u64);
     let input: Vec<FlatTup> = vec![
         var_expr!(42, 314, 43770),
@@ -15,17 +15,17 @@ fn test_basic() {
         var_expr!(42, 314, 30619),
         var_expr!(43, 10, 600),
     ];
-    let mut merged = MyGHT::default();
+    let mut merged = MyGht::default();
     for i in input.clone() {
         merged.insert(i);
     }
     println!("merged: {:?}", merged);
     let mut df = hydroflow_syntax! {
         source_iter(input)
-            -> map(|t| MyGHT::new_from(vec![t]))
-            -> lattice_fold::<'static>(MyGHT::default)
+            -> map(|t| MyGht::new_from(vec![t]))
+            -> lattice_fold::<'static>(MyGht::default)
             -> inspect(|t| println!("{:?}", t))
-            -> assert(|x: &MyGHT| x.eq(&merged))
+            -> assert(|x: &MyGht| x.eq(&merged))
             -> null();
     };
     df.run_available();
@@ -33,8 +33,8 @@ fn test_basic() {
 
 #[test]
 fn test_join() {
-    type MyGHT = GhtType!(u16 => u16);
-    type MyGhtTrie = <MyGHT as GeneralizedHashTrie>::Trie;
+    type MyGht = GhtType!(u16 => u16);
+    type MyGhtTrie = <MyGht as GeneralizedHashTrie>::Trie;
     type ResultGht = GhtType!(u16 => u16, u16);
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
@@ -52,11 +52,11 @@ fn test_join() {
 
     let mut df = hydroflow_syntax! {
         R = source_iter(r)
-            -> map(|t| MyGHT::new_from([t]))
-            -> state::<MyGHT>();
+            -> map(|t| MyGht::new_from([t]))
+            -> state::<MyGht>();
         S = source_iter(s)
-            -> map(|t| MyGHT::new_from([t]))
-            -> state::<MyGHT>();
+            -> map(|t| MyGht::new_from([t]))
+            -> state::<MyGht>();
         R[items] -> [0]my_join;
         S[items] -> [1]my_join;
         my_join = lattice_bimorphism(MyBim::default(), #R, #S)

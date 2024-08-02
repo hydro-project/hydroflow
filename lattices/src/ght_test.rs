@@ -5,13 +5,13 @@ mod test {
 
     use variadics::{var_expr, var_type, VariadicExt};
 
-    use crate::ght::{GeneralizedHashTrie, GeneralizedHashTrieNode, GHT};
+    use crate::ght::{FindLeaf, GeneralizedHashTrie, GeneralizedHashTrieNode, GHT};
     use crate::ght_lattice::{
         DeepJoinLatticeBimorphism, GhtBimorphism, GhtCartesianProductBimorphism,
         GhtNodeKeyedBimorphism,
     };
-    use crate::lazy_trie::ColumnLazyTrieNode;
-    use crate::{GhtNodeType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
+    use crate::lazy_trie::{ColumnLazyTrieNode, GhtForest, GhtForestStruct};
+    use crate::{GhtForestType, GhtNodeType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
 
     #[test]
     fn basic_test() {
@@ -187,6 +187,29 @@ mod test {
         // for row in htrie.prefix_iter(var_expr!(42, 315, 43770).as_ref_var()) {
         //     println!("42,315,43770: {:?}", row);
         // }
+    }
+
+    #[test]
+    fn test_find_containing_leaf() {
+        type MyGht = GhtType!(u32, u32 => u32);
+        type InputType = var_type!(u32, u32, u32);
+        let input: HashSet<InputType> = HashSet::from_iter(
+            [
+                (42, 314, 30619),
+                (42, 314, 43770),
+                (42, 315, 43770),
+                (43, 10, 600),
+            ]
+            .iter()
+            .map(|&(a, b, c)| var_expr!(a, b, c)),
+        );
+        let htrie = MyGht::new_from(input.clone());
+
+        assert!(FindLeaf::find_containing_leaf(
+            &htrie,
+            var_expr!(42u32, 315u32, 43770u32).as_ref_var()
+        )
+        .is_some(),);
     }
 
     #[test]
@@ -977,4 +1000,48 @@ mod test {
     //         // }
     //     }
     // }
+
+    #[test]
+    fn test_build_forest() {
+        type MyForest = GhtForestStruct<GhtForestType!(u8, u16, u32, u64)>;
+        let mut forest = MyForest::default();
+        forest.forest.0.insert(var_expr!(1, 1, 1, 1));
+        forest.forest.1 .0.insert(var_expr!(2, 2, 2, 2));
+        forest.forest.1 .1 .0.insert(var_expr!(3, 3, 3, 3));
+
+        // let i = <MyForest as GhtForest<<var_type!(u8, u16, u32, u64) as VariadicExt>::AsRefVar<'_>>>::find_matching_trie(&forest, var_expr!(1, 1, 1, 1).as_ref_var(), 0);
+
+        assert_eq!(
+            // println!(
+            //     "found in trie {}",
+            forest
+                .find_matching_trie(var_expr!(1, 1, 1, 1).as_ref_var(), 0)
+                .unwrap(),
+            0
+        );
+        assert_eq!(
+            // println!(
+            //     "found in trie {}",
+            forest
+                .find_matching_trie(var_expr!(2, 2, 2, 2).as_ref_var(), 0)
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            // println!(
+            //     "found in trie {}",
+            forest
+                .find_matching_trie(var_expr!(3, 3, 3, 3).as_ref_var(), 0)
+                .unwrap(),
+            2
+        );
+        assert!(
+            // println!(
+            //     "found in trie {}",
+            forest
+                .find_matching_trie(var_expr!(4, 4, 4, 4).as_ref_var(), 0)
+                .is_none()
+        );
+        println!("{:?}", forest.forest);
+    }
 }
