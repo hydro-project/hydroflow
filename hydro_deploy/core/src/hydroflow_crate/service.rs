@@ -287,7 +287,10 @@ impl Service for HydroflowCrateService {
             .unwrap();
 
         let start_ack_line = ProgressTracker::leaf(
-            "waiting for ack start".to_string(),
+            self.display_id
+                .clone()
+                .unwrap_or_else(|| format!("service/{}", self.id))
+                + " / waiting for ack start",
             tokio::time::timeout(Duration::from_secs(60), stdout_receiver),
         )
         .await??;
@@ -300,13 +303,23 @@ impl Service for HydroflowCrateService {
     }
 
     async fn stop(&mut self) -> Result<()> {
-        self.launched_binary
-            .as_ref()
-            .unwrap()
-            .stdin()
-            .send("stop\n".to_string())?;
+        let launched_binary = self.launched_binary.as_mut().unwrap();
+        launched_binary.stdin().send("stop\n".to_string())?;
 
-        self.launched_binary.as_mut().unwrap().wait().await;
+        let timeout_result = ProgressTracker::leaf(
+            self.display_id
+                .clone()
+                .unwrap_or_else(|| format!("service/{}", self.id))
+                + " / waiting for exit",
+            tokio::time::timeout(Duration::from_secs(60), launched_binary.wait()),
+        )
+        .await;
+        match timeout_result {
+            Err(_timeout) => {} // `wait()` timed out, but stop will force quit.
+            Ok(Err(unexpected_error)) => return Err(unexpected_error), // `wait()` errored.
+            Ok(Ok(_exit_status)) => {}
+        }
+        launched_binary.stop().await?;
 
         Ok(())
     }

@@ -29,14 +29,15 @@ pub async fn launch_flow(mut flow: Hydroflow<'_>) {
     tokio::task::spawn_blocking(|| {
         let mut line = String::new();
         std::io::stdin().read_line(&mut line).unwrap();
-        assert!(line.starts_with("stop"));
-        stop.0.send(()).unwrap();
+        if line.starts_with("stop") {
+            stop.0.send(()).unwrap();
+        } else {
+            eprintln!("Unexpected stdin input: {:?}", line);
+        }
     });
 
     let local_set = tokio::task::LocalSet::new();
-    let flow = local_set.run_until(async move {
-        flow.run_async().await;
-    });
+    let flow = local_set.run_until(flow.run_async());
 
     tokio::select! {
         _ = stop.1 => {},

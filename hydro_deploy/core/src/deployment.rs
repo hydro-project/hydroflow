@@ -1,8 +1,9 @@
 use std::collections::HashMap;
+use std::future::Future;
 use std::sync::{Arc, Weak};
 
 use anyhow::Result;
-use futures::{StreamExt, TryStreamExt};
+use futures::{FutureExt, StreamExt, TryStreamExt};
 use tokio::sync::RwLock;
 
 use super::gcp::GcpNetwork;
@@ -39,6 +40,21 @@ impl Deployment {
         external_ports: Vec<u16>,
     ) -> Arc<RwLock<CustomService>> {
         self.add_service(|id| CustomService::new(id, on, external_ports))
+    }
+
+    /// Runs `deploy()`, and `start()`, waits for the trigger future, then runs `stop()`.
+    pub async fn run_until(&mut self, trigger: impl Future<Output = ()>) -> Result<()> {
+        // TODO(mingwei): should `trigger` interrupt `deploy()` and `start()`? If so make sure shutdown works as expected.
+        self.deploy().await?;
+        self.start().await?;
+        trigger.await;
+        self.stop().await?;
+        Ok(())
+    }
+
+    /// Runs `deploy()`, and `start()`, waits for CTRL+C, then runs `stop()`.
+    pub async fn run_ctrl_c(&mut self) -> Result<()> {
+        self.run_until(tokio::signal::ctrl_c().map(|_| ())).await
     }
 
     pub async fn deploy(&mut self) -> Result<()> {
@@ -115,6 +131,23 @@ impl Deployment {
             );
 
             futures::future::try_join_all(all_services_start)
+        })
+        .await?;
+        Ok(())
+    }
+
+    pub async fn stop(&mut self) -> Result<()> {
+        self.services.retain(|weak| weak.strong_count() > 0);
+
+        progress::ProgressTracker::with_group("stop", None, || {
+            let all_services_stop = self.services.iter().filter_map(Weak::upgrade).map(
+                |service: Arc<RwLock<dyn Service>>| async move {
+                    service.write().await.stop().await?;
+                    Ok(()) as Result<()>
+                },
+            );
+
+            futures::future::try_join_all(all_services_stop)
         })
         .await?;
         Ok(())
