@@ -297,7 +297,7 @@ pub trait EitherRefVariadic: Variadic {
     /// let un_ref: <var_type!(&u32, &String, &bool) as EitherRefVariadic>::UnRefVar =
     ///     var_expr!(1_u32, "Hello".to_owned(), false);
     /// ```
-    type UnRefVar: Variadic;
+    type UnRefVar: VariadicExt;
 
     /// This type with all exclusive `&mut` references replaced with shared `&` references.
     ///
@@ -488,7 +488,7 @@ pub trait PartialEqVariadic: VariadicExt {
     fn eq(&self, other: &Self) -> bool;
 
     /// `PartialEq` for the `AsRefVar` version op `Self`.
-    fn eq_ref<'a>(this: Self::AsRefVar<'a>, other: Self::AsRefVar<'a>) -> bool;
+    fn eq_ref(this: Self::AsRefVar<'_>, other: Self::AsRefVar<'_>) -> bool;
 }
 #[sealed]
 impl<Item, Rest> PartialEqVariadic for (Item, Rest)
@@ -502,9 +502,9 @@ where
         item_self == item_other && rest_self.eq(rest_other)
     }
 
-    fn eq_ref<'a>(
-        this: <Self as VariadicExt>::AsRefVar<'a>,
-        other: <Self as VariadicExt>::AsRefVar<'a>,
+    fn eq_ref(
+        this: <Self as VariadicExt>::AsRefVar<'_>,
+        other: <Self as VariadicExt>::AsRefVar<'_>,
     ) -> bool {
         let var_args!(item_self, ...rest_self) = this;
         let var_args!(item_other, ...rest_other) = other;
@@ -517,9 +517,9 @@ impl PartialEqVariadic for () {
         true
     }
 
-    fn eq_ref<'a>(
-        _this: <Self as VariadicExt>::AsRefVar<'a>,
-        _other: <Self as VariadicExt>::AsRefVar<'a>,
+    fn eq_ref(
+        _this: <Self as VariadicExt>::AsRefVar<'_>,
+        _other: <Self as VariadicExt>::AsRefVar<'_>,
     ) -> bool {
         true
     }
@@ -712,5 +712,31 @@ mod test {
             assert_eq!(Some(i), var.get(i).copied());
             assert_eq!(Some(i), var.get_mut(i).copied());
         }
+    }
+
+    #[test]
+    fn test_eq_ref_vec() {
+        type MyVar = var_type!(i32, bool, &'static str);
+        let vec: Vec<MyVar> = vec![
+            var_expr!(0, true, "hello"),
+            var_expr!(1, true, "world"),
+            var_expr!(2, false, "goodnight"),
+            var_expr!(3, false, "moon"),
+        ];
+        let needle: <MyVar as VariadicExt>::AsRefVar<'_> =
+            var_expr!(2, false, "goodnight").as_ref_var();
+        assert_eq!(
+            Some(2),
+            vec.iter()
+                .position(|item| <MyVar as PartialEqVariadic>::eq_ref(needle, item.as_ref_var()))
+        );
+
+        let missing: <MyVar as VariadicExt>::AsRefVar<'_> =
+            var_expr!(3, false, "goodnight").as_ref_var();
+        assert_eq!(
+            None,
+            vec.iter()
+                .position(|item| <MyVar as PartialEqVariadic>::eq_ref(missing, item.as_ref_var()))
+        );
     }
 }

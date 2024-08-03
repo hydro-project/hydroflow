@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+use std::future::Future;
 use std::sync::{Arc, Weak};
 
 use anyhow::Result;
-use futures::{StreamExt, TryStreamExt};
+use futures::{FutureExt, StreamExt, TryStreamExt};
 use tokio::sync::RwLock;
 
 use super::gcp::GcpNetwork;
@@ -9,7 +11,7 @@ use super::{
     progress, CustomService, GcpComputeEngineHost, Host, LocalhostHost, ResourcePool,
     ResourceResult, Service,
 };
-use crate::ServiceBuilder;
+use crate::{AzureHost, ServiceBuilder};
 
 #[derive(Default)]
 pub struct Deployment {
@@ -31,31 +33,6 @@ impl Deployment {
         self.add_host(LocalhostHost::new)
     }
 
-    #[allow(non_snake_case, clippy::too_many_arguments)] // TODO(mingwei)
-    pub fn GcpComputeEngineHost(
-        &mut self,
-        project: impl Into<String>,
-        machine_type: impl Into<String>,
-        image: impl Into<String>,
-        region: impl Into<String>,
-        network: Arc<RwLock<GcpNetwork>>,
-        user: Option<String>,
-        startup_script: Option<String>,
-    ) -> Arc<GcpComputeEngineHost> {
-        self.add_host(|id| {
-            GcpComputeEngineHost::new(
-                id,
-                project,
-                machine_type,
-                image,
-                region,
-                network,
-                user,
-                startup_script,
-            )
-        })
-    }
-
     #[allow(non_snake_case)]
     pub fn CustomService(
         &mut self,
@@ -65,24 +42,29 @@ impl Deployment {
         self.add_service(|id| CustomService::new(id, on, external_ports))
     }
 
+    /// Runs `deploy()`, and `start()`, waits for the trigger future, then runs `stop()`.
+    pub async fn run_until(&mut self, trigger: impl Future<Output = ()>) -> Result<()> {
+        // TODO(mingwei): should `trigger` interrupt `deploy()` and `start()`? If so make sure shutdown works as expected.
+        self.deploy().await?;
+        self.start().await?;
+        trigger.await;
+        self.stop().await?;
+        Ok(())
+    }
+
+    /// Runs `deploy()`, and `start()`, waits for CTRL+C, then runs `stop()`.
+    pub async fn run_ctrl_c(&mut self) -> Result<()> {
+        self.run_until(tokio::signal::ctrl_c().map(|_| ())).await
+    }
+
     pub async fn deploy(&mut self) -> Result<()> {
+        self.services.retain(|weak| weak.strong_count() > 0);
+
         progress::ProgressTracker::with_group("deploy", None, || async {
             let mut resource_batch = super::ResourceBatch::new();
-            let active_services = self
-                .services
-                .iter()
-                .filter(|service| service.upgrade().is_some())
-                .cloned()
-                .collect::<Vec<_>>();
-            self.services = active_services;
 
-            for service in self.services.iter() {
-                service
-                    .upgrade()
-                    .unwrap()
-                    .read()
-                    .await
-                    .collect_resources(&mut resource_batch);
+            for service in self.services.iter().filter_map(Weak::upgrade) {
+                service.read().await.collect_resources(&mut resource_batch);
             }
 
             for host in self.hosts.iter() {
@@ -106,15 +88,11 @@ impl Deployment {
             progress::ProgressTracker::with_group("deploy", None, || {
                 let services_future = self
                     .services
-                    .iter_mut()
-                    .map(|service: &mut Weak<RwLock<dyn Service>>| async {
-                        service
-                            .upgrade()
-                            .unwrap()
-                            .write()
-                            .await
-                            .deploy(&resource_result)
-                            .await
+                    .iter()
+                    .filter_map(Weak::upgrade)
+                    .map(|service: Arc<RwLock<dyn Service>>| {
+                        let resource_result = &resource_result;
+                        async move { service.write().await.deploy(resource_result).await }
                     })
                     .collect::<Vec<_>>();
 
@@ -125,13 +103,12 @@ impl Deployment {
             .await?;
 
             progress::ProgressTracker::with_group("ready", None, || {
-                let all_services_ready =
-                    self.services
-                        .iter()
-                        .map(|service: &Weak<RwLock<dyn Service>>| async {
-                            service.upgrade().unwrap().write().await.ready().await?;
-                            Ok(()) as Result<()>
-                        });
+                let all_services_ready = self.services.iter().filter_map(Weak::upgrade).map(
+                    |service: Arc<RwLock<dyn Service>>| async move {
+                        service.write().await.ready().await?;
+                        Ok(()) as Result<()>
+                    },
+                );
 
                 futures::future::try_join_all(all_services_ready)
             })
@@ -143,22 +120,15 @@ impl Deployment {
     }
 
     pub async fn start(&mut self) -> Result<()> {
-        let active_services = self
-            .services
-            .iter()
-            .filter(|service| service.upgrade().is_some())
-            .cloned()
-            .collect::<Vec<_>>();
-        self.services = active_services;
+        self.services.retain(|weak| weak.strong_count() > 0);
 
         progress::ProgressTracker::with_group("start", None, || {
-            let all_services_start =
-                self.services
-                    .iter()
-                    .map(|service: &Weak<RwLock<dyn Service>>| async {
-                        service.upgrade().unwrap().write().await.start().await?;
-                        Ok(()) as Result<()>
-                    });
+            let all_services_start = self.services.iter().filter_map(Weak::upgrade).map(
+                |service: Arc<RwLock<dyn Service>>| async move {
+                    service.write().await.start().await?;
+                    Ok(()) as Result<()>
+                },
+            );
 
             futures::future::try_join_all(all_services_start)
         })
@@ -166,6 +136,25 @@ impl Deployment {
         Ok(())
     }
 
+    pub async fn stop(&mut self) -> Result<()> {
+        self.services.retain(|weak| weak.strong_count() > 0);
+
+        progress::ProgressTracker::with_group("stop", None, || {
+            let all_services_stop = self.services.iter().filter_map(Weak::upgrade).map(
+                |service: Arc<RwLock<dyn Service>>| async move {
+                    service.write().await.stop().await?;
+                    Ok(()) as Result<()>
+                },
+            );
+
+            futures::future::try_join_all(all_services_stop)
+        })
+        .await?;
+        Ok(())
+    }
+}
+
+impl Deployment {
     pub fn add_host<T: Host + 'static, F: FnOnce(usize) -> T>(&mut self, host: F) -> Arc<T> {
         let arc = Arc::new(host(self.next_host_id));
         self.next_host_id += 1;
@@ -184,5 +173,49 @@ impl Deployment {
         let dyn_arc: Arc<RwLock<dyn Service>> = arc.clone();
         self.services.push(Arc::downgrade(&dyn_arc));
         arc
+    }
+}
+
+/// Buildstructor methods.
+#[buildstructor::buildstructor]
+impl Deployment {
+    #[allow(clippy::too_many_arguments)]
+    #[builder(entry = "GcpComputeEngineHost", exit = "add")]
+    pub fn add_gcp_compute_engine_host(
+        &mut self,
+        project: String,
+        machine_type: String,
+        image: String,
+        region: String,
+        network: Arc<RwLock<GcpNetwork>>,
+        user: Option<String>,
+        startup_script: Option<String>,
+    ) -> Arc<GcpComputeEngineHost> {
+        self.add_host(|id| {
+            GcpComputeEngineHost::new(
+                id,
+                project,
+                machine_type,
+                image,
+                region,
+                network,
+                user,
+                startup_script,
+            )
+        })
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    #[builder(entry = "AzureHost", exit = "add")]
+    pub fn add_azure_host(
+        &mut self,
+        project: String,
+        os_type: String, // linux or windows
+        machine_size: String,
+        image: Option<HashMap<String, String>>,
+        region: String,
+        user: Option<String>,
+    ) -> Arc<AzureHost> {
+        self.add_host(|id| AzureHost::new(id, project, os_type, machine_size, image, region, user))
     }
 }

@@ -1,7 +1,9 @@
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
+use std::process::ExitStatus;
 use std::sync::{Arc, Mutex};
 
+use anyhow::Result;
 use async_trait::async_trait;
 use futures::io::BufReader;
 use futures::{AsyncBufReadExt, AsyncWriteExt};
@@ -110,16 +112,22 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
             .try_status()
             .ok()
             .flatten()
-            .and_then(|c| {
-                #[cfg(unix)]
-                return c.code().or(c.signal());
-                #[cfg(not(unix))]
-                return c.code();
-            })
+            .map(exit_code)
     }
 
-    async fn wait(&mut self) -> Option<i32> {
-        let _ = self.child.get_mut().unwrap().status().await;
-        self.exit_code()
+    async fn wait(&mut self) -> Result<i32> {
+        Ok(exit_code(self.child.get_mut().unwrap().status().await?))
     }
+
+    async fn stop(&mut self) -> Result<()> {
+        self.child.get_mut().unwrap().kill()?;
+        Ok(())
+    }
+}
+
+fn exit_code(c: ExitStatus) -> i32 {
+    #[cfg(unix)]
+    return c.code().or(c.signal()).unwrap();
+    #[cfg(not(unix))]
+    return c.code().unwrap();
 }

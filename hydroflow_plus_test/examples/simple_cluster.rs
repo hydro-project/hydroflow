@@ -20,15 +20,14 @@ async fn main() {
 
         (
             Box::new(move |deployment| -> Arc<dyn Host> {
-                deployment.GcpComputeEngineHost(
-                    &project,
-                    "e2-micro",
-                    "debian-cloud/debian-11",
-                    "us-west1-a",
-                    network.clone(),
-                    None,
-                    None,
-                )
+                deployment
+                    .GcpComputeEngineHost()
+                    .project(&project)
+                    .machine_type("e2-micro")
+                    .image("debian-cloud/debian-11")
+                    .region("us-west1-a")
+                    .network(network.clone())
+                    .add()
             }),
             "release",
         )
@@ -68,10 +67,5 @@ async fn main() {
     );
 
     let mut deployment = deployment.into_inner();
-
-    deployment.deploy().await.unwrap();
-
-    deployment.start().await.unwrap();
-
-    tokio::signal::ctrl_c().await.unwrap()
+    deployment.run_ctrl_c().await.unwrap();
 }

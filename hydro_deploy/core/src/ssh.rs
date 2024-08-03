@@ -10,11 +10,13 @@ use async_ssh2_lite::ssh2::ErrorCode;
 use async_ssh2_lite::{AsyncChannel, AsyncSession, Error, SessionConfiguration};
 use async_trait::async_trait;
 use futures::io::BufReader;
-use futures::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt};
+use futures::{AsyncBufReadExt, AsyncWriteExt};
 use hydroflow_cli_integration::ServerBindConfig;
 use nanoid::nanoid;
 use tokio::net::{TcpListener, TcpStream};
+use tokio::runtime::Handle;
 use tokio::sync::{mpsc, oneshot};
+use tokio_stream::StreamExt;
 
 use super::progress::ProgressTracker;
 use super::util::async_retry;
@@ -22,6 +24,8 @@ use super::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
 use crate::hydroflow_crate::build::BuildOutput;
 use crate::hydroflow_crate::perf_options::PerfOptions;
 use crate::util::prioritized_broadcast;
+
+const PERF_OUTFILE: &str = "__profile.perf.data";
 
 struct LaunchedSshBinary {
     _resource_result: Arc<ResourceResult>,
@@ -75,81 +79,85 @@ impl LaunchedBinary for LaunchedSshBinary {
         }
     }
 
-    async fn wait(&mut self) -> Option<i32> {
+    async fn wait(&mut self) -> Result<i32> {
         self.channel.wait_eof().await.unwrap();
-        let ret = self.exit_code();
+        let exit_code = self.channel.exit_status()?;
         self.channel.wait_close().await.unwrap();
-        ret
+
+        Ok(exit_code)
+    }
+
+    async fn stop(&mut self) -> Result<()> {
+        if !self.channel.eof() {
+            self.channel.write_all(b"\x03").await?; // `^C`
+            self.channel.send_eof().await?;
+            self.channel.wait_eof().await?;
+            // `exit_status()`
+            self.channel.wait_close().await?;
+        }
+
+        // Run perf post-processing and download perf output.
+        if let Some(perf) = &self.perf {
+            let local_file = perf.output_file.to_str().unwrap();
+            let mut local_file = tokio::fs::File::create(local_file).await?;
+            {
+                let mut script_channel = self.session.as_ref().unwrap().channel_session().await?;
+                let mut stderr_lines = BufReader::new(script_channel.stderr()).lines();
+                let mut stdout = script_channel.stream(0);
+                tokio::try_join!(
+                    async move {
+                        // Log stderr.
+                        while let Some(Ok(s)) = stderr_lines.next().await {
+                            ProgressTracker::println(&format!("[perf stderr] {s}"));
+                        }
+                        Ok(()) as Result<_>
+                    },
+                    async move {
+                        // Download output via stdout.
+                        // Writing to a file and downloading via `sftp` may be faster as it can download non-sequentially.
+                        Ok(tokio::io::copy(&mut stdout, &mut local_file).await?)
+                    },
+                    async move {
+                        // Run command (last!).
+                        Ok(script_channel
+                            .exec(&format!("perf script --symfs=/ -i {PERF_OUTFILE}"))
+                            .await?)
+                    },
+                )?;
+            }
+
+            // TODO(mingwei): re-use this code to download `dtrace` data.
+            // let sftp = self.session.as_ref().unwrap().sftp().await?;
+            // // Check if perf.data exists
+            // match sftp.open(&PathBuf::from(output_file)).await {
+            //     Ok(perf_data) => {
+            //         // download perf.data
+            //         let mut perf_data_local = tokio::fs::File::create(output_file).await?;
+            //         tokio::io::copy(&mut perf_data, &mut perf_data_local).await?;
+            //     }
+            //     Err(Error::Ssh2(ssh2_err)) if ErrorCode::SFTP(2) == ssh2_err.code() => {
+            //         // File not found, probably due to some other previous error.
+            //         ProgressTracker::println(&format!(
+            //             "perf output file {:?} not found on remote machine (SFTP error 2).",
+            //             output_file
+            //         ));
+            //     }
+            //     Err(unexpected_err) => Err(unexpected_err)?,
+            // }
+        };
+
+        Ok(())
     }
 }
 
 impl Drop for LaunchedSshBinary {
     fn drop(&mut self) {
-        let session = self.session.take().unwrap();
-        std::thread::scope(|s| {
-            let result = s
-                .spawn(|| {
-                    let runtime = tokio::runtime::Builder::new_multi_thread()
-                        .enable_time()
-                        .build()
-                        .unwrap();
-                    runtime
-                        .block_on(async move {
-                            self.channel.write_all(b"\x03").await.unwrap();
-                            self.channel.send_eof().await?;
-                            self.channel.wait_eof().await?;
-                            self.channel.wait_close().await?;
-
-                            // Copy perf file down, if perf was set.
-                            let download_err = if let Some(perf) = &self.perf {
-                                let output_file = perf.output_file.to_str().unwrap();
-                                let sftp = session.sftp().await?;
-
-                                // Check if perf.data exists
-                                match sftp.open(&PathBuf::from(output_file)).await {
-                                    Ok(mut perf_data) => {
-                                        // download perf.data
-                                        let mut downloaded_perf_data =
-                                            tokio::fs::File::create(output_file).await?;
-                                        let data_size = perf_data.stat().await?.size.unwrap();
-                                        let mut read_buf = vec![0; 128 * 1024];
-                                        let mut index = 0;
-                                        while index < data_size {
-                                            let bytes_read = perf_data.read(&mut read_buf).await?;
-                                            use tokio::io::AsyncWriteExt;
-                                            downloaded_perf_data
-                                                .write_all(read_buf[0..bytes_read].as_ref())
-                                                .await?;
-                                            index += bytes_read as u64;
-                                        }
-                                        Ok(())
-                                    }
-                                    Err(Error::Ssh2(ssh2_err))
-                                        if ErrorCode::SFTP(2) == ssh2_err.code() =>
-                                    {
-                                        // File not found, probably due to previous error.
-                                        Ok(())
-                                    }
-                                    Err(unexpected_err) => Err(unexpected_err),
-                                }
-                            } else {
-                                Ok(())
-                            };
-
-                            session.disconnect(None, "", None).await?;
-                            download_err
-                        })
-                        .unwrap();
-                })
-                .join();
-            if let Err(e) = result {
-                if let Some(s) = e.downcast_ref::<String>() {
-                    ProgressTracker::println(&format!("DROP ERROR: {}", s));
-                } else {
-                    ProgressTracker::println("PANIC NOT STRING");
-                }
-            }
-        });
+        if let Some(session) = self.session.take() {
+            tokio::task::block_in_place(|| {
+                Handle::current().block_on(session.disconnect(None, "", None))
+            })
+            .unwrap();
+        }
     }
 }
 
@@ -357,33 +365,19 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
                     )
                     .await?;
 
-                let binary_path_string = binary_path.to_str().unwrap();
-                let args_string = args
-                    .iter()
-                    .map(|s| shell_escape::unix::escape(Cow::from(s)))
-                    .fold("".to_string(), |acc, v| format!("{acc} {v}"));
-                let mut command = format!("{binary_path_string}{args_string}");
+                let mut command = binary_path.to_str().unwrap().to_owned();
+                for arg in args{
+                    command.push(' ');
+                    command.push_str(&shell_escape::unix::escape(Cow::Borrowed(arg)))
+                }
                 // Launch with perf if specified, also copy local binary to expected place for perf report to work
-                if let Some(perf) = perf.clone() {
-                    let output_file = perf.output_file.to_str().unwrap();
-                    // let local_binary = PathBuf::from(format!(
-                    //     "{output_file}.bins/home/{user}/hydro-{unique_name}"
-                    // ));
-                    // fs::create_dir_all(local_binary.parent().unwrap()).unwrap();
-                    // fs::write(local_binary, &binary.bin_data).unwrap();
+                if let Some(PerfOptions { frequency, .. }) = perf.clone() {
                     // Attach perf to the command
-                    command = format!("perf record -F {freq} --call-graph dwarf,64000 -o {data_file} {cmd}; perf script --symfs=/ -i {data_file} > {out_file}",
-                        freq = perf.frequency,
-                        cmd = command,
-                        data_file = shell_escape::unix::escape(Cow::Owned(format!("{output_file}.data"))),
-                        out_file = shell_escape::unix::escape(Cow::Borrowed(output_file))
+                    command = format!(
+                        "perf record -F {frequency} --call-graph dwarf,64000 -o {PERF_OUTFILE} {command}",
                     );
                 }
-
-                channel
-                    .exec(&command)
-                    .await?;
-
+                channel.exec(&command).await?;
                 anyhow::Ok(channel)
             },
         )

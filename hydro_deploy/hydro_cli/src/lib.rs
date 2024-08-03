@@ -23,8 +23,8 @@ use tokio::sync::oneshot::Sender;
 use tokio::sync::{Mutex, RwLock};
 
 mod cli;
-use hydro_deploy as core;
 use hydro_deploy::ssh::LaunchedSshHost;
+use hydro_deploy::{self as core};
 
 static TOKIO_RUNTIME: std::sync::RwLock<Option<tokio::runtime::Runtime>> =
     std::sync::RwLock::new(None);
