@@ -126,6 +126,16 @@ pub trait VariadicExt: Variadic {
     /// Reverses this variadic value.
     fn reverse(self) -> Self::Reverse;
 
+    /// The length of this variadic type
+    fn len(&self) -> usize {
+        Self::LEN
+    }
+
+    /// Checks if this variadic type is empty.
+    fn is_empty(&self) -> bool {
+        Self::LEN == 0
+    }
+
     /// This as a variadic of references.
     type AsRefVar<'a>: RefVariadic<
         UnRefVar = Self,

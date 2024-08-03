@@ -138,6 +138,17 @@ checksum = "d92bec98840b8f03a5ff5413de5293bfcd8bf96467cf5452609f939ec6f5de16"
 
 [[package]]
 name = "async-channel"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81953c529336010edd6d8e358f886d9581267795c61b19475b71314bffa46d35"
+dependencies = [
+ "concurrent-queue",
+ "event-listener 2.5.3",
+ "futures-core",
+]
+
+[[package]]
+name = "async-channel"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ca33f4bc4ed1babef42cad36cc1f51fa88be00420404e5b1e80ab1b18f7678c"
@@ -396,7 +407,7 @@ version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a37913e8dc4ddcc604f0c6d3bf2887c995153af3611de9e23c352b44c1b9118"
 dependencies = [
- "async-channel",
+ "async-channel 2.1.1",
  "async-lock 3.2.0",
  "async-task",
  "fastrand 2.0.1",
@@ -1387,6 +1398,7 @@ name = "hydro_deploy"
 version = "0.8.0"
 dependencies = [
  "anyhow",
+ "async-channel 1.9.0",
  "async-process",
  "async-recursion",
  "async-ssh2-lite",
@@ -1457,6 +1469,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "trybuild",
+ "tuples",
  "variadics",
  "wasm-bindgen-test",
  "web-time",
@@ -1767,10 +1780,14 @@ name = "lattices"
 version = "0.5.6"
 dependencies = [
  "cc-traits",
+ "fnv",
  "lattices_macro",
+ "ref-cast",
  "sealed",
  "serde",
  "trybuild",
+ "variadics",
+ "variadics_macro",
 ]
 
 [[package]]
@@ -2642,18 +2659,18 @@ dependencies = [
 
 [[package]]
 name = "ref-cast"
-version = "1.0.21"
+version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53313ec9f12686aeeffb43462c3ac77aa25f590a5f630eb2cde0de59417b29c7"
+checksum = "ccf0a6f84d5f1d581da8b41b47ec8600871962f2a528115b542b362d4b744931"
 dependencies = [
  "ref-cast-impl",
 ]
 
 [[package]]
 name = "ref-cast-impl"
-version = "1.0.21"
+version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2566c4bf6845f2c2e83b27043c3f5dfcd5ba8f2937d6c00dc009bfb51a079dc4"
+checksum = "bcc303e793d3734489387d205e9b186fac9c6cfacedd98cbb2e8a5943595f3e6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3698,6 +3715,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "tuples"
+version = "1.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2588972108c7814c636526f2cf2ba1bf8d975f55680f79da4a7aa9e0810f6b44"
+
+[[package]]
 name = "typenum"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3783,6 +3806,19 @@ version = "0.0.5"
 dependencies = [
  "sealed",
  "trybuild",
+]
+
+[[package]]
+name = "variadics_macro"
+version = "0.5.5"
+dependencies = [
+ "insta",
+ "prettyplease",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.60",
+ "variadics",
 ]
 
 [[package]]
