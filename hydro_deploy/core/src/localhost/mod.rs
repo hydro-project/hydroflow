@@ -163,7 +163,7 @@ impl LaunchedHost for LaunchedLocalhost {
                 "dwarf,64000",
                 "-o",
             ])
-            .arg(&perf.output_file)
+            .arg(&perf.perf_outfile.expect("perf_outfile should be set for localhost perf."))
             .arg(&binary.bin_path)
             .args(args);
             tmp
