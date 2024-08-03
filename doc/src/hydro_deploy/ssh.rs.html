@@ -445,12 +445,6 @@
 <a href="#445" id="445">445</a>
 <a href="#446" id="446">446</a>
 <a href="#447" id="447">447</a>
-<a href="#448" id="448">448</a>
-<a href="#449" id="449">449</a>
-<a href="#450" id="450">450</a>
-<a href="#451" id="451">451</a>
-<a href="#452" id="452">452</a>
-<a href="#453" id="453">453</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
@@ -463,11 +457,13 @@
 <span class="kw">use </span>async_ssh2_lite::{AsyncChannel, AsyncSession, Error, SessionConfiguration};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::io::BufReader;
-<span class="kw">use </span>futures::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt};
+<span class="kw">use </span>futures::{AsyncBufReadExt, AsyncWriteExt};
 <span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
 <span class="kw">use </span>nanoid::nanoid;
 <span class="kw">use </span>tokio::net::{TcpListener, TcpStream};
+<span class="kw">use </span>tokio::runtime::Handle;
 <span class="kw">use </span>tokio::sync::{mpsc, oneshot};
+<span class="kw">use </span>tokio_stream::StreamExt;
 
 <span class="kw">use </span><span class="kw">super</span>::progress::ProgressTracker;
 <span class="kw">use </span><span class="kw">super</span>::util::async_retry;
@@ -475,6 +471,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::hydroflow_crate::build::BuildOutput;
 <span class="kw">use </span><span class="kw">crate</span>::hydroflow_crate::perf_options::PerfOptions;
 <span class="kw">use </span><span class="kw">crate</span>::util::prioritized_broadcast;
+
+<span class="kw">const </span>PERF_OUTFILE: <span class="kw-2">&amp;</span>str = <span class="string">"__profile.perf.data"</span>;
 
 <span class="kw">struct </span>LaunchedSshBinary {
     _resource_result: Arc&lt;ResourceResult&gt;,
@@ -528,81 +526,85 @@
         </span>}
     }
 
-    <span class="kw">async fn </span>wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
+    <span class="kw">async fn </span>wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;i32&gt; {
         <span class="self">self</span>.channel.wait_eof().<span class="kw">await</span>.unwrap();
-        <span class="kw">let </span>ret = <span class="self">self</span>.exit_code();
+        <span class="kw">let </span>exit_code = <span class="self">self</span>.channel.exit_status()<span class="question-mark">?</span>;
         <span class="self">self</span>.channel.wait_close().<span class="kw">await</span>.unwrap();
-        ret
+
+        <span class="prelude-val">Ok</span>(exit_code)
+    }
+
+    <span class="kw">async fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">if </span>!<span class="self">self</span>.channel.eof() {
+            <span class="self">self</span>.channel.write_all(<span class="string">b"\x03"</span>).<span class="kw">await</span><span class="question-mark">?</span>; <span class="comment">// `^C`
+            </span><span class="self">self</span>.channel.send_eof().<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="self">self</span>.channel.wait_eof().<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="comment">// `exit_status()`
+            </span><span class="self">self</span>.channel.wait_close().<span class="kw">await</span><span class="question-mark">?</span>;
+        }
+
+        <span class="comment">// Run perf post-processing and download perf output.
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(perf) = <span class="kw-2">&amp;</span><span class="self">self</span>.perf {
+            <span class="kw">let </span>local_file = perf.output_file.to_str().unwrap();
+            <span class="kw">let </span><span class="kw-2">mut </span>local_file = tokio::fs::File::create(local_file).<span class="kw">await</span><span class="question-mark">?</span>;
+            {
+                <span class="kw">let </span><span class="kw-2">mut </span>script_channel = <span class="self">self</span>.session.as_ref().unwrap().channel_session().<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>stderr_lines = BufReader::new(script_channel.stderr()).lines();
+                <span class="kw">let </span><span class="kw-2">mut </span>stdout = script_channel.stream(<span class="number">0</span>);
+                <span class="macro">tokio::try_join!</span>(
+                    <span class="kw">async move </span>{
+                        <span class="comment">// Log stderr.
+                        </span><span class="kw">while let </span><span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(s)) = stderr_lines.next().<span class="kw">await </span>{
+                            ProgressTracker::println(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"[perf stderr] {s}"</span>));
+                        }
+                        <span class="prelude-val">Ok</span>(()) <span class="kw">as </span><span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>&gt;
+                    },
+                    <span class="kw">async move </span>{
+                        <span class="comment">// Download output via stdout.
+                        // Writing to a file and downloading via `sftp` may be faster as it can download non-sequentially.
+                        </span><span class="prelude-val">Ok</span>(tokio::io::copy(<span class="kw-2">&amp;mut </span>stdout, <span class="kw-2">&amp;mut </span>local_file).<span class="kw">await</span><span class="question-mark">?</span>)
+                    },
+                    <span class="kw">async move </span>{
+                        <span class="comment">// Run command (last!).
+                        </span><span class="prelude-val">Ok</span>(script_channel
+                            .exec(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"perf script --symfs=/ -i {PERF_OUTFILE}"</span>))
+                            .<span class="kw">await</span><span class="question-mark">?</span>)
+                    },
+                )<span class="question-mark">?</span>;
+            }
+
+            <span class="comment">// TODO(mingwei): re-use this code to download `dtrace` data.
+            // let sftp = self.session.as_ref().unwrap().sftp().await?;
+            // // Check if perf.data exists
+            // match sftp.open(&amp;PathBuf::from(output_file)).await {
+            //     Ok(perf_data) =&gt; {
+            //         // download perf.data
+            //         let mut perf_data_local = tokio::fs::File::create(output_file).await?;
+            //         tokio::io::copy(&amp;mut perf_data, &amp;mut perf_data_local).await?;
+            //     }
+            //     Err(Error::Ssh2(ssh2_err)) if ErrorCode::SFTP(2) == ssh2_err.code() =&gt; {
+            //         // File not found, probably due to some other previous error.
+            //         ProgressTracker::println(&amp;format!(
+            //             "perf output file {:?} not found on remote machine (SFTP error 2).",
+            //             output_file
+            //         ));
+            //     }
+            //     Err(unexpected_err) =&gt; Err(unexpected_err)?,
+            // }
+        </span>};
+
+        <span class="prelude-val">Ok</span>(())
     }
 }
 
 <span class="kw">impl </span>Drop <span class="kw">for </span>LaunchedSshBinary {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">let </span>session = <span class="self">self</span>.session.take().unwrap();
-        std::thread::scope(|s| {
-            <span class="kw">let </span>result = s
-                .spawn(|| {
-                    <span class="kw">let </span>runtime = tokio::runtime::Builder::new_multi_thread()
-                        .enable_time()
-                        .build()
-                        .unwrap();
-                    runtime
-                        .block_on(<span class="kw">async move </span>{
-                            <span class="self">self</span>.channel.write_all(<span class="string">b"\x03"</span>).<span class="kw">await</span>.unwrap();
-                            <span class="self">self</span>.channel.send_eof().<span class="kw">await</span><span class="question-mark">?</span>;
-                            <span class="self">self</span>.channel.wait_eof().<span class="kw">await</span><span class="question-mark">?</span>;
-                            <span class="self">self</span>.channel.wait_close().<span class="kw">await</span><span class="question-mark">?</span>;
-
-                            <span class="comment">// Copy perf file down, if perf was set.
-                            </span><span class="kw">let </span>download_err = <span class="kw">if let </span><span class="prelude-val">Some</span>(perf) = <span class="kw-2">&amp;</span><span class="self">self</span>.perf {
-                                <span class="kw">let </span>output_file = perf.output_file.to_str().unwrap();
-                                <span class="kw">let </span>sftp = session.sftp().<span class="kw">await</span><span class="question-mark">?</span>;
-
-                                <span class="comment">// Check if perf.data exists
-                                </span><span class="kw">match </span>sftp.open(<span class="kw-2">&amp;</span>PathBuf::from(output_file)).<span class="kw">await </span>{
-                                    <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>perf_data) =&gt; {
-                                        <span class="comment">// download perf.data
-                                        </span><span class="kw">let </span><span class="kw-2">mut </span>downloaded_perf_data =
-                                            tokio::fs::File::create(output_file).<span class="kw">await</span><span class="question-mark">?</span>;
-                                        <span class="kw">let </span>data_size = perf_data.stat().<span class="kw">await</span><span class="question-mark">?</span>.size.unwrap();
-                                        <span class="kw">let </span><span class="kw-2">mut </span>read_buf = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="number">128 </span>* <span class="number">1024</span>];
-                                        <span class="kw">let </span><span class="kw-2">mut </span>index = <span class="number">0</span>;
-                                        <span class="kw">while </span>index &lt; data_size {
-                                            <span class="kw">let </span>bytes_read = perf_data.read(<span class="kw-2">&amp;mut </span>read_buf).<span class="kw">await</span><span class="question-mark">?</span>;
-                                            <span class="kw">use </span>tokio::io::AsyncWriteExt;
-                                            downloaded_perf_data
-                                                .write_all(read_buf[<span class="number">0</span>..bytes_read].as_ref())
-                                                .<span class="kw">await</span><span class="question-mark">?</span>;
-                                            index += bytes_read <span class="kw">as </span>u64;
-                                        }
-                                        <span class="prelude-val">Ok</span>(())
-                                    }
-                                    <span class="prelude-val">Err</span>(Error::Ssh2(ssh2_err))
-                                        <span class="kw">if </span>ErrorCode::SFTP(<span class="number">2</span>) == ssh2_err.code() =&gt;
-                                    {
-                                        <span class="comment">// File not found, probably due to previous error.
-                                        </span><span class="prelude-val">Ok</span>(())
-                                    }
-                                    <span class="prelude-val">Err</span>(unexpected_err) =&gt; <span class="prelude-val">Err</span>(unexpected_err),
-                                }
-                            } <span class="kw">else </span>{
-                                <span class="prelude-val">Ok</span>(())
-                            };
-
-                            session.disconnect(<span class="prelude-val">None</span>, <span class="string">""</span>, <span class="prelude-val">None</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-                            download_err
-                        })
-                        .unwrap();
-                })
-                .join();
-            <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = result {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(s) = e.downcast_ref::&lt;String&gt;() {
-                    ProgressTracker::println(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"DROP ERROR: {}"</span>, s));
-                } <span class="kw">else </span>{
-                    ProgressTracker::println(<span class="string">"PANIC NOT STRING"</span>);
-                }
-            }
-        });
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(session) = <span class="self">self</span>.session.take() {
+            tokio::task::block_in_place(|| {
+                Handle::current().block_on(session.disconnect(<span class="prelude-val">None</span>, <span class="string">""</span>, <span class="prelude-val">None</span>))
+            })
+            .unwrap();
+        }
     }
 }
 
@@ -810,33 +812,19 @@
                     )
                     .<span class="kw">await</span><span class="question-mark">?</span>;
 
-                <span class="kw">let </span>binary_path_string = binary_path.to_str().unwrap();
-                <span class="kw">let </span>args_string = args
-                    .iter()
-                    .map(|s| shell_escape::unix::escape(Cow::from(s)))
-                    .fold(<span class="string">""</span>.to_string(), |acc, v| <span class="macro">format!</span>(<span class="string">"{acc} {v}"</span>));
-                <span class="kw">let </span><span class="kw-2">mut </span>command = <span class="macro">format!</span>(<span class="string">"{binary_path_string}{args_string}"</span>);
+                <span class="kw">let </span><span class="kw-2">mut </span>command = binary_path.to_str().unwrap().to_owned();
+                <span class="kw">for </span>arg <span class="kw">in </span>args{
+                    command.push(<span class="string">' '</span>);
+                    command.push_str(<span class="kw-2">&amp;</span>shell_escape::unix::escape(Cow::Borrowed(arg)))
+                }
                 <span class="comment">// Launch with perf if specified, also copy local binary to expected place for perf report to work
-                </span><span class="kw">if let </span><span class="prelude-val">Some</span>(perf) = perf.clone() {
-                    <span class="kw">let </span>output_file = perf.output_file.to_str().unwrap();
-                    <span class="comment">// let local_binary = PathBuf::from(format!(
-                    //     "{output_file}.bins/home/{user}/hydro-{unique_name}"
-                    // ));
-                    // fs::create_dir_all(local_binary.parent().unwrap()).unwrap();
-                    // fs::write(local_binary, &amp;binary.bin_data).unwrap();
-                    // Attach perf to the command
-                    </span>command = <span class="macro">format!</span>(<span class="string">"perf record -F {freq} --call-graph dwarf,64000 -o {data_file} {cmd}; perf script --symfs=/ -i {data_file} &gt; {out_file}"</span>,
-                        freq = perf.frequency,
-                        cmd = command,
-                        data_file = shell_escape::unix::escape(Cow::Owned(<span class="macro">format!</span>(<span class="string">"{output_file}.data"</span>))),
-                        out_file = shell_escape::unix::escape(Cow::Borrowed(output_file))
+                </span><span class="kw">if let </span><span class="prelude-val">Some</span>(PerfOptions { frequency, .. }) = perf.clone() {
+                    <span class="comment">// Attach perf to the command
+                    </span>command = <span class="macro">format!</span>(
+                        <span class="string">"perf record -F {frequency} --call-graph dwarf,64000 -o {PERF_OUTFILE} {command}"</span>,
                     );
                 }
-
-                channel
-                    .exec(<span class="kw-2">&amp;</span>command)
-                    .<span class="kw">await</span><span class="question-mark">?</span>;
-
+                channel.exec(<span class="kw-2">&amp;</span>command).<span class="kw">await</span><span class="question-mark">?</span>;
                 anyhow::Ok(channel)
             },
         )

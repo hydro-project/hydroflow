@@ -311,6 +311,19 @@
 <a href="#311" id="311">311</a>
 <a href="#312" id="312">312</a>
 <a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
@@ -600,7 +613,10 @@
             .unwrap();
 
         <span class="kw">let </span>start_ack_line = ProgressTracker::leaf(
-            <span class="string">"waiting for ack start"</span>.to_string(),
+            <span class="self">self</span>.display_id
+                .clone()
+                .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id))
+                + <span class="string">" / waiting for ack start"</span>,
             tokio::time::timeout(Duration::from_secs(<span class="number">60</span>), stdout_receiver),
         )
         .<span class="kw">await</span><span class="question-mark">??</span>;
@@ -613,13 +629,23 @@
     }
 
     <span class="kw">async fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="self">self</span>.launched_binary
-            .as_ref()
-            .unwrap()
-            .stdin()
-            .send(<span class="string">"stop\n"</span>.to_string())<span class="question-mark">?</span>;
+        <span class="kw">let </span>launched_binary = <span class="self">self</span>.launched_binary.as_mut().unwrap();
+        launched_binary.stdin().send(<span class="string">"stop\n"</span>.to_string())<span class="question-mark">?</span>;
 
-        <span class="self">self</span>.launched_binary.as_mut().unwrap().wait().<span class="kw">await</span>;
+        <span class="kw">let </span>timeout_result = ProgressTracker::leaf(
+            <span class="self">self</span>.display_id
+                .clone()
+                .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id))
+                + <span class="string">" / waiting for exit"</span>,
+            tokio::time::timeout(Duration::from_secs(<span class="number">60</span>), launched_binary.wait()),
+        )
+        .<span class="kw">await</span>;
+        <span class="kw">match </span>timeout_result {
+            <span class="prelude-val">Err</span>(_timeout) =&gt; {} <span class="comment">// `wait()` timed out, but stop will force quit.
+            </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(unexpected_error)) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(unexpected_error), <span class="comment">// `wait()` errored.
+            </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(_exit_status)) =&gt; {}
+        }
+        launched_binary.stop().<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
     }

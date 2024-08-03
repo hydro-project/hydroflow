@@ -186,11 +186,45 @@
 <a href="#186" id="186">186</a>
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::sync::{Arc, Weak};
 
 <span class="kw">use </span>anyhow::Result;
-<span class="kw">use </span>futures::{StreamExt, TryStreamExt};
+<span class="kw">use </span>futures::{FutureExt, StreamExt, TryStreamExt};
 <span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">use </span><span class="kw">super</span>::gcp::GcpNetwork;
@@ -228,6 +262,21 @@
     ) -&gt; Arc&lt;RwLock&lt;CustomService&gt;&gt; {
         <span class="self">self</span>.add_service(|id| CustomService::new(id, on, external_ports))
     }
+
+    <span class="doccomment">/// Runs `deploy()`, and `start()`, waits for the trigger future, then runs `stop()`.
+    </span><span class="kw">pub async fn </span>run_until(<span class="kw-2">&amp;mut </span><span class="self">self</span>, trigger: <span class="kw">impl </span>Future&lt;Output = ()&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="comment">// TODO(mingwei): should `trigger` interrupt `deploy()` and `start()`? If so make sure shutdown works as expected.
+        </span><span class="self">self</span>.deploy().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">self</span>.start().<span class="kw">await</span><span class="question-mark">?</span>;
+        trigger.<span class="kw">await</span>;
+        <span class="self">self</span>.stop().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="doccomment">/// Runs `deploy()`, and `start()`, waits for CTRL+C, then runs `stop()`.
+    </span><span class="kw">pub async fn </span>run_ctrl_c(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.run_until(tokio::signal::ctrl_c().map(|<span class="kw">_</span>| ())).<span class="kw">await
+    </span>}
 
     <span class="kw">pub async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.services.retain(|weak| weak.strong_count() &gt; <span class="number">0</span>);
@@ -303,6 +352,23 @@
             );
 
             futures::future::try_join_all(all_services_start)
+        })
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">pub async fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.services.retain(|weak| weak.strong_count() &gt; <span class="number">0</span>);
+
+        progress::ProgressTracker::with_group(<span class="string">"stop"</span>, <span class="prelude-val">None</span>, || {
+            <span class="kw">let </span>all_services_stop = <span class="self">self</span>.services.iter().filter_map(Weak::upgrade).map(
+                |service: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;| <span class="kw">async move </span>{
+                    service.write().<span class="kw">await</span>.stop().<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="prelude-val">Ok</span>(()) <span class="kw">as </span><span class="prelude-ty">Result</span>&lt;()&gt;
+                },
+            );
+
+            futures::future::try_join_all(all_services_stop)
         })
         .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())

@@ -123,10 +123,20 @@
 <a href="#123" id="123">123</a>
 <a href="#124" id="124">124</a>
 <a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
 </pre></div><pre class="rust"><code><span class="attr">#[cfg(unix)]
 </span><span class="kw">use </span>std::os::unix::process::ExitStatusExt;
+<span class="kw">use </span>std::process::ExitStatus;
 <span class="kw">use </span>std::sync::{Arc, Mutex};
 
+<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::io::BufReader;
 <span class="kw">use </span>futures::{AsyncBufReadExt, AsyncWriteExt};
@@ -235,17 +245,23 @@
             .try_status()
             .ok()
             .flatten()
-            .and_then(|c| {
-                <span class="attr">#[cfg(unix)]
-                </span><span class="kw">return </span>c.code().or(c.signal());
-                <span class="attr">#[cfg(not(unix))]
-                </span><span class="kw">return </span>c.code();
-            })
+            .map(exit_code)
     }
 
-    <span class="kw">async fn </span>wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
-        <span class="kw">let _ </span>= <span class="self">self</span>.child.get_mut().unwrap().status().<span class="kw">await</span>;
-        <span class="self">self</span>.exit_code()
+    <span class="kw">async fn </span>wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;i32&gt; {
+        <span class="prelude-val">Ok</span>(exit_code(<span class="self">self</span>.child.get_mut().unwrap().status().<span class="kw">await</span><span class="question-mark">?</span>))
     }
+
+    <span class="kw">async fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.child.get_mut().unwrap().kill()<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
+    }
+}
+
+<span class="kw">fn </span>exit_code(c: ExitStatus) -&gt; i32 {
+    <span class="attr">#[cfg(unix)]
+    </span><span class="kw">return </span>c.code().or(c.signal()).unwrap();
+    <span class="attr">#[cfg(not(unix))]
+    </span><span class="kw">return </span>c.code().unwrap();
 }
 </code></pre></div></section></main></body></html>

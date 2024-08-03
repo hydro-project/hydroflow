@@ -114,6 +114,7 @@
 <a href="#114" id="114">114</a>
 <a href="#115" id="115">115</a>
 <a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
 </pre></div><pre class="rust"><code><span class="attr">#![allow(missing_docs)] </span><span class="comment">// TODO(mingwei)
 
 </span><span class="kw">use </span>std::cell::RefCell;
@@ -145,14 +146,15 @@
     tokio::task::spawn_blocking(|| {
         <span class="kw">let </span><span class="kw-2">mut </span>line = String::new();
         std::io::stdin().read_line(<span class="kw-2">&amp;mut </span>line).unwrap();
-        <span class="macro">assert!</span>(line.starts_with(<span class="string">"stop"</span>));
-        stop.<span class="number">0</span>.send(()).unwrap();
+        <span class="kw">if </span>line.starts_with(<span class="string">"stop"</span>) {
+            stop.<span class="number">0</span>.send(()).unwrap();
+        } <span class="kw">else </span>{
+            <span class="macro">eprintln!</span>(<span class="string">"Unexpected stdin input: {:?}"</span>, line);
+        }
     });
 
     <span class="kw">let </span>local_set = tokio::task::LocalSet::new();
-    <span class="kw">let </span>flow = local_set.run_until(<span class="kw">async move </span>{
-        flow.run_async().<span class="kw">await</span>;
-    });
+    <span class="kw">let </span>flow = local_set.run_until(flow.run_async());
 
     <span class="macro">tokio::select!</span> {
         <span class="kw">_ </span>= stop.<span class="number">1 </span>=&gt; {},
