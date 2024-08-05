@@ -160,7 +160,7 @@ impl LaunchedBinary for LaunchedSshBinary {
                 output_tasks.push(Box::pin(ProgressTracker::rich_leaf(
                     format!("write {:?}", fold_outfile),
                     |set_progress, _| async move {
-                        let mut reader = ProgressReader::new(&**fold_data, set_progress);
+                        let mut reader = ProgressReader::new(&fold_data, set_progress);
                         let mut writer = tokio::fs::File::create(fold_outfile).await?;
                         tokio::io::copy_buf(&mut reader, &mut writer).await?;
                         Ok(())
@@ -194,10 +194,9 @@ impl LaunchedBinary for LaunchedSshBinary {
                 .filter_map(Result::err)
                 .collect::<Vec<_>>()
                 .await;
-            let var_name = if !errors.is_empty() {
+            if !errors.is_empty() {
                 Err(MultipleErrors { errors })?;
             };
-            var_name
 
             // TODO(mingwei): re-use this code to download `dtrace` data.
             // let sftp = self.session.as_ref().unwrap().sftp().await?;
