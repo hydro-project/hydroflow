@@ -5,7 +5,6 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
-use std::task::{Context, Poll};
 use std::time::Duration;
 
 use anyhow::{Context as _, Error, Result};
@@ -19,7 +18,7 @@ use hydroflow_cli_integration::ServerBindConfig;
 use inferno::collapse::perf::Folder;
 use inferno::collapse::Collapse;
 use nanoid::nanoid;
-use tokio::io::{AsyncBufRead, AsyncRead, BufReader as TokioBufReader};
+use tokio::io::BufReader as TokioBufReader;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::runtime::Handle;
 use tokio::sync::{mpsc, oneshot};
@@ -157,37 +156,37 @@ impl LaunchedBinary for LaunchedSshBinary {
             // fold_outfile
             if let Some(fold_outfile) = perf.fold_outfile.clone() {
                 let fold_data = Arc::clone(&fold_data);
-                output_tasks.push(Box::pin(ProgressTracker::rich_leaf(
-                    format!("write {:?}", fold_outfile),
-                    |set_progress, _| async move {
-                        let mut reader = ProgressReader::new(&fold_data, set_progress);
-                        let mut writer = tokio::fs::File::create(fold_outfile).await?;
-                        tokio::io::copy_buf(&mut reader, &mut writer).await?;
-                        Ok(())
-                    },
-                )));
+                output_tasks.push(Box::pin(async move {
+                    let mut reader = &**fold_data;
+                    let mut writer = tokio::fs::File::create(fold_outfile).await?;
+                    tokio::io::copy_buf(&mut reader, &mut writer).await?;
+                    Ok(())
+                }));
             };
 
             // flamegraph_outfile
             if let Some(flamegraph_outfile) = perf.flamegraph_outfile.clone() {
                 let mut options = perf.flamegraph_options.map(|f| (f)()).unwrap_or_default();
                 let fold_data = Arc::clone(&fold_data);
-                output_tasks.push(Box::pin(ProgressTracker::leaf(
-                    format!("write {:?}", flamegraph_outfile),
-                    async move {
-                        let writer = tokio::fs::File::create(flamegraph_outfile)
-                            .await?
-                            .into_std()
-                            .await;
-                        tokio::task::spawn_blocking(move || {
-                            let reader = &**fold_data;
-                            // `inferno` just immediately reads everything into an in-memory string, so cannot track progress.
-                            inferno::flamegraph::from_reader(&mut options, reader, writer)
-                        })
-                        .await??;
-                        Ok(())
-                    },
-                )));
+                output_tasks.push(Box::pin(async move {
+                    let writer = tokio::fs::File::create(flamegraph_outfile)
+                        .await?
+                        .into_std()
+                        .await;
+                    tokio::task::spawn_blocking(move || {
+                        let reader = &**fold_data;
+                        inferno::flamegraph::from_lines(
+                            &mut options,
+                            reader
+                                .split(|&b| b == b'\n')
+                                .map(std::str::from_utf8)
+                                .map(Result::unwrap),
+                            writer,
+                        )
+                    })
+                    .await??;
+                    Ok(())
+                }));
             };
 
             let errors = output_tasks
@@ -541,50 +540,3 @@ impl std::fmt::Display for MultipleErrors {
     }
 }
 impl std::error::Error for MultipleErrors {}
-
-struct ProgressReader<'a> {
-    bytes: &'a [u8],
-    set_progress: Box<dyn Fn(u64) + Send + Sync>,
-    read: usize,
-    len: usize,
-}
-impl<'a> ProgressReader<'a> {
-    fn new(bytes: &'a [u8], set_progress: Box<dyn Fn(u64) + Send + Sync>) -> Self {
-        Self {
-            bytes,
-            set_progress,
-            read: 0,
-            len: bytes.len(),
-        }
-    }
-
-    fn add_progress(&mut self, amt: usize) {
-        if 0 < amt {
-            self.read += amt;
-            let pct = 100.0 * (self.read as f64) / (self.len as f64);
-            (self.set_progress)(pct as u64);
-        }
-    }
-}
-impl AsyncRead for ProgressReader<'_> {
-    fn poll_read(
-        self: Pin<&mut Self>,
-        _cx: &mut Context<'_>,
-        buf: &mut tokio::io::ReadBuf<'_>,
-    ) -> Poll<std::io::Result<()>> {
-        let amt: usize = std::cmp::min(buf.remaining(), self.bytes.len());
-        buf.put_slice(&self.bytes[..amt]);
-        self.consume(amt);
-        Poll::Ready(Ok(()))
-    }
-}
-impl AsyncBufRead for ProgressReader<'_> {
-    fn poll_fill_buf(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<std::io::Result<&[u8]>> {
-        Poll::Ready(Ok(self.bytes))
-    }
-
-    fn consume(mut self: Pin<&mut Self>, amt: usize) {
-        self.add_progress(amt);
-        Pin::new(&mut self.bytes).consume(amt);
-    }
-}
