@@ -303,24 +303,31 @@ impl Service for HydroflowCrateService {
     }
 
     async fn stop(&mut self) -> Result<()> {
-        let launched_binary = self.launched_binary.as_mut().unwrap();
-        launched_binary.stdin().send("stop\n".to_string())?;
-
-        let timeout_result = ProgressTracker::leaf(
-            self.display_id
+        ProgressTracker::with_group(
+            &self
+                .display_id
                 .clone()
-                .unwrap_or_else(|| format!("service/{}", self.id))
-                + " / waiting for exit",
-            tokio::time::timeout(Duration::from_secs(60), launched_binary.wait()),
-        )
-        .await;
-        match timeout_result {
-            Err(_timeout) => {} // `wait()` timed out, but stop will force quit.
-            Ok(Err(unexpected_error)) => return Err(unexpected_error), // `wait()` errored.
-            Ok(Ok(_exit_status)) => {}
-        }
-        launched_binary.stop().await?;
+                .unwrap_or_else(|| format!("service/{}", self.id)),
+            None,
+            || async {
+                let launched_binary = self.launched_binary.as_mut().unwrap();
+                launched_binary.stdin().send("stop\n".to_string())?;
 
-        Ok(())
+                let timeout_result = ProgressTracker::leaf(
+                    "waiting for exit".to_owned(),
+                    tokio::time::timeout(Duration::from_secs(60), launched_binary.wait()),
+                )
+                .await;
+                match timeout_result {
+                    Err(_timeout) => {} // `wait()` timed out, but stop will force quit.
+                    Ok(Err(unexpected_error)) => return Err(unexpected_error), // `wait()` errored.
+                    Ok(Ok(_exit_status)) => {}
+                }
+                launched_binary.stop().await?;
+
+                Ok(())
+            },
+        )
+        .await
     }
 }
