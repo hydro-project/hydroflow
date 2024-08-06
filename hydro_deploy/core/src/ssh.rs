@@ -1,22 +1,29 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::future::Future;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Error, Result};
 use async_ssh2_lite::ssh2::ErrorCode;
-use async_ssh2_lite::{AsyncChannel, AsyncSession, Error, SessionConfiguration};
+use async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
 use async_trait::async_trait;
-use futures::io::BufReader;
+use futures::io::BufReader as FuturesBufReader;
+use futures::stream::FuturesUnordered;
 use futures::{AsyncBufReadExt, AsyncWriteExt};
 use hydroflow_cli_integration::ServerBindConfig;
+use inferno::collapse::perf::Folder;
+use inferno::collapse::Collapse;
 use nanoid::nanoid;
+use tokio::io::BufReader as TokioBufReader;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::runtime::Handle;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::StreamExt;
+use tokio_util::io::SyncIoBridge;
 
 use super::progress::ProgressTracker;
 use super::util::async_retry;
@@ -89,42 +96,106 @@ impl LaunchedBinary for LaunchedSshBinary {
 
     async fn stop(&mut self) -> Result<()> {
         if !self.channel.eof() {
-            self.channel.write_all(b"\x03").await?; // `^C`
-            self.channel.send_eof().await?;
-            self.channel.wait_eof().await?;
-            // `exit_status()`
-            self.channel.wait_close().await?;
+            ProgressTracker::leaf("force stopping".to_owned(), async {
+                self.channel.write_all(b"\x03").await?; // `^C`
+                self.channel.send_eof().await?;
+                self.channel.wait_eof().await?;
+                // `exit_status()`
+                self.channel.wait_close().await?;
+                Result::<_>::Ok(())
+            })
+            .await?;
         }
 
         // Run perf post-processing and download perf output.
-        if let Some(perf) = &self.perf {
-            let local_file = perf.output_file.to_str().unwrap();
-            let mut local_file = tokio::fs::File::create(local_file).await?;
-            {
-                let mut script_channel = self.session.as_ref().unwrap().channel_session().await?;
-                let mut stderr_lines = BufReader::new(script_channel.stderr()).lines();
-                let mut stdout = script_channel.stream(0);
-                tokio::try_join!(
+        if let Some(perf) = &mut self.perf {
+            let mut script_channel = self.session.as_ref().unwrap().channel_session().await?;
+            let mut fold_er = Folder::from(perf.fold_options.clone().unwrap_or_default());
+
+            let fold_data = ProgressTracker::leaf("perf script & folding".to_owned(), async move {
+                let mut stderr_lines = FuturesBufReader::new(script_channel.stderr()).lines();
+                let stdout = script_channel.stream(0);
+
+                // Pattern on `()` to make sure no `Result`s are ignored.
+                let ((), fold_data, ()) = tokio::try_join!(
                     async move {
                         // Log stderr.
                         while let Some(Ok(s)) = stderr_lines.next().await {
                             ProgressTracker::println(&format!("[perf stderr] {s}"));
                         }
-                        Ok(()) as Result<_>
+                        Result::<_>::Ok(())
                     },
                     async move {
-                        // Download output via stdout.
-                        // Writing to a file and downloading via `sftp` may be faster as it can download non-sequentially.
-                        Ok(tokio::io::copy(&mut stdout, &mut local_file).await?)
+                        // Download perf output and fold.
+                        tokio::task::spawn_blocking(move || {
+                            let mut fold_data = Vec::new();
+                            fold_er.collapse(
+                                SyncIoBridge::new(TokioBufReader::new(stdout)),
+                                &mut fold_data,
+                            )?;
+                            Ok(fold_data)
+                        })
+                        .await?
                     },
                     async move {
                         // Run command (last!).
-                        Ok(script_channel
+                        script_channel
                             .exec(&format!("perf script --symfs=/ -i {PERF_OUTFILE}"))
-                            .await?)
+                            .await?;
+                        Ok(())
                     },
                 )?;
-            }
+                Result::<_>::Ok(fold_data)
+            })
+            .await?;
+            // Wrap in Arc to allow sharing data across multiple outputs.
+            let fold_data = Arc::new(fold_data);
+            let output_tasks =
+                FuturesUnordered::<Pin<Box<dyn Future<Output = Result<()>> + Send + Sync>>>::new();
+
+            // fold_outfile
+            if let Some(fold_outfile) = perf.fold_outfile.clone() {
+                let fold_data = Arc::clone(&fold_data);
+                output_tasks.push(Box::pin(async move {
+                    let mut reader = &**fold_data;
+                    let mut writer = tokio::fs::File::create(fold_outfile).await?;
+                    tokio::io::copy_buf(&mut reader, &mut writer).await?;
+                    Ok(())
+                }));
+            };
+
+            // flamegraph_outfile
+            if let Some(flamegraph_outfile) = perf.flamegraph_outfile.clone() {
+                let mut options = perf.flamegraph_options.map(|f| (f)()).unwrap_or_default();
+                let fold_data = Arc::clone(&fold_data);
+                output_tasks.push(Box::pin(async move {
+                    let writer = tokio::fs::File::create(flamegraph_outfile)
+                        .await?
+                        .into_std()
+                        .await;
+                    tokio::task::spawn_blocking(move || {
+                        let reader = &**fold_data;
+                        inferno::flamegraph::from_lines(
+                            &mut options,
+                            reader
+                                .split(|&b| b == b'\n')
+                                .map(std::str::from_utf8)
+                                .map(Result::unwrap),
+                            writer,
+                        )
+                    })
+                    .await??;
+                    Ok(())
+                }));
+            };
+
+            let errors = output_tasks
+                .filter_map(Result::err)
+                .collect::<Vec<_>>()
+                .await;
+            if !errors.is_empty() {
+                Err(MultipleErrors { errors })?;
+            };
 
             // TODO(mingwei): re-use this code to download `dtrace` data.
             // let sftp = self.session.as_ref().unwrap().sftp().await?;
@@ -316,7 +387,9 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
 
                         match sftp.rename(&temp_path, binary_path, None).await {
                             Ok(_) => {}
-                            Err(Error::Ssh2(e)) if e.code() == ErrorCode::SFTP(4) => {
+                            Err(async_ssh2_lite::Error::Ssh2(e))
+                                if e.code() == ErrorCode::SFTP(4) =>
+                            {
                                 // file already exists
                                 sftp.unlink(&temp_path).await?;
                             }
@@ -397,11 +470,11 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
 
         let id_clone = id.clone();
         let (stdout_cli_receivers, stdout_receivers) =
-            prioritized_broadcast(BufReader::new(channel.stream(0)).lines(), move |s| {
+            prioritized_broadcast(FuturesBufReader::new(channel.stream(0)).lines(), move |s| {
                 ProgressTracker::println(&format!("[{id_clone}] {s}"));
             });
         let (_, stderr_receivers) =
-            prioritized_broadcast(BufReader::new(channel.stderr()).lines(), move |s| {
+            prioritized_broadcast(FuturesBufReader::new(channel.stderr()).lines(), move |s| {
                 ProgressTracker::println(&format!("[{id} stderr] {s}"));
             });
 
@@ -445,3 +518,25 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
         Ok(local_addr)
     }
 }
+
+#[derive(Debug)]
+struct MultipleErrors {
+    errors: Vec<Error>,
+}
+impl std::fmt::Display for MultipleErrors {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if 1 == self.errors.len() {
+            self.errors.first().unwrap().fmt(f)
+        } else {
+            writeln!(f, "({}) errors occured:", self.errors.len())?;
+            writeln!(f)?;
+            for (i, error) in self.errors.iter().enumerate() {
+                write!(f, "({}/{}):", i + 1, self.errors.len())?;
+                error.fmt(f)?;
+                writeln!(f)?;
+            }
+            Ok(())
+        }
+    }
+}
+impl std::error::Error for MultipleErrors {}
