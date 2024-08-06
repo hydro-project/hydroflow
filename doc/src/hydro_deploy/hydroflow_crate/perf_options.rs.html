@@ -5,11 +5,33 @@
 <a href="#5" id="5">5</a>
 <a href="#6" id="6">6</a>
 <a href="#7" id="7">7</a>
+<a href="#8" id="8">8</a>
+<a href="#9" id="9">9</a>
+<a href="#10" id="10">10</a>
+<a href="#11" id="11">11</a>
+<a href="#12" id="12">12</a>
+<a href="#13" id="13">13</a>
+<a href="#14" id="14">14</a>
+<a href="#15" id="15">15</a>
+<a href="#16" id="16">16</a>
+<a href="#17" id="17">17</a>
+<a href="#18" id="18">18</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
 
-<span class="attr">#[derive(Clone)]
+<span class="attr">#[derive(Clone, buildstructor::Builder)]
+#[non_exhaustive] </span><span class="comment">// Prevent direct construction.
 </span><span class="kw">pub struct </span>PerfOptions {
-    <span class="kw">pub </span>output_file: PathBuf,
     <span class="kw">pub </span>frequency: u32,
+
+    <span class="doccomment">/// TODO(mingwei): Only used by localhost, for now.
+    </span><span class="kw">pub </span>perf_outfile: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+
+    <span class="doccomment">/// If set, what the write the folded output to.
+    </span><span class="kw">pub </span>fold_outfile: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+    <span class="kw">pub </span>fold_options: <span class="prelude-ty">Option</span>&lt;inferno::collapse::perf::Options&gt;,
+    <span class="doccomment">/// If set, what to write the output flamegraph SVG file to.
+    </span><span class="kw">pub </span>flamegraph_outfile: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+    <span class="comment">// This type is super annoying and isn't `clone` and has a lifetime... so wrap in fn pointer for now.
+    </span><span class="kw">pub </span>flamegraph_options: <span class="prelude-ty">Option</span>&lt;<span class="kw">fn</span>() -&gt; inferno::flamegraph::Options&lt;<span class="lifetime">'static</span>&gt;&gt;,
 }
 </code></pre></div></section></main></body></html>

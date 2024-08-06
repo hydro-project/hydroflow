@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["PerfOptions"]};
+window.SIDEBAR_ITEMS = {"struct":["PerfOptions"],"type":["NewPerfOptionsBuilder"]};

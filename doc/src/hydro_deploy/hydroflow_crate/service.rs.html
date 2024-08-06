@@ -324,6 +324,13 @@
 <a href="#324" id="324">324</a>
 <a href="#325" id="325">325</a>
 <a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
@@ -629,25 +636,32 @@
     }
 
     <span class="kw">async fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">let </span>launched_binary = <span class="self">self</span>.launched_binary.as_mut().unwrap();
-        launched_binary.stdin().send(<span class="string">"stop\n"</span>.to_string())<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>timeout_result = ProgressTracker::leaf(
-            <span class="self">self</span>.display_id
+        ProgressTracker::with_group(
+            <span class="kw-2">&amp;</span><span class="self">self
+                </span>.display_id
                 .clone()
-                .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id))
-                + <span class="string">" / waiting for exit"</span>,
-            tokio::time::timeout(Duration::from_secs(<span class="number">60</span>), launched_binary.wait()),
-        )
-        .<span class="kw">await</span>;
-        <span class="kw">match </span>timeout_result {
-            <span class="prelude-val">Err</span>(_timeout) =&gt; {} <span class="comment">// `wait()` timed out, but stop will force quit.
-            </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(unexpected_error)) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(unexpected_error), <span class="comment">// `wait()` errored.
-            </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(_exit_status)) =&gt; {}
-        }
-        launched_binary.stop().<span class="kw">await</span><span class="question-mark">?</span>;
+                .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id)),
+            <span class="prelude-val">None</span>,
+            || <span class="kw">async </span>{
+                <span class="kw">let </span>launched_binary = <span class="self">self</span>.launched_binary.as_mut().unwrap();
+                launched_binary.stdin().send(<span class="string">"stop\n"</span>.to_string())<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(())
-    }
+                <span class="kw">let </span>timeout_result = ProgressTracker::leaf(
+                    <span class="string">"waiting for exit"</span>.to_owned(),
+                    tokio::time::timeout(Duration::from_secs(<span class="number">60</span>), launched_binary.wait()),
+                )
+                .<span class="kw">await</span>;
+                <span class="kw">match </span>timeout_result {
+                    <span class="prelude-val">Err</span>(_timeout) =&gt; {} <span class="comment">// `wait()` timed out, but stop will force quit.
+                    </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(unexpected_error)) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(unexpected_error), <span class="comment">// `wait()` errored.
+                    </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(_exit_status)) =&gt; {}
+                }
+                launched_binary.stop().<span class="kw">await</span><span class="question-mark">?</span>;
+
+                <span class="prelude-val">Ok</span>(())
+            },
+        )
+        .<span class="kw">await
+    </span>}
 }
 </code></pre></div></section></main></body></html>
