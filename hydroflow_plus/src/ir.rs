@@ -183,6 +183,7 @@ pub enum HfPlusNode {
 
     Union(Box<HfPlusNode>, Box<HfPlusNode>),
     CrossProduct(Box<HfPlusNode>, Box<HfPlusNode>),
+    CrossSingleton(Box<HfPlusNode>, Box<HfPlusNode>),
     Join(Box<HfPlusNode>, Box<HfPlusNode>),
     Difference(Box<HfPlusNode>, Box<HfPlusNode>),
     AntiJoin(Box<HfPlusNode>, Box<HfPlusNode>),
@@ -203,6 +204,8 @@ pub enum HfPlusNode {
         f: DebugExpr,
         input: Box<HfPlusNode>,
     },
+
+    DeferTick(Box<HfPlusNode>),
     Enumerate(Box<HfPlusNode>),
     Inspect {
         f: DebugExpr,
@@ -211,6 +214,7 @@ pub enum HfPlusNode {
 
     Unique(Box<HfPlusNode>),
 
+    Sort(Box<HfPlusNode>),
     Fold {
         init: DebugExpr,
         acc: DebugExpr,
@@ -298,6 +302,10 @@ impl HfPlusNode {
                 Box::new(transform(*left, seen_tees)),
                 Box::new(transform(*right, seen_tees)),
             ),
+            HfPlusNode::CrossSingleton(left, right) => HfPlusNode::CrossSingleton(
+                Box::new(transform(*left, seen_tees)),
+                Box::new(transform(*right, seen_tees)),
+            ),
             HfPlusNode::Join(left, right) => HfPlusNode::Join(
                 Box::new(transform(*left, seen_tees)),
                 Box::new(transform(*right, seen_tees)),
@@ -327,6 +335,10 @@ impl HfPlusNode {
                 f,
                 input: Box::new(transform(*input, seen_tees)),
             },
+            HfPlusNode::Sort(input) => HfPlusNode::Sort(Box::new(transform(*input, seen_tees))),
+            HfPlusNode::DeferTick(input) => {
+                HfPlusNode::DeferTick(Box::new(transform(*input, seen_tees)))
+            }
             HfPlusNode::Enumerate(input) => {
                 HfPlusNode::Enumerate(Box::new(transform(*input, seen_tees)))
             }
@@ -527,11 +539,44 @@ impl HfPlusNode {
                 (union_ident, left_location_id)
             }
 
+            HfPlusNode::CrossSingleton(left, right) => {
+                let (left_ident, left_location_id) =
+                    left.emit(graph_builders, built_tees, next_stmt_id);
+                let (right_ident, right_location_id) =
+                    right.emit(graph_builders, built_tees, next_stmt_id);
+
+                assert_eq!(
+                    left_location_id, right_location_id,
+                    "cross_singleton inputs must be in the same location"
+                );
+
+                let union_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let cross_ident =
+                    syn::Ident::new(&format!("stream_{}", union_id), Span::call_site());
+
+                let builder = graph_builders.entry(left_location_id).or_default();
+                builder.add_statement(parse_quote! {
+                    #cross_ident = cross_singleton();
+                });
+
+                builder.add_statement(parse_quote! {
+                    #left_ident -> [input]#cross_ident;
+                });
+
+                builder.add_statement(parse_quote! {
+                    #right_ident -> [single]#cross_ident;
+                });
+
+                (cross_ident, left_location_id)
+            }
+
             HfPlusNode::CrossProduct(..) | HfPlusNode::Join(..) => {
                 let operator: syn::Ident = if matches!(self, HfPlusNode::CrossProduct(..)) {
-                    parse_quote!(cross_join)
+                    parse_quote!(cross_join_multiset)
                 } else {
-                    parse_quote!(join)
+                    parse_quote!(join_multiset)
                 };
 
                 let (HfPlusNode::CrossProduct(left, right) | HfPlusNode::Join(left, right)) = self
@@ -605,9 +650,9 @@ impl HfPlusNode {
 
             HfPlusNode::Difference(..) | HfPlusNode::AntiJoin(..) => {
                 let operator: syn::Ident = if matches!(self, HfPlusNode::Difference(..)) {
-                    parse_quote!(difference)
+                    parse_quote!(difference_multiset)
                 } else {
-                    parse_quote!(anti_join)
+                    parse_quote!(anti_join_multiset)
                 };
 
                 let (HfPlusNode::Difference(left, right) | HfPlusNode::AntiJoin(left, right)) =
@@ -730,6 +775,41 @@ impl HfPlusNode {
                 });
 
                 (filter_map_ident, input_location_id)
+            }
+
+            HfPlusNode::Sort(input) => {
+                let (input_ident, input_location_id) =
+                    input.emit(graph_builders, built_tees, next_stmt_id);
+
+                let sort_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let sort_ident = syn::Ident::new(&format!("stream_{}", sort_id), Span::call_site());
+
+                let builder = graph_builders.entry(input_location_id).or_default();
+                builder.add_statement(parse_quote! {
+                    #sort_ident = #input_ident -> sort();
+                });
+
+                (sort_ident, input_location_id)
+            }
+
+            HfPlusNode::DeferTick(input) => {
+                let (input_ident, input_location_id) =
+                    input.emit(graph_builders, built_tees, next_stmt_id);
+
+                let defer_tick_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let defer_tick_ident =
+                    syn::Ident::new(&format!("stream_{}", defer_tick_id), Span::call_site());
+
+                let builder = graph_builders.entry(input_location_id).or_default();
+                builder.add_statement(parse_quote! {
+                    #defer_tick_ident = #input_ident -> defer_tick_lazy();
+                });
+
+                (defer_tick_ident, input_location_id)
             }
 
             HfPlusNode::Enumerate(input) => {
