@@ -49,7 +49,8 @@ async fn main() {
         &DeployProcessSpec::new(|| {
             let mut deployment = deployment.borrow_mut();
             let host = create_host(&mut deployment);
-            let perf_options = PerfOptions::builder()
+            let perf_options: PerfOptions = PerfOptions::builder()
+                .perf_outfile("leader.perf")
                 .fold_outfile("leader.data.folded")
                 .flamegraph_outfile("leader.svg")
                 .frequency(5)
@@ -68,6 +69,7 @@ async fn main() {
                 .map(|idx| {
                     let host = create_host(&mut deployment);
                     let perf_options = PerfOptions::builder()
+                        .perf_outfile(format!("cluster{}.leader.perf", idx))
                         .fold_outfile(format!("cluster{}.data.folded", idx))
                         .flamegraph_outfile(format!("cluster{}.svg", idx))
                         .frequency(5)
