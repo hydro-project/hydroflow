@@ -153,6 +153,35 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
         )
     }
 
+    pub fn cross_singleton<O>(self, other: Stream<'a, O, Windowed, N>) -> Stream<'a, (T, O), W, N>
+    where
+        O: Clone,
+    {
+        if self.node.id() != other.node.id() {
+            panic!("cross_singleton must be called on streams on the same node");
+        }
+
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::CrossSingleton(
+                Box::new(self.ir_node.into_inner()),
+                Box::new(other.ir_node.into_inner()),
+            ),
+        )
+    }
+
+    /// Allow this stream through if the other stream has elements, otherwise the output is empty.
+    pub fn continue_if<U>(self, signal: Stream<'a, U, Windowed, N>) -> Stream<'a, T, W, N> {
+        self.cross_singleton(signal.map(q!(|_u| ())))
+            .map(q!(|(d, _signal)| d))
+    }
+
+    /// Allow this stream through if the other stream is empty, otherwise the output is empty.
+    pub fn continue_unless<U>(self, other: Stream<'a, U, Windowed, N>) -> Stream<'a, T, W, N> {
+        self.continue_if(other.count().filter(q!(|c| *c == 0)))
+    }
+
     // TODO(shadaj): should allow for differing windows, using strongest one
     pub fn cross_product<O>(self, other: Stream<'a, O, W, N>) -> Stream<'a, (T, O), W, N>
     where
@@ -252,6 +281,17 @@ impl<'a, T, N: Location + Clone> Stream<'a, T, Windowed, N> {
         )
     }
 
+    pub fn sort(self) -> Stream<'a, T, Windowed, N>
+    where
+        T: Ord,
+    {
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::Sort(Box::new(self.ir_node.into_inner())),
+        )
+    }
+
     pub fn count(self) -> Stream<'a, usize, Windowed, N> {
         self.fold(q!(|| 0usize), q!(|count, _| *count += 1))
     }
@@ -261,6 +301,14 @@ impl<'a, T, N: Location + Clone> Stream<'a, T, Windowed, N> {
             self.node,
             self.ir_leaves,
             HfPlusNode::Delta(Box::new(self.ir_node.into_inner())),
+        )
+    }
+
+    pub fn defer_tick(self) -> Stream<'a, T, Windowed, N> {
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::DeferTick(Box::new(self.ir_node.into_inner())),
         )
     }
 
