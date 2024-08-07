@@ -29,6 +29,7 @@ async fn main() {
             )]
         }),
     );
+    let _built = builder.finalize();
 
     let mut deployment = deployment.into_inner();
 
