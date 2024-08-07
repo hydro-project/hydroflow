@@ -1,6 +1,6 @@
 ---
 source: hydroflow_plus_test/src/distributed/networked.rs
-expression: builder.extract().ir()
+expression: builder.finalize().ir()
 ---
 [
     ForEach {
@@ -8,8 +8,7 @@ expression: builder.extract().ir()
         input: Network {
             to_location: 1,
             serialize_pipeline: None,
-            sink_expr: null,
-            source_expr: null,
+            instantiate_fn: <network instantiate>,
             deserialize_pipeline: Some(
                 Operator(
                     Operator {

@@ -50,6 +50,7 @@ async fn main() {
             )
         }),
     );
+    let _built = builder.finalize();
 
     deployment.run_ctrl_c().await.unwrap();
 }
