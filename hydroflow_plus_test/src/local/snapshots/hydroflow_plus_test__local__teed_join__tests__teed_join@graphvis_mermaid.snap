@@ -12,7 +12,7 @@ linkStyle default stroke:#aaa
 2v1[/"(2v1) <code>tee()</code>"\]:::pushClass
 3v1[/"<div style=text-align:center>(3v1)</div> <code>map({<br>    use crate::__staged::local::teed_join::*;<br>    |v| (v + 1, ())<br>})</code>"\]:::pushClass
 4v1[/"<div style=text-align:center>(4v1)</div> <code>map({<br>    use crate::__staged::local::teed_join::*;<br>    |v| (v - 1, ())<br>})</code>"\]:::pushClass
-5v1[\"(5v1) <code>join::&lt;'tick, 'tick&gt;()</code>"/]:::pullClass
+5v1[\"(5v1) <code>join_multiset::&lt;'tick, 'tick&gt;()</code>"/]:::pullClass
 6v1[\"<div style=text-align:center>(6v1)</div> <code>map({<br>    use crate::__staged::local::teed_join::*;<br>    |t| t.0<br>})</code>"/]:::pullClass
 7v3["(7v3) <code>handoff</code>"]:::otherClass
 8v1[/"<div style=text-align:center>(8v1)</div> <code>for_each({<br>    use crate::__staged::local::teed_join::*;<br>    let output = output;<br>    |v| {<br>        output.send(v).unwrap();<br>    }<br>})</code>"\]:::pushClass
@@ -55,4 +55,3 @@ subgraph sg_2v1 ["sg_2v1 stratum 0"]
         6v1
     end
 end
-
