@@ -154,7 +154,11 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
     }
 
     // TODO(shadaj): should allow for differing windows, using strongest one
-    pub fn cross_product<O>(self, other: Stream<'a, O, W, N>) -> Stream<'a, (T, O), W, N> {
+    pub fn cross_product<O>(self, other: Stream<'a, O, W, N>) -> Stream<'a, (T, O), W, N>
+    where
+        T: Clone,
+        O: Clone,
+    {
         if self.node.id() != other.node.id() {
             panic!("cross_product must be called on streams on the same node");
         }
@@ -292,7 +296,10 @@ impl<'a, T, N: Location + Clone> Stream<'a, T, Windowed, N> {
     pub fn sample_every(
         self,
         duration: impl Quoted<'a, std::time::Duration> + Copy + 'a,
-    ) -> Stream<'a, T, Windowed, N> {
+    ) -> Stream<'a, T, Windowed, N>
+    where
+        T: Clone,
+    {
         let interval = duration.splice();
 
         let samples = Stream::<'a, hydroflow::tokio::time::Instant, Windowed, N>::new(
@@ -532,25 +539,16 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
     ) -> Stream<'a, N::Out<T>, Async, N2>
     where
         N: HfSend<N2, V, In<T> = (N2::Id, T)>,
-        T: Serialize + DeserializeOwned,
+        T: Clone + Serialize + DeserializeOwned,
         N2::Id: Clone,
     {
-        let ids_spliced = other.ids().splice();
+        let ids = other.ids();
 
-        let other_ids = Stream::<'a, &N2::Id, Windowed, N>::new(
-            self.node.clone(),
-            self.ir_leaves.clone(),
-            HfPlusNode::Source {
-                source: HfPlusSource::Iter(ids_spliced.into()),
-                location_id: self.node.id(),
-            },
-        )
-        .cloned()
-        .all_ticks();
-
-        other_ids
-            .cross_product(self.assume_windowed())
-            .send_bincode(other)
+        self.flat_map(q!(|b| ids.iter().map(move |id| (
+            ::std::clone::Clone::clone(id),
+            ::std::clone::Clone::clone(&b)
+        ))))
+        .send_bincode(other)
     }
 
     pub fn broadcast_bincode_interleaved<N2: Location + Cluster<'a> + Clone, Tag, V>(
@@ -559,7 +557,7 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
     ) -> Stream<'a, T, Async, N2>
     where
         N: HfSend<N2, V, In<T> = (N2::Id, T), Out<T> = (Tag, T)>,
-        T: Serialize + DeserializeOwned,
+        T: Clone + Serialize + DeserializeOwned,
         N2::Id: Clone,
     {
         self.broadcast_bincode(other).map(q!(|(_, b)| b))
@@ -572,23 +570,15 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
     where
         N: HfSend<N2, V, In<Bytes> = (N2::Id, T)>,
         N2::Id: Clone,
+        T: Clone,
     {
-        let ids_spliced = other.ids().splice();
+        let ids = other.ids();
 
-        let other_ids = Stream::<'a, &N2::Id, Windowed, N>::new(
-            self.node.clone(),
-            self.ir_leaves.clone(),
-            HfPlusNode::Source {
-                source: HfPlusSource::Iter(ids_spliced.into()),
-                location_id: self.node.id(),
-            },
-        )
-        .cloned()
-        .all_ticks();
-
-        other_ids
-            .cross_product(self.assume_windowed())
-            .send_bytes(other)
+        self.flat_map(q!(|b| ids.iter().map(move |id| (
+            ::std::clone::Clone::clone(id),
+            ::std::clone::Clone::clone(&b)
+        ))))
+        .send_bytes(other)
     }
 
     pub fn broadcast_bytes_interleaved<N2: Location + Cluster<'a> + Clone, Tag, V>(
@@ -598,6 +588,7 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
     where
         N: HfSend<N2, V, In<Bytes> = (N2::Id, T), Out<Bytes> = (Tag, Bytes)>,
         N2::Id: Clone,
+        T: Clone,
     {
         self.broadcast_bytes(other).map(q!(|(_, b)| b))
     }
