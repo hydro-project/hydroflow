@@ -1,3 +1,4 @@
+use core::panic;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::ops::Deref;
@@ -38,6 +39,28 @@ impl std::fmt::Debug for DebugExpr {
     }
 }
 
+pub enum DebugInstantiate<'a> {
+    Building(Box<dyn Fn() -> (syn::Expr, syn::Expr) + 'a>),
+    Finalized(syn::Expr, syn::Expr),
+}
+
+impl <'a> Clone for DebugInstantiate<'a> {
+    fn clone(&self) -> Self {
+        match self {
+            DebugInstantiate::Building(_) => {
+                panic!("cannot clone building function")
+            },
+            DebugInstantiate::Finalized(sink, source) => DebugInstantiate::Finalized(sink.clone(), source.clone()),
+        }
+    }
+}
+
+impl<'a> std::fmt::Debug for DebugInstantiate<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<network instantiate>")
+    }
+}
+
 #[derive(Clone)]
 pub struct DebugPipelineFn(pub Rc<dyn Fn() -> Pipeline + 'static>);
 
@@ -60,28 +83,32 @@ pub enum HfPlusSource {
 /// any downstream values. Traversals over the dataflow graph and
 /// generating Hydroflow IR start from leaves.
 #[derive(Clone, Debug)]
-pub enum HfPlusLeaf {
+pub enum HfPlusLeaf<'a> {
     ForEach {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HfPlusNode<'a>>,
     },
     DestSink {
         sink: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HfPlusNode<'a>>,
     },
     CycleSink {
         ident: syn::Ident,
         location_id: usize,
-        input: Box<HfPlusNode>,
+        input: Box<HfPlusNode<'a>>,
     },
 }
 
-impl HfPlusLeaf {
+impl<'a> HfPlusLeaf<'a> {
+    pub fn finalize(self, seen_tees: &mut SeenTees<'a>) -> HfPlusLeaf<'a> {
+        self.transform_children(|n, s| n.finalize(s), seen_tees)
+    }
+
     pub fn transform_children(
         self,
-        mut transform: impl FnMut(HfPlusNode, &mut SeenTees) -> HfPlusNode,
-        seen_tees: &mut SeenTees,
-    ) -> HfPlusLeaf {
+        mut transform: impl FnMut(HfPlusNode<'a>, &mut SeenTees<'a>) -> HfPlusNode<'a>,
+        seen_tees: &mut SeenTees<'a>,
+    ) -> HfPlusLeaf<'a> {
         match self {
             HfPlusLeaf::ForEach { f, input } => HfPlusLeaf::ForEach {
                 f,
@@ -106,7 +133,7 @@ impl HfPlusLeaf {
     pub fn emit(
         self,
         graph_builders: &mut BTreeMap<usize, FlatGraphBuilder>,
-        built_tees: &mut HashMap<*const RefCell<HfPlusNode>, (syn::Ident, usize)>,
+        built_tees: &mut HashMap<*const RefCell<HfPlusNode<'a>>, (syn::Ident, usize)>,
         next_stmt_id: &mut usize,
     ) {
         match self {
@@ -161,7 +188,7 @@ impl HfPlusLeaf {
 /// An intermediate node in a Hydroflow+ graph, which consumes data
 /// from upstream nodes and emits data to downstream nodes.
 #[derive(Clone, Debug)]
-pub enum HfPlusNode {
+pub enum HfPlusNode<'a> {
     Placeholder,
 
     Source {
@@ -175,84 +202,108 @@ pub enum HfPlusNode {
     },
 
     Tee {
-        inner: Rc<RefCell<HfPlusNode>>,
+        inner: Rc<RefCell<HfPlusNode<'a>>>,
     },
 
-    Persist(Box<HfPlusNode>),
-    Delta(Box<HfPlusNode>),
+    Persist(Box<HfPlusNode<'a>>),
+    Delta(Box<HfPlusNode<'a>>),
 
-    Union(Box<HfPlusNode>, Box<HfPlusNode>),
-    CrossProduct(Box<HfPlusNode>, Box<HfPlusNode>),
-    CrossSingleton(Box<HfPlusNode>, Box<HfPlusNode>),
-    Join(Box<HfPlusNode>, Box<HfPlusNode>),
-    Difference(Box<HfPlusNode>, Box<HfPlusNode>),
-    AntiJoin(Box<HfPlusNode>, Box<HfPlusNode>),
+    Union(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
+    CrossProduct(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
+    CrossSingleton(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
+    Join(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
+    Difference(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
+    AntiJoin(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
 
     Map {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HfPlusNode<'a>>,
     },
     FlatMap {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HfPlusNode<'a>>,
     },
     Filter {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HfPlusNode<'a>>,
     },
     FilterMap {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HfPlusNode<'a>>,
     },
 
-    DeferTick(Box<HfPlusNode>),
-    Enumerate(Box<HfPlusNode>),
+    DeferTick(Box<HfPlusNode<'a>>),
+    Enumerate(Box<HfPlusNode<'a>>),
     Inspect {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HfPlusNode<'a>>,
     },
 
-    Unique(Box<HfPlusNode>),
+    Unique(Box<HfPlusNode<'a>>),
 
-    Sort(Box<HfPlusNode>),
+    Sort(Box<HfPlusNode<'a>>),
     Fold {
         init: DebugExpr,
         acc: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HfPlusNode<'a>>,
     },
     FoldKeyed {
         init: DebugExpr,
         acc: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HfPlusNode<'a>>,
     },
 
     Reduce {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HfPlusNode<'a>>,
     },
     ReduceKeyed {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HfPlusNode<'a>>,
     },
 
     Network {
         to_location: usize,
         serialize_pipeline: Option<Pipeline>,
-        sink_expr: DebugExpr,
-        source_expr: DebugExpr,
+        instantiate_fn: DebugInstantiate<'a>,
         deserialize_pipeline: Option<Pipeline>,
-        input: Box<HfPlusNode>,
+        input: Box<HfPlusNode<'a>>,
     },
 }
 
-pub type SeenTees = HashMap<*const RefCell<HfPlusNode>, Rc<RefCell<HfPlusNode>>>;
+pub type SeenTees<'a> = HashMap<*const RefCell<HfPlusNode<'a>>, Rc<RefCell<HfPlusNode<'a>>>>;
 
-impl HfPlusNode {
+impl<'a> HfPlusNode<'a> {
+    pub fn finalize(self, seen_tees: &mut SeenTees<'a>) -> HfPlusNode<'a> {
+        match self.transform_children(|n, s| n.finalize(s), seen_tees) {
+            HfPlusNode::Network { to_location, serialize_pipeline, instantiate_fn, deserialize_pipeline, input } => {
+                let (sink_expr, source_expr) = match instantiate_fn {
+                    DebugInstantiate::Building(build_fn) => {
+                        let (sink, source) = build_fn();
+                        (sink, source)
+                    }
+
+                    DebugInstantiate::Finalized(_, _) => panic!("network already finalized"),
+                };
+
+                HfPlusNode::Network {
+                    to_location,
+                    serialize_pipeline,
+                    instantiate_fn: DebugInstantiate::Finalized(sink_expr, source_expr),
+                    deserialize_pipeline,
+                    input,
+                }
+            },
+
+            o => o,
+        }
+    }
+
     pub fn transform_children(
         self,
-        mut transform: impl FnMut(HfPlusNode, &mut SeenTees) -> HfPlusNode,
-        seen_tees: &mut SeenTees,
-    ) -> HfPlusNode {
+        mut transform: impl FnMut(HfPlusNode<'a>, &mut SeenTees<'a>) -> HfPlusNode<'a>,
+        seen_tees: &mut SeenTees<'a>,
+    ) -> HfPlusNode<'a> {
         match self {
             HfPlusNode::Placeholder => HfPlusNode::Placeholder,
 
@@ -281,7 +332,7 @@ impl HfPlusNode {
                         inner.as_ref() as *const RefCell<HfPlusNode>,
                         transformed_cell.clone(),
                     );
-                    let orig = inner.borrow().clone();
+                    let orig = inner.replace(HfPlusNode::Placeholder);
                     *transformed_cell.borrow_mut() = transform(orig, seen_tees);
                     HfPlusNode::Tee {
                         inner: transformed_cell,
@@ -372,15 +423,13 @@ impl HfPlusNode {
             HfPlusNode::Network {
                 to_location,
                 serialize_pipeline,
-                sink_expr,
-                source_expr,
+                instantiate_fn,
                 deserialize_pipeline,
                 input,
             } => HfPlusNode::Network {
                 to_location,
                 serialize_pipeline,
-                sink_expr,
-                source_expr,
+                instantiate_fn,
                 deserialize_pipeline,
                 input: Box::new(transform(*input, seen_tees)),
             },
@@ -390,7 +439,7 @@ impl HfPlusNode {
     pub fn emit(
         self,
         graph_builders: &mut BTreeMap<usize, FlatGraphBuilder>,
-        built_tees: &mut HashMap<*const RefCell<HfPlusNode>, (syn::Ident, usize)>,
+        built_tees: &mut HashMap<*const RefCell<HfPlusNode<'a>>, (syn::Ident, usize)>,
         next_stmt_id: &mut usize,
     ) -> (syn::Ident, usize) {
         match self {
@@ -952,11 +1001,18 @@ impl HfPlusNode {
             HfPlusNode::Network {
                 to_location,
                 serialize_pipeline,
-                sink_expr,
-                source_expr,
+                instantiate_fn,
                 deserialize_pipeline,
                 input,
             } => {
+                let (sink_expr, source_expr) = match instantiate_fn {
+                    DebugInstantiate::Building(_) => {
+                        panic!("Expected the network to be finalized")
+                    }
+
+                    DebugInstantiate::Finalized(sink, source) => (sink, source),
+                };
+
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 

@@ -58,8 +58,9 @@ mod tests {
                     .collect()
             }),
         );
+        let built = builder.finalize();
 
-        insta::assert_debug_snapshot!(builder.finalize().ir());
+        insta::assert_debug_snapshot!(built.ir());
 
         let mut deployment = deployment.into_inner();
 

@@ -22,10 +22,10 @@ use crate::{HfCompiled, HfCycle, RuntimeContext, Stream};
 /// Tracks the leaves of the dataflow IR. This is referenced by
 /// `Stream` and `HfCycle` to build the IR. The inner option will
 /// be set to `None` when this builder is finalized.
-pub type FlowLeaves = Rc<RefCell<Option<Vec<HfPlusLeaf>>>>;
+pub type FlowLeaves<'a> = Rc<RefCell<Option<Vec<HfPlusLeaf<'a>>>>>;
 
 pub struct FlowBuilder<'a, D: LocalDeploy<'a> + ?Sized> {
-    ir_leaves: FlowLeaves,
+    ir_leaves: FlowLeaves<'a>,
     nodes: RefCell<Vec<D::Process>>,
     clusters: RefCell<Vec<D::Cluster>>,
     cycle_ids: RefCell<HashMap<usize, usize>>,
@@ -80,8 +80,17 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
 
     pub fn finalize(mut self) -> BuiltFlow<'a, D> {
         self.finalized = true;
+
+        // TODO(shadaj): this should take place after optimization
+        let ir_leaves = self.ir_leaves.borrow_mut().take().unwrap();
+        let mut seen_tees = HashMap::new();
+        let ir_leaves_finalized: Vec<HfPlusLeaf> = ir_leaves
+            .into_iter()
+            .map(|leaf| leaf.finalize(&mut seen_tees))
+            .collect();
+
         BuiltFlow {
-            ir: self.ir_leaves.borrow_mut().take().unwrap(),
+            ir: ir_leaves_finalized,
             nodes: self.nodes.replace(vec![]),
             clusters: self.clusters.replace(vec![]),
             _phantom: PhantomData,
@@ -94,12 +103,12 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
 
     pub fn optimize_with(
         self,
-        f: impl FnOnce(Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf>,
+        f: impl FnOnce(Vec<HfPlusLeaf<'a>>) -> Vec<HfPlusLeaf<'a>>,
     ) -> BuiltFlow<'a, D> {
         self.finalize().optimize_with(f)
     }
 
-    pub fn ir_leaves(&self) -> &FlowLeaves {
+    pub fn ir_leaves(&self) -> &FlowLeaves<'a> {
         &self.ir_leaves
     }
 
@@ -307,7 +316,7 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
 }
 
 pub struct BuiltFlow<'a, D: LocalDeploy<'a>> {
-    pub(crate) ir: Vec<HfPlusLeaf>,
+    pub(crate) ir: Vec<HfPlusLeaf<'a>>,
     nodes: Vec<D::Process>,
     clusters: Vec<D::Cluster>,
 
@@ -326,13 +335,13 @@ impl<'a, D: LocalDeploy<'a>> Clone for BuiltFlow<'a, D> {
 }
 
 impl<'a, D: LocalDeploy<'a>> BuiltFlow<'a, D> {
-    pub fn ir(&self) -> &Vec<HfPlusLeaf> {
+    pub fn ir(&self) -> &Vec<HfPlusLeaf<'a>> {
         &self.ir
     }
 
     pub fn optimize_with(
         self,
-        f: impl FnOnce(Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf>,
+        f: impl FnOnce(Vec<HfPlusLeaf<'a>>) -> Vec<HfPlusLeaf<'a>>,
     ) -> BuiltFlow<'a, D> {
         BuiltFlow {
             ir: f(self.ir),

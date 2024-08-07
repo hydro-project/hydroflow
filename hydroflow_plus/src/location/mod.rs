@@ -22,12 +22,14 @@ pub trait Deploy<'a> {
     type Process: Location<Meta = Self::Meta, Port = Self::ProcessPort>
         + HfSendOneToOne<Self::Process>
         + HfSendOneToMany<Self::Cluster, Self::ClusterId>
-        + Clone;
+        + Clone
+        + 'a;
     type Cluster: Location<Meta = Self::Meta, Port = Self::ClusterPort>
         + HfSendManyToOne<Self::Process, Self::ClusterId>
         + HfSendManyToMany<Self::Cluster, Self::ClusterId>
         + Cluster<'a, Id = Self::ClusterId>
-        + Clone;
+        + Clone
+        + 'a;
     type ProcessPort;
     type ClusterPort;
     type Meta: Default;

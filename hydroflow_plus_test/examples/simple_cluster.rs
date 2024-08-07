@@ -65,6 +65,7 @@ async fn main() {
                 .collect()
         }),
     );
+    let _built = builder.finalize();
 
     let mut deployment = deployment.into_inner();
     deployment.run_ctrl_c().await.unwrap();

@@ -17,13 +17,13 @@ fn quoted_any_fn<'a, F: Fn(usize) -> usize + 'a, Q: IntoQuotedMut<'a, F>>(q: Q) 
 
 /// Add a profiling node before each node to count the cardinality of its input
 fn add_profiling_node<'a>(
-    node: HfPlusNode,
+    node: HfPlusNode<'a>,
     _context: RuntimeContext<'a>,
     counters: RuntimeData<&'a RefCell<Vec<u64>>>,
     counter_queue: RuntimeData<&'a RefCell<UnboundedSender<(usize, u64)>>>,
     id: &mut u32,
-    seen_tees: &mut SeenTees,
-) -> HfPlusNode {
+    seen_tees: &mut SeenTees<'a>,
+) -> HfPlusNode<'a> {
     let my_id = *id;
     *id += 1;
 
@@ -56,11 +56,11 @@ fn add_profiling_node<'a>(
 
 /// Count the cardinality of each input and periodically output to a file
 pub fn profiling<'a>(
-    ir: Vec<HfPlusLeaf>,
+    ir: Vec<HfPlusLeaf<'a>>,
     context: RuntimeContext<'a>,
     counters: RuntimeData<&'a RefCell<Vec<u64>>>,
     counter_queue: RuntimeData<&'a RefCell<UnboundedSender<(usize, u64)>>>,
-) -> Vec<HfPlusLeaf> {
+) -> Vec<HfPlusLeaf<'a>> {
     let mut id = 0;
     let mut seen_tees = Default::default();
     ir.into_iter()

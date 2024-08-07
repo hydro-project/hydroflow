@@ -86,6 +86,7 @@ async fn main() {
         }),
         RuntimeData::new("FAKE"),
     );
+    let _built = builder.finalize();
 
     // Uncomment below, change .bin("counter_compute_pi") in order to track cardinality per operation
     // let runtime_context = builder.runtime_context();
