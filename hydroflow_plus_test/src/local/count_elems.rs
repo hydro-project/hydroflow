@@ -21,7 +21,7 @@ pub fn count_elems<'a, T: 'a>(
         output.send(v).unwrap();
     }));
 
-    flow.extract().optimize_default()
+    flow.with_default_optimize().compile()
 }
 
 #[stageleft::runtime]

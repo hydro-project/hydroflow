@@ -33,7 +33,7 @@ pub fn chat_app<'a>(
         output.send(t).unwrap();
     }));
 
-    flow.extract().optimize_default()
+    flow.with_default_optimize().compile()
 }
 
 #[stageleft::runtime]
