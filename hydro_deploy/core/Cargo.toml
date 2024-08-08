@@ -22,6 +22,7 @@ futures = "0.3.0"
 hydroflow_deploy_integration = { path = "../hydroflow_deploy_integration", version = "^0.5.2" }
 indicatif = "0.17.0"
 inferno = "0.11.0"
+itertools = "0.10.0" # TODO(mingwei): remove when `iter_intersperse` is stabilized.
 memo-map = "0.3.0"
 nanoid = "0.4.0"
 nix = { version = "0.29.0", features = [ "signal" ] }

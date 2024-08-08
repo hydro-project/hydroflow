@@ -5,16 +5,21 @@ use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use futures::io::BufReader;
+use futures::io::BufReader as FuturesBufReader;
 use futures::{AsyncBufReadExt, AsyncWriteExt};
+use inferno::collapse::dtrace::Folder;
+use inferno::collapse::Collapse;
 use tokio::sync::{mpsc, oneshot};
 
+use crate::hydroflow_crate::flamegraph::handle_fold_data;
+use crate::hydroflow_crate::tracing_options::TracingOptions;
 use crate::progress::ProgressTracker;
 use crate::util::prioritized_broadcast;
 use crate::LaunchedBinary;
 
 pub struct LaunchedLocalhostBinary {
     child: Mutex<async_process::Child>,
+    tracing: Option<TracingOptions>,
     stdin_sender: mpsc::UnboundedSender<String>,
     stdout_deploy_receivers: Arc<Mutex<Option<oneshot::Sender<String>>>>,
     stdout_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
@@ -41,7 +46,11 @@ impl Drop for LaunchedLocalhostBinary {
 }
 
 impl LaunchedLocalhostBinary {
-    pub fn new(mut child: async_process::Child, id: String) -> Self {
+    pub fn new(
+        mut child: async_process::Child,
+        id: String,
+        tracing: Option<TracingOptions>,
+    ) -> Self {
         let (stdin_sender, mut stdin_receiver) = mpsc::unbounded_channel::<String>();
         let mut stdin = child.stdin.take().unwrap();
         tokio::spawn(async move {
@@ -56,16 +65,17 @@ impl LaunchedLocalhostBinary {
 
         let id_clone = id.clone();
         let (stdout_deploy_receivers, stdout_receivers) = prioritized_broadcast(
-            BufReader::new(child.stdout.take().unwrap()).lines(),
+            FuturesBufReader::new(child.stdout.take().unwrap()).lines(),
             move |s| ProgressTracker::println(format!("[{id_clone}] {s}")),
         );
         let (_, stderr_receivers) = prioritized_broadcast(
-            BufReader::new(child.stderr.take().unwrap()).lines(),
-            move |s| ProgressTracker::println(format!("[{id} stderr] {s}")),
+            FuturesBufReader::new(child.stderr.take().unwrap()).lines(),
+            move |s| ProgressTracker::println(&format!("[{id} stderr] {s}")),
         );
 
         Self {
             child: Mutex::new(child),
+            tracing,
             stdin_sender,
             stdout_deploy_receivers,
             stdout_receivers,
@@ -121,7 +131,30 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
     }
 
     async fn stop(&mut self) -> Result<()> {
-        self.child.get_mut().unwrap().kill()?;
+        if let Err(err) = self.child.get_mut().unwrap().kill() {
+            if !matches!(err.kind(), std::io::ErrorKind::InvalidInput) {
+                Err(err)?;
+            }
+        }
+
+        // Run perf post-processing and download perf output.
+        if let Some(tracing) = self.tracing.as_ref() {
+            let dtrace_outfile = tracing
+                .dtrace_outfile
+                .as_ref()
+                .expect("`dtrace_outfile` must be set for `dtrace` on localhost.");
+            let mut fold_er = Folder::from(tracing.fold_dtrace_options.clone().unwrap_or_default());
+
+            let fold_data = ProgressTracker::leaf("fold dtrace output".to_owned(), async move {
+                let mut fold_data = Vec::new();
+                fold_er.collapse_file(Some(dtrace_outfile), &mut fold_data)?;
+                Result::<_>::Ok(fold_data)
+            })
+            .await?;
+
+            handle_fold_data(tracing, fold_data).await?;
+        };
+
         Ok(())
     }
 }

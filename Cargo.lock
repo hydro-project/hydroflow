@@ -1296,6 +1296,7 @@ dependencies = [
  "hydroflow_deploy_integration",
  "indicatif",
  "inferno",
+ "itertools",
  "memo-map",
  "nanoid",
  "nix",
