@@ -44,8 +44,8 @@ pub fn map_reduce_runtime<'a>(
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = map_reduce(&flow, &cli, &cli);
-    flow.extract()
-        .optimize_default()
+    flow.with_default_optimize()
+        .compile()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
@@ -62,11 +62,11 @@ mod tests {
             &RuntimeData::new("FAKE"),
             &RuntimeData::new("FAKE"),
         );
-        let built = builder.extract();
+        let built = builder.finalize();
 
         insta::assert_debug_snapshot!(built.ir());
 
-        for (id, ir) in built.optimize_default().hydroflow_ir() {
+        for (id, ir) in built.with_default_optimize().compile().hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(ir.surface_syntax_string());
             });

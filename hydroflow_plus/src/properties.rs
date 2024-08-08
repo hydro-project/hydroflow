@@ -102,7 +102,7 @@ mod tests {
             .for_each(q!(|(string, count)| println!("{}: {}", string, count)));
 
         let built = flow
-            .extract()
+            .finalize()
             .optimize_with(|ir| properties_optimize(ir, &database))
             .with_default_optimize();
 

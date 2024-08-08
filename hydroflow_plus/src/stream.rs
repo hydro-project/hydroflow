@@ -14,6 +14,7 @@ use serde::Serialize;
 use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
 
+use crate::builder::FlowLeaves;
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{Cluster, HfSend, Location};
 
@@ -42,18 +43,14 @@ pub struct Windowed {}
 pub struct Stream<'a, T, W, N: Location + Clone> {
     node: N,
 
-    ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
+    ir_leaves: FlowLeaves,
     pub(crate) ir_node: RefCell<HfPlusNode>,
 
     _phantom: PhantomData<(&'a mut &'a (), T, W)>,
 }
 
 impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
-    pub(crate) fn new(
-        node: N,
-        ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
-        ir_node: HfPlusNode,
-    ) -> Self {
+    pub(crate) fn new(node: N, ir_leaves: FlowLeaves, ir_node: HfPlusNode) -> Self {
         Stream {
             node,
             ir_leaves,
@@ -218,14 +215,14 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
     }
 
     pub fn for_each<F: Fn(T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) {
-        self.ir_leaves.borrow_mut().push(HfPlusLeaf::ForEach {
+        self.ir_leaves.borrow_mut().as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::ForEach {
             input: Box::new(self.ir_node.into_inner()),
             f: f.splice().into(),
         });
     }
 
     pub fn dest_sink<S: Unpin + Sink<T> + 'a>(self, sink: impl Quoted<'a, S>) {
-        self.ir_leaves.borrow_mut().push(HfPlusLeaf::DestSink {
+        self.ir_leaves.borrow_mut().as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::DestSink {
             sink: sink.splice().into(),
             input: Box::new(self.ir_node.into_inner()),
         });

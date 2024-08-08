@@ -7,7 +7,7 @@ use std::time::Duration;
 use hydroflow::bytes::Bytes;
 use hydroflow::futures::stream::Stream as FuturesStream;
 use hydroflow::lattices::collections::MapMapValues;
-use hydroflow_lang::graph::eliminate_extra_unions_tees;
+use hydroflow_lang::graph::{eliminate_extra_unions_tees, HydroflowGraph};
 use proc_macro2::Span;
 use stageleft::*;
 use syn::parse_quote;
@@ -19,8 +19,13 @@ use crate::location::{
 use crate::stream::{Async, Windowed};
 use crate::{HfCompiled, HfCycle, RuntimeContext, Stream};
 
+/// Tracks the leaves of the dataflow IR. This is referenced by
+/// `Stream` and `HfCycle` to build the IR. The inner option will
+/// be set to `None` when this builder is finalized.
+pub type FlowLeaves = Rc<RefCell<Option<Vec<HfPlusLeaf>>>>;
+
 pub struct FlowBuilder<'a, D: LocalDeploy<'a> + ?Sized> {
-    ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
+    ir_leaves: FlowLeaves,
     nodes: RefCell<Vec<D::Process>>,
     clusters: RefCell<Vec<D::Cluster>>,
     cycle_ids: RefCell<HashMap<usize, usize>>,
@@ -33,11 +38,23 @@ pub struct FlowBuilder<'a, D: LocalDeploy<'a> + ?Sized> {
 
     next_node_id: RefCell<usize>,
 
+    /// Tracks whether this flow has been finalized; it is an error to
+    /// drop without finalizing.
+    finalized: bool,
+
     /// 'a on a FlowBuilder is used to ensure that staged code does not
     /// capture more data that it is allowed to; 'a is generated at the
     /// entrypoint of the staged code and we keep it invariant here
     /// to enforce the appropriate constraints
     _phantom: PhantomData<&'a mut &'a ()>,
+}
+
+impl<'a, D: LocalDeploy<'a> + ?Sized> Drop for FlowBuilder<'a, D> {
+    fn drop(&mut self) {
+        if !self.finalized {
+            panic!("Dropped FlowBuilder without finalizing, you may have forgotten to call `with_default_optimize`, `optimize_with`, or `finalize`.");
+        }
+    }
 }
 
 impl<'a, D: LocalDeploy<'a>> QuotedContext for FlowBuilder<'a, D> {
@@ -50,26 +67,39 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
     #[allow(clippy::new_without_default)]
     pub fn new() -> FlowBuilder<'a, D> {
         FlowBuilder {
-            ir_leaves: Rc::new(RefCell::new(Vec::new())),
+            ir_leaves: Rc::new(RefCell::new(Some(Vec::new()))),
             nodes: RefCell::new(Vec::new()),
             clusters: RefCell::new(Vec::new()),
             cycle_ids: RefCell::new(HashMap::new()),
             meta: RefCell::new(Default::default()),
             next_node_id: RefCell::new(0),
+            finalized: false,
             _phantom: PhantomData,
         }
     }
 
-    pub fn extract(self) -> BuiltFlow<'a, D> {
+    pub fn finalize(mut self) -> BuiltFlow<'a, D> {
+        self.finalized = true;
         BuiltFlow {
-            ir: self.ir_leaves.borrow().clone(),
-            nodes: self.nodes.into_inner(),
-            clusters: self.clusters.into_inner(),
+            ir: self.ir_leaves.borrow_mut().take().unwrap(),
+            nodes: self.nodes.replace(vec![]),
+            clusters: self.clusters.replace(vec![]),
             _phantom: PhantomData,
         }
     }
 
-    pub fn ir_leaves(&self) -> &Rc<RefCell<Vec<HfPlusLeaf>>> {
+    pub fn with_default_optimize(self) -> BuiltFlow<'a, D> {
+        self.finalize().with_default_optimize()
+    }
+
+    pub fn optimize_with(
+        self,
+        f: impl FnOnce(Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf>,
+    ) -> BuiltFlow<'a, D> {
+        self.finalize().optimize_with(f)
+    }
+
+    pub fn ir_leaves(&self) -> &FlowLeaves {
         &self.ir_leaves
     }
 
@@ -313,7 +343,7 @@ impl<'a, D: LocalDeploy<'a>> BuiltFlow<'a, D> {
     }
 }
 
-fn build_inner<'a, D: LocalDeploy<'a>>(me: BuiltFlow<'a, D>) -> HfCompiled<'a, D::GraphId> {
+fn build_inner<'a, D: LocalDeploy<'a>>(me: BuiltFlow<'a, D>) -> BTreeMap<usize, HydroflowGraph> {
     let mut builders = BTreeMap::new();
     let mut built_tees = HashMap::new();
     let mut next_stmt_id = 0;
@@ -321,26 +351,22 @@ fn build_inner<'a, D: LocalDeploy<'a>>(me: BuiltFlow<'a, D>) -> HfCompiled<'a, D
         leaf.emit(&mut builders, &mut built_tees, &mut next_stmt_id);
     }
 
-    HfCompiled {
-        hydroflow_ir: builders.map_values(|v| {
-            let (mut flat_graph, _, _) = v.build();
-            eliminate_extra_unions_tees(&mut flat_graph);
-            flat_graph
-        }),
-        _phantom: PhantomData,
-    }
+    builders.map_values(|v| {
+        let (mut flat_graph, _, _) = v.build();
+        eliminate_extra_unions_tees(&mut flat_graph);
+        flat_graph
+    })
 }
 
 impl<'a, D: LocalDeploy<'a>> BuiltFlow<'a, D> {
-    pub fn no_optimize(self) -> HfCompiled<'a, D::GraphId> {
-        build_inner(self)
+    pub fn compile(self) -> HfCompiled<'a, D::GraphId> {
+        HfCompiled {
+            hydroflow_ir: build_inner(self),
+            _phantom: PhantomData,
+        }
     }
 
     pub fn with_default_optimize(self) -> BuiltFlow<'a, D> {
         self.optimize_with(super::persist_pullup::persist_pullup)
-    }
-
-    pub fn optimize_default(self) -> HfCompiled<'a, D::GraphId> {
-        self.with_default_optimize().no_optimize()
     }
 }

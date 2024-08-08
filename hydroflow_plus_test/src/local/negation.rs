@@ -25,7 +25,7 @@ pub fn test_difference<'a>(
         output.send(v).unwrap();
     }));
 
-    flow.extract().optimize_default()
+    flow.with_default_optimize().compile()
 }
 
 #[stageleft::entry]
@@ -52,7 +52,7 @@ pub fn test_anti_join<'a>(
         output.send(v.0).unwrap();
     }));
 
-    flow.extract().optimize_default()
+    flow.with_default_optimize().compile()
 }
 
 #[stageleft::runtime]

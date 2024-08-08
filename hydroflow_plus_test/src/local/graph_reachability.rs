@@ -29,7 +29,7 @@ pub fn graph_reachability<'a>(
         reached_out.send(v).unwrap();
     }));
 
-    flow.extract().optimize_default()
+    flow.with_default_optimize().compile()
 }
 
 #[stageleft::runtime]

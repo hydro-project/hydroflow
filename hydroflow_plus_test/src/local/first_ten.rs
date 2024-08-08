@@ -15,7 +15,7 @@ pub fn first_ten_runtime<'a>(
     flow: FlowBuilder<'a, SingleProcessGraph>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     first_ten(&flow, &());
-    flow.extract().optimize_default()
+    flow.with_default_optimize().compile()
 }
 
 #[stageleft::runtime]

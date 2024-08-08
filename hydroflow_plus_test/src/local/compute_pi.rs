@@ -49,5 +49,5 @@ pub fn compute_pi_runtime<'a>(
     batch_size: RuntimeData<&'a usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = compute_pi(&flow, &(), batch_size);
-    flow.extract().optimize_default()
+    flow.with_default_optimize().compile()
 }

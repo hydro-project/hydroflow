@@ -93,13 +93,13 @@ mod tests {
             .for_each(q!(|n| println!("{}", n)));
 
         let runtime_context = flow.runtime_context();
-        let built = flow.extract();
+        let built = flow.finalize();
 
         insta::assert_debug_snapshot!(&built.ir);
 
         // Print mermaid
         // let mut mermaid_config = WriteConfig {op_text_no_imports: true, ..Default::default()};
-        // for (_, ir) in built.clone().optimize_default().hydroflow_ir() {
+        // for (_, ir) in built.clone().with_default_optimize().compile().hydroflow_ir() {
         //     println!("{}", ir.to_mermaid(&mermaid_config));
         // }
 

@@ -36,14 +36,14 @@ mod tests {
             .map(q!(|v| v + 1))
             .for_each(q!(|n| println!("{}", n)));
 
-        let built = flow.extract();
+        let built = flow.finalize();
 
         insta::assert_debug_snapshot!(built.ir());
 
         let optimized = built.optimize_with(super::persist_pullup);
 
         insta::assert_debug_snapshot!(optimized.ir());
-        for (id, graph) in optimized.no_optimize().hydroflow_ir() {
+        for (id, graph) in optimized.compile().hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(graph.surface_syntax_string());
             });
@@ -64,7 +64,7 @@ mod tests {
 
         before_tee.for_each(q!(|n| println!("{}", n)));
 
-        let built = flow.extract();
+        let built = flow.finalize();
 
         insta::assert_debug_snapshot!(built.ir());
 
@@ -72,7 +72,7 @@ mod tests {
 
         insta::assert_debug_snapshot!(optimized.ir());
 
-        for (id, graph) in optimized.no_optimize().hydroflow_ir() {
+        for (id, graph) in optimized.compile().hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(graph.surface_syntax_string());
             });
