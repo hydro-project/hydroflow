@@ -36,8 +36,8 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
         output.send(v).unwrap();
     }));
 
-    flow.extract()
-        .optimize_default()
+    flow.with_default_optimize()
+        .compile()
         .with_dynamic_id(subgraph_id)
 }
 
