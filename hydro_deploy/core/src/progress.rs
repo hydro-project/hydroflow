@@ -217,14 +217,14 @@ impl ProgressTracker {
 }
 
 impl ProgressTracker {
-    pub fn println(msg: &str) {
+    pub fn println(msg: impl AsRef<str>) {
         let progress_bar = PROGRESS_TRACKER
             .get_or_init(|| Mutex::new(ProgressTracker::new()))
             .lock()
             .unwrap();
 
-        if progress_bar.multi_progress.println(msg).is_err() {
-            println!("{}", msg);
+        if progress_bar.multi_progress.println(msg.as_ref()).is_err() {
+            println!("{}", msg.as_ref());
         }
     }
 

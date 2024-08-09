@@ -13,6 +13,7 @@ use super::{
 };
 use crate::hydroflow_crate::build::BuildOutput;
 use crate::hydroflow_crate::perf_options::PerfOptions;
+use crate::progress::ProgressTracker;
 use crate::HostStrategyGetter;
 
 pub mod launched_binary;
@@ -153,7 +154,7 @@ impl LaunchedHost for LaunchedLocalhost {
         perf: Option<PerfOptions>,
     ) -> Result<Box<dyn LaunchedBinary>> {
         let mut command = if let Some(perf) = perf {
-            println!("Profiling binary with perf");
+            ProgressTracker::println(format!("[{id}] Profiling binary with perf"));
             let mut tmp = Command::new("perf");
             tmp.args([
                 "record",
