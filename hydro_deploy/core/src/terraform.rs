@@ -246,7 +246,7 @@ impl TerraformApply {
         let stderr_loop = tokio::task::spawn_blocking(move || {
             let mut lines = BufReader::new(stderr).lines();
             while let Some(Ok(line)) = lines.next() {
-                ProgressTracker::println(&format!("[terraform] {}", line));
+                ProgressTracker::println(format!("[terraform] {}", line));
             }
         });
 
