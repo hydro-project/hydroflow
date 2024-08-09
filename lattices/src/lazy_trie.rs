@@ -11,10 +11,10 @@ use crate::ght::{
 /// COLT from Wang/Willsey/Suciu
 pub trait ColumnLazyTrieNode: GeneralizedHashTrieNode {
     /// into_iter for leaf elements, needed by force below
-    fn into_iter(self) -> Option<impl Iterator<Item = Self::Schema>>;
+    fn into_iter(self) -> Option<impl Iterator<Item = Self::SuffixSchema>>;
 
     /// pull all the data out of this trie node but retain the reference
-    fn drain(&mut self) -> Option<impl Iterator<Item = Self::Schema>>;
+    fn drain(&mut self) -> Option<impl Iterator<Item = Self::SuffixSchema>>;
 
     /// result of `force`ing a node
     type Force: GeneralizedHashTrieNode + GhtHasChildren;
@@ -35,15 +35,15 @@ pub trait ColumnLazyTrieNode: GeneralizedHashTrieNode {
 
 impl<Head, Node> ColumnLazyTrieNode for GhtInner<Head, Node>
 where
-    Head: 'static + Hash + Eq,
+    Head: 'static + Hash + Eq + Clone,
     Node: 'static + ColumnLazyTrieNode,
 {
-    fn into_iter(self) -> Option<impl Iterator<Item = var_type!(Head, ...Node::Schema)>> {
-        None::<Box<dyn Iterator<Item = Self::Schema>>>
+    fn into_iter(self) -> Option<impl Iterator<Item = var_type!(Head, ...Node::SuffixSchema)>> {
+        None::<Box<dyn Iterator<Item = Self::SuffixSchema>>>
     }
 
-    fn drain(&mut self) -> Option<impl Iterator<Item = Self::Schema>> {
-        None::<Box<dyn Iterator<Item = Self::Schema>>>
+    fn drain(&mut self) -> Option<impl Iterator<Item = Self::SuffixSchema>> {
+        None::<Box<dyn Iterator<Item = Self::SuffixSchema>>>
     }
 
     type Force = GhtInner<Head, Node>;
@@ -64,11 +64,11 @@ where
     //     PartialEq<<var_type!(Head, ...Rest) as VariadicExt>::AsRefVar<'s>>,
     for<'r> Rest::AsRefVar<'r>: PartialEq<Rest::AsRefVar<'r>>,
 {
-    fn into_iter(self) -> Option<impl Iterator<Item = Self::Schema>> {
+    fn into_iter(self) -> Option<impl Iterator<Item = Self::SuffixSchema>> {
         Some(self.elements.into_iter())
     }
 
-    fn drain(&mut self) -> Option<impl Iterator<Item = Self::Schema>> {
+    fn drain(&mut self) -> Option<impl Iterator<Item = Self::SuffixSchema>> {
         Some(self.elements.drain())
     }
 
@@ -325,20 +325,22 @@ macro_rules! GhtForestType {
 /// Make a GhtForest trait with a force method that does the forcing+merging logic
 /// This trait will be recursive on the variadic of `Ght`s.
 #[sealed]
-pub trait GhtForest<Prefix>
+pub trait GhtForest<SearchKey, TrieVariadic>
 where
-    Prefix: VariadicExt + RefVariadic,
+    SearchKey: VariadicExt + RefVariadic,
+    // TrieFirst: GeneralizedHashTrie,
+    TrieVariadic: VariadicExt,
 {
     /// each element is a `GeneralizedHashTrieNode<Schema = Self::Schema>`
     // type Schema: 'static + VariadicExt
     // where
     //     for<'a> <Self::Schema as VariadicExt>::AsRefVar<'a>: Split<Prefix>;
 
-    fn find_matching_trie<'a>(&self, search_key: Prefix, count: usize) -> Option<usize>;
-    fn force_and_merge<'a>(&self, search_key: Prefix) -> bool;
+    fn find_matching_trie(&self, search_key: SearchKey, count: usize) -> Option<usize>;
+    fn force_and_merge<'a>(&self, search_key: SearchKey) -> bool;
 }
 
-/// GhtForestStruct is a metadata node pointing to a variadic list of (Trie, LeafType) pairs
+/// GhtForestStruct is a metadata node pointing to a variadic list of GHTs
 #[derive(RefCast)]
 #[repr(transparent)]
 pub struct GhtForestStruct<T>
@@ -385,17 +387,26 @@ where
 //     }
 // }
 
+// given: Forest F, first tree T of height h(T), search key k of length |k|
+// if k is found in T:
+// if |k| > h(T):
+// todo!() // need to force leaf where we found key and recurse to next tree
+// else:
+// return <range of offsets> or <set of full tuples>
+// else
+// recurse to next tree
+
 #[sealed]
-impl<TrieFirst, TrieRest, Prefix> GhtForest<Prefix>
+impl<SearchKey, TrieFirst, TrieRest> GhtForest<SearchKey, var_type!(TrieFirst, ...TrieRest)>
     for GhtForestStruct<var_type!(TrieFirst, ...TrieRest)>
 where
     TrieFirst: GeneralizedHashTrie,
     TrieRest: VariadicExt,
-    TrieFirst: HtPrefixIter<Prefix>,
-    GhtForestStruct<TrieRest>: GhtForest<Prefix>,
-    Prefix: VariadicExt + RefVariadic,
+    TrieFirst: HtPrefixIter<SearchKey>,
+    GhtForestStruct<TrieRest>: GhtForest<SearchKey, TrieRest>,
+    SearchKey: VariadicExt + RefVariadic,
 {
-    fn find_matching_trie<'a>(&self, search_key: Prefix, count: usize) -> Option<usize> {
+    fn find_matching_trie<'a>(&self, search_key: SearchKey, count: usize) -> Option<usize> {
         let var_expr!(first, ...rest) = &self.forest;
         if first.prefix_iter(search_key).next().is_some() {
             Some(count)
@@ -404,7 +415,7 @@ where
             GhtForest::find_matching_trie(remainder, search_key, count + 1)
         }
     }
-    fn force_and_merge<'a>(&self, search_key: Prefix) -> bool {
+    fn force_and_merge<'a>(&self, search_key: SearchKey) -> bool {
         let var_expr!(first, ...rest) = &self.forest;
         if first.prefix_iter(search_key).next().is_some() {
             // this is the trie!
@@ -423,14 +434,14 @@ where
 }
 
 #[sealed]
-impl<Prefix> GhtForest<Prefix> for GhtForestStruct<var_type!()>
+impl<SearchKey> GhtForest<SearchKey, var_type!()> for GhtForestStruct<var_type!()>
 where
-    Prefix: VariadicExt + RefVariadic,
+    SearchKey: VariadicExt + RefVariadic,
 {
-    fn find_matching_trie<'a>(&self, _search_key: Prefix, _count: usize) -> Option<usize> {
+    fn find_matching_trie<'a>(&self, _search_key: SearchKey, _count: usize) -> Option<usize> {
         None
     }
-    fn force_and_merge<'a>(&self, _search_key: Prefix) -> bool {
+    fn force_and_merge<'a>(&self, _search_key: SearchKey) -> bool {
         false
     }
 }

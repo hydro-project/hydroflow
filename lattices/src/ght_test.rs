@@ -36,7 +36,8 @@ mod test {
         type LilTrie = GhtNodeType!(() => u32);
         let _l = LilTrie::new_from(vec![var_expr!(1)]);
 
-        type SmallTrie = GhtNodeType!(u32 => &'static str);
+        type SmallTrie =
+            crate::ght::GhtInner<u32, crate::ght::GhtLeaf<var_type!(u32, &'static str)>>;
         type SmallKeyedTrie = GhtNodeType!(u32 => &'static str);
         let l = SmallTrie::new_from(vec![var_expr!(1, "hello")]);
         let _: SmallKeyedTrie = l;
@@ -587,32 +588,32 @@ mod test {
         }
     }
 
-    #[test]
-    fn test_recursive_iter_keys() {
-        type MyGht = GhtType!(u32 => u32, u32);
-        type InputType = var_type!(u32, u32, u32);
-        type OutputType = var_type!(u32);
-        type ResultType<'a> = var_type!(&'a u32);
-        let input: HashSet<InputType> = HashSet::from_iter(
-            [
-                (42, 314, 43770),
-                (42, 315, 43770),
-                (43, 10, 600),
-                (43, 10, 60),
-            ]
-            .iter()
-            .map(|&(a, b, c)| var_expr!(a, b, c)),
-        );
-        let output: HashSet<OutputType> = [var_expr!(42), var_expr!(43)].iter().copied().collect();
+    // #[test]
+    // fn test_recursive_iter_keys() {
+    //     type MyGht = GhtType!(u32 => u32, u32);
+    //     type InputType = var_type!(u32, u32, u32);
+    //     type OutputType = var_type!(u32);
+    //     type ResultType<'a> = var_type!(&'a u32);
+    //     let input: HashSet<InputType> = HashSet::from_iter(
+    //         [
+    //             (42, 314, 43770),
+    //             (42, 315, 43770),
+    //             (43, 10, 600),
+    //             (43, 10, 60),
+    //         ]
+    //         .iter()
+    //         .map(|&(a, b, c)| var_expr!(a, b, c)),
+    //     );
+    //     let output: HashSet<OutputType> = [var_expr!(42), var_expr!(43)].iter().copied().collect();
 
-        let htrie = MyGht::new_from(input.clone());
-        let result = output.iter().map(|v| v.as_ref_var()).collect();
-        let v: HashSet<ResultType> = htrie
-            .recursive_iter_keys()
-            .map(|(a, (_b, (_c, ())))| var_expr!(a))
-            .collect();
-        assert_eq!(v, result);
-    }
+    //     let htrie = MyGht::new_from(input.clone());
+    //     let result = output.iter().map(|v| v.as_ref_var()).collect();
+    //     let v: HashSet<ResultType> = htrie
+    //         .recursive_iter_keys()
+    //         .map(|(a, (_b, (_c, ())))| var_expr!(a))
+    //         .collect();
+    //     assert_eq!(v, result);
+    // }
 
     pub trait PartialEqExceptNested: variadics::Variadic {
         fn eq_except_nested(&self, other: &Self) -> bool;
@@ -663,21 +664,21 @@ mod test {
         assert_eq!(output, correct);
     }
 
-    #[test]
-    fn test_key_cmp() {
-        type MyRoot = GhtType!(u16, u32 => u64);
-        let mut trie1 = MyRoot::default();
-        (*trie1.get_mut_trie()).insert(var_expr!(1, 2, 3));
-        let mut trie2 = MyRoot::default();
-        (*trie2.get_mut_trie()).insert(var_expr!(1, 2, 4));
+    // #[test]
+    // fn test_key_cmp() {
+    //     type MyRoot = GhtType!(u16, u32 => u64);
+    //     let mut trie1 = MyRoot::default();
+    //     (*trie1.get_mut_trie()).insert(var_expr!(1, 2, 3));
+    //     let mut trie2 = MyRoot::default();
+    //     (*trie2.get_mut_trie()).insert(var_expr!(1, 2, 4));
 
-        let tup1 = trie1.get_trie().recursive_iter_keys().next().unwrap();
-        let (k1, _v1) = MyRoot::split_key_val(tup1);
-        let tup2 = trie2.get_trie().recursive_iter_keys().next().unwrap();
-        let (k2, _v2) = MyRoot::split_key_val(tup2);
-        assert!(tup1 != tup2);
-        assert_eq!(k1, k2);
-    }
+    //     let tup1 = trie1.get_trie().recursive_iter_keys().next().unwrap();
+    //     let (k1, _v1) = MyRoot::split_key_val(tup1);
+    //     let tup2 = trie2.get_trie().recursive_iter_keys().next().unwrap();
+    //     let (k2, _v2) = MyRoot::split_key_val(tup2);
+    //     assert!(tup1 != tup2);
+    //     assert_eq!(k1, k2);
+    // }
 
     use variadics_macro::tuple;
 

@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use variadics::{var_expr, var_type, CloneRefVariadic, VariadicExt};
+use variadics::{var_expr, var_type, CloneRefVariadic, SplitBySuffix, VariadicExt};
 
 use crate::ght::{GeneralizedHashTrie, GeneralizedHashTrieNode, GhtInner, GhtLeaf, GHT};
 use crate::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
@@ -26,9 +26,9 @@ where
 
 impl<Head, Node> Merge<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
-    Node: GeneralizedHashTrieNode + Merge<Node>,
+    Node: GeneralizedHashTrieNode + Merge<Node> + Clone,
     Self: GeneralizedHashTrieNode,
-    Head: Hash + Eq,
+    Head: Hash + Eq + Clone,
 {
     fn merge(&mut self, other: GhtInner<Head, Node>) -> bool {
         let mut changed = false;
@@ -74,8 +74,9 @@ where
 
 impl<Head, Node> PartialEq<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
-    Head: Hash + Eq + 'static,
+    Head: Hash + Eq + 'static + Clone,
     Node: GeneralizedHashTrieNode + 'static + PartialEq,
+    Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
 {
     fn eq(&self, other: &GhtInner<Head, Node>) -> bool {
         if self.children.len() != other.children.len() {
@@ -109,8 +110,9 @@ where
 
 impl<Head, Node> PartialOrd<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
-    Head: Hash + Eq + 'static,
+    Head: Hash + Eq + 'static + Clone,
     Node: 'static + GeneralizedHashTrieNode + PartialEq + PartialOrd,
+    Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
 {
     fn partial_cmp(&self, other: &GhtInner<Head, Node>) -> Option<Ordering> {
         if self.children.is_empty() && other.children.is_empty() {
@@ -216,6 +218,7 @@ where
 impl<Head, Node> LatticeOrd<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
     Self: PartialOrd<GhtInner<Head, Node>>,
+    Head: Clone,
     Node: GeneralizedHashTrieNode,
 {
 }
@@ -235,6 +238,7 @@ where
 
 impl<Head, Node> IsBot for GhtInner<Head, Node>
 where
+    Head: Clone,
     Node: GeneralizedHashTrieNode + IsBot,
 {
     fn is_bot(&self) -> bool {
@@ -265,6 +269,7 @@ where
 
 impl<Head, Node> IsTop for GhtInner<Head, Node>
 where
+    Head: Clone,
     Node: GeneralizedHashTrieNode,
 {
     fn is_top(&self) -> bool {
@@ -301,9 +306,9 @@ impl<'a, 'b, GhtA, GhtB, GhtOut> LatticeBimorphism<&'a GhtA, &'b GhtB>
 where
     GhtA: GeneralizedHashTrieNode,
     GhtB: GeneralizedHashTrieNode,
-    GhtOut: FromIterator<var_type!(...GhtA::Schema, ...GhtB::Schema)>,
-    <GhtA::Schema as VariadicExt>::AsRefVar<'a>: CloneRefVariadic,
-    <GhtB::Schema as VariadicExt>::AsRefVar<'b>: CloneRefVariadic,
+    GhtOut: FromIterator<var_type!(...GhtA::SuffixSchema, ...GhtB::SuffixSchema)>,
+    <GhtA::SuffixSchema as VariadicExt>::AsRefVar<'a>: CloneRefVariadic,
+    <GhtB::SuffixSchema as VariadicExt>::AsRefVar<'b>: CloneRefVariadic,
 {
     type Output = GhtOut;
 
@@ -378,8 +383,8 @@ where
     ValFunc::Output: GeneralizedHashTrieNode,
     GhtA: GeneralizedHashTrieNode<Head = Head>,
     GhtB: GeneralizedHashTrieNode<Head = Head>,
-    <GhtA::Schema as VariadicExt>::AsRefVar<'a>: CloneRefVariadic,
-    <GhtB::Schema as VariadicExt>::AsRefVar<'b>: CloneRefVariadic,
+    <GhtA::SuffixSchema as VariadicExt>::AsRefVar<'a>: CloneRefVariadic,
+    <GhtB::SuffixSchema as VariadicExt>::AsRefVar<'b>: CloneRefVariadic,
     // <GhtA as GeneralizedHashTrieNode>::Leaf: VariadicExt,
     // <GhtB as GeneralizedHashTrieNode>::Leaf: VariadicExt,
     // <<GhtA as GeneralizedHashTrieNode>::Leaf as VariadicExt>::Extend<
