@@ -33,9 +33,9 @@ fn test_basic() {
 
 #[test]
 fn test_join() {
-    type MyGht = GhtType!(u16 => u16);
+    type MyGht = GhtType!(u8 => u16);
     type MyGhtTrie = <MyGht as GeneralizedHashTrie>::Trie;
-    type ResultGht = GhtType!(u16 => u16, u16);
+    type ResultGht = GhtType!(u8 => u16, u16);
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
     let r = vec![
@@ -49,6 +49,10 @@ fn test_join() {
     type MyNodeBim =
         <(MyGhtTrie, MyGhtTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
     type MyBim = GhtBimorphism<MyNodeBim>;
+
+    let my_ght1 = MyGht::default();
+    let my_ght2 = MyGht::default();
+    let me_node_bim = MyNodeBim::default();
 
     let mut df = hydroflow_syntax! {
         R = source_iter(r)

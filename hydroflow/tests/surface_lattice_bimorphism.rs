@@ -8,7 +8,7 @@ use lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
 use lattices::GhtType;
 use multiplatform_test::multiplatform_test;
-use variadics::{var_expr, CloneRefVariadic};
+use variadics::var_expr;
 
 #[multiplatform_test]
 pub fn test_cartesian_product() {
@@ -149,6 +149,7 @@ fn test_ght_join_bimorphism() {
     type MyNodeBim =
         <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
     type MyBim = GhtBimorphism<MyNodeBim>;
+    let me_bim = MyBim::default();
 
     let mut hf = hydroflow_syntax! {
         lhs = source_iter_delta([

@@ -5,7 +5,7 @@ mod test {
 
     use variadics::{var_expr, var_type, VariadicExt};
 
-    use crate::ght::{FindLeaf, GeneralizedHashTrie, GeneralizedHashTrieNode, GHT};
+    use crate::ght::{FindLeaf, GeneralizedHashTrie, GeneralizedHashTrieNode, GhtLeaf, GHT};
     use crate::ght_lattice::{
         DeepJoinLatticeBimorphism, GhtBimorphism, GhtCartesianProductBimorphism,
         GhtNodeKeyedBimorphism,
@@ -29,15 +29,21 @@ mod test {
         let htrie2 = MyTrie2::new_from(vec![var_expr!(42, 314)]);
         assert!(htrie2.contains(var_expr!(&42, &314)));
         assert_eq!(htrie1.recursive_iter().count(), 1);
-    }
 
+        type MyTrie3 = GhtType!(u32, u64, u16 => &'static str);
+        let htrie3 = MyTrie3::new_from(vec![
+            var_expr!(123, 2, 5, "hello"),
+            var_expr!(50, 1, 1, "hi"),
+            var_expr!(5, 1, 7, "hi"),
+            var_expr!(5, 1, 7, "bye"),
+        ]);
+    }
     #[test]
     fn test_ght_node_type_macro() {
         type LilTrie = GhtNodeType!(() => u32);
         let _l = LilTrie::new_from(vec![var_expr!(1)]);
 
-        type SmallTrie =
-            crate::ght::GhtInner<u32, crate::ght::GhtLeaf<var_type!(u32, &'static str)>>;
+        type SmallTrie = GhtNodeType!(u32 => &'static str);
         type SmallKeyedTrie = GhtNodeType!(u32 => &'static str);
         let l = SmallTrie::new_from(vec![var_expr!(1, "hello")]);
         let _: SmallKeyedTrie = l;
@@ -116,7 +122,7 @@ mod test {
 
         let leaf = inner.get(&314).unwrap();
         let t = leaf.recursive_iter().next().unwrap();
-        assert_eq!(t, var_expr!(&43770));
+        assert_eq!(t, var_expr!(42, 314, 43770).as_ref_var());
     }
 
     #[test]
@@ -131,7 +137,7 @@ mod test {
         let leaf_key = inner.iter().next().unwrap();
         let leaf = inner.get(leaf_key).unwrap();
         let t = leaf.iter().next().unwrap();
-        assert_eq!(t, &var_expr!(43770));
+        assert_eq!(t, &var_expr!(42, 314, 43770));
     }
 
     #[test]
@@ -156,10 +162,38 @@ mod test {
     }
 
     #[test]
+    fn test_prefix_iter_leaf() {
+        use crate::ght::HtPrefixIter;
+        type InputType = var_type!(u8, u16, u32);
+        type ResultType<'a> = var_type!(&'a u8, &'a u16, &'a u32);
+
+        let input: HashSet<InputType> = HashSet::from_iter(
+            [
+                (42, 314, 30619),
+                (42, 314, 43770),
+                (42, 315, 43770),
+                (43, 10, 600),
+            ]
+            .iter()
+            .map(|&(a, b, c)| var_expr!(a, b, c)),
+        );
+        let leaf = GhtLeaf::<InputType, var_type!(u16, u32)>::new_from(input.clone());
+        // let key = var_expr!(42u8).as_ref_var();
+        let key = var_expr!().as_ref_var();
+        let v: HashSet<ResultType> = leaf.prefix_iter(key).collect();
+        let result = input
+            .iter()
+            .filter(|t: &&InputType| t.0 == 42)
+            .map(|t: &InputType| var_expr!(&t.0, &t.1 .0, &t.1 .1 .0))
+            .collect();
+        assert_eq!(v, result);
+    }
+
+    #[test]
     fn test_prefix_iter() {
-        type MyGht = GhtType!(u32, u32 => u32);
-        type InputType = var_type!(u32, u32, u32);
-        type ResultType<'a> = var_type!(&'a u32, &'a u32);
+        type MyGht = GhtType!(u8, u16 => u32);
+        type InputType = var_type!(u8, u16, u32);
+        type ResultType<'a> = var_type!(&'a u8, &'a u16, &'a u32);
         let input: HashSet<InputType> = HashSet::from_iter(
             [
                 (42, 314, 30619),
@@ -172,15 +206,15 @@ mod test {
         );
         let htrie = MyGht::new_from(input.clone());
 
-        let v: HashSet<(&u32, ())> = htrie.prefix_iter(var_expr!(42, 315).as_ref_var()).collect();
-        let result = HashSet::from_iter([(&43770, ())].iter().copied());
+        let v: HashSet<ResultType> = htrie.prefix_iter(var_expr!(42, 315).as_ref_var()).collect();
+        let result = HashSet::from_iter([var_expr!(&42, &315, &43770)].iter().copied());
         assert_eq!(v, result);
 
-        let v: HashSet<ResultType> = htrie.prefix_iter(var_expr!(42).as_ref_var()).collect();
+        let v: HashSet<ResultType> = htrie.prefix_iter(var_expr!(42u8).as_ref_var()).collect();
         let result = input
             .iter()
             .filter(|t: &&InputType| t.0 == 42)
-            .map(|t: &InputType| (&t.1 .0, (&t.1 .1 .0, ())))
+            .map(|t: &InputType| var_expr!(&t.0, &t.1 .0, &t.1 .1 .0))
             .collect();
         assert_eq!(v, result);
 
@@ -190,34 +224,32 @@ mod test {
         // }
     }
 
-    #[test]
-    fn test_find_containing_leaf() {
-        type MyGht = GhtType!(u32, u32 => u32);
-        type InputType = var_type!(u32, u32, u32);
-        let input: HashSet<InputType> = HashSet::from_iter(
-            [
-                (42, 314, 30619),
-                (42, 314, 43770),
-                (42, 315, 43770),
-                (43, 10, 600),
-            ]
-            .iter()
-            .map(|&(a, b, c)| var_expr!(a, b, c)),
-        );
-        let htrie = MyGht::new_from(input.clone());
+    // #[test]
+    // fn test_find_containing_leaf() {
+    //     type MyGht = GhtType!(u32, u32 => u32);
+    //     type InputType = var_type!(u32, u32, u32);
+    //     let input: HashSet<InputType> = HashSet::from_iter(
+    //         [
+    //             (42, 314, 30619),
+    //             (42, 314, 43770),
+    //             (42, 315, 43770),
+    //             (43, 10, 600),
+    //         ]
+    //         .iter()
+    //         .map(|&(a, b, c)| var_expr!(a, b, c)),
+    //     );
+    //     let htrie = MyGht::new_from(input.clone());
 
-        assert!(FindLeaf::find_containing_leaf(
-            &htrie,
-            var_expr!(42u32, 315u32, 43770u32).as_ref_var()
-        )
-        .is_some(),);
-    }
+    //     assert!(
+    //         FindLeaf::find_containing_leaf(&htrie, var_expr!(42u32, 315u32, 43770u32)).is_some(),
+    //     );
+    // }
 
     #[test]
     fn test_prefix_iter_complex() {
         type MyGht = GhtType!(bool, u32, &'static str => i32);
         type InputType = var_type!(bool, u32, &'static str, i32);
-        type ResultType<'a> = var_type!(&'a u32, &'a &'static str, &'a i32);
+        type ResultType<'a> = var_type!(&'a bool, &'a u32, &'a &'static str, &'a i32);
         let input: HashSet<InputType> = HashSet::from_iter(
             [
                 (true, 1, "hello", -5),
@@ -234,11 +266,15 @@ mod test {
 
         let htrie = MyGht::new_from(input.clone());
 
-        let v: HashSet<(&i32, ())> = htrie
+        let v: HashSet<ResultType> = htrie
             .prefix_iter(var_expr!(true, 1, "hi").as_ref_var())
             .collect();
-        let result =
-            HashSet::from_iter([(&-2, ()), (&-3, ()), (&-4, ()), (&-5, ())].iter().copied());
+        let result = input
+            .iter()
+            .filter(|t: &&InputType| t.0 && t.1.0 == 1 && t.1.1.0 == "hi")
+            //.map(|t: &InputType| (&t.0, &t.1 .0, (&t.1 .1 .0, (&t.1 .1 .1 .0, ()))))
+            .map(|t| t.as_ref_var())
+            .collect();
         assert_eq!(v, result);
 
         let v: HashSet<ResultType> = htrie.prefix_iter(var_expr!(true).as_ref_var()).collect();

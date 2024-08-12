@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::marker::PhantomData;
 
 use sealed::sealed;
 use variadics::{
@@ -99,8 +100,8 @@ where
     TrieRoot: GeneralizedHashTrieNode,
 {
     pub(crate) trie: TrieRoot,
-    pub(crate) _key: std::marker::PhantomData<KeyType>,
-    pub(crate) _val: std::marker::PhantomData<ValType>,
+    pub(crate) _key: PhantomData<KeyType>,
+    pub(crate) _val: PhantomData<ValType>,
 }
 
 impl<K, V, TrieRoot> GHT<K, V, TrieRoot>
@@ -110,13 +111,13 @@ where
     TrieRoot: GeneralizedHashTrieNode,
 {
     /// Just calls `prefix_iter` on the underlying trie.
-    pub fn prefix_iter<'a, Prefix>(
+    pub fn prefix_iter<'a, KeyPrefix>(
         &'a self,
-        prefix: Prefix,
-    ) -> impl Iterator<Item = <<TrieRoot as HtPrefixIter<Prefix>>::Schema as VariadicExt>::AsRefVar<'a>>
+        prefix: KeyPrefix,
+    ) -> impl Iterator<Item = <<TrieRoot as HtPrefixIter<KeyPrefix>>::Schema as VariadicExt>::AsRefVar<'a>>
     where
-        TrieRoot: HtPrefixIter<Prefix>,
-        Prefix: 'a,
+        TrieRoot: HtPrefixIter<KeyPrefix>,
+        KeyPrefix: 'a,
     {
         self.trie.prefix_iter(prefix)
     }
@@ -186,8 +187,8 @@ where
 {
     fn default() -> Self {
         let tree = TrieRoot::default();
-        let _key: std::marker::PhantomData<K> = Default::default();
-        let _val: std::marker::PhantomData<V> = Default::default();
+        let _key: PhantomData<K> = Default::default();
+        let _val: PhantomData<V> = Default::default();
         Self {
             trie: tree,
             _key,
@@ -412,29 +413,34 @@ where
 
 /// leaf node of a HashTrie
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct GhtLeaf<Schema>
+pub struct GhtLeaf<Schema, SuffixSchema>
 where
     Schema: Eq + Hash,
 {
     pub(crate) elements: HashSet<Schema>,
+    pub(crate) _suffix_schema: PhantomData<SuffixSchema>,
 }
-impl<Schema> Default for GhtLeaf<Schema>
+impl<Schema, SuffixSchema> Default for GhtLeaf<Schema, SuffixSchema>
 where
     Schema: Eq + Hash,
 {
     fn default() -> Self {
         let elements = Default::default();
-        Self { elements }
+        Self {
+            elements,
+            _suffix_schema: PhantomData,
+        }
     }
 }
 #[sealed]
-impl<Schema> GeneralizedHashTrieNode for GhtLeaf<Schema>
+impl<Schema, SuffixSchema> GeneralizedHashTrieNode for GhtLeaf<Schema, SuffixSchema>
 where
-    Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<var_type!()>,
+    Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<SuffixSchema>,
+    SuffixSchema: VariadicExt + Clone,
     for<'a> Schema::AsRefVar<'a>: PartialEq,
 {
     type Schema = Schema;
-    type SuffixSchema = var_type!();
+    type SuffixSchema = SuffixSchema;
     type Head = Schema;
 
     fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self {
@@ -487,13 +493,16 @@ where
         (Self, Other): DeepJoinLatticeBimorphism;
 }
 
-impl<Schema> FromIterator<Schema> for GhtLeaf<Schema>
+impl<Schema, SuffixSchema> FromIterator<Schema> for GhtLeaf<Schema, SuffixSchema>
 where
     Schema: Eq + Hash,
 {
     fn from_iter<Iter: IntoIterator<Item = Schema>>(iter: Iter) -> Self {
         let elements = iter.into_iter().collect();
-        Self { elements }
+        Self {
+            elements,
+            _suffix_schema: PhantomData,
+        }
     }
 }
 
@@ -510,22 +519,23 @@ pub trait FindLeaf<Schema, LeafType> {
 }
 
 #[sealed]
-impl<KeyType, ValType, TrieRoot, Schema> FindLeaf<Schema, GhtLeaf<ValType>>
-    for GHT<KeyType, ValType, TrieRoot>
+impl<KeyType, ValType, TrieRoot, Schema, SuffixSchema>
+    FindLeaf<Schema, GhtLeaf<ValType, SuffixSchema>> for GHT<KeyType, ValType, TrieRoot>
 where
-    TrieRoot: FindLeaf<Schema, GhtLeaf<ValType>>,
+    TrieRoot: FindLeaf<Schema, GhtLeaf<ValType, SuffixSchema>>,
     KeyType: VariadicExt,
     ValType: 'static + VariadicExt + Eq + Hash + PartialEqVariadic + Clone,
     TrieRoot: GeneralizedHashTrieNode,
     Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
     for<'a> ValType::AsRefVar<'a>: PartialEq,
 
-    ValType: SplitBySuffix<var_type!()>,
+    ValType: SplitBySuffix<SuffixSchema>,
+    SuffixSchema: Clone + VariadicExt,
 {
-    // type Suffix = <TrieRoot as HtPrefixIter<Prefix>>::Suffix;
-    type Suffix = <TrieRoot as FindLeaf<Schema, GhtLeaf<ValType>>>::Suffix;
+    // type Suffix = <TrieRoot as HtPrefixIter<KeyPrefix>>::Suffix;
+    type Suffix = <TrieRoot as FindLeaf<Schema, GhtLeaf<ValType, SuffixSchema>>>::Suffix;
 
-    fn find_containing_leaf<'a>(&'a self, row: Schema) -> Option<&'a GhtLeaf<ValType>>
+    fn find_containing_leaf<'a>(&'a self, row: Schema) -> Option<&'a GhtLeaf<ValType, SuffixSchema>>
     where
         Self::Suffix: 'a,
     {
@@ -567,16 +577,20 @@ where
 /// This case only splits HEAD and REST in order to prevent a conflict with the `HtPrefixIter<var_type!()>` impl.
 /// If not for that, we could just use a single variadic type parameter.
 #[sealed]
-impl<'k, Head> FindLeaf<Head::AsRefVar<'k>, GhtLeaf<Head>> for GhtLeaf<Head>
+impl<'k, Schema, SuffixSchema> FindLeaf<Schema::AsRefVar<'k>, GhtLeaf<Schema, SuffixSchema>>
+    for GhtLeaf<Schema, SuffixSchema>
 where
-    Head: Eq + Hash + VariadicExt + PartialEqVariadic,
+    Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
     // Head: Eq + Hash + RefVariadic, /* TODO(mingwei): `Hash` actually use hash set contains instead of iterate. */
     // Head::UnRefVar: 'static + Eq + Hash,
     // for<'a> PrefixRest::AsRefVar<'a>: PartialEq<PrefixRest::AsRefVar<'a>>,
     // Head::UnRefVar: for<'a> VariadicExt<AsRefVar<'a> = Head>,
 {
     type Suffix = var_expr!();
-    fn find_containing_leaf<'a>(&'a self, row: Head::AsRefVar<'k>) -> Option<&'a GhtLeaf<Head>>
+    fn find_containing_leaf<'a>(
+        &'a self,
+        row: Schema::AsRefVar<'k>,
+    ) -> Option<&'a GhtLeaf<Schema, SuffixSchema>>
     where
         Self::Suffix: 'a,
     {
@@ -584,7 +598,7 @@ where
         if self
             .elements
             .iter()
-            .any(|x| Head::eq_ref(row, x.as_ref_var()))
+            .any(|x| Schema::eq_ref(row, x.as_ref_var()))
         {
             Some(self)
         } else {
@@ -597,22 +611,23 @@ where
 
 #[sealed]
 /// iterators for HashTries based on a prefix search
-pub trait HtPrefixIter<Prefix> {
+pub trait HtPrefixIter<KeyPrefix> {
     /// type of the suffix of this prefix
     type Schema: VariadicExt;
     /// given a prefix, return an iterator through the items below
     fn prefix_iter<'a>(
         &'a self,
-        prefix: Prefix,
+        prefix: KeyPrefix,
     ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'a>>
     where
         Self::Schema: 'a;
 }
 
 #[sealed]
-impl<Prefix, KeyType, ValType, TrieRoot> HtPrefixIter<Prefix> for GHT<KeyType, ValType, TrieRoot>
+impl<KeyPrefix, KeyType, ValType, TrieRoot> HtPrefixIter<KeyPrefix>
+    for GHT<KeyType, ValType, TrieRoot>
 where
-    TrieRoot: HtPrefixIter<Prefix>,
+    TrieRoot: HtPrefixIter<KeyPrefix>,
     KeyType: VariadicExt,
     ValType: VariadicExt,
     TrieRoot: GeneralizedHashTrieNode,
@@ -623,11 +638,11 @@ where
     // PrefixRest: Copy,
     // <TrieRoot as GhtHasChildren>::Node: HtPrefixIter<PrefixRest>,
 {
-    type Schema = <TrieRoot as HtPrefixIter<Prefix>>::Schema;
+    type Schema = <TrieRoot as HtPrefixIter<KeyPrefix>>::Schema;
 
     fn prefix_iter<'a>(
         &'a self,
-        prefix: Prefix,
+        prefix: KeyPrefix,
     ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'a>>
     where
         Self::Schema: 'a,
@@ -681,16 +696,16 @@ where
 /// This case only splits HEAD and REST in order to prevent a conflict with the `HtPrefixIter<var_type!()>` impl.
 /// If not for that, we could just use a single variadic type parameter.
 #[sealed]
-impl<Prefix, Schema> HtPrefixIter<Prefix> for GhtLeaf<Schema>
+impl<KeyPrefix, Schema, SuffixSchema> HtPrefixIter<KeyPrefix> for GhtLeaf<Schema, SuffixSchema>
 where
-    Prefix: 'static + RefVariadic + PartialEqVariadic,
+    KeyPrefix: 'static + RefVariadic + PartialEqVariadic,
     Schema: 'static + VariadicExt + Hash + Eq,
-    for<'a> Schema::AsRefVar<'a>: Split<Prefix>,
+    for<'a> Schema::AsRefVar<'a>: Split<KeyPrefix>,
 {
     type Schema = Schema;
     fn prefix_iter<'a>(
         &'a self,
-        prefix: Prefix,
+        prefix: KeyPrefix,
     ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'a>>
     where
         Self::Schema: 'a,
@@ -699,8 +714,9 @@ where
             .iter()
             .map(Schema::as_ref_var)
             .filter(move |&row| {
-                let (row_prefix, _row_suffix) = <Schema::AsRefVar<'_> as Split<Prefix>>::split(row);
-                Prefix::eq(&prefix, &row_prefix)
+                let (row_prefix, _row_suffix) =
+                    <Schema::AsRefVar<'_> as Split<KeyPrefix>>::split(row);
+                KeyPrefix::eq(&prefix, &row_prefix)
             })
     }
 }
@@ -778,13 +794,21 @@ where
 /// a la var_expr!(T1, T2, T3)
 #[macro_export]
 macro_rules! GhtNodeTypeWithSchema {
-    // Empty key base case.
-    (() => $( $z:ty ),* => $( $schema:ty ),+ ) => (
-        $crate::ght::GhtLeaf::<$( $schema ),*>
+    // Empty key, singleton val base case.
+    (() => $z:ty => $( $schema:ty ),+ ) => (
+        $crate::ght::GhtLeaf::<$( $schema ),*, $crate::variadics::var_type!( $z ) >
     );
-    // Singleton key base case.
-    ($a:ty => $( $z:ty ),* => $( $schema:ty ),+ ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$( $schema ),*>>
+    // Empty key, compound val base case.
+    (() => $y:ty, $( $z:ty ),* => $( $schema:ty ),+ ) => (
+        $crate::ght::GhtLeaf::<$( $schema ),*, ( $y, $( $z ),* ) >
+    );
+    // Singleton key, singleton val base case.
+    ($a:ty => $z:ty  => $( $schema:ty ),+ ) => (
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$( $schema ),*, $crate::variadics::var_type!( $z ) >>
+    );
+    // Singleton key, compound val base case.
+    ($a:ty => $y:ty, $( $z:ty ),* => $( $schema:ty ),+ ) => (
+            $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$( $schema ),*, $crate::variadics::var_type!($y, $( $z ),*) >>
     );
     // Recursive case.
     ($a:ty, $( $b:ty ),* => $( $z:ty ),* => $( $schema:ty ),+ ) => (
@@ -794,13 +818,13 @@ macro_rules! GhtNodeTypeWithSchema {
 #[macro_export]
 macro_rules! GhtNodeType {
     (() => $( $z:ty ),* ) => (
-        $crate::GhtNodeTypeWithSchema!(() => $( $z ),* => var_type!($( $z ),* ))
+        $crate::GhtNodeTypeWithSchema!(() => $( $z ),* => $crate::variadics::var_type!($( $z ),* ))
     );
     ($a:ty => $( $z:ty ),*) => (
-        $crate::GhtNodeTypeWithSchema!($a => $( $z ),* => var_type!($a, $( $z ),+ ))
+        $crate::GhtNodeTypeWithSchema!($a => $( $z ),* => $crate::variadics::var_type!($a, $( $z ),+ ))
     );
     ($a:ty, $( $b:ty ),* => $( $z:ty ),*) => (
-        $crate::GhtNodeTypeWithSchema!($a, $( $b ),* => ($( $z ),*) => var_type!($a, $( $b ),*, $( $z ),*))
+        $crate::GhtNodeTypeWithSchema!($a, $( $b ),* => $( $z ),* => $crate::variadics::var_type!($a, $( $b ),*, $( $z ),*))
     );
 }
 

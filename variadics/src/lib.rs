@@ -633,7 +633,7 @@ where
     type Suffix: VariadicExt;
     /// Splits this variadic into two parts, first the `Prefix`, and second the `Suffix`.
     fn split(self) -> (Prefix, Self::Suffix);
-
+    /// Splits a refvar variadic
     fn split_ref(
         this: Self::AsRefVar<'_>,
     ) -> (
@@ -647,12 +647,15 @@ where
     PrefixRest: VariadicExt,
     Rest: Split<PrefixRest>,
 {
+    /// The second part when splitting this variadic by `Prefix`.
     type Suffix = <Rest as Split<PrefixRest>>::Suffix;
+    /// Splits this variadic into two parts, first the `Prefix`, and second the `Suffix`.
     fn split(self) -> ((Item, PrefixRest), Self::Suffix) {
         let (item, rest) = self;
         let (prefix_rest, suffix) = rest.split();
         ((item, prefix_rest), suffix)
     }
+    /// Splits a refvar variadic
     fn split_ref(
         this: Self::AsRefVar<'_>,
     ) -> (
@@ -681,15 +684,19 @@ where
 }
 
 #[sealed]
+/// Helper trait for splitting a variadic into two parts. `Prefix` is the first part, everything
+/// after is the `Suffix` or second part.
+///
+/// This is a sealed trait.
 pub trait SplitBySuffix<Suffix>: VariadicExt
 where
     Suffix: VariadicExt,
 {
-    /// The second part when splitting this variadic by `Prefix`.
+    /// The first part when splitting this variadic by `Suffix`.
     type Prefix: VariadicExt;
     /// Splits this variadic into two parts, first the `Prefix`, and second the `Suffix`.
     fn split_by_suffix(self) -> (Self::Prefix, Suffix);
-
+    /// Splits a refvar variadic
     fn split_by_suffix_ref(
         this: Self::AsRefVar<'_>,
     ) -> (
@@ -698,40 +705,88 @@ where
     );
 }
 #[sealed]
-impl<Item, Rest, Suffix> SplitBySuffix<Suffix> for (Item, Rest)
+impl<Suffix, This> SplitBySuffix<Suffix> for This
 where
-    Rest: SplitBySuffix<Suffix>,
     Suffix: VariadicExt,
+    This: VariadicExt,
+    This::Reverse: Split<Suffix::Reverse>,
+    Suffix::Reverse: VariadicExt<Reverse = Suffix>,
 {
-    type Prefix = var_type!(Item, ...Rest::Prefix);
+    /// The second part when splitting this variadic by `Prefix`.
+    type Prefix = <<This::Reverse as Split<Suffix::Reverse>>::Suffix as VariadicExt>::Reverse;
+    /// Splits this variadic into two parts, first the `Prefix`, and second the `Suffix`.
     fn split_by_suffix(self) -> (Self::Prefix, Suffix) {
-        let (item, rest) = self;
-        let (prefix, suffix) = rest.split_by_suffix();
-        ((item, prefix), suffix)
+        let (rsuffix, rprefix) = self.reverse().split();
+        (rprefix.reverse(), rsuffix.reverse())
     }
+
     fn split_by_suffix_ref(
-        this: Self::AsRefVar<'_>,
+        _this: Self::AsRefVar<'_>,
     ) -> (
         <Self::Prefix as VariadicExt>::AsRefVar<'_>,
         Suffix::AsRefVar<'_>,
     ) {
-        let (item, rest) = this;
-        let (prefix, suffix) = Rest::split_by_suffix_ref(rest);
-        ((item, prefix), suffix)
+        todo!();
+        // let (rsuffix, rprefix) = this.reverse().split();
+        // (rprefix.reverse(), rsuffix.reverse())
     }
 }
-#[sealed]
-impl SplitBySuffix<var_type!()> for var_type!() {
-    type Prefix = var_type!();
-    fn split_by_suffix(self) -> (Self::Prefix, var_type!()) {
-        (var_expr!(), var_expr!())
-    }
-    fn split_by_suffix_ref(
-        _this: Self::AsRefVar<'_>,
-    ) -> (<Self::Prefix as VariadicExt>::AsRefVar<'_>, var_type!()) {
-        (var_expr!(), var_expr!())
-    }
-}
+
+// #[sealed]
+// impl<Item, Rest, Suffix> SplitBySuffix<Suffix> for (Item, Rest)
+// where
+//     Rest: SplitBySuffix<Suffix>,
+//     Suffix: VariadicExt,
+// {
+//     type Prefix = var_type!(Item, ...Rest::Prefix);
+//     fn split_by_suffix(self) -> (Self::Prefix, Suffix) {
+//         let (item, rest) = self;
+//         let (prefix, suffix) = rest.split_by_suffix();
+//         ((item, prefix), suffix)
+//     }
+//     fn split_by_suffix_ref(
+//         this: Self::AsRefVar<'_>,
+//     ) -> (
+//         <Self::Prefix as VariadicExt>::AsRefVar<'_>,
+//         Suffix::AsRefVar<'_>,
+//     ) {
+//         let (item, rest) = this;
+//         let (prefix, suffix) = Rest::split_by_suffix_ref(rest);
+//         ((item, prefix), suffix)
+//     }
+// }
+// #[sealed]
+// impl<Item, Suffix> SplitBySuffix<Suffix> for (Item, Suffix)
+// where
+//     Suffix: VariadicExt,
+// {
+//     type Prefix = var_type!(Item);
+//     fn split_by_suffix(self) -> (Self::Prefix, Suffix) {
+//         let (item, suffix) = self;
+//         (var_expr!(item), suffix)
+//     }
+//     fn split_by_suffix_ref(
+//         this: Self::AsRefVar<'_>,
+//     ) -> (
+//         <Self::Prefix as VariadicExt>::AsRefVar<'_>,
+//         Suffix::AsRefVar<'_>,
+//     ) {
+//         let (item, suffix) = this;
+//         (var_expr!(item), suffix)
+//     }
+// }
+// #[sealed]
+// impl SplitBySuffix<()> for () {
+//     type Prefix = ();
+//     fn split_by_suffix(self) -> (Self::Prefix, ()) {
+//         ((), ())
+//     }
+//     fn split_by_suffix_ref(
+//         _this: Self::AsRefVar<'_>,
+//     ) -> (<Self::Prefix as VariadicExt>::AsRefVar<'_>, ()) {
+//         ((), ())
+//     }
+// }
 
 #[cfg(test)]
 mod test {

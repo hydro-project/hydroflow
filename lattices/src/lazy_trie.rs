@@ -2,7 +2,7 @@ use std::hash::Hash;
 
 use ref_cast::RefCast;
 use sealed::sealed;
-use variadics::{var_expr, var_type, RefVariadic, VariadicExt};
+use variadics::{var_expr, var_type, RefVariadic, SplitBySuffix, VariadicExt};
 
 use crate::ght::{
     GeneralizedHashTrie, GeneralizedHashTrieNode, GhtHasChildren, GhtInner, GhtLeaf, HtPrefixIter,
@@ -11,10 +11,10 @@ use crate::ght::{
 /// COLT from Wang/Willsey/Suciu
 pub trait ColumnLazyTrieNode: GeneralizedHashTrieNode {
     /// into_iter for leaf elements, needed by force below
-    fn into_iter(self) -> Option<impl Iterator<Item = Self::SuffixSchema>>;
+    fn into_iter(self) -> Option<impl Iterator<Item = Self::Schema>>;
 
     /// pull all the data out of this trie node but retain the reference
-    fn drain(&mut self) -> Option<impl Iterator<Item = Self::SuffixSchema>>;
+    fn drain(&mut self) -> Option<impl Iterator<Item = Self::Schema>>;
 
     /// result of `force`ing a node
     type Force: GeneralizedHashTrieNode + GhtHasChildren;
@@ -36,17 +36,18 @@ pub trait ColumnLazyTrieNode: GeneralizedHashTrieNode {
 impl<Head, Node> ColumnLazyTrieNode for GhtInner<Head, Node>
 where
     Head: 'static + Hash + Eq + Clone,
-    Node: 'static + ColumnLazyTrieNode,
+    Node: 'static + Clone + ColumnLazyTrieNode,
+    Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
 {
-    fn into_iter(self) -> Option<impl Iterator<Item = var_type!(Head, ...Node::SuffixSchema)>> {
-        None::<Box<dyn Iterator<Item = Self::SuffixSchema>>>
+    fn into_iter(self) -> Option<impl Iterator<Item = Self::Schema>> {
+        None::<Box<dyn Iterator<Item = Self::Schema>>>
     }
 
-    fn drain(&mut self) -> Option<impl Iterator<Item = Self::SuffixSchema>> {
-        None::<Box<dyn Iterator<Item = Self::SuffixSchema>>>
+    fn drain(&mut self) -> Option<impl Iterator<Item = Self::Schema>> {
+        None::<Box<dyn Iterator<Item = Self::Schema>>>
     }
 
-    type Force = GhtInner<Head, Node>;
+    type Force = GhtInner<Head, Node> where Node:GeneralizedHashTrieNode;
     fn force(self) -> Option<Self::Force> {
         None
     }
@@ -56,37 +57,43 @@ where
     }
 }
 
-impl<Head, Rest> ColumnLazyTrieNode for GhtLeaf<var_type!(Head, ...Rest)>
+impl<Schema, Head, Rest> ColumnLazyTrieNode for GhtLeaf<Schema, var_type!(Head, ...Rest)>
 where
-    Head: 'static + Hash + Eq,
-    Rest: 'static + Hash + Eq + VariadicExt,
+    Head: 'static + Clone + Hash + Eq,
+    Rest: 'static + Clone + Hash + Eq + VariadicExt,
+    Schema: 'static + Hash + Eq + Clone + VariadicExt,
     // for<'r, 's> <var_type!(Head, ...Rest) as VariadicExt>::AsRefVar<'r>:
     //     PartialEq<<var_type!(Head, ...Rest) as VariadicExt>::AsRefVar<'s>>,
     for<'r> Rest::AsRefVar<'r>: PartialEq<Rest::AsRefVar<'r>>,
+    for<'r> Schema::AsRefVar<'r>: PartialEq<Schema::AsRefVar<'r>>,
+    Schema: SplitBySuffix<var_type!(Head, ...Rest)>,
+    Schema: SplitBySuffix<Rest>,
 {
-    fn into_iter(self) -> Option<impl Iterator<Item = Self::SuffixSchema>> {
+    fn into_iter(self) -> Option<impl Iterator<Item = Self::Schema>> {
         Some(self.elements.into_iter())
     }
 
-    fn drain(&mut self) -> Option<impl Iterator<Item = Self::SuffixSchema>> {
+    fn drain(&mut self) -> Option<impl Iterator<Item = Self::Schema>> {
         Some(self.elements.drain())
     }
-
-    type Force = GhtInner<Head, GhtLeaf<Rest>>;
+    // Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>
+    type Force = GhtInner<Head, GhtLeaf<Schema, Rest>>;
     fn force(self) -> Option<Self::Force> {
         let mut retval = Self::Force::default();
-        for t in self.into_iter().unwrap() {
-            let var_expr!(h, ...r) = t;
-            retval.insert((h, r));
+        for row in self.into_iter().unwrap() {
+            // let var_expr!(h, ...r) = row;
+            // retval.insert((h, r));
+            retval.insert(row);
         }
         Some(retval)
     }
 
-    fn force_drain(&mut self) -> Option<GhtInner<Head, GhtLeaf<Rest>>> {
+    fn force_drain(&mut self) -> Option<GhtInner<Head, GhtLeaf<Schema, Rest>>> {
         let mut retval = Self::Force::default();
-        for t in self.drain().unwrap() {
-            let var_expr!(h, ...r) = t;
-            retval.insert((h, r));
+        for row in self.drain().unwrap() {
+            // let var_expr!(h, ...r) = row;
+            // retval.insert((h, r));
+            retval.insert(row);
         }
         Some(retval)
     }
