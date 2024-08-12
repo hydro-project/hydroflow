@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use variadics::{var_expr, var_type, CloneVariadic, EitherRefVariadic, SplitBySuffix, VariadicExt};
+use variadics::{var_expr, var_type, CloneVariadic, SplitBySuffix, VariadicExt};
 
 use crate::ght::{GeneralizedHashTrie, GeneralizedHashTrieNode, GhtInner, GhtLeaf, GHT};
 use crate::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
@@ -316,17 +316,21 @@ impl<'a, 'b, GhtA, GhtB, GhtOut> LatticeBimorphism<&'a GhtA, &'b GhtB>
 where
     GhtA: GeneralizedHashTrieNode,
     GhtB: GeneralizedHashTrieNode,
-    GhtOut: FromIterator<var_type!(...GhtA::Schema, ...GhtB::Schema)>,
-    GhtA::Schema: CloneVariadic,
-    GhtB::Schema: CloneVariadic,
+    GhtOut: FromIterator<var_type!(...GhtA::SuffixSchema, ...GhtB::SuffixSchema)>,
+    GhtA::SuffixSchema: CloneVariadic,
+    GhtB::SuffixSchema: CloneVariadic,
 {
     type Output = GhtOut;
 
     fn call(&mut self, ght_a: &'a GhtA, ght_b: &'b GhtB) -> Self::Output {
         ght_a.recursive_iter().flat_map(|a| {
+            let (_a_prefix, a_suffix) = <GhtA::Schema as SplitBySuffix<GhtA::SuffixSchema>>::split_by_suffix_ref(a);
             ght_b
                 .recursive_iter()
-                .map(move |b| var_expr!(...<GhtA::Schema as CloneVariadic>::clone_var_ref(a), ...<GhtB::Schema as CloneVariadic>::clone_var_ref(b)))
+                .map(move |b| {
+                    let (_b_prefix, b_suffix) = <GhtB::Schema as SplitBySuffix<GhtB::SuffixSchema>>::split_by_suffix_ref(b);
+                    var_expr!(...<GhtA::SuffixSchema as CloneVariadic>::clone_var_ref(a_suffix), ...<GhtB::SuffixSchema as CloneVariadic>::clone_var_ref(b_suffix))
+                })
         }).collect()
     }
 }
@@ -349,31 +353,14 @@ where
     GhtA: GeneralizedHashTrieNode,
     GhtB: GeneralizedHashTrieNode,
     GhtOut: FromIterator<var_type!(...GhtA::Schema, ...GhtB::SuffixSchema)>,
-    GhtA::Schema: Eq + Hash + CloneVariadic, // + SplitBySuffix<GhtA::SuffixSchema>,
-    // GhtA::SuffixSchema: CloneVariadic,
+    GhtA::Schema: Eq + Hash + CloneVariadic,
     GhtB::Schema: Eq + Hash + SplitBySuffix<GhtB::SuffixSchema>,
     GhtB::SuffixSchema: CloneVariadic,
-    // <GhtB::SuffixSchema as VariadicExt>::AsRefVar<'b>: Eq + Hash,
-    // + CloneRefVariadic,
-    //
-    // + FromIterator<<<<GhtA as GeneralizedHashTrieNode>::Schema as EitherRefVariadic>::UnRefVar as VariadicExt>::Extend<<<GhtB as GeneralizedHashTrieNode>::SuffixSchema as EitherRefVariadic>::UnRefVar>>,
-    //    + FromIterator<<<GhtA as GeneralizedHashTrieNode>::Schema as VariadicExt>::Extend<<GhtB as GeneralizedHashTrieNode>::SuffixSchema>>,
-    // FromIterator<
-    //     <<GhtA as GeneralizedHashTrieNode>::Schema as VariadicExt>::Extend<<GhtB as GeneralizedHashTrieNode>::SuffixSchema>>,
-    // <GhtA::Schema as VariadicExt>::AsRefVar<'a>: CloneRefVariadic, // + Eq + Hash,
-    // <GhtB::Schema as VariadicExt>::AsRefVar<'b>: Eq + Hash + SplitBySuffix<GhtB::SuffixSchema>,
-    // <GhtB::SuffixSchema as VariadicExt>::AsRefVar<'b>: Eq + Hash + CloneRefVariadic,
-    // <GhtA::SuffixSchema as VariadicExt>::AsRefVar<'a>: CloneRefVariadic,
-    //  GhtB::SuffixSchema: CloneRefVariadic,
-    // <GhtA as GeneralizedHashTrieNode>::SuffixSchema: EitherRefVariadic + CloneRefVariadic,
-    // <GhtA as GeneralizedHashTrieNode>::Schema: EitherRefVariadic,
 {
     type Output = GhtOut;
 
     fn call(&mut self, ght_a: &'a GhtA, ght_b: &'b GhtB) -> Self::Output {
         ght_a.recursive_iter().flat_map(|a| {
-            // let (_prefix_a, suffix_a)
-            //     = <GhtA::Schema as SplitBySuffix<GhtA::SuffixSchema>>::split_by_suffix_ref(a);
             ght_b
                 .recursive_iter()
                 .map(move |b| {
@@ -450,17 +437,10 @@ where
     GhtB: GeneralizedHashTrieNode<Head = Head>,
     <GhtA::SuffixSchema as VariadicExt>::AsRefVar<'a>: CloneVariadic,
     <GhtB::SuffixSchema as VariadicExt>::AsRefVar<'b>: CloneVariadic,
-    // <GhtA as GeneralizedHashTrieNode>::Leaf: VariadicExt,
-    // <GhtB as GeneralizedHashTrieNode>::Leaf: VariadicExt,
-    // <<GhtA as GeneralizedHashTrieNode>::Leaf as VariadicExt>::Extend<
-    //     <GhtB as GeneralizedHashTrieNode>::Leaf,
-    // >: Eq + Hash,
 {
     type Output = GhtInner<Head, ValFunc::Output>; // HashMap<Head, ValFunc::Output>; // GhtOut;
 
     fn call(&mut self, ght_a: &'a GhtA, ght_b: &'b GhtB) -> Self::Output {
-        // let ght_out = Self::Output::default();
-
         let mut children = HashMap::<Head, ValFunc::Output>::new();
         for head in ght_b.iter() {
             if let Some(get_a) = ght_a.get(head) {
@@ -469,10 +449,7 @@ where
                 children.insert(head.clone(), val);
             }
         }
-        GhtInner::<Head, ValFunc::Output> {
-            children,
-            // _leaf: Default::default(),
-        }
+        GhtInner { children }
     }
 }
 

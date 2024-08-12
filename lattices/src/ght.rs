@@ -360,7 +360,7 @@ where
     fn recursive_iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
         self.children
             .iter()
-            .flat_map(|(_k, vs)| vs.recursive_iter().map(move |v| v))
+            .flat_map(|(_k, vs)| vs.recursive_iter())
     }
 
     // fn recursive_iter_keys(
@@ -396,6 +396,19 @@ where
             out.insert(row);
         }
         out
+    }
+}
+
+impl<Schema, SuffixSchema> FromIterator<Schema> for GhtLeaf<Schema, SuffixSchema>
+where
+    Schema: Eq + Hash,
+{
+    fn from_iter<Iter: IntoIterator<Item = Schema>>(iter: Iter) -> Self {
+        let elements = iter.into_iter().collect();
+        Self {
+            elements,
+            _suffix_schema: PhantomData,
+        }
     }
 }
 
@@ -491,19 +504,6 @@ where
     where
         Other: GeneralizedHashTrieNode,
         (Self, Other): DeepJoinLatticeBimorphism;
-}
-
-impl<Schema, SuffixSchema> FromIterator<Schema> for GhtLeaf<Schema, SuffixSchema>
-where
-    Schema: Eq + Hash,
-{
-    fn from_iter<Iter: IntoIterator<Item = Schema>>(iter: Iter) -> Self {
-        let elements = iter.into_iter().collect();
-        Self {
-            elements,
-            _suffix_schema: PhantomData,
-        }
-    }
 }
 
 #[sealed]
@@ -612,7 +612,7 @@ where
 #[sealed]
 /// iterators for HashTries based on a prefix search
 pub trait HtPrefixIter<KeyPrefix> {
-    /// type of the suffix of this prefix
+    /// the schema output
     type Schema: VariadicExt;
     /// given a prefix, return an iterator through the items below
     fn prefix_iter<'a>(
@@ -624,40 +624,11 @@ pub trait HtPrefixIter<KeyPrefix> {
 }
 
 #[sealed]
-impl<KeyPrefix, KeyType, ValType, TrieRoot> HtPrefixIter<KeyPrefix>
-    for GHT<KeyType, ValType, TrieRoot>
-where
-    TrieRoot: HtPrefixIter<KeyPrefix>,
-    KeyType: VariadicExt,
-    ValType: VariadicExt,
-    TrieRoot: GeneralizedHashTrieNode,
-    // Head: Hash + Eq,
-    // KeyType: VariadicExt,
-    // ValType: VariadicExt,
-    // TrieRoot: GeneralizedHashTrieNode + GhtHasChildren + HtPrefixIter<PrefixRest>,
-    // PrefixRest: Copy,
-    // <TrieRoot as GhtHasChildren>::Node: HtPrefixIter<PrefixRest>,
-{
-    type Schema = <TrieRoot as HtPrefixIter<KeyPrefix>>::Schema;
-
-    fn prefix_iter<'a>(
-        &'a self,
-        prefix: KeyPrefix,
-    ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'a>>
-    where
-        Self::Schema: 'a,
-    {
-        self.trie.prefix_iter(prefix)
-    }
-}
-
-#[sealed]
 impl<'k, Head, Node, PrefixRest> HtPrefixIter<var_type!(&'k Head, ...PrefixRest)>
     for GhtInner<Head, Node>
 where
     Head: Eq + Hash + Clone,
     Node: GeneralizedHashTrieNode + HtPrefixIter<PrefixRest>,
-    PrefixRest: Copy,
 {
     type Schema = <Node as HtPrefixIter<PrefixRest>>::Schema;
     fn prefix_iter<'a>(
@@ -675,6 +646,54 @@ where
             .flatten()
     }
 }
+#[sealed]
+impl<Head, Node> HtPrefixIter<var_type!()> for GhtInner<Head, Node>
+where
+    Self: GeneralizedHashTrieNode,
+    Head: Eq + Hash + Clone,
+    Node: GeneralizedHashTrieNode,
+{
+    type Schema = <Self as GeneralizedHashTrieNode>::Schema;
+    fn prefix_iter<'a>(
+        &'a self,
+        _prefix: var_type!(),
+    ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'a>>
+    where
+        Self::Schema: 'a,
+    {
+        self.recursive_iter()
+    }
+}
+
+/// This case only splits HEAD and REST in order to prevent a conflict with the `HtPrefixIter<var_type!()>` impl.
+/// If not for that, we could just use a single variadic type parameter.
+#[sealed]
+impl<KeyPrefixRef, Schema, SuffixSchema> HtPrefixIter<KeyPrefixRef>
+    for GhtLeaf<Schema, SuffixSchema>
+where
+    KeyPrefixRef: 'static + RefVariadic + PartialEqVariadic,
+    Schema: 'static + VariadicExt + Hash + Eq,
+    for<'a> Schema::AsRefVar<'a>: Split<KeyPrefixRef>,
+{
+    type Schema = Schema;
+    fn prefix_iter<'a>(
+        &'a self,
+        prefix: KeyPrefixRef,
+    ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'a>>
+    where
+        Self::Schema: 'a,
+    {
+        self.elements
+            .iter()
+            .map(Schema::as_ref_var)
+            .filter(move |&row| {
+                let (row_prefix, _row_suffix) =
+                    <Schema::AsRefVar<'_> as Split<KeyPrefixRef>>::split(row);
+                KeyPrefixRef::eq(&prefix, &row_prefix)
+            })
+    }
+}
+
 // #[sealed]
 // impl<Head, Node> HtPrefixIter<var_type!()> for GhtInner<Head, Node>
 // where
@@ -693,33 +712,6 @@ where
 //     }
 // }
 
-/// This case only splits HEAD and REST in order to prevent a conflict with the `HtPrefixIter<var_type!()>` impl.
-/// If not for that, we could just use a single variadic type parameter.
-#[sealed]
-impl<KeyPrefix, Schema, SuffixSchema> HtPrefixIter<KeyPrefix> for GhtLeaf<Schema, SuffixSchema>
-where
-    KeyPrefix: 'static + RefVariadic + PartialEqVariadic,
-    Schema: 'static + VariadicExt + Hash + Eq,
-    for<'a> Schema::AsRefVar<'a>: Split<KeyPrefix>,
-{
-    type Schema = Schema;
-    fn prefix_iter<'a>(
-        &'a self,
-        prefix: KeyPrefix,
-    ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'a>>
-    where
-        Self::Schema: 'a,
-    {
-        self.elements
-            .iter()
-            .map(Schema::as_ref_var)
-            .filter(move |&row| {
-                let (row_prefix, _row_suffix) =
-                    <Schema::AsRefVar<'_> as Split<KeyPrefix>>::split(row);
-                KeyPrefix::eq(&prefix, &row_prefix)
-            })
-    }
-}
 // // #[sealed]
 // // impl<'k, Head, PrefixRest> HtPrefixIter<var_type!(&'k Head, ...PrefixRest::AsRefVar<'k>)>
 // //     for GhtLeaf<var_type!(Head, ...PrefixRest)>
@@ -784,14 +776,7 @@ where
 //     }
 // }
 
-/// Macro to construct a Ght node type from the constituent key and
-/// dependent column types. You pass it:
-///    - a list of key column types and dependent column type separated by a fat arrow,
-///         a la (K1, K2, K3 => T1, T2, T3)
-///
-/// This macro generates a hierarchy of GHT node types where each key column is associated with an GhtInner
-/// of the associated column type, and the remaining dependent columns are associated with a variadic HTleaf
-/// a la var_expr!(T1, T2, T3)
+/// Helper that does the heavy lifting for GhtNodeType!
 #[macro_export]
 macro_rules! GhtNodeTypeWithSchema {
     // Empty key, singleton val base case.
@@ -800,7 +785,7 @@ macro_rules! GhtNodeTypeWithSchema {
     );
     // Empty key, compound val base case.
     (() => $y:ty, $( $z:ty ),* => $( $schema:ty ),+ ) => (
-        $crate::ght::GhtLeaf::<$( $schema ),*, ( $y, $( $z ),* ) >
+        $crate::ght::GhtLeaf::<$( $schema ),*, ( $y, $crate::variadics::var_type!($( $z ),* )) >
     );
     // Singleton key, singleton val base case.
     ($a:ty => $z:ty  => $( $schema:ty ),+ ) => (
@@ -815,6 +800,15 @@ macro_rules! GhtNodeTypeWithSchema {
         $crate::ght::GhtInner::<$a, $crate::GhtNodeTypeWithSchema!($( $b ),* => $( $z ),* => $( $schema ),*)>
     );
 }
+
+/// Macro to construct a Ght node type from the constituent key and
+/// dependent column types. You pass it:
+///    - a list of key column types and dependent column type separated by a fat arrow,
+///         a la (K1, K2, K3 => T1, T2, T3)
+///
+/// This macro generates a hierarchy of GHT node types where each key column is associated with an GhtInner
+/// of the associated column type, and the remaining dependent columns are associated with a variadic HTleaf
+/// a la var_expr!(T1, T2, T3)
 #[macro_export]
 macro_rules! GhtNodeType {
     (() => $( $z:ty ),* ) => (

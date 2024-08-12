@@ -32,7 +32,6 @@ pub trait ColumnLazyTrieNode: GeneralizedHashTrieNode {
 //     /// Recurse until a leaf, force the leaf and build superstructure 1 level taller
 //     fn deep_force(&mut self, key: Key) -> Self::DeepForce;
 // }
-
 impl<Head, Node> ColumnLazyTrieNode for GhtInner<Head, Node>
 where
     Head: 'static + Hash + Eq + Clone,
@@ -394,9 +393,8 @@ where
 //     }
 // }
 
-// given: Forest F, first tree T of height h(T), search key k of length |k|
+// given: Forest F, first tree T of height h(T), search key k of length |k| <= h(T)
 // if k is found in T:
-// if |k| > h(T):
 // todo!() // need to force leaf where we found key and recurse to next tree
 // else:
 // return <range of offsets> or <set of full tuples>
@@ -407,9 +405,8 @@ where
 impl<SearchKey, TrieFirst, TrieRest> GhtForest<SearchKey, var_type!(TrieFirst, ...TrieRest)>
     for GhtForestStruct<var_type!(TrieFirst, ...TrieRest)>
 where
-    TrieFirst: GeneralizedHashTrie,
+    TrieFirst: GeneralizedHashTrie + HtPrefixIter<SearchKey>,
     TrieRest: VariadicExt,
-    TrieFirst: HtPrefixIter<SearchKey>,
     GhtForestStruct<TrieRest>: GhtForest<SearchKey, TrieRest>,
     SearchKey: VariadicExt + RefVariadic,
 {

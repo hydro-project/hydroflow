@@ -6,7 +6,7 @@ use lattices::ght::GeneralizedHashTrie;
 use lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
 use lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap};
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
-use lattices::{GhtType, LatticeBimorphism};
+use lattices::GhtType;
 use multiplatform_test::multiplatform_test;
 use variadics::{var_expr, CloneVariadic};
 
