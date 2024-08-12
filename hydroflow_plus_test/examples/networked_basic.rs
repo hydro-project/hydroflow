@@ -9,28 +9,30 @@ use hydroflow_plus_cli_integration::{DeployClusterSpec, DeployProcessSpec};
 async fn main() {
     let mut deployment = Deployment::new();
     let localhost = deployment.Localhost();
+    let localhost_clone = localhost.clone();
+    let localhost_clone_2 = localhost.clone();
 
     let deployment = RefCell::new(deployment);
     let builder = hydroflow_plus::FlowBuilder::new();
     let io = hydroflow_plus_test::distributed::networked::networked_basic(
         &builder,
-        &DeployProcessSpec::new(|| {
-            deployment.borrow_mut().add_service(
-                HydroflowCrate::new(".", localhost.clone())
+        &DeployProcessSpec::new(move |deployment| {
+            deployment.add_service(
+                HydroflowCrate::new(".", localhost_clone.clone())
                     .bin("networked_basic")
                     .profile("dev"),
             )
         }),
-        &DeployClusterSpec::new(|| {
-            vec![deployment.borrow_mut().add_service(
-                HydroflowCrate::new(".", localhost.clone())
+        &DeployClusterSpec::new(move |deployment| {
+            vec![deployment.add_service(
+                HydroflowCrate::new(".", localhost_clone_2.clone())
                     .bin("networked_basic")
                     .profile("dev"),
             )]
         }),
     );
-
     let mut deployment = deployment.into_inner();
+    let _nodes = builder.with_default_optimize().deploy(&mut deployment);
 
     let port_to_zero = io
         .source_zero_port

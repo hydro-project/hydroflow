@@ -1,6 +1,6 @@
 use crate::ir::*;
 
-fn persist_pullup_node(node: HfPlusNode, seen_tees: &mut SeenTees) -> HfPlusNode {
+fn persist_pullup_node<'a>(node: HfPlusNode<'a>, seen_tees: &mut SeenTees<'a>) -> HfPlusNode<'a> {
     match node.transform_children(persist_pullup_node, seen_tees) {
         HfPlusNode::Map {
             f,
