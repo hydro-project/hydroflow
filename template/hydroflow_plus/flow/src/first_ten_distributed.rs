@@ -55,7 +55,7 @@ mod tests {
             }),
         );
 
-        let _built = flow.with_default_optimize();
+        builder.with_default_optimize().deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
 
