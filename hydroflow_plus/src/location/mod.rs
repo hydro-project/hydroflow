@@ -1,4 +1,5 @@
 use dyn_clone::DynClone;
+use hydroflow_lang::graph::HydroflowGraph;
 use stageleft::Quoted;
 
 pub mod graphs;
@@ -18,16 +19,19 @@ pub trait LocalDeploy<'a> {
 pub trait Deploy<'a> {
     /// Type of ID used to identify individual members of a cluster.
     type ClusterId: Clone + 'static;
+    type InstantiateEnv;
 
-    type Process: Location<Meta = Self::Meta, Port = Self::ProcessPort>
+    type Process: Location<Meta = Self::Meta, Port = Self::ProcessPort, InstantiateEnv = Self::InstantiateEnv>
         + HfSendOneToOne<Self::Process>
         + HfSendOneToMany<Self::Cluster, Self::ClusterId>
-        + Clone;
-    type Cluster: Location<Meta = Self::Meta, Port = Self::ClusterPort>
+        + Clone
+        + 'a;
+    type Cluster: Location<Meta = Self::Meta, Port = Self::ClusterPort, InstantiateEnv = Self::InstantiateEnv>
         + HfSendManyToOne<Self::Process, Self::ClusterId>
         + HfSendManyToMany<Self::Cluster, Self::ClusterId>
         + Cluster<'a, Id = Self::ClusterId>
-        + Clone;
+        + Clone
+        + 'a;
     type ProcessPort;
     type ClusterPort;
     type Meta: Default;
@@ -58,22 +62,30 @@ impl<
 }
 
 pub trait ProcessSpec<'a, D: LocalDeploy<'a> + ?Sized> {
-    fn build(&self, id: usize, meta: &mut D::Meta) -> D::Process;
+    fn build(&self, id: usize) -> D::Process;
 }
 
 pub trait ClusterSpec<'a, D: LocalDeploy<'a> + ?Sized> {
-    fn build(&self, id: usize, meta: &mut D::Meta) -> D::Cluster;
+    fn build(&self, id: usize) -> D::Cluster;
 }
 
 pub trait Location: DynClone {
     type Port;
     type Meta;
+    type InstantiateEnv;
 
     fn id(&self) -> usize;
 
     fn next_port(&self) -> Self::Port;
 
     fn update_meta(&mut self, meta: &Self::Meta);
+
+    fn instantiate(
+        &self,
+        env: &mut Self::InstantiateEnv,
+        meta: &mut Self::Meta,
+        graph: HydroflowGraph,
+    );
 }
 
 pub trait Cluster<'a>: Location {

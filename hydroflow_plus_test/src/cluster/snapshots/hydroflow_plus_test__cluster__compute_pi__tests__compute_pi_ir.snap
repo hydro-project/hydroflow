@@ -25,8 +25,7 @@ expression: built.ir()
                                         },
                                     ),
                                 ),
-                                sink_expr: { use hydroflow_plus_cli_integration :: __staged :: runtime :: * ; let port = "port_0" ; let self_cli = FAKE ; { self_cli . port (port) . connect_local_blocking :: < ConnectedDirect > () . into_sink () } },
-                                source_expr: { use hydroflow_plus_cli_integration :: __staged :: runtime :: * ; let port = "port_0" ; let self_cli = FAKE ; { self_cli . port (port) . connect_local_blocking :: < ConnectedTagged < ConnectedDirect > > () . into_source () } },
+                                instantiate_fn: <network instantiate>,
                                 deserialize_pipeline: Some(
                                     Operator(
                                         Operator {

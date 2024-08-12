@@ -93,11 +93,11 @@ mod tests {
             &RuntimeData::new("FAKE"),
             RuntimeData::new("FAKE"),
         );
-        let built = builder.finalize();
+        let built = builder.with_default_optimize();
 
         insta::assert_debug_snapshot!(built.ir());
 
-        for (id, ir) in built.with_default_optimize().compile().hydroflow_ir() {
+        for (id, ir) in built.compile().hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(ir.surface_syntax_string());
             });
