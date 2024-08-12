@@ -6,9 +6,9 @@ use lattices::ght::GeneralizedHashTrie;
 use lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
 use lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap};
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
-use lattices::GhtType;
+use lattices::{GhtType, LatticeBimorphism};
 use multiplatform_test::multiplatform_test;
-use variadics::var_expr;
+use variadics::{var_expr, CloneVariadic};
 
 #[multiplatform_test]
 pub fn test_cartesian_product() {
@@ -146,10 +146,12 @@ fn test_ght_join_bimorphism() {
     type MyGhtATrie = <MyGhtA as GeneralizedHashTrie>::Trie;
     type MyGhtBTrie = <MyGhtB as GeneralizedHashTrie>::Trie;
 
+    type Output = variadics::var_type!(u32, u64, u16, &'static str, &'static str);
+
     type MyNodeBim =
         <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
     type MyBim = GhtBimorphism<MyNodeBim>;
-    let me_bim = MyBim::default();
+    // let me_bim = MyBim::default();
 
     let mut hf = hydroflow_syntax! {
         lhs = source_iter_delta([
@@ -178,7 +180,7 @@ fn test_ght_join_bimorphism() {
             -> lattice_reduce()
             -> enumerate()
             -> inspect(|x| println!("{:?} {:#?}", context.current_tick(), x))
-            -> flat_map(|(_num, ght)| ght.recursive_iter().map(|row| row.clone_var()).collect::<Vec<_>>())
+            -> flat_map(|(_num, ght)| ght.recursive_iter().map(<Output as CloneVariadic>::clone_var_ref).collect::<Vec<_>>())
             -> null();
             // -> for_each(|x| println!("{:#?}\n", x));
     };

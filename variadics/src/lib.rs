@@ -460,35 +460,31 @@ impl CopyRefVariadic for () {
 /// );
 /// ```
 #[sealed]
-pub trait CloneRefVariadic: EitherRefVariadic {
+pub trait CloneVariadic: VariadicExt {
+    fn clone_var(&self) -> Self
+    where
+        Self: Sized,
+    {
+        Self::clone_var_ref(self.as_ref_var())
+    }
+
     /// Clone self per-value.
-    fn clone_var(&self) -> Self::UnRefVar;
+    fn clone_var_ref(this: Self::AsRefVar<'_>) -> Self;
 }
 #[sealed]
-impl<Item, Rest> CloneRefVariadic for (&Item, Rest)
+impl<Item, Rest> CloneVariadic for (Item, Rest)
 where
     Item: Clone,
-    Rest: CloneRefVariadic,
+    Rest: CloneVariadic,
 {
-    fn clone_var(&self) -> Self::UnRefVar {
-        let var_args!(item, ...rest) = self;
-        var_expr!((*item).clone(), ...rest.clone_var())
+    fn clone_var_ref(this: Self::AsRefVar<'_>) -> Self {
+        let var_args!(item, ...rest) = this;
+        var_expr!(item.clone(), ...Rest::clone_var_ref(rest))
     }
 }
 #[sealed]
-impl<Item, Rest> CloneRefVariadic for (&mut Item, Rest)
-where
-    Item: Clone,
-    Rest: CloneRefVariadic,
-{
-    fn clone_var(&self) -> Self::UnRefVar {
-        let var_args!(item, ...rest) = self;
-        var_expr!((*item).clone(), ...rest.clone_var())
-    }
-}
-#[sealed]
-impl CloneRefVariadic for () {
-    fn clone_var(&self) -> Self::UnRefVar {}
+impl CloneVariadic for () {
+    fn clone_var_ref(_this: Self::AsRefVar<'_>) -> Self {}
 }
 
 /// A variadic where all item implement `PartialEq`.

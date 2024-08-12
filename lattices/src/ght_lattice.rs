@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use variadics::{var_expr, var_type, CloneRefVariadic, EitherRefVariadic, SplitBySuffix, VariadicExt};
+use variadics::{var_expr, var_type, CloneVariadic, EitherRefVariadic, SplitBySuffix, VariadicExt};
 
 use crate::ght::{GeneralizedHashTrie, GeneralizedHashTrieNode, GhtInner, GhtLeaf, GHT};
 use crate::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
@@ -317,8 +317,8 @@ where
     GhtA: GeneralizedHashTrieNode,
     GhtB: GeneralizedHashTrieNode,
     GhtOut: FromIterator<var_type!(...GhtA::Schema, ...GhtB::Schema)>,
-    <GhtA::Schema as VariadicExt>::AsRefVar<'a>: CloneRefVariadic,
-    <GhtB::Schema as VariadicExt>::AsRefVar<'b>: CloneRefVariadic,
+    GhtA::Schema: CloneVariadic,
+    GhtB::Schema: CloneVariadic,
 {
     type Output = GhtOut;
 
@@ -326,7 +326,7 @@ where
         ght_a.recursive_iter().flat_map(|a| {
             ght_b
                 .recursive_iter()
-                .map(move |b| var_expr!(...CloneRefVariadic::clone_var(&a), ...CloneRefVariadic::clone_var(&b)))
+                .map(move |b| var_expr!(...<GhtA::Schema as CloneVariadic>::clone_var_ref(a), ...<GhtB::Schema as CloneVariadic>::clone_var_ref(b)))
         }).collect()
     }
 }
@@ -348,32 +348,38 @@ impl<'a, 'b, GhtA, GhtB, GhtOut> LatticeBimorphism<&'a GhtA, &'b GhtB>
 where
     GhtA: GeneralizedHashTrieNode,
     GhtB: GeneralizedHashTrieNode,
-    GhtOut: FromIterator<var_type!(...GhtA::Schema, ...GhtB::SuffixSchema)> +
-        // + FromIterator<<<<GhtA as GeneralizedHashTrieNode>::Schema as EitherRefVariadic>::UnRefVar as VariadicExt>::Extend<<<GhtB as GeneralizedHashTrieNode>::SuffixSchema as EitherRefVariadic>::UnRefVar>>,
-        //    + FromIterator<<<GhtA as GeneralizedHashTrieNode>::Schema as VariadicExt>::Extend<<GhtB as GeneralizedHashTrieNode>::SuffixSchema>>,
-        FromIterator<<<GhtA as GeneralizedHashTrieNode>::Schema as VariadicExt>::Extend<<<GhtB as GeneralizedHashTrieNode>::SuffixSchema as EitherRefVariadic>::UnRefVar>>,
-    <GhtA::Schema as VariadicExt>::AsRefVar<'a>: CloneRefVariadic, // + Eq + Hash,
-    <GhtB::Schema as VariadicExt>::AsRefVar<'b>: Eq + Hash + SplitBySuffix<GhtB::SuffixSchema>,
-    <GhtB::SuffixSchema as VariadicExt>::AsRefVar<'b>: Eq + Hash + CloneRefVariadic,
+    GhtOut: FromIterator<var_type!(...GhtA::Schema, ...GhtB::SuffixSchema)>,
+    GhtA::Schema: Eq + Hash + CloneVariadic, // + SplitBySuffix<GhtA::SuffixSchema>,
+    // GhtA::SuffixSchema: CloneVariadic,
+    GhtB::Schema: Eq + Hash + SplitBySuffix<GhtB::SuffixSchema>,
+    GhtB::SuffixSchema: CloneVariadic,
+    // <GhtB::SuffixSchema as VariadicExt>::AsRefVar<'b>: Eq + Hash,
+    // + CloneRefVariadic,
+    //
+    // + FromIterator<<<<GhtA as GeneralizedHashTrieNode>::Schema as EitherRefVariadic>::UnRefVar as VariadicExt>::Extend<<<GhtB as GeneralizedHashTrieNode>::SuffixSchema as EitherRefVariadic>::UnRefVar>>,
+    //    + FromIterator<<<GhtA as GeneralizedHashTrieNode>::Schema as VariadicExt>::Extend<<GhtB as GeneralizedHashTrieNode>::SuffixSchema>>,
+    // FromIterator<
+    //     <<GhtA as GeneralizedHashTrieNode>::Schema as VariadicExt>::Extend<<GhtB as GeneralizedHashTrieNode>::SuffixSchema>>,
+    // <GhtA::Schema as VariadicExt>::AsRefVar<'a>: CloneRefVariadic, // + Eq + Hash,
+    // <GhtB::Schema as VariadicExt>::AsRefVar<'b>: Eq + Hash + SplitBySuffix<GhtB::SuffixSchema>,
+    // <GhtB::SuffixSchema as VariadicExt>::AsRefVar<'b>: Eq + Hash + CloneRefVariadic,
     // <GhtA::SuffixSchema as VariadicExt>::AsRefVar<'a>: CloneRefVariadic,
     //  GhtB::SuffixSchema: CloneRefVariadic,
     // <GhtA as GeneralizedHashTrieNode>::SuffixSchema: EitherRefVariadic + CloneRefVariadic,
     // <GhtA as GeneralizedHashTrieNode>::Schema: EitherRefVariadic,
-    <GhtB as GeneralizedHashTrieNode>::SuffixSchema: CloneRefVariadic,
 {
     type Output = GhtOut;
 
-    fn call(&mut self, ght_a: &'a GhtA, ght_b: &'b GhtB) -> Self::Output
-    {
+    fn call(&mut self, ght_a: &'a GhtA, ght_b: &'b GhtB) -> Self::Output {
         ght_a.recursive_iter().flat_map(|a| {
-            // let (prefix_a, suffix_a) 
-            //     = <<GhtA::Schema as VariadicExt>::AsRefVar<'a> as SplitBySuffix<GhtA::SuffixSchema>>::split_by_suffix(a);
+            // let (_prefix_a, suffix_a)
+            //     = <GhtA::Schema as SplitBySuffix<GhtA::SuffixSchema>>::split_by_suffix_ref(a);
             ght_b
                 .recursive_iter()
                 .map(move |b| {
-                    let (_prefix_b, suffix_b) 
-                        = <<GhtB::Schema as VariadicExt>::AsRefVar<'b> as SplitBySuffix<GhtB::SuffixSchema>>::split_by_suffix(b);
-                    var_expr!(...CloneRefVariadic::clone_var(&a), ...CloneRefVariadic::clone_var(&suffix_b))
+                    let (_prefix_b, suffix_b)
+                        = <GhtB::Schema as SplitBySuffix<GhtB::SuffixSchema>>::split_by_suffix_ref(b);
+                    var_expr!(...<GhtA::Schema as CloneVariadic>::clone_var_ref(a), ...<GhtB::SuffixSchema as CloneVariadic>::clone_var_ref(suffix_b))
                 }
             )
         }).collect()
@@ -442,8 +448,8 @@ where
     ValFunc::Output: GeneralizedHashTrieNode,
     GhtA: GeneralizedHashTrieNode<Head = Head>,
     GhtB: GeneralizedHashTrieNode<Head = Head>,
-    <GhtA::SuffixSchema as VariadicExt>::AsRefVar<'a>: CloneRefVariadic,
-    <GhtB::SuffixSchema as VariadicExt>::AsRefVar<'b>: CloneRefVariadic,
+    <GhtA::SuffixSchema as VariadicExt>::AsRefVar<'a>: CloneVariadic,
+    <GhtB::SuffixSchema as VariadicExt>::AsRefVar<'b>: CloneVariadic,
     // <GhtA as GeneralizedHashTrieNode>::Leaf: VariadicExt,
     // <GhtB as GeneralizedHashTrieNode>::Leaf: VariadicExt,
     // <<GhtA as GeneralizedHashTrieNode>::Leaf as VariadicExt>::Extend<
@@ -498,8 +504,8 @@ where
     SuffixSchemaA: 'static + VariadicExt + Eq + Hash, // + AsRefVariadicPartialEq
     SchemaB: 'static + VariadicExt + Eq + Hash + SplitBySuffix<SuffixSchemaB>, /* + AsRefVariadicPartialEq */
     SuffixSchemaB: 'static + VariadicExt + Eq + Hash, // + AsRefVariadicPartialEq
-    for<'x> SchemaA::AsRefVar<'x>: CloneRefVariadic,
-    for<'x> SchemaB::AsRefVar<'x>: CloneRefVariadic,
+    for<'x> SchemaA::AsRefVar<'x>: CloneVariadic,
+    for<'x> SchemaB::AsRefVar<'x>: CloneVariadic,
     // for<'a, 'b> A::AsRefVar<'a>: PartialEq<A::AsRefVar<'b>>,
     // for<'a, 'b> B::AsRefVar<'a>: PartialEq<B::AsRefVar<'b>>,
     var_type!(...SchemaA, ...SuffixSchemaB): Eq + Hash,
