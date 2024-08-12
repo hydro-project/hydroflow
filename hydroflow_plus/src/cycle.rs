@@ -12,7 +12,7 @@ use crate::Stream;
 pub struct HfCycle<'a, T, W, N: Location + Clone> {
     pub(crate) ident: syn::Ident,
     pub(crate) node: N,
-    pub(crate) ir_leaves: FlowLeaves,
+    pub(crate) ir_leaves: FlowLeaves<'a>,
     pub(crate) _phantom: PhantomData<(&'a mut &'a (), T, W)>,
 }
 

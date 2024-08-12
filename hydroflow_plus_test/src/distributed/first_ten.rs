@@ -51,7 +51,7 @@ mod tests {
         let builder = hydroflow_plus::FlowBuilder::new();
         let second_node = super::first_ten_distributed(
             &builder,
-            &DeployProcessSpec::new(|| {
+            &DeployProcessSpec::new(move |deployment| {
                 deployment.add_service(
                     HydroflowCrate::new(".", localhost.clone())
                         .bin("first_ten_distributed")
@@ -60,10 +60,12 @@ mod tests {
             }),
         );
 
-        // if we drop this, we drop the references to the deployment nodes
-        let built = builder.finalize();
+        let built = builder.with_default_optimize();
 
         insta::assert_debug_snapshot!(built.ir());
+
+        // if we drop this, we drop the references to the deployment nodes
+        let _nodes = built.deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
 

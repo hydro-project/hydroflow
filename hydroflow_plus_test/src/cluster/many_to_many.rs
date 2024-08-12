@@ -46,10 +46,10 @@ mod tests {
         let builder = hydroflow_plus::FlowBuilder::new();
         let cluster = super::many_to_many(
             &builder,
-            &DeployClusterSpec::new(|| {
+            &DeployClusterSpec::new(move |deployment| {
                 (0..2)
                     .map(|_| {
-                        deployment.borrow_mut().add_service(
+                        deployment.add_service(
                             HydroflowCrate::new(".", localhost.clone())
                                 .bin("many_to_many")
                                 .profile("dev"),
@@ -58,15 +58,17 @@ mod tests {
                     .collect()
             }),
         );
+        let built = builder.with_default_optimize();
 
-        insta::assert_debug_snapshot!(builder.finalize().ir());
+        insta::assert_debug_snapshot!(built.ir());
 
         let mut deployment = deployment.into_inner();
+        let _nodes = built.deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
 
         let cluster_stdouts =
-            futures::future::join_all(cluster.members.iter().map(|node| node.stdout())).await;
+            futures::future::join_all(cluster.members().iter().map(|node| node.stdout())).await;
 
         deployment.start().await.unwrap();
 

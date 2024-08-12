@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use hydroflow_plus::lang::graph::HydroflowGraph;
 use hydroflow_plus::location::{
     Cluster, ClusterSpec, Deploy, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany,
     HfSendOneToOne, Location, ProcessSpec,
@@ -16,6 +17,7 @@ pub struct CLIRuntime {}
 
 impl<'a> Deploy<'a> for CLIRuntime {
     type ClusterId = u32;
+    type InstantiateEnv = ();
     type Process = CLIRuntimeNode<'a>;
     type Cluster = CLIRuntimeCluster<'a>;
     type Meta = ();
@@ -34,6 +36,7 @@ pub struct CLIRuntimeNode<'a> {
 impl<'a> Location for CLIRuntimeNode<'a> {
     type Port = String;
     type Meta = ();
+    type InstantiateEnv = ();
 
     fn id(&self) -> usize {
         self.id
@@ -46,6 +49,15 @@ impl<'a> Location for CLIRuntimeNode<'a> {
     }
 
     fn update_meta(&mut self, _meta: &Self::Meta) {}
+
+    fn instantiate(
+        &self,
+        _env: &mut Self::InstantiateEnv,
+        _meta: &mut Self::Meta,
+        _graph: HydroflowGraph,
+    ) {
+        panic!(".deploy() cannot be called on a CLIRuntimeNode");
+    }
 }
 
 #[derive(Clone)]
@@ -58,6 +70,7 @@ pub struct CLIRuntimeCluster<'a> {
 impl<'a> Location for CLIRuntimeCluster<'a> {
     type Port = String;
     type Meta = ();
+    type InstantiateEnv = ();
 
     fn id(&self) -> usize {
         self.id
@@ -70,6 +83,15 @@ impl<'a> Location for CLIRuntimeCluster<'a> {
     }
 
     fn update_meta(&mut self, _meta: &Self::Meta) {}
+
+    fn instantiate(
+        &self,
+        _env: &mut Self::InstantiateEnv,
+        _meta: &mut Self::Meta,
+        _graph: HydroflowGraph,
+    ) {
+        panic!(".deploy() cannot be called on a CLIRuntimeCluster");
+    }
 }
 
 impl<'a> Cluster<'a> for CLIRuntimeCluster<'a> {
@@ -209,7 +231,7 @@ impl<'a> HfSendManyToMany<CLIRuntimeCluster<'a>, u32> for CLIRuntimeCluster<'a> 
 }
 
 impl<'cli> ProcessSpec<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<HydroflowPlusMeta>> {
-    fn build(&self, id: usize, _meta: &mut ()) -> CLIRuntimeNode<'cli> {
+    fn build(&self, id: usize) -> CLIRuntimeNode<'cli> {
         CLIRuntimeNode {
             id,
             next_port: Rc::new(RefCell::new(0)),
@@ -219,7 +241,7 @@ impl<'cli> ProcessSpec<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<Hydroflo
 }
 
 impl<'cli> ClusterSpec<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<HydroflowPlusMeta>> {
-    fn build(&self, id: usize, _meta: &mut ()) -> CLIRuntimeCluster<'cli> {
+    fn build(&self, id: usize) -> CLIRuntimeCluster<'cli> {
         CLIRuntimeCluster {
             id,
             next_port: Rc::new(RefCell::new(0)),
