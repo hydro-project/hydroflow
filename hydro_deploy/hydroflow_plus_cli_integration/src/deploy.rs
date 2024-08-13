@@ -8,7 +8,7 @@ use hydro_deploy::hydroflow_crate::ports::{
     DemuxSink, HydroflowSink, HydroflowSource, TaggedSource,
 };
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
-use hydro_deploy::{Deployment, Host};
+use hydro_deploy::{Deployment, Host, HydroflowCrate};
 use hydroflow_plus::lang::graph::HydroflowGraph;
 use hydroflow_plus::location::{
     Cluster, ClusterSpec, Deploy, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany,
@@ -70,7 +70,7 @@ pub trait DeployCrateWrapper {
 pub struct DeployNode {
     id: usize,
     next_port: Rc<RefCell<usize>>,
-    node_fn: Rc<CrateBuilder<'static>>,
+    node_fn: Rc<RefCell<Option<HydroflowCrate>>>,
     underlying: Rc<RefCell<Option<Arc<RwLock<HydroflowCrateService>>>>>,
 }
 
@@ -145,7 +145,8 @@ impl Location for DeployNode {
         _meta: &mut Self::Meta,
         _graph: HydroflowGraph,
     ) {
-        *self.underlying.borrow_mut() = Some((self.node_fn.as_ref())(env));
+        *self.underlying.borrow_mut() =
+            Some(env.add_service(self.node_fn.borrow_mut().take().unwrap()));
     }
 }
 
@@ -160,13 +161,11 @@ impl DeployCrateWrapper for DeployClusterNode {
     }
 }
 
-type CreateClusterFn = dyn Fn(&mut Deployment) -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'static;
-
 #[derive(Clone)]
 pub struct DeployCluster {
     id: usize,
     next_port: Rc<RefCell<usize>>,
-    cluster_fn: Rc<RefCell<Box<CreateClusterFn>>>,
+    cluster_fn: Rc<RefCell<Option<Vec<HydroflowCrate>>>>,
     members: Rc<RefCell<Vec<DeployClusterNode>>>,
 }
 
@@ -197,11 +196,18 @@ impl Location for DeployCluster {
 
     fn instantiate(
         &self,
-        _env: &mut Self::InstantiateEnv,
+        env: &mut Self::InstantiateEnv,
         meta: &mut Self::Meta,
         _graph: HydroflowGraph,
     ) {
-        let cluster_nodes = (self.cluster_fn.borrow_mut())(_env);
+        let cluster_nodes = self
+            .cluster_fn
+            .borrow_mut()
+            .take()
+            .unwrap()
+            .into_iter()
+            .map(|c| env.add_service(c))
+            .collect::<Vec<_>>();
         meta.insert(self.id, (0..(cluster_nodes.len() as u32)).collect());
         *self.members.borrow_mut() = cluster_nodes
             .into_iter()
@@ -404,15 +410,11 @@ impl HfSendManyToMany<DeployCluster, u32> for DeployCluster {
     }
 }
 
-type CrateBuilder<'a> = dyn Fn(&mut Deployment) -> Arc<RwLock<HydroflowCrateService>> + 'a;
-
-pub struct DeployProcessSpec(Rc<CrateBuilder<'static>>);
+pub struct DeployProcessSpec(HydroflowCrate);
 
 impl DeployProcessSpec {
-    pub fn new<F: Fn(&mut Deployment) -> Arc<RwLock<HydroflowCrateService>> + 'static>(
-        f: F,
-    ) -> Self {
-        Self(Rc::new(f))
+    pub fn new(t: HydroflowCrate) -> Self {
+        Self(t)
     }
 }
 
@@ -421,21 +423,17 @@ impl<'a> ProcessSpec<'a, HydroDeploy> for DeployProcessSpec {
         DeployNode {
             id,
             next_port: Rc::new(RefCell::new(0)),
-            node_fn: self.0.clone(),
+            node_fn: Rc::new(RefCell::new(Some(self.0.clone()))),
             underlying: Rc::new(RefCell::new(None)),
         }
     }
 }
 
-type ClusterSpecFn = dyn Fn(&mut Deployment) -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'static;
-
-pub struct DeployClusterSpec(Rc<RefCell<Box<ClusterSpecFn>>>);
+pub struct DeployClusterSpec(Vec<HydroflowCrate>);
 
 impl DeployClusterSpec {
-    pub fn new<F: Fn(&mut Deployment) -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'static>(
-        f: F,
-    ) -> Self {
-        Self(Rc::new(RefCell::new(Box::new(f))))
+    pub fn new(crates: Vec<HydroflowCrate>) -> Self {
+        Self(crates)
     }
 }
 
@@ -444,7 +442,7 @@ impl<'a> ClusterSpec<'a, HydroDeploy> for DeployClusterSpec {
         DeployCluster {
             id,
             next_port: Rc::new(RefCell::new(0)),
-            cluster_fn: self.0.clone(),
+            cluster_fn: Rc::new(RefCell::new(Some(self.0.clone()))),
             members: Rc::new(RefCell::new(vec![])),
         }
     }

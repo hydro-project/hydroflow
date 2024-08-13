@@ -44,14 +44,12 @@ mod tests {
         let builder = hydroflow_plus::FlowBuilder::new();
         let cluster = super::many_to_many(
             &builder,
-            &DeployClusterSpec::new(move |deployment| {
+            &DeployClusterSpec::new({
                 (0..2)
                     .map(|_| {
-                        deployment.add_service(
-                            HydroflowCrate::new(".", localhost.clone())
-                                .bin("many_to_many")
-                                .profile("dev"),
-                        )
+                        HydroflowCrate::new(".", localhost.clone())
+                            .bin("many_to_many")
+                            .profile("dev")
                     })
                     .collect()
             }),
