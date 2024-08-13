@@ -384,6 +384,23 @@ impl EitherRefVariadic for () {
     fn unref_ref(&self) -> <Self::UnRefVar as VariadicExt>::AsRefVar<'_> {}
 }
 
+#[sealed]
+pub trait RefVariadicLt<'a>: EitherRefVariadic
+where
+    Self: 'a + EitherRefVariadic,
+    <Self as EitherRefVariadic>::UnRefVar: VariadicExt<AsRefVar<'a> = Self>,
+{
+}
+#[sealed]
+impl<'a, Item, Rest> RefVariadicLt<'a> for (&'a Item, Rest)
+where
+    Rest: RefVariadicLt<'a>,
+    <Rest as EitherRefVariadic>::UnRefVar: VariadicExt<AsRefVar<'a> = Rest>,
+{
+}
+#[sealed]
+impl<'a> RefVariadicLt<'a> for () {}
+
 /// A variadic where each item is a shared reference `&item`.
 ///
 /// This can be created using [`VariadicExt::as_ref_var`]:
