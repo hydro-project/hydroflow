@@ -53,26 +53,21 @@ mod tests {
     async fn simple_cluster() {
         let mut deployment = Deployment::new();
         let localhost = deployment.Localhost();
-        let localhost_clone = localhost.clone();
 
         let builder = hydroflow_plus::FlowBuilder::new();
         let (node, cluster) = super::simple_cluster(
             &builder,
-            &DeployProcessSpec::new(move |deployment| {
-                deployment.add_service(
-                    HydroflowCrate::new(".", localhost.clone())
-                        .bin("simple_cluster")
-                        .profile("dev"),
-                )
+            &DeployProcessSpec::new({
+                HydroflowCrate::new(".", localhost.clone())
+                    .bin("simple_cluster")
+                    .profile("dev")
             }),
-            &DeployClusterSpec::new(move |deployment| {
+            &DeployClusterSpec::new({
                 (0..2)
                     .map(|_| {
-                        deployment.add_service(
-                            HydroflowCrate::new(".", localhost_clone.clone())
-                                .bin("simple_cluster")
-                                .profile("dev"),
-                        )
+                        HydroflowCrate::new(".", localhost.clone())
+                            .bin("simple_cluster")
+                            .profile("dev")
                     })
                     .collect()
             }),

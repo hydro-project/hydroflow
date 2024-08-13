@@ -51,12 +51,10 @@ mod tests {
         let builder = hydroflow_plus::FlowBuilder::new();
         let second_node = super::first_ten_distributed(
             &builder,
-            &DeployProcessSpec::new(move |deployment| {
-                deployment.add_service(
-                    HydroflowCrate::new(".", localhost.clone())
-                        .bin("first_ten_distributed")
-                        .profile("dev"),
-                )
+            &DeployProcessSpec::new({
+                HydroflowCrate::new(".", localhost.clone())
+                    .bin("first_ten_distributed")
+                    .profile("dev")
             }),
         );
 
