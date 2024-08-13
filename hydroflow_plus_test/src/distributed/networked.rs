@@ -71,30 +71,36 @@ mod tests {
     async fn networked_basic() {
         let mut deployment = Deployment::new();
         let localhost = deployment.Localhost();
+        let localhost_clone = localhost.clone();
+        let localhost_clone_2 = localhost.clone();
 
         let builder = hydroflow_plus::FlowBuilder::new();
         let deployment = RefCell::new(deployment);
         let io = super::networked_basic(
             &builder,
-            &DeployProcessSpec::new(|| {
-                deployment.borrow_mut().add_service(
-                    HydroflowCrate::new(".", localhost.clone())
+            &DeployProcessSpec::new(move |deployment| {
+                deployment.add_service(
+                    HydroflowCrate::new(".", localhost_clone.clone())
                         .bin("networked_basic")
                         .profile("dev"),
                 )
             }),
-            &DeployClusterSpec::new(|| {
-                vec![deployment.borrow_mut().add_service(
-                    HydroflowCrate::new(".", localhost.clone())
+            &DeployClusterSpec::new(move |deployment| {
+                vec![deployment.add_service(
+                    HydroflowCrate::new(".", localhost_clone_2.clone())
                         .bin("networked_basic")
                         .profile("dev"),
                 )]
             }),
         );
 
-        insta::assert_debug_snapshot!(builder.finalize().ir());
+        let built = builder.with_default_optimize();
+        insta::assert_debug_snapshot!(built.ir());
 
         let mut deployment = deployment.into_inner();
+
+        // if we drop this, we drop the references to the deployment nodes
+        let _nodes = built.deploy(&mut deployment);
 
         let port_to_zero = io
             .source_zero_port
@@ -112,7 +118,7 @@ mod tests {
         let mut node_one_stdout = io.process_one.stdout().await;
 
         let mut conn_to_cluster = ports_to_cluster[0].connect().await.into_sink();
-        let mut cluster_stdout = io.cluster.members[0].stdout().await;
+        let mut cluster_stdout = io.cluster.members()[0].stdout().await;
 
         deployment.start().await.unwrap();
 
