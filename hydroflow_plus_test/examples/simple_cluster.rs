@@ -39,26 +39,32 @@ async fn main() {
     };
 
     let builder = hydroflow_plus::FlowBuilder::new();
-    hydroflow_plus_test::cluster::simple_cluster::simple_cluster(
-        &builder,
-        DeployProcessSpec::new({
-            let host = create_host(&mut deployment);
-            HydroflowCrate::new(".", host)
-                .bin("simple_cluster")
-                .profile(profile)
-        }),
-        DeployClusterSpec::new({
-            (0..2)
-                .map(|_| {
-                    let host = create_host(&mut deployment);
-                    HydroflowCrate::new(".", host)
-                        .bin("simple_cluster")
-                        .profile(profile)
-                })
-                .collect()
-        }),
-    );
+    let (process, cluster) = hydroflow_plus_test::cluster::simple_cluster::simple_cluster(&builder);
 
-    let _nodes = builder.with_default_optimize().deploy(&mut deployment);
+    let _nodes = builder
+        .with_default_optimize()
+        .with_process(
+            &process,
+            DeployProcessSpec::new({
+                let host = create_host(&mut deployment);
+                HydroflowCrate::new(".", host)
+                    .bin("simple_cluster")
+                    .profile(profile)
+            }),
+        )
+        .with_cluster(
+            &cluster,
+            DeployClusterSpec::new({
+                (0..2)
+                    .map(|_| {
+                        let host = create_host(&mut deployment);
+                        HydroflowCrate::new(".", host)
+                            .bin("simple_cluster")
+                            .profile(profile)
+                    })
+                    .collect()
+            }),
+        )
+        .deploy(&mut deployment);
     deployment.run_ctrl_c().await.unwrap();
 }
