@@ -9,7 +9,7 @@ pub fn count_elems<'a, T: 'a>(
     input_stream: RuntimeData<UnboundedReceiverStream<T>>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let process = flow.process(&());
+    let process = flow.process(());
 
     let source = flow.source_stream(&process, input_stream);
     let count = source

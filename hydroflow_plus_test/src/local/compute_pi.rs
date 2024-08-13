@@ -5,7 +5,7 @@ use stageleft::*;
 
 pub fn compute_pi<'a, D: LocalDeploy<'a>>(
     flow: &FlowBuilder<'a, D>,
-    process_spec: &impl ProcessSpec<'a, D>,
+    process_spec: impl ProcessSpec<'a, D>,
     batch_size: RuntimeData<&'a usize>,
 ) -> D::Process {
     let process = flow.process(process_spec);
@@ -48,6 +48,6 @@ pub fn compute_pi_runtime<'a>(
     flow: FlowBuilder<'a, SingleProcessGraph>,
     batch_size: RuntimeData<&'a usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = compute_pi(&flow, &(), batch_size);
+    let _ = compute_pi(&flow, (), batch_size);
     flow.with_default_optimize().compile()
 }

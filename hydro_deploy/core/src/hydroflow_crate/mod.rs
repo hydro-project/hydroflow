@@ -14,7 +14,7 @@ pub use service::*;
 
 pub mod perf_options;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum CrateTarget {
     Default,
     Bin(String),
@@ -23,6 +23,7 @@ pub enum CrateTarget {
 
 /// Specifies a crate that uses `hydroflow_cli_integration` to be
 /// deployed as a service.
+#[derive(Clone)]
 pub struct HydroflowCrate {
     src: PathBuf,
     target: CrateTarget,

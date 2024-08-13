@@ -14,7 +14,7 @@ impl<'a> LocalDeploy<'a> for SingleProcessGraph {
 }
 
 impl<'a> ProcessSpec<'a, SingleProcessGraph> for () {
-    fn build(&self, _id: usize) -> SingleNode {
+    fn build(self, _id: usize) -> SingleNode {
         SingleNode {}
     }
 }
@@ -73,7 +73,7 @@ impl<'a> LocalDeploy<'a> for MultiGraph {
 }
 
 impl<'a> ProcessSpec<'a, MultiGraph> for () {
-    fn build(&self, id: usize) -> MultiNode {
+    fn build(self, id: usize) -> MultiNode {
         MultiNode { id }
     }
 }
