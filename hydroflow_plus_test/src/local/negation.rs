@@ -9,7 +9,7 @@ pub fn test_difference<'a>(
     persist1: bool,
     persist2: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let process = flow.process(&());
+    let process = flow.process(());
 
     let mut source = flow.source_iter(&process, q!(0..5));
     if persist1 {
@@ -35,7 +35,7 @@ pub fn test_anti_join<'a>(
     persist1: bool,
     persist2: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let process = flow.process(&());
+    let process = flow.process(());
 
     let mut source = flow.source_iter(&process, q!(0..5)).map(q!(|v| (v, v)));
     if persist1 {

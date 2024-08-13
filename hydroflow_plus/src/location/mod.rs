@@ -62,11 +62,11 @@ impl<
 }
 
 pub trait ProcessSpec<'a, D: LocalDeploy<'a> + ?Sized> {
-    fn build(&self, id: usize) -> D::Process;
+    fn build(self, id: usize) -> D::Process;
 }
 
 pub trait ClusterSpec<'a, D: LocalDeploy<'a> + ?Sized> {
-    fn build(&self, id: usize) -> D::Cluster;
+    fn build(self, id: usize) -> D::Cluster;
 }
 
 pub trait Location: DynClone {

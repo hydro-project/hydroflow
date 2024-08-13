@@ -10,7 +10,7 @@ pub fn graph_reachability<'a>(
     edges: RuntimeData<UnboundedReceiverStream<(u32, u32)>>,
     reached_out: RuntimeData<&'a UnboundedSender<u32>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let process = flow.process(&());
+    let process = flow.process(());
 
     let roots = flow.source_stream(&process, roots);
     let edges = flow.source_stream(&process, edges);

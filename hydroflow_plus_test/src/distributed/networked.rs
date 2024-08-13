@@ -15,10 +15,10 @@ pub struct NetworkedBasicIo<'a, D: Deploy<'a>> {
 
 pub fn networked_basic<'a, D: Deploy<'a>>(
     flow: &FlowBuilder<'a, D>,
-    process_spec: &impl ProcessSpec<'a, D>,
-    cluster_spec: &impl ClusterSpec<'a, D>,
+    process_spec: impl ProcessSpec<'a, D> + Clone,
+    cluster_spec: impl ClusterSpec<'a, D>,
 ) -> NetworkedBasicIo<'a, D> {
-    let process_zero = flow.process(process_spec);
+    let process_zero = flow.process(process_spec.clone());
     let process_one = flow.process(process_spec);
 
     let (source_zero_port, source_zero) = flow.source_external(&process_zero);
@@ -58,8 +58,6 @@ pub fn networked_basic_runtime<'a>(
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use std::cell::RefCell;
-
     use hydro_deploy::{Deployment, HydroflowCrate};
     use hydroflow_plus::futures::SinkExt;
     use hydroflow_plus::util::cli::ConnectedSink;
@@ -71,33 +69,24 @@ mod tests {
     async fn networked_basic() {
         let mut deployment = Deployment::new();
         let localhost = deployment.Localhost();
-        let localhost_clone = localhost.clone();
-        let localhost_clone_2 = localhost.clone();
 
         let builder = hydroflow_plus::FlowBuilder::new();
-        let deployment = RefCell::new(deployment);
         let io = super::networked_basic(
             &builder,
-            &DeployProcessSpec::new(move |deployment| {
-                deployment.add_service(
-                    HydroflowCrate::new(".", localhost_clone.clone())
-                        .bin("networked_basic")
-                        .profile("dev"),
-                )
+            DeployProcessSpec::new({
+                HydroflowCrate::new(".", localhost.clone())
+                    .bin("networked_basic")
+                    .profile("dev")
             }),
-            &DeployClusterSpec::new(move |deployment| {
-                vec![deployment.add_service(
-                    HydroflowCrate::new(".", localhost_clone_2.clone())
-                        .bin("networked_basic")
-                        .profile("dev"),
-                )]
+            DeployClusterSpec::new({
+                vec![HydroflowCrate::new(".", localhost.clone())
+                    .bin("networked_basic")
+                    .profile("dev")]
             }),
         );
 
         let built = builder.with_default_optimize();
         insta::assert_debug_snapshot!(built.ir());
-
-        let mut deployment = deployment.into_inner();
 
         // if we drop this, we drop the references to the deployment nodes
         let _nodes = built.deploy(&mut deployment);
