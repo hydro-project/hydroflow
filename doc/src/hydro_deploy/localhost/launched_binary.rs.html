@@ -131,6 +131,7 @@
 <a href="#131" id="131">131</a>
 <a href="#132" id="132">132</a>
 <a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
 </pre></div><pre class="rust"><code><span class="attr">#[cfg(unix)]
 </span><span class="kw">use </span>std::os::unix::process::ExitStatusExt;
 <span class="kw">use </span>std::process::ExitStatus;
@@ -142,6 +143,7 @@
 <span class="kw">use </span>futures::{AsyncBufReadExt, AsyncWriteExt};
 <span class="kw">use </span>tokio::sync::{mpsc, oneshot};
 
+<span class="kw">use </span><span class="kw">crate</span>::progress::ProgressTracker;
 <span class="kw">use </span><span class="kw">crate</span>::util::prioritized_broadcast;
 <span class="kw">use </span><span class="kw">crate</span>::LaunchedBinary;
 
@@ -167,7 +169,7 @@
             nix::unistd::Pid::from_raw(pid <span class="kw">as </span>i32),
             nix::sys::signal::SIGTERM,
         ) {
-            <span class="macro">eprintln!</span>(<span class="string">"Failed to SIGTERM process {}: {}"</span>, pid, e);
+            ProgressTracker::println(<span class="macro">format!</span>(<span class="string">"Failed to SIGTERM process {}: {}"</span>, pid, e));
         }
     }
 }
@@ -189,11 +191,11 @@
         <span class="kw">let </span>id_clone = id.clone();
         <span class="kw">let </span>(stdout_cli_receivers, stdout_receivers) = prioritized_broadcast(
             BufReader::new(child.stdout.take().unwrap()).lines(),
-            <span class="kw">move </span>|s| <span class="macro">println!</span>(<span class="string">"[{id_clone}] {s}"</span>),
+            <span class="kw">move </span>|s| ProgressTracker::println(<span class="macro">format!</span>(<span class="string">"[{id_clone}] {s}"</span>)),
         );
         <span class="kw">let </span>(<span class="kw">_</span>, stderr_receivers) = prioritized_broadcast(
             BufReader::new(child.stderr.take().unwrap()).lines(),
-            <span class="kw">move </span>|s| <span class="macro">eprintln!</span>(<span class="string">"[{id}] {s}"</span>),
+            <span class="kw">move </span>|s| ProgressTracker::println(<span class="macro">format!</span>(<span class="string">"[{id} stderr] {s}"</span>)),
         );
 
         <span class="self">Self </span>{

@@ -627,7 +627,7 @@
         <span class="kw">let </span>stderr_loop = tokio::task::spawn_blocking(<span class="kw">move </span>|| {
             <span class="kw">let </span><span class="kw-2">mut </span>lines = BufReader::new(stderr).lines();
             <span class="kw">while let </span><span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(line)) = lines.next() {
-                ProgressTracker::println(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"[terraform] {}"</span>, line));
+                ProgressTracker::println(<span class="macro">format!</span>(<span class="string">"[terraform] {}"</span>, line));
             }
         });
 

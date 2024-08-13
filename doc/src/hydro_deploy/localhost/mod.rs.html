@@ -196,6 +196,7 @@
 <a href="#196" id="196">196</a>
 <a href="#197" id="197">197</a>
 <a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::sync::Arc;
@@ -211,6 +212,7 @@
 };
 <span class="kw">use </span><span class="kw">crate</span>::hydroflow_crate::build::BuildOutput;
 <span class="kw">use </span><span class="kw">crate</span>::hydroflow_crate::perf_options::PerfOptions;
+<span class="kw">use </span><span class="kw">crate</span>::progress::ProgressTracker;
 <span class="kw">use </span><span class="kw">crate</span>::HostStrategyGetter;
 
 <span class="kw">pub mod </span>launched_binary;
@@ -351,7 +353,7 @@
         perf: <span class="prelude-ty">Option</span>&lt;PerfOptions&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>command = <span class="kw">if let </span><span class="prelude-val">Some</span>(perf) = perf {
-            <span class="macro">println!</span>(<span class="string">"Profiling binary with perf"</span>);
+            ProgressTracker::println(<span class="macro">format!</span>(<span class="string">"[{id}] Profiling binary with perf"</span>));
             <span class="kw">let </span><span class="kw-2">mut </span>tmp = Command::new(<span class="string">"perf"</span>);
             tmp.args([
                 <span class="string">"record"</span>,

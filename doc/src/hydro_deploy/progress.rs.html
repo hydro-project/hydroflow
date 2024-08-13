@@ -548,14 +548,14 @@
 }
 
 <span class="kw">impl </span>ProgressTracker {
-    <span class="kw">pub fn </span>println(msg: <span class="kw-2">&amp;</span>str) {
+    <span class="kw">pub fn </span>println(msg: <span class="kw">impl </span>AsRef&lt;str&gt;) {
         <span class="kw">let </span>progress_bar = PROGRESS_TRACKER
             .get_or_init(|| Mutex::new(ProgressTracker::new()))
             .lock()
             .unwrap();
 
-        <span class="kw">if </span>progress_bar.multi_progress.println(msg).is_err() {
-            <span class="macro">println!</span>(<span class="string">"{}"</span>, msg);
+        <span class="kw">if </span>progress_bar.multi_progress.println(msg.as_ref()).is_err() {
+            <span class="macro">println!</span>(<span class="string">"{}"</span>, msg.as_ref());
         }
     }
 
