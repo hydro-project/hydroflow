@@ -59,8 +59,8 @@ pub fn compute_pi_runtime<'a>(
     batch_size: RuntimeData<&'a usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = compute_pi(&flow, &cli, &cli, batch_size);
-    flow.extract()
-        .optimize_default()
+    flow.with_default_optimize()
+        .compile()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
@@ -74,9 +74,8 @@ pub fn cardinality_compute_pi_runtime<'a>(
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = compute_pi(&flow, &cli, &cli, batch_size);
     let runtime_context = flow.runtime_context();
-    flow.extract()
-        .optimize_with(|ir| profiling(ir, runtime_context, counters, counter_queue))
-        .no_optimize()
+    flow.optimize_with(|ir| profiling(ir, runtime_context, counters, counter_queue))
+        .compile()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
@@ -94,11 +93,11 @@ mod tests {
             &RuntimeData::new("FAKE"),
             RuntimeData::new("FAKE"),
         );
-        let built = builder.extract();
+        let built = builder.finalize();
 
         insta::assert_debug_snapshot!(built.ir());
 
-        for (id, ir) in built.optimize_default().hydroflow_ir() {
+        for (id, ir) in built.with_default_optimize().compile().hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(ir.surface_syntax_string());
             });
