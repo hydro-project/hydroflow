@@ -1,13 +1,9 @@
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn simple_cluster<'a, D: Deploy<'a, ClusterId = u32>>(
-    flow: &FlowBuilder<'a, D>,
-    process_spec: impl ProcessSpec<'a, D>,
-    cluster_spec: impl ClusterSpec<'a, D>,
-) -> (D::Process, D::Cluster) {
-    let process = flow.process(process_spec);
-    let cluster = flow.cluster(cluster_spec);
+pub fn simple_cluster<'a>(flow: &FlowBuilder<'a>) -> (Process<()>, Cluster<'a, ()>) {
+    let process = flow.process();
+    let cluster = flow.cluster();
 
     let numbers = flow.source_iter(&process, q!(0..5));
     let ids = flow.source_iter(&process, cluster.ids()).map(q!(|&id| id));
@@ -32,12 +28,12 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn simple_cluster_runtime<'a>(
-    flow: FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = simple_cluster(&flow, &cli, &cli);
+    let _ = simple_cluster(&flow);
     flow.with_default_optimize()
-        .compile()
+        .compile::<CLIRuntime>(&cli)
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
@@ -55,34 +51,45 @@ mod tests {
         let localhost = deployment.Localhost();
 
         let builder = hydroflow_plus::FlowBuilder::new();
-        let (node, cluster) = super::simple_cluster(
-            &builder,
-            DeployProcessSpec::new({
-                HydroflowCrate::new(".", localhost.clone())
-                    .bin("simple_cluster")
-                    .profile("dev")
-            }),
-            DeployClusterSpec::new({
-                (0..2)
-                    .map(|_| {
-                        HydroflowCrate::new(".", localhost.clone())
-                            .bin("simple_cluster")
-                            .profile("dev")
-                    })
-                    .collect()
-            }),
-        );
+        let (node, cluster) = super::simple_cluster(&builder);
         let built = builder.with_default_optimize();
 
         insta::assert_debug_snapshot!(built.ir());
 
-        let _nodes = built.deploy(&mut deployment);
+        let nodes = built
+            .with_process(
+                &node,
+                DeployProcessSpec::new({
+                    HydroflowCrate::new(".", localhost.clone())
+                        .bin("simple_cluster")
+                        .profile("dev")
+                }),
+            )
+            .with_cluster(
+                &cluster,
+                DeployClusterSpec::new({
+                    (0..2)
+                        .map(|_| {
+                            HydroflowCrate::new(".", localhost.clone())
+                                .bin("simple_cluster")
+                                .profile("dev")
+                        })
+                        .collect()
+                }),
+            )
+            .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
 
-        let mut node_stdout = node.stdout().await;
-        let cluster_stdouts =
-            futures::future::join_all(cluster.members().iter().map(|node| node.stdout())).await;
+        let mut node_stdout = nodes.get_process(node).stdout().await;
+        let cluster_stdouts = futures::future::join_all(
+            nodes
+                .get_cluster(cluster)
+                .members()
+                .iter()
+                .map(|node| node.stdout()),
+        )
+        .await;
 
         deployment.start().await.unwrap();
 
