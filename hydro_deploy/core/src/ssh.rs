@@ -121,7 +121,7 @@ impl LaunchedBinary for LaunchedSshBinary {
                     async move {
                         // Log stderr.
                         while let Some(Ok(s)) = stderr_lines.next().await {
-                            ProgressTracker::println(&format!("[perf stderr] {s}"));
+                            ProgressTracker::println(format!("[perf stderr] {s}"));
                         }
                         Result::<_>::Ok(())
                     },
@@ -471,11 +471,11 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
         let id_clone = id.clone();
         let (stdout_cli_receivers, stdout_receivers) =
             prioritized_broadcast(FuturesBufReader::new(channel.stream(0)).lines(), move |s| {
-                ProgressTracker::println(&format!("[{id_clone}] {s}"));
+                ProgressTracker::println(format!("[{id_clone}] {s}"));
             });
         let (_, stderr_receivers) =
             prioritized_broadcast(FuturesBufReader::new(channel.stderr()).lines(), move |s| {
-                ProgressTracker::println(&format!("[{id} stderr] {s}"));
+                ProgressTracker::println(format!("[{id} stderr] {s}"));
             });
 
         Ok(Box::new(LaunchedSshBinary {
