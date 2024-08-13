@@ -6,7 +6,12 @@ expression: built.ir()
     ForEach {
         f: { use crate :: __staged :: cluster :: many_to_many :: * ; | n | println ! ("cluster received: {:?}" , n) },
         input: Network {
-            to_location: 0,
+            from_location: Cluster(
+                0,
+            ),
+            to_location: Cluster(
+                0,
+            ),
             serialize_pipeline: Some(
                 Operator(
                     Operator {
@@ -29,12 +34,14 @@ expression: built.ir()
                 ),
             ),
             input: FlatMap {
-                f: { use hydroflow_plus :: __staged :: stream :: * ; let ids = { use hydroflow_plus_cli_integration :: __staged :: deploy :: * ; panic ! () } ; | b | ids . iter () . map (move | id | (:: std :: clone :: Clone :: clone (id) , :: std :: clone :: Clone :: clone (& b))) },
+                f: { use hydroflow_plus :: __staged :: stream :: * ; let ids = __hydroflow_plus_cluster_ids_0 ; | b | ids . iter () . map (move | id | (:: std :: clone :: Clone :: clone (id) , :: std :: clone :: Clone :: clone (& b))) },
                 input: Source {
                     source: Iter(
                         { use crate :: __staged :: cluster :: many_to_many :: * ; 0 .. 2 },
                     ),
-                    location_id: 0,
+                    location_kind: Cluster(
+                        0,
+                    ),
                 },
             },
         },
