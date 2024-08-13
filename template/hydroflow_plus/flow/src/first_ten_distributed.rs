@@ -1,12 +1,14 @@
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn first_ten_distributed<'a, D: Deploy<'a>>(
-    flow: &FlowBuilder<'a, D>,
-    process_spec: impl ProcessSpec<'a, D> + Clone,
-) -> D::Process {
-    let process = flow.process(process_spec.clone());
-    let second_process = flow.process(process_spec);
+pub struct P1 {}
+pub struct P2 {}
+
+pub fn first_ten_distributed<'a>(
+    flow: &FlowBuilder<'a>,
+) -> (Process<P1>, Process<P2>) {
+    let process = flow.process::<P1>();
+    let second_process = flow.process::<P1>();
 
     let numbers = flow.source_iter(&process, q!(0..10));
     numbers
@@ -21,12 +23,12 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn first_ten_distributed_runtime<'a>(
-    flow: FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = first_ten_distributed(&flow, &cli);
+    let _ = first_ten_distributed(&flow);
     flow.with_default_optimize()
-        .compile()
+        .compile::<CLIRuntime>(&cli)
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
@@ -44,16 +46,20 @@ mod tests {
         let localhost = deployment.Localhost();
 
         let flow = hydroflow_plus::FlowBuilder::new();
-        let second_process = super::first_ten_distributed(
-            &flow,
-            DeployProcessSpec::new({
+        let (p1, p2) = super::first_ten_distributed(&flow);
+
+        let nodes = flow.with_default_optimize()
+            .with_process(p1, DeployProcessSpec::new({
                 HydroflowCrate::new(".", localhost.clone())
                     .bin("first_ten_distributed")
                     .profile("dev")
-            }),
-        );
-
-        let _nodes = flow.with_default_optimize().deploy(&mut deployment);
+            }))
+            .with_process(p2, DeployProcessSpec::new({
+                HydroflowCrate::new(".", localhost.clone())
+                    .bin("first_ten_distributed")
+                    .profile("dev")
+            }))
+            .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
 
