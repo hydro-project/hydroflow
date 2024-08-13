@@ -1116,46 +1116,46 @@ mod test {
     //     }
     // }
 
-    // #[test]
-    // fn test_build_forest() {
-    //     type MyForest = GhtForestStruct<GhtForestType!(u8, u16, u32, u64)>;
-    //     let mut forest = MyForest::default();
-    //     forest.forest.0.insert(var_expr!(1, 1, 1, 1));
-    //     forest.forest.1 .0.insert(var_expr!(2, 2, 2, 2));
-    //     forest.forest.1 .1 .0.insert(var_expr!(3, 3, 3, 3));
+    #[test]
+    fn test_build_forest() {
+        type MyForest = GhtForestStruct<GhtForestType!(u8, u16, u32, u64)>;
+        let mut forest = MyForest::default();
+        forest.forest.0.insert(var_expr!(1, 1, 1, 1));
+        forest.forest.1 .0.insert(var_expr!(2, 2, 2, 2));
+        forest.forest.1 .1 .0.insert(var_expr!(3, 3, 3, 3));
 
-    //     // let i = <MyForest as GhtForest<<var_type!(u8, u16, u32, u64) as VariadicExt>::AsRefVar<'_>>>::find_matching_trie(&forest, var_expr!(1, 1, 1, 1).as_ref_var(), 0);
-    //     assert_eq!(
-    //         // println!(
-    //         //     "found in trie {}",
-    //         forest
-    //             .find_matching_trie(var_expr!(1, 1, 1, 1).as_ref_var(), 0)
-    //             .unwrap(),
-    //         0
-    //     );
-    //     assert_eq!(
-    //         // println!(
-    //         //     "found in trie {}",
-    //         forest
-    //             .find_matching_trie(var_expr!(2, 2, 2, 2).as_ref_var(), 0)
-    //             .unwrap(),
-    //         1
-    //     );
-    //     assert_eq!(
-    //         // println!(
-    //         //     "found in trie {}",
-    //         forest
-    //             .find_matching_trie(var_expr!(3, 3, 3, 3).as_ref_var(), 0)
-    //             .unwrap(),
-    //         2
-    //     );
-    //     assert!(
-    //         // println!(
-    //         //     "found in trie {}",
-    //         forest
-    //             .find_matching_trie(var_expr!(4, 4, 4, 4).as_ref_var(), 0)
-    //             .is_none()
-    //     );
-    //     println!("{:?}", forest.forest);
-    // }
+        // let i = <MyForest as GhtForest<<var_type!(u8, u16, u32, u64) as VariadicExt>::AsRefVar<'_>>>::find_matching_trie(&forest, var_expr!(1, 1, 1, 1).as_ref_var(), 0);
+        assert_eq!(
+            // println!(
+            //     "found in trie {}",
+            forest
+                .find_matching_trie(var_expr!(1_u8, 1_u16, 1_u32, 1_u64).as_ref_var(), 0)
+                .unwrap(),
+            0
+        );
+        assert_eq!(
+            // println!(
+            //     "found in trie {}",
+            forest
+                .find_matching_trie(var_expr!(2, 2, 2, 2).as_ref_var(), 0)
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            // println!(
+            //     "found in trie {}",
+            forest
+                .find_matching_trie(var_expr!(3, 3, 3, 3).as_ref_var(), 0)
+                .unwrap(),
+            2
+        );
+        assert!(
+            // println!(
+            //     "found in trie {}",
+            forest
+                .find_matching_trie(var_expr!(4, 4, 4, 4).as_ref_var(), 0)
+                .is_none()
+        );
+        println!("{:?}", forest.forest);
+    }
 }

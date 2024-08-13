@@ -307,7 +307,7 @@ pub trait EitherRefVariadic: VariadicExt {
     /// let un_ref: <var_type!(&u32, &String, &bool) as EitherRefVariadic>::UnRefVar =
     ///     var_expr!(1_u32, "Hello".to_owned(), false);
     /// ```
-    type UnRefVar: VariadicExt;
+    type UnRefVar: for<'a> VariadicExt;
 
     /// This type with all exclusive `&mut` references replaced with shared `&` references.
     ///
@@ -329,6 +329,8 @@ pub trait EitherRefVariadic: VariadicExt {
     ///
     /// Conversion from `&` to `&mut` is generally invalid, so a `ref_to_mut()` method does not exist.
     type MutVar: MutVariadic<UnRefVar = Self::UnRefVar, MutVar = Self::MutVar>;
+
+    fn unref_ref(&self) -> <Self::UnRefVar as VariadicExt>::AsRefVar<'_>;
 }
 #[sealed]
 impl<'a, Item, Rest> EitherRefVariadic for (&'a Item, Rest)
@@ -344,6 +346,11 @@ where
     }
 
     type MutVar = (&'a mut Item, Rest::MutVar);
+
+    fn unref_ref(&self) -> <Self::UnRefVar as VariadicExt>::AsRefVar<'_> {
+        let var_args!(item, ...rest) = self;
+        var_expr!(item, ...rest.unref_ref())
+    }
 }
 #[sealed]
 impl<'a, Item, Rest> EitherRefVariadic for (&'a mut Item, Rest)
@@ -359,6 +366,11 @@ where
     }
 
     type MutVar = (&'a mut Item, Rest::MutVar);
+
+    fn unref_ref(&self) -> <Self::UnRefVar as VariadicExt>::AsRefVar<'_> {
+        let var_args!(item, ...rest) = self;
+        var_expr!(item, ...rest.unref_ref())
+    }
 }
 #[sealed]
 impl EitherRefVariadic for () {
@@ -368,6 +380,8 @@ impl EitherRefVariadic for () {
     fn mut_to_ref(self) -> Self::RefVar {}
 
     type MutVar = ();
+
+    fn unref_ref(&self) -> <Self::UnRefVar as VariadicExt>::AsRefVar<'_> {}
 }
 
 /// A variadic where each item is a shared reference `&item`.

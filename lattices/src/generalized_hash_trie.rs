@@ -98,17 +98,17 @@ where
     V: VariadicExt + AsRefVariadicPartialEq,
     Node: GeneralizedHashTrieNode,
 {
-    /// Just calls [`GeneralizedHashTrieNode::prefix_iter`].
-    pub fn prefix_iter<'a, Prefix>(
-        &'a self,
-        prefix: Prefix,
-    ) -> impl Iterator<Item = <Node::Suffix as VariadicExt>::AsRefVar<'a>>
-    where
-        Node: HtPrefixIter<Prefix>,
-        Prefix: 'a,
-    {
-        self.trie.prefix_iter(prefix)
-    }
+    // /// Just calls [`GeneralizedHashTrieNode::prefix_iter`].
+    // pub fn prefix_iter<'a, Prefix>(
+    //     &'a self,
+    //     prefix: Prefix,
+    // ) -> impl Iterator<Item = <Node::Suffix as VariadicExt>::AsRefVar<'a>>
+    // where
+    //     Node: HtPrefixIter<Prefix>,
+    //     Prefix: 'a,
+    // {
+    //     self.trie.prefix_iter(prefix)
+    // }
 }
 
 impl<K, V, Node> GeneralizedHashTrie for GHT<K, V, Node>

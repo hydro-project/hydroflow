@@ -114,7 +114,7 @@ where
     pub fn prefix_iter<'a, KeyPrefix>(
         &'a self,
         prefix: KeyPrefix,
-    ) -> impl Iterator<Item = <<TrieRoot as HtPrefixIter<KeyPrefix>>::Schema as VariadicExt>::AsRefVar<'a>>
+    ) -> impl Iterator<Item = <<TrieRoot as HtPrefixIter<KeyPrefix>>::Item as VariadicExt>::AsRefVar<'a>>
     where
         TrieRoot: HtPrefixIter<KeyPrefix>,
         KeyPrefix: 'a,
@@ -613,14 +613,14 @@ where
 /// iterators for HashTries based on a prefix search
 pub trait HtPrefixIter<KeyPrefix> {
     /// the schema output
-    type Schema: VariadicExt;
+    type Item: VariadicExt;
     /// given a prefix, return an iterator through the items below
     fn prefix_iter<'a>(
         &'a self,
         prefix: KeyPrefix,
-    ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'a>>
+    ) -> impl Iterator<Item = <Self::Item as VariadicExt>::AsRefVar<'a>>
     where
-        Self::Schema: 'a;
+        Self::Item: 'a;
 }
 
 #[sealed]
@@ -630,13 +630,13 @@ where
     Head: Eq + Hash + Clone,
     Node: GeneralizedHashTrieNode + HtPrefixIter<PrefixRest>,
 {
-    type Schema = <Node as HtPrefixIter<PrefixRest>>::Schema;
+    type Item = <Node as HtPrefixIter<PrefixRest>>::Item;
     fn prefix_iter<'a>(
         &'a self,
         prefix: var_type!(&'k Head, ...PrefixRest),
-    ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'a>>
+    ) -> impl Iterator<Item = <Self::Item as VariadicExt>::AsRefVar<'a>>
     where
-        Self::Schema: 'a,
+        Self::Item: 'a,
     {
         let var_args!(head, ...rest) = prefix;
         self.children
@@ -653,13 +653,13 @@ where
     Head: Eq + Hash + Clone,
     Node: GeneralizedHashTrieNode,
 {
-    type Schema = <Self as GeneralizedHashTrieNode>::Schema;
+    type Item = <Self as GeneralizedHashTrieNode>::Schema;
     fn prefix_iter<'a>(
         &'a self,
         _prefix: var_type!(),
-    ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'a>>
+    ) -> impl Iterator<Item = <Self::Item as VariadicExt>::AsRefVar<'a>>
     where
-        Self::Schema: 'a,
+        Self::Item: 'a,
     {
         self.recursive_iter()
     }
@@ -671,25 +671,32 @@ where
 impl<KeyPrefixRef, Schema, SuffixSchema> HtPrefixIter<KeyPrefixRef>
     for GhtLeaf<Schema, SuffixSchema>
 where
-    KeyPrefixRef: 'static + RefVariadic + PartialEqVariadic,
-    Schema: 'static + VariadicExt + Hash + Eq,
-    for<'a> Schema::AsRefVar<'a>: Split<KeyPrefixRef>,
+    KeyPrefixRef: 'static + RefVariadic,
+    Schema: 'static + VariadicExt + Hash + Eq + SplitBySuffix<SuffixSchema>,
+    SuffixSchema: VariadicExt,
+    // for<'a> SuffixSchema::AsRefVar<'a>: Split<KeyPrefixRef>,
+    SuffixSchema: Split<KeyPrefixRef::UnRefVar>,
+    KeyPrefixRef::UnRefVar: PartialEqVariadic,
 {
-    type Schema = Schema;
+    type Item = Schema;
     fn prefix_iter<'a>(
         &'a self,
         prefix: KeyPrefixRef,
-    ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'a>>
+    ) -> impl Iterator<Item = <Self::Item as VariadicExt>::AsRefVar<'a>>
     where
-        Self::Schema: 'a,
+        Self::Item: 'a,
     {
         self.elements
             .iter()
             .map(Schema::as_ref_var)
             .filter(move |&row| {
-                let (row_prefix, _row_suffix) =
-                    <Schema::AsRefVar<'_> as Split<KeyPrefixRef>>::split(row);
-                KeyPrefixRef::eq(&prefix, &row_prefix)
+                let (_row_prefix, row_mid_suffix) =
+                    <Schema as SplitBySuffix<SuffixSchema>>::split_by_suffix_ref(row);
+                let (row_mid, _row_suffix): (
+                    <KeyPrefixRef::UnRefVar as VariadicExt>::AsRefVar<'_>,
+                    _,
+                ) = <SuffixSchema as Split<KeyPrefixRef::UnRefVar>>::split_ref(row_mid_suffix);
+                <KeyPrefixRef::UnRefVar as PartialEqVariadic>::eq_ref(prefix.unref_ref(), row_mid)
             })
     }
 }

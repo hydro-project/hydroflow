@@ -405,14 +405,15 @@ where
 impl<SearchKey, TrieFirst, TrieRest> GhtForest<SearchKey, var_type!(TrieFirst, ...TrieRest)>
     for GhtForestStruct<var_type!(TrieFirst, ...TrieRest)>
 where
-    TrieFirst: GeneralizedHashTrie + HtPrefixIter<SearchKey>,
+    TrieFirst: GeneralizedHashTrie,
+    TrieFirst::Trie: HtPrefixIter<SearchKey>,
     TrieRest: VariadicExt,
     GhtForestStruct<TrieRest>: GhtForest<SearchKey, TrieRest>,
     SearchKey: VariadicExt + RefVariadic,
 {
     fn find_matching_trie<'a>(&self, search_key: SearchKey, count: usize) -> Option<usize> {
         let var_expr!(first, ...rest) = &self.forest;
-        if first.prefix_iter(search_key).next().is_some() {
+        if first.get_trie().prefix_iter(search_key).next().is_some() {
             Some(count)
         } else {
             let remainder = GhtForestStruct::<TrieRest>::ref_cast(rest);
@@ -421,7 +422,7 @@ where
     }
     fn force_and_merge<'a>(&self, search_key: SearchKey) -> bool {
         let var_expr!(first, ...rest) = &self.forest;
-        if first.prefix_iter(search_key).next().is_some() {
+        if first.get_trie().prefix_iter(search_key).next().is_some() {
             // this is the trie!
             if search_key.len() <= first.height().unwrap() {
                 // no need to force anything!
