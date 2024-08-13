@@ -46,7 +46,7 @@ mod tests {
         let flow = hydroflow_plus::FlowBuilder::new();
         let second_process = super::first_ten_distributed(
             &flow,
-            &DeployProcessSpec::new(|| {
+            &DeployProcessSpec::new(|deployment| {
                 deployment.add_service(
                     HydroflowCrate::new(".", localhost.clone())
                         .bin("first_ten_distributed")
@@ -55,7 +55,7 @@ mod tests {
             }),
         );
 
-        let _built = flow.with_default_optimize();
+        let _nodes = flow.with_default_optimize().deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
 
