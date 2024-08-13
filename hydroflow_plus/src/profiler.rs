@@ -84,7 +84,7 @@ mod tests {
     #[test]
     fn profiler_wrapping_all_operators() {
         let flow = crate::builder::FlowBuilder::<MultiGraph>::new();
-        let process = flow.process(&());
+        let process = flow.process(());
 
         flow.source_iter(&process, q!(0..10))
             .all_ticks()

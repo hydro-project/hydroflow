@@ -5,7 +5,7 @@ use stageleft::*;
 
 pub fn first_ten<'a, D: LocalDeploy<'a>>(
     flow: &FlowBuilder<'a, D>,
-    process_spec: &impl ProcessSpec<'a, D>,
+    process_spec: impl ProcessSpec<'a, D>,
 ) {
     let process = flow.process(process_spec);
 
@@ -17,6 +17,6 @@ pub fn first_ten<'a, D: LocalDeploy<'a>>(
 pub fn first_ten_runtime<'a>(
     flow: FlowBuilder<'a, SingleProcessGraph>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    first_ten(&flow, &()); // &() for a single process graph.
+    first_ten(&flow, ()); // () for a single process graph.
     flow.with_default_optimize().compile() // : impl Quoted<'a, Hydroflow<'a>>
 }

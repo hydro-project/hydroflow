@@ -94,7 +94,7 @@ mod tests {
         let flow = FlowBuilder::<SingleProcessGraph>::new();
         let mut database = PropertyDatabase::default();
 
-        let process = flow.process(&());
+        let process = flow.process(());
 
         let counter_func = q!(|count: &mut i32, _| *count += 1);
         let _ = database.add_commutative_tag(counter_func);

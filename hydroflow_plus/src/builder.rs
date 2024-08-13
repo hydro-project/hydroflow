@@ -98,7 +98,7 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         &self.ir_leaves
     }
 
-    pub fn process(&self, spec: &impl ProcessSpec<'a, D>) -> D::Process {
+    pub fn process(&self, spec: impl ProcessSpec<'a, D>) -> D::Process {
         let mut next_node_id = self.next_node_id.borrow_mut();
         let id = *next_node_id;
         *next_node_id += 1;
@@ -109,7 +109,7 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         node
     }
 
-    pub fn cluster(&self, spec: &impl ClusterSpec<'a, D>) -> D::Cluster {
+    pub fn cluster(&self, spec: impl ClusterSpec<'a, D>) -> D::Cluster {
         let mut next_node_id = self.next_node_id.borrow_mut();
         let id = *next_node_id;
         *next_node_id += 1;

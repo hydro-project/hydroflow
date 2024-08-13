@@ -15,7 +15,7 @@ use crate::{AzureHost, ServiceBuilder};
 
 #[derive(Default)]
 pub struct Deployment {
-    pub hosts: Vec<Arc<dyn Host>>,
+    pub hosts: Vec<Weak<dyn Host>>,
     pub services: Vec<Weak<RwLock<dyn Service>>>,
     pub resource_pool: ResourcePool,
     last_resource_result: Option<Arc<ResourceResult>>,
@@ -67,7 +67,7 @@ impl Deployment {
                 service.read().await.collect_resources(&mut resource_batch);
             }
 
-            for host in self.hosts.iter() {
+            for host in self.hosts.iter().filter_map(Weak::upgrade) {
                 host.collect_resources(&mut resource_batch);
             }
 
@@ -81,7 +81,7 @@ impl Deployment {
             );
             self.last_resource_result = Some(resource_result.clone());
 
-            for host in self.hosts.iter() {
+            for host in self.hosts.iter().filter_map(Weak::upgrade) {
                 host.provision(&resource_result);
             }
 
@@ -159,7 +159,8 @@ impl Deployment {
         let arc = Arc::new(host(self.next_host_id));
         self.next_host_id += 1;
 
-        self.hosts.push(arc.clone());
+        self.hosts
+            .push(Arc::downgrade(&(arc.clone() as Arc<dyn Host>)));
         arc
     }
 
