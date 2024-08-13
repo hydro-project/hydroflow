@@ -16,7 +16,8 @@ use syn::parse_quote;
 
 use crate::builder::FlowLeaves;
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource};
-use crate::location::{Cluster, HfSend, Location};
+use crate::location::{CanSend, Location, LocationKind};
+use crate::Cluster;
 
 /// Marks the stream as being asynchronous, which means the presence
 /// of all elements is directly influenced by the runtime's batching
@@ -40,19 +41,23 @@ pub struct Windowed {}
 /// - `W`: the windowing semantics of the stream, which is either [`Async`]
 ///    or [`Windowed`]
 /// - `N`: the type of the node that the stream is materialized on
-pub struct Stream<'a, T, W, N: Location + Clone> {
-    node: N,
+pub struct Stream<'a, T, W, N: Location> {
+    location_kind: LocationKind,
 
     ir_leaves: FlowLeaves<'a>,
     pub(crate) ir_node: RefCell<HfPlusNode<'a>>,
 
-    _phantom: PhantomData<(&'a mut &'a (), T, W)>,
+    _phantom: PhantomData<(&'a mut &'a (), T, N, W)>,
 }
 
-impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
-    pub(crate) fn new(node: N, ir_leaves: FlowLeaves<'a>, ir_node: HfPlusNode<'a>) -> Self {
+impl<'a, T, W, N: Location> Stream<'a, T, W, N> {
+    pub(crate) fn new(
+        location_kind: LocationKind,
+        ir_leaves: FlowLeaves<'a>,
+        ir_node: HfPlusNode<'a>,
+    ) -> Self {
         Stream {
-            node,
+            location_kind,
             ir_leaves,
             ir_node: RefCell::new(ir_node),
             _phantom: PhantomData,
@@ -60,7 +65,7 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
     }
 }
 
-impl<'a, T: Clone, W, N: Location + Clone> Clone for Stream<'a, T, W, N> {
+impl<'a, T: Clone, W, N: Location> Clone for Stream<'a, T, W, N> {
     fn clone(&self) -> Self {
         if !matches!(self.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
             let orig_ir_node = self.ir_node.replace(HfPlusNode::Placeholder);
@@ -70,17 +75,17 @@ impl<'a, T: Clone, W, N: Location + Clone> Clone for Stream<'a, T, W, N> {
         }
 
         Stream::new(
-            self.node.clone(),
+            self.location_kind,
             self.ir_leaves.clone(),
             self.ir_node.borrow().clone(),
         )
     }
 }
 
-impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
+impl<'a, T, W, N: Location> Stream<'a, T, W, N> {
     pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Stream<'a, U, W, N> {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::Map {
                 f: f.splice().into(),
@@ -94,7 +99,7 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
         f: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, U, W, N> {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::FlatMap {
                 f: f.splice().into(),
@@ -105,7 +110,7 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
 
     pub fn enumerate(self) -> Stream<'a, (usize, T), W, N> {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::Enumerate(Box::new(self.ir_node.into_inner())),
         )
@@ -113,7 +118,7 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
 
     pub fn inspect<F: Fn(&T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Stream<'a, T, W, N> {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::Inspect {
                 f: f.splice().into(),
@@ -127,7 +132,7 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
         f: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, T, W, N> {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::Filter {
                 f: f.splice().into(),
@@ -141,7 +146,7 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
         f: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, U, W, N> {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::FilterMap {
                 f: f.splice().into(),
@@ -154,12 +159,12 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
     where
         O: Clone,
     {
-        if self.node.id() != other.node.id() {
+        if self.location_kind != other.location_kind {
             panic!("cross_singleton must be called on streams on the same node");
         }
 
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::CrossSingleton(
                 Box::new(self.ir_node.into_inner()),
@@ -185,12 +190,12 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
         T: Clone,
         O: Clone,
     {
-        if self.node.id() != other.node.id() {
+        if self.location_kind != other.location_kind {
             panic!("cross_product must be called on streams on the same node");
         }
 
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::CrossProduct(
                 Box::new(self.ir_node.into_inner()),
@@ -200,12 +205,12 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
     }
 
     pub fn union(self, other: Stream<'a, T, W, N>) -> Stream<'a, T, W, N> {
-        if self.node.id() != other.node.id() {
+        if self.location_kind != other.location_kind {
             panic!("union must be called on streams on the same node");
         }
 
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::Union(
                 Box::new(self.ir_node.into_inner()),
@@ -230,31 +235,39 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
 
     pub fn all_ticks(self) -> Stream<'a, T, Windowed, N> {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
         )
     }
 
     pub fn assume_windowed(self) -> Stream<'a, T, Windowed, N> {
-        Stream::new(self.node, self.ir_leaves, self.ir_node.into_inner())
+        Stream::new(
+            self.location_kind,
+            self.ir_leaves,
+            self.ir_node.into_inner(),
+        )
     }
 }
 
-impl<'a, T, N: Location + Clone> Stream<'a, T, Async, N> {
+impl<'a, T, N: Location> Stream<'a, T, Async, N> {
     pub fn tick_batch(self) -> Stream<'a, T, Windowed, N> {
-        Stream::new(self.node, self.ir_leaves, self.ir_node.into_inner())
+        Stream::new(
+            self.location_kind,
+            self.ir_leaves,
+            self.ir_node.into_inner(),
+        )
     }
 }
 
-impl<'a, T, N: Location + Clone> Stream<'a, T, Windowed, N> {
+impl<'a, T, N: Location> Stream<'a, T, Windowed, N> {
     pub fn fold<A, I: Fn() -> A + 'a, C: Fn(&mut A, T)>(
         self,
         init: impl IntoQuotedMut<'a, I>,
         comb: impl IntoQuotedMut<'a, C>,
     ) -> Stream<'a, A, Windowed, N> {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::Fold {
                 init: init.splice().into(),
@@ -269,7 +282,7 @@ impl<'a, T, N: Location + Clone> Stream<'a, T, Windowed, N> {
         comb: impl IntoQuotedMut<'a, C>,
     ) -> Stream<'a, T, Windowed, N> {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::Reduce {
                 f: comb.splice().into(),
@@ -283,7 +296,7 @@ impl<'a, T, N: Location + Clone> Stream<'a, T, Windowed, N> {
         T: Ord,
     {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::Sort(Box::new(self.ir_node.into_inner())),
         )
@@ -295,7 +308,7 @@ impl<'a, T, N: Location + Clone> Stream<'a, T, Windowed, N> {
 
     pub fn delta(self) -> Stream<'a, T, Windowed, N> {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::Delta(Box::new(self.ir_node.into_inner())),
         )
@@ -303,7 +316,7 @@ impl<'a, T, N: Location + Clone> Stream<'a, T, Windowed, N> {
 
     pub fn defer_tick(self) -> Stream<'a, T, Windowed, N> {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::DeferTick(Box::new(self.ir_node.into_inner())),
         )
@@ -314,7 +327,7 @@ impl<'a, T, N: Location + Clone> Stream<'a, T, Windowed, N> {
         T: Eq + Hash,
     {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::Unique(Box::new(self.ir_node.into_inner())),
         )
@@ -324,12 +337,12 @@ impl<'a, T, N: Location + Clone> Stream<'a, T, Windowed, N> {
     where
         T: Eq + Hash,
     {
-        if self.node.id() != other.node.id() {
+        if self.location_kind != other.location_kind {
             panic!("union must be called on streams on the same node");
         }
 
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::Difference(
                 Box::new(self.ir_node.into_inner()),
@@ -345,11 +358,11 @@ impl<'a, T, N: Location + Clone> Stream<'a, T, Windowed, N> {
         let interval = duration.splice();
 
         let samples = Stream::<'a, hydroflow::tokio::time::Instant, Windowed, N>::new(
-            self.node.clone(),
+            self.location_kind,
             self.ir_leaves.clone(),
             HfPlusNode::Source {
                 source: HfPlusSource::Interval(interval.into()),
-                location_id: self.node.id(),
+                location_kind: self.location_kind,
             },
         );
 
@@ -357,24 +370,24 @@ impl<'a, T, N: Location + Clone> Stream<'a, T, Windowed, N> {
     }
 }
 
-impl<'a, T: Clone, W, N: Location + Clone> Stream<'a, &T, W, N> {
+impl<'a, T: Clone, W, N: Location> Stream<'a, &T, W, N> {
     pub fn cloned(self) -> Stream<'a, T, W, N> {
         self.map(q!(|d| d.clone()))
     }
 }
 
-impl<'a, K, V1, W, N: Location + Clone> Stream<'a, (K, V1), W, N> {
+impl<'a, K, V1, W, N: Location> Stream<'a, (K, V1), W, N> {
     // TODO(shadaj): figure out window semantics
     pub fn join<W2, V2>(self, n: Stream<'a, (K, V2), W2, N>) -> Stream<'a, (K, (V1, V2)), W, N>
     where
         K: Eq + Hash,
     {
-        if self.node.id() != n.node.id() {
+        if self.location_kind != n.location_kind {
             panic!("join must be called on streams on the same node");
         }
 
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::Join(
                 Box::new(self.ir_node.into_inner()),
@@ -387,12 +400,12 @@ impl<'a, K, V1, W, N: Location + Clone> Stream<'a, (K, V1), W, N> {
     where
         K: Eq + Hash,
     {
-        if self.node.id() != n.node.id() {
+        if self.location_kind != n.location_kind {
             panic!("anti_join must be called on streams on the same node");
         }
 
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::AntiJoin(
                 Box::new(self.ir_node.into_inner()),
@@ -402,14 +415,14 @@ impl<'a, K, V1, W, N: Location + Clone> Stream<'a, (K, V1), W, N> {
     }
 }
 
-impl<'a, K: Eq + Hash, V, N: Location + Clone> Stream<'a, (K, V), Windowed, N> {
+impl<'a, K: Eq + Hash, V, N: Location> Stream<'a, (K, V), Windowed, N> {
     pub fn fold_keyed<A, I: Fn() -> A + 'a, C: Fn(&mut A, V) + 'a>(
         self,
         init: impl IntoQuotedMut<'a, I>,
         comb: impl IntoQuotedMut<'a, C>,
     ) -> Stream<'a, (K, A), Windowed, N> {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::FoldKeyed {
                 init: init.splice().into(),
@@ -424,7 +437,7 @@ impl<'a, K: Eq + Hash, V, N: Location + Clone> Stream<'a, (K, V), Windowed, N> {
         comb: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, (K, V), Windowed, N> {
         Stream::new(
-            self.node,
+            self.location_kind,
             self.ir_leaves,
             HfPlusNode::ReduceKeyed {
                 f: comb.splice().into(),
@@ -487,88 +500,45 @@ fn deserialize_bincode<T: DeserializeOwned>(tagged: bool) -> Pipeline {
     }
 }
 
-impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
-    pub fn send_bincode<N2: Location + Clone + 'a, V, CoreType>(
+impl<'a, T, W, N: Location> Stream<'a, T, W, N> {
+    pub fn send_bincode<N2: Location, CoreType>(
         self,
         other: &N2,
     ) -> Stream<'a, N::Out<CoreType>, Async, N2>
     where
-        N: HfSend<N2, V, In<CoreType> = T> + 'a,
+        N: CanSend<N2, In<CoreType> = T>,
         CoreType: Serialize + DeserializeOwned,
     {
         let serialize_pipeline = Some(serialize_bincode::<CoreType>(N::is_demux()));
 
         let deserialize_pipeline = Some(deserialize_bincode::<CoreType>(N::is_tagged()));
 
-        let self_node_clone = self.node.clone();
-        let other_node_clone = other.clone();
-        let sink_source_fn = Box::new(move || {
-            let send_port = self_node_clone.next_port();
-            let sink_expr = self_node_clone.gen_sink_statement(&send_port);
-
-            let recv_port = other_node_clone.next_port();
-            let source_expr = N::gen_source_statement(&other_node_clone, &recv_port);
-
-            let self_node_clone = self_node_clone.clone();
-            let my_other_node = other_node_clone.clone();
-            (
-                sink_expr,
-                source_expr,
-                Rc::new(move || {
-                    self_node_clone.connect(&my_other_node, &send_port, &recv_port);
-                }) as Rc<dyn Fn()>,
-            )
-        });
-
         Stream::new(
-            other.clone(),
+            other.location_kind(),
             self.ir_leaves,
             HfPlusNode::Network {
-                to_location: other.id(),
+                from_location: self.location_kind,
+                to_location: other.location_kind(),
                 serialize_pipeline,
-                instantiate_fn: DebugInstantiate::Building(sink_source_fn),
+                instantiate_fn: DebugInstantiate::Building(),
                 deserialize_pipeline,
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
     }
 
-    pub fn send_bytes<N2: Location + Clone + 'a, V>(
-        self,
-        other: &N2,
-    ) -> Stream<'a, N::Out<Bytes>, Async, N2>
+    pub fn send_bytes<N2: Location>(self, other: &N2) -> Stream<'a, N::Out<Bytes>, Async, N2>
     where
-        N: HfSend<N2, V, In<Bytes> = T> + 'a,
+        N: CanSend<N2, In<Bytes> = T>,
     {
-        let self_node_clone = self.node.clone();
-        let other_node_clone = other.clone();
-
-        let sink_source_fn = Box::new(move || {
-            let send_port = self_node_clone.next_port();
-            let sink_expr = self_node_clone.gen_sink_statement(&send_port);
-
-            let recv_port = other_node_clone.next_port();
-            let source_expr = N::gen_source_statement(&other_node_clone, &recv_port);
-
-            let self_node_clone = self_node_clone.clone();
-            let my_other_node = other_node_clone.clone();
-
-            (
-                sink_expr,
-                source_expr,
-                Rc::new(move || {
-                    self_node_clone.connect(&my_other_node, &send_port, &recv_port);
-                }) as Rc<dyn Fn()>,
-            )
-        });
-
         Stream::new(
-            other.clone(),
+            other.location_kind(),
             self.ir_leaves,
             HfPlusNode::Network {
-                to_location: other.id(),
+                from_location: self.location_kind,
+                to_location: other.location_kind(),
                 serialize_pipeline: None,
-                instantiate_fn: DebugInstantiate::Building(sink_source_fn),
+                instantiate_fn: DebugInstantiate::Building(),
                 deserialize_pipeline: if N::is_tagged() {
                     Some(parse_quote!(map(|(id, b)| (id, b.unwrap().freeze()))))
                 } else {
@@ -579,36 +549,34 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
         )
     }
 
-    pub fn send_bincode_interleaved<N2: Location + Clone + 'a, Tag, CoreType, V>(
+    pub fn send_bincode_interleaved<N2: Location, Tag, CoreType>(
         self,
         other: &N2,
     ) -> Stream<'a, CoreType, Async, N2>
     where
-        N: HfSend<N2, V, In<CoreType> = T, Out<CoreType> = (Tag, CoreType)> + 'a,
+        N: CanSend<N2, In<CoreType> = T, Out<CoreType> = (Tag, CoreType)>,
         CoreType: Serialize + DeserializeOwned,
     {
-        self.send_bincode::<N2, V, CoreType>(other)
-            .map(q!(|(_, b)| b))
+        self.send_bincode::<N2, CoreType>(other).map(q!(|(_, b)| b))
     }
 
-    pub fn send_bytes_interleaved<N2: Location + Clone + 'a, Tag, V>(
+    pub fn send_bytes_interleaved<N2: Location, Tag, V>(
         self,
         other: &N2,
     ) -> Stream<'a, Bytes, Async, N2>
     where
-        N: HfSend<N2, V, In<Bytes> = T, Out<Bytes> = (Tag, Bytes)> + 'a,
+        N: CanSend<N2, In<Bytes> = T, Out<Bytes> = (Tag, Bytes)>,
     {
-        self.send_bytes::<N2, V>(other).map(q!(|(_, b)| b))
+        self.send_bytes::<N2>(other).map(q!(|(_, b)| b))
     }
 
-    pub fn broadcast_bincode<N2: Location + Cluster<'a> + Clone + 'a, V>(
+    pub fn broadcast_bincode<C2>(
         self,
-        other: &N2,
-    ) -> Stream<'a, N::Out<T>, Async, N2>
+        other: &Cluster<'a, C2>,
+    ) -> Stream<'a, N::Out<T>, Async, Cluster<'a, C2>>
     where
-        N: HfSend<N2, V, In<T> = (N2::Id, T)> + 'a,
+        N: CanSend<Cluster<'a, C2>, In<T> = (u32, T)>,
         T: Clone + Serialize + DeserializeOwned,
-        N2::Id: Clone,
     {
         let ids = other.ids();
 
@@ -619,25 +587,23 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
         .send_bincode(other)
     }
 
-    pub fn broadcast_bincode_interleaved<N2: Location + Cluster<'a> + Clone + 'a, Tag, V>(
+    pub fn broadcast_bincode_interleaved<C2, Tag>(
         self,
-        other: &N2,
-    ) -> Stream<'a, T, Async, N2>
+        other: &Cluster<'a, C2>,
+    ) -> Stream<'a, T, Async, Cluster<'a, C2>>
     where
-        N: HfSend<N2, V, In<T> = (N2::Id, T), Out<T> = (Tag, T)> + 'a,
+        N: CanSend<Cluster<'a, C2>, In<T> = (u32, T), Out<T> = (Tag, T)> + 'a,
         T: Clone + Serialize + DeserializeOwned,
-        N2::Id: Clone,
     {
         self.broadcast_bincode(other).map(q!(|(_, b)| b))
     }
 
-    pub fn broadcast_bytes<N2: Location + Cluster<'a> + Clone + 'a, V>(
+    pub fn broadcast_bytes<C2>(
         self,
-        other: &N2,
-    ) -> Stream<'a, N::Out<Bytes>, Async, N2>
+        other: &Cluster<'a, C2>,
+    ) -> Stream<'a, N::Out<Bytes>, Async, Cluster<'a, C2>>
     where
-        N: HfSend<N2, V, In<Bytes> = (N2::Id, T)> + 'a,
-        N2::Id: Clone,
+        N: CanSend<Cluster<'a, C2>, In<Bytes> = (u32, T)> + 'a,
         T: Clone,
     {
         let ids = other.ids();
@@ -649,13 +615,12 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
         .send_bytes(other)
     }
 
-    pub fn broadcast_bytes_interleaved<N2: Location + Cluster<'a> + Clone + 'a, Tag, V>(
+    pub fn broadcast_bytes_interleaved<C2, Tag>(
         self,
-        other: &N2,
-    ) -> Stream<'a, Bytes, Async, N2>
+        other: &Cluster<'a, C2>,
+    ) -> Stream<'a, Bytes, Async, Cluster<'a, C2>>
     where
-        N: HfSend<N2, V, In<Bytes> = (N2::Id, T), Out<Bytes> = (Tag, Bytes)> + 'a,
-        N2::Id: Clone,
+        N: CanSend<Cluster<'a, C2>, In<Bytes> = (u32, T), Out<Bytes> = (Tag, Bytes)> + 'a,
         T: Clone,
     {
         self.broadcast_bytes(other).map(q!(|(_, b)| b))
