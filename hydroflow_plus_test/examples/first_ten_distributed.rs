@@ -41,13 +41,11 @@ async fn main() {
     let builder = hydroflow_plus::FlowBuilder::new();
     hydroflow_plus_test::distributed::first_ten::first_ten_distributed(
         &builder,
-        &DeployProcessSpec::new(move |deployment| {
-            let host = create_host(deployment);
-            deployment.add_service(
-                HydroflowCrate::new(".", host.clone())
-                    .bin("first_ten_distributed")
-                    .profile(profile),
-            )
+        DeployProcessSpec::new({
+            let host = create_host(&mut deployment);
+            HydroflowCrate::new(".", host.clone())
+                .bin("first_ten_distributed")
+                .profile(profile)
         }),
     );
     let _nodes = builder.with_default_optimize().deploy(&mut deployment);
