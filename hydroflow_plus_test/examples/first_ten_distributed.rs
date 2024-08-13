@@ -39,16 +39,28 @@ async fn main() {
     };
 
     let builder = hydroflow_plus::FlowBuilder::new();
-    hydroflow_plus_test::distributed::first_ten::first_ten_distributed(
-        &builder,
-        DeployProcessSpec::new({
-            let host = create_host(&mut deployment);
-            HydroflowCrate::new(".", host.clone())
-                .bin("first_ten_distributed")
-                .profile(profile)
-        }),
-    );
-    let _nodes = builder.with_default_optimize().deploy(&mut deployment);
+    let (p1, p2) = hydroflow_plus_test::distributed::first_ten::first_ten_distributed(&builder);
+    let _nodes = builder
+        .with_default_optimize()
+        .with_process(
+            &p1,
+            DeployProcessSpec::new({
+                let host = create_host(&mut deployment);
+                HydroflowCrate::new(".", host.clone())
+                    .bin("first_ten_distributed")
+                    .profile(profile)
+            }),
+        )
+        .with_process(
+            &p2,
+            DeployProcessSpec::new({
+                let host = create_host(&mut deployment);
+                HydroflowCrate::new(".", host.clone())
+                    .bin("first_ten_distributed")
+                    .profile(profile)
+            }),
+        )
+        .deploy(&mut deployment);
 
     deployment.run_ctrl_c().await.unwrap();
 }

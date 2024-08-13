@@ -40,30 +40,36 @@ async fn main() {
     };
 
     let builder = hydroflow_plus::FlowBuilder::new();
-    hydroflow_plus_test::cluster::compute_pi::compute_pi(
-        &builder,
-        DeployProcessSpec::new({
-            let host = create_host(&mut deployment);
-            HydroflowCrate::new(".", host.clone())
-                .bin("compute_pi")
-                .profile(profile)
-                .display_name("leader")
-        }),
-        DeployClusterSpec::new({
-            (0..8)
-                .map(|idx| {
-                    let host = create_host(&mut deployment);
-                    HydroflowCrate::new(".", host.clone())
-                        .bin("compute_pi")
-                        .profile(profile)
-                        .display_name(format!("cluster/{}", idx))
-                })
-                .collect()
-        }),
-        RuntimeData::new("FAKE"),
-    );
+    let (cluster, leader) =
+        hydroflow_plus_test::cluster::compute_pi::compute_pi(&builder, RuntimeData::new("FAKE"));
 
-    let _nodes = builder.with_default_optimize().deploy(&mut deployment);
+    let _nodes = builder
+        .with_default_optimize()
+        .with_process(
+            &leader,
+            DeployProcessSpec::new({
+                let host = create_host(&mut deployment);
+                HydroflowCrate::new(".", host.clone())
+                    .bin("compute_pi")
+                    .profile(profile)
+                    .display_name("leader")
+            }),
+        )
+        .with_cluster(
+            &cluster,
+            DeployClusterSpec::new({
+                (0..8)
+                    .map(|idx| {
+                        let host = create_host(&mut deployment);
+                        HydroflowCrate::new(".", host.clone())
+                            .bin("compute_pi")
+                            .profile(profile)
+                            .display_name(format!("cluster/{}", idx))
+                    })
+                    .collect()
+            }),
+        )
+        .deploy(&mut deployment);
 
     deployment.run_ctrl_c().await.unwrap();
 }
