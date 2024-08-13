@@ -11,7 +11,7 @@ pub fn increment_counter(count: &mut u64) {
     *count += 1;
 }
 
-fn quoted_any_fn<'a, F: Fn(usize) -> usize + 'a, Q: IntoQuotedMut<'a, F>>(q: Q) -> Q {
+fn quoted_any_fn<'a, F: Fn(&usize) + 'a, Q: IntoQuotedMut<'a, F>>(q: Q) -> Q {
     q
 }
 
@@ -33,7 +33,7 @@ fn add_profiling_node<'a>(
         },
         seen_tees,
     );
-    HfPlusNode::Map {
+    HfPlusNode::Inspect {
         f: quoted_any_fn(q!({
             // Put counters on queue
             counter_queue
@@ -41,11 +41,10 @@ fn add_profiling_node<'a>(
                 .unbounded_send((my_id as usize, counters.borrow()[my_id as usize]))
                 .unwrap();
             counters.borrow_mut()[my_id as usize] = 0;
-            move |v| {
+            move |_| {
                 hydroflow_plus::profiler::increment_counter(
                     &mut counters.borrow_mut()[my_id as usize],
                 );
-                v
             }
         }))
         .splice()
@@ -111,5 +110,7 @@ mod tests {
             .with_default_optimize();
 
         insta::assert_debug_snapshot!(&pushed_down.ir);
+
+        let _ = pushed_down.compile();
     }
 }

@@ -110,5 +110,7 @@ mod tests {
             .with_default_optimize();
 
         insta::assert_debug_snapshot!(built.ir());
+
+        let _ = built.compile();
     }
 }
