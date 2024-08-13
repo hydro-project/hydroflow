@@ -207,13 +207,13 @@
             .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n)));
 
         <span class="kw">let </span>runtime_context = flow.runtime_context();
-        <span class="kw">let </span>built = flow.extract();
+        <span class="kw">let </span>built = flow.finalize();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(<span class="kw-2">&amp;</span>built.ir);
 
         <span class="comment">// Print mermaid
         // let mut mermaid_config = WriteConfig {op_text_no_imports: true, ..Default::default()};
-        // for (_, ir) in built.clone().optimize_default().hydroflow_ir() {
+        // for (_, ir) in built.clone().with_default_optimize().compile().hydroflow_ir() {
         //     println!("{}", ir.to_mermaid(&amp;mermaid_config));
         // }
 

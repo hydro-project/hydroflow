@@ -102,6 +102,6 @@
     batch_size: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>usize&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let _ </span>= compute_pi(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>(), batch_size);
-    flow.extract().optimize_default()
+    flow.with_default_optimize().compile()
 }
 </code></pre></div></section></main></body></html>

@@ -27,11 +27,9 @@
 <a href="#27" id="27">27</a>
 <a href="#28" id="28">28</a>
 <a href="#29" id="29">29</a>
-<a href="#30" id="30">30</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
-<span class="kw">use </span>std::marker::PhantomData;
-<span class="kw">use </span>std::rc::Rc;
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
+<span class="kw">use </span><span class="kw">crate</span>::builder::FlowLeaves;
 <span class="kw">use </span><span class="kw">crate</span>::ir::HfPlusLeaf;
 <span class="kw">use </span><span class="kw">crate</span>::location::Location;
 <span class="kw">use </span><span class="kw">crate</span>::Stream;
@@ -43,7 +41,7 @@
 </span><span class="kw">pub struct </span>HfCycle&lt;<span class="lifetime">'a</span>, T, W, N: Location + Clone&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
     <span class="kw">pub</span>(<span class="kw">crate</span>) node: N,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) ir_leaves: Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) ir_leaves: FlowLeaves,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), T, W)&gt;,
 }
 
@@ -51,7 +49,7 @@
     <span class="kw">pub fn </span>complete(<span class="self">self</span>, stream: Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt;) {
         <span class="kw">let </span>ident = <span class="self">self</span>.ident;
 
-        <span class="self">self</span>.ir_leaves.borrow_mut().push(HfPlusLeaf::CycleSink {
+        <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a cycle to a flow that has already been finalized. No cycles can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
             ident,
             location_id: <span class="self">self</span>.node.id(),
             input: Box::new(stream.ir_node.into_inner()),

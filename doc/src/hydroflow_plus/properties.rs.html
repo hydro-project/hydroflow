@@ -213,7 +213,7 @@
             .for_each(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(<span class="string">"{}: {}"</span>, string, count)));
 
         <span class="kw">let </span>built = flow
-            .extract()
+            .finalize()
             .optimize_with(|ir| properties_optimize(ir, <span class="kw-2">&amp;</span>database))
             .with_default_optimize();
 

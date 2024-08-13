@@ -104,7 +104,6 @@
 <a href="#104" id="104">104</a>
 <a href="#105" id="105">105</a>
 <a href="#106" id="106">106</a>
-<a href="#107" id="107">107</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::time::Duration;
 
@@ -166,8 +165,8 @@
     batch_size: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>usize&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let _ </span>= compute_pi(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli, batch_size);
-    flow.extract()
-        .optimize_default()
+    flow.with_default_optimize()
+        .compile()
         .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
@@ -181,9 +180,8 @@
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let _ </span>= compute_pi(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli, batch_size);
     <span class="kw">let </span>runtime_context = flow.runtime_context();
-    flow.extract()
-        .optimize_with(|ir| profiling(ir, runtime_context, counters, counter_queue))
-        .no_optimize()
+    flow.optimize_with(|ir| profiling(ir, runtime_context, counters, counter_queue))
+        .compile()
         .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
@@ -201,11 +199,11 @@
             <span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>),
             RuntimeData::new(<span class="string">"FAKE"</span>),
         );
-        <span class="kw">let </span>built = builder.extract();
+        <span class="kw">let </span>built = builder.finalize();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
-        <span class="kw">for </span>(id, ir) <span class="kw">in </span>built.optimize_default().hydroflow_ir() {
+        <span class="kw">for </span>(id, ir) <span class="kw">in </span>built.with_default_optimize().compile().hydroflow_ir() {
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="macro">format!</span>(<span class="string">"surface_graph_{id}"</span>)}, {
                 <span class="macro">insta::assert_display_snapshot!</span>(ir.surface_syntax_string());
             });

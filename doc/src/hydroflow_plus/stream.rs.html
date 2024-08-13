@@ -635,9 +635,6 @@
 <a href="#635" id="635">635</a>
 <a href="#636" id="636">636</a>
 <a href="#637" id="637">637</a>
-<a href="#638" id="638">638</a>
-<a href="#639" id="639">639</a>
-<a href="#640" id="640">640</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -654,6 +651,7 @@
 <span class="kw">use </span>stageleft::{q, IntoQuotedMut, Quoted};
 <span class="kw">use </span>syn::parse_quote;
 
+<span class="kw">use </span><span class="kw">crate</span>::builder::FlowLeaves;
 <span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 <span class="kw">use </span><span class="kw">crate</span>::location::{Cluster, HfSend, Location};
 
@@ -682,18 +680,14 @@
 </span><span class="kw">pub struct </span>Stream&lt;<span class="lifetime">'a</span>, T, W, N: Location + Clone&gt; {
     node: N,
 
-    ir_leaves: Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt;,
+    ir_leaves: FlowLeaves,
     <span class="kw">pub</span>(<span class="kw">crate</span>) ir_node: RefCell&lt;HfPlusNode&gt;,
 
     _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), T, W)&gt;,
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location + Clone&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(
-        node: N,
-        ir_leaves: Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt;,
-        ir_node: HfPlusNode,
-    ) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(node: N, ir_leaves: FlowLeaves, ir_node: HfPlusNode) -&gt; <span class="self">Self </span>{
         Stream {
             node,
             ir_leaves,
@@ -858,14 +852,14 @@
     }
 
     <span class="kw">pub fn </span>for_each&lt;F: Fn(T) + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) {
-        <span class="self">self</span>.ir_leaves.borrow_mut().push(HfPlusLeaf::ForEach {
+        <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::ForEach {
             input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             f: f.splice().into(),
         });
     }
 
     <span class="kw">pub fn </span>dest_sink&lt;S: Unpin + Sink&lt;T&gt; + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, sink: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, S&gt;) {
-        <span class="self">self</span>.ir_leaves.borrow_mut().push(HfPlusLeaf::DestSink {
+        <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::DestSink {
             sink: sink.splice().into(),
             input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
         });

@@ -70,7 +70,7 @@
         output.send(v).unwrap();
     }));
 
-    flow.extract().optimize_default()
+    flow.with_default_optimize().compile()
 }
 
 <span class="attr">#[stageleft::runtime]
