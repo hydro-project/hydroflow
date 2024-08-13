@@ -4,20 +4,17 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 use std::time::Duration;
 
-use hydroflow::bytes::Bytes;
 use hydroflow::futures::stream::Stream as FuturesStream;
 use hydroflow::lattices::collections::MapMapValues;
 use hydroflow_lang::graph::{eliminate_extra_unions_tees, HydroflowGraph};
 use proc_macro2::Span;
 use stageleft::*;
-use syn::parse_quote;
 
+use crate::deploy::{ClusterSpec, Deploy, LocalDeploy, Node, ProcessSpec};
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
-use crate::location::{
-    ClusterSpec, HfSendOneToMany, HfSendOneToOne, LocalDeploy, Location, ProcessSpec,
-};
+use crate::location::{Cluster, Location, LocationKind, Process};
 use crate::stream::{Async, Windowed};
-use crate::{Deploy, HfCompiled, HfCycle, RuntimeContext, Stream};
+use crate::{HfCompiled, HfCycle, RuntimeContext, Stream};
 
 /// Tracks the leaves of the dataflow IR. This is referenced by
 /// `Stream` and `HfCycle` to build the IR. The inner option will
@@ -98,26 +95,32 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         &self.ir_leaves
     }
 
-    pub fn process(&self, spec: impl ProcessSpec<'a, D>) -> D::Process {
+    pub fn process<P>(&self, spec: impl ProcessSpec<'a, D>) -> Process<P> {
         let mut next_node_id = self.next_node_id.borrow_mut();
         let id = *next_node_id;
         *next_node_id += 1;
 
         let node = spec.build(id);
-        self.nodes.borrow_mut().push(node.clone());
+        self.nodes.borrow_mut().push(node);
 
-        node
+        Process {
+            id,
+            _phantom: PhantomData,
+        }
     }
 
-    pub fn cluster(&self, spec: impl ClusterSpec<'a, D>) -> D::Cluster {
+    pub fn cluster<C>(&self, spec: impl ClusterSpec<'a, D>) -> Cluster<'a, C> {
         let mut next_node_id = self.next_node_id.borrow_mut();
         let id = *next_node_id;
         *next_node_id += 1;
 
         let cluster = spec.build(id);
-        self.clusters.borrow_mut().push(cluster.clone());
+        self.clusters.borrow_mut().push(cluster);
 
-        cluster
+        Cluster {
+            id,
+            _phantom: PhantomData,
+        }
     }
 
     pub fn runtime_context(&self) -> RuntimeContext<'a> {
@@ -126,18 +129,18 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         }
     }
 
-    pub fn spin<L: Location + Clone>(&self, on: &L) -> Stream<'a, (), Async, L> {
+    pub fn spin<L: Location>(&self, on: &L) -> Stream<'a, (), Async, L> {
         Stream::new(
-            on.clone(),
+            on.location_kind(),
             self.ir_leaves().clone(),
             HfPlusNode::Source {
                 source: HfPlusSource::Spin(),
-                location_id: on.id(),
+                location_kind: on.location_kind(),
             },
         )
     }
 
-    pub fn spin_batch<L: Location + Clone>(
+    pub fn spin_batch<L: Location>(
         &self,
         on: &L,
         batch_size: impl Quoted<'a, usize> + Copy + 'a,
@@ -148,7 +151,7 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
             .tick_batch()
     }
 
-    pub fn source_stream<T, E: FuturesStream<Item = T> + Unpin, L: Location + Clone>(
+    pub fn source_stream<T, E: FuturesStream<Item = T> + Unpin, L: Location>(
         &self,
         on: &L,
         e: impl Quoted<'a, E>,
@@ -156,69 +159,16 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         let e = e.splice();
 
         Stream::new(
-            on.clone(),
+            on.location_kind(),
             self.ir_leaves().clone(),
             HfPlusNode::Source {
                 source: HfPlusSource::Stream(e.into()),
-                location_id: on.id(),
+                location_kind: on.location_kind(),
             },
         )
     }
 
-    pub fn source_external<L>(&self, on: &L) -> (L::Port, Stream<'a, Bytes, Async, L>)
-    where
-        L: Location + Clone + HfSendOneToOne<L>,
-    {
-        let port = on.next_port();
-        let source_pipeline = L::gen_source_statement(on, &port);
-
-        let process: syn::Expr = parse_quote!(|b| b.unwrap().freeze());
-
-        (
-            port,
-            Stream::new(
-                on.clone(),
-                self.ir_leaves().clone(),
-                HfPlusNode::Map {
-                    f: process.into(),
-                    input: Box::new(HfPlusNode::Source {
-                        source: HfPlusSource::Stream(source_pipeline.into()),
-                        location_id: on.id(),
-                    }),
-                },
-            ),
-        )
-    }
-
-    pub fn many_source_external<S, Cid, L: Location + Clone>(
-        &self,
-        on: &L,
-    ) -> (L::Port, Stream<'a, Bytes, Async, L>)
-    where
-        S: Location + HfSendOneToMany<L, Cid>,
-    {
-        let port = on.next_port();
-        let source_pipeline = S::gen_source_statement(on, &port);
-
-        let process: syn::Expr = parse_quote!(|b| b.unwrap().freeze());
-
-        (
-            port,
-            Stream::new(
-                on.clone(),
-                self.ir_leaves().clone(),
-                HfPlusNode::Map {
-                    f: process.into(),
-                    input: Box::new(HfPlusNode::Source {
-                        source: HfPlusSource::Stream(source_pipeline.into()),
-                        location_id: on.id(),
-                    }),
-                },
-            ),
-        )
-    }
-
-    pub fn source_iter<T, E: IntoIterator<Item = T>, L: Location + Clone>(
+    pub fn source_iter<T, E: IntoIterator<Item = T>, L: Location>(
         &self,
         on: &L,
         e: impl Quoted<'a, E>,
@@ -226,16 +176,16 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         let e = e.splice();
 
         Stream::new(
-            on.clone(),
+            on.location_kind(),
             self.ir_leaves().clone(),
             HfPlusNode::Source {
                 source: HfPlusSource::Iter(e.into()),
-                location_id: on.id(),
+                location_kind: on.location_kind(),
             },
         )
     }
 
-    pub fn source_interval<L: Location + Clone>(
+    pub fn source_interval<L: Location>(
         &self,
         on: &L,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
@@ -243,22 +193,24 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         let interval = interval.splice();
 
         Stream::new(
-            on.clone(),
+            on.location_kind(),
             self.ir_leaves().clone(),
             HfPlusNode::Source {
                 source: HfPlusSource::Interval(interval.into()),
-                location_id: on.id(),
+                location_kind: on.location_kind(),
             },
         )
     }
 
-    pub fn cycle<T, W, L: Location + Clone>(
-        &self,
-        on: &L,
-    ) -> (HfCycle<'a, T, W, L>, Stream<'a, T, W, L>) {
+    pub fn cycle<T, W, L: Location>(&self, on: &L) -> (HfCycle<'a, T, W, L>, Stream<'a, T, W, L>) {
         let next_id = {
+            let on_id = match on.location_kind() {
+                LocationKind::Process(id) => id,
+                LocationKind::Cluster(id) => id,
+            };
+
             let mut cycle_ids = self.cycle_ids.borrow_mut();
-            let next_id_entry = cycle_ids.entry(on.id()).or_default();
+            let next_id_entry = cycle_ids.entry(on_id).or_default();
 
             let id = *next_id_entry;
             *next_id_entry += 1;
@@ -270,16 +222,16 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         (
             HfCycle {
                 ident: ident.clone(),
-                node: on.clone(),
+                location_kind: on.location_kind(),
                 ir_leaves: self.ir_leaves().clone(),
                 _phantom: PhantomData,
             },
             Stream::new(
-                on.clone(),
+                on.location_kind(),
                 self.ir_leaves().clone(),
                 HfPlusNode::CycleSource {
                     ident,
-                    location_id: on.id(),
+                    location_kind: on.location_kind(),
                 },
             ),
         )
@@ -339,17 +291,12 @@ fn build_inner(ir: Vec<HfPlusLeaf>) -> BTreeMap<usize, HydroflowGraph> {
 }
 
 impl<'a, D: LocalDeploy<'a>> BuiltFlow<'a, D> {
-    pub fn compile(mut self) -> HfCompiled<'a, D::GraphId> {
+    pub fn compile_no_network(mut self) -> HfCompiled<'a, D::GraphId> {
         self.used = true;
 
-        let mut seen_tees: HashMap<_, _> = HashMap::new();
-        let ir_leaves_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
-            .into_iter()
-            .map(|leaf| leaf.instantiate_network(&mut seen_tees))
-            .collect();
-
         HfCompiled {
-            hydroflow_ir: build_inner(ir_leaves_networked),
+            hydroflow_ir: build_inner(std::mem::take(&mut self.ir)),
+            extra_stmts: BTreeMap::new(),
             _phantom: PhantomData,
         }
     }
@@ -360,14 +307,101 @@ impl<'a, D: LocalDeploy<'a>> BuiltFlow<'a, D> {
 }
 
 impl<'a, D: Deploy<'a>> BuiltFlow<'a, D> {
-    #[must_use]
-    pub fn deploy(mut self, env: &mut D::InstantiateEnv) -> (Vec<D::Process>, Vec<D::Cluster>) {
+    pub fn compile(mut self, env: &D::CompileEnv) -> HfCompiled<'a, D::GraphId> {
         self.used = true;
+
+        let location_to_node = self
+            .nodes
+            .iter()
+            .map(|node| (node.id(), node))
+            .collect::<HashMap<_, _>>();
+        let location_to_cluster = self
+            .clusters
+            .iter()
+            .map(|cluster| (cluster.id(), cluster))
+            .collect::<HashMap<_, _>>();
+
+        let mut seen_tees: HashMap<_, _> = HashMap::new();
+        let ir_leaves_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
+            .into_iter()
+            .map(|leaf| {
+                leaf.compile_network::<D>(
+                    env,
+                    &mut seen_tees,
+                    &location_to_node,
+                    &location_to_cluster,
+                )
+            })
+            .collect();
+
+        let all_locations_count = location_to_node.len() + location_to_cluster.len();
+
+        let mut extra_stmts: BTreeMap<usize, Vec<syn::Stmt>> = BTreeMap::new();
+        for cluster in &self.clusters {
+            let self_id_ident = syn::Ident::new(
+                &format!("__hydroflow_plus_cluster_self_id_{}", cluster.id()),
+                Span::call_site(),
+            );
+            let self_id_expr = D::cluster_self_id(env).splice();
+            extra_stmts
+                .entry(cluster.id())
+                .or_default()
+                .push(syn::parse_quote! {
+                    let #self_id_ident = #self_id_expr;
+                });
+
+            for other_location in 0..all_locations_count {
+                let self_id = cluster.id();
+                let other_id_ident = syn::Ident::new(
+                    &format!("__hydroflow_plus_cluster_ids_{}", self_id),
+                    Span::call_site(),
+                );
+                let other_id_expr = D::cluster_ids(env, self_id).splice();
+                extra_stmts
+                    .entry(other_location)
+                    .or_default()
+                    .push(syn::parse_quote! {
+                        let #other_id_ident = #other_id_expr;
+                    });
+            }
+        }
+
+        HfCompiled {
+            hydroflow_ir: build_inner(ir_leaves_networked),
+            extra_stmts,
+            _phantom: PhantomData,
+        }
+    }
+
+    #[must_use]
+    pub fn deploy(mut self, env: &mut D::InstantiateEnv) -> DeployResult<'a, D>
+    where
+        D: Deploy<'a, CompileEnv = ()>,
+    {
+        self.used = true;
+
+        let location_to_node = self
+            .nodes
+            .iter()
+            .map(|node| (node.id(), node))
+            .collect::<HashMap<_, _>>();
+        let location_to_cluster = self
+            .clusters
+            .iter()
+            .map(|cluster| (cluster.id(), cluster))
+            .collect::<HashMap<_, _>>();
 
         let mut seen_tees_instantiate: HashMap<_, _> = HashMap::new();
         let ir_leaves_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
             .into_iter()
-            .map(|leaf| leaf.instantiate_network(&mut seen_tees_instantiate))
+            .map(|leaf| {
+                leaf.compile_network::<D>(
+                    &(),
+                    &mut seen_tees_instantiate,
+                    &location_to_node,
+                    &location_to_cluster,
+                )
+            })
             .collect();
 
         let mut compiled = build_inner(ir_leaves_networked.clone());
@@ -403,6 +437,37 @@ impl<'a, D: Deploy<'a>> BuiltFlow<'a, D> {
             leaf.connect_network(&mut seen_tees_connect);
         }
 
-        (nodes, clusters)
+        DeployResult {
+            location_to_process: nodes.into_iter().map(|node| (node.id(), node)).collect(),
+            location_to_cluster: clusters
+                .into_iter()
+                .map(|cluster| (cluster.id(), cluster))
+                .collect(),
+        }
+    }
+}
+
+pub struct DeployResult<'a, D: Deploy<'a>> {
+    pub(crate) location_to_process: HashMap<usize, D::Process>,
+    pub(crate) location_to_cluster: HashMap<usize, D::Cluster>,
+}
+
+impl<'a, D: Deploy<'a>> DeployResult<'a, D> {
+    pub fn get_process<P>(&self, p: Process<P>) -> &D::Process {
+        let id = match p.location_kind() {
+            LocationKind::Process(id) => id,
+            LocationKind::Cluster(id) => id,
+        };
+
+        self.location_to_process.get(&id).unwrap()
+    }
+
+    pub fn get_cluster<C>(&self, c: Cluster<'a, C>) -> &D::Cluster {
+        let id = match c.location_kind() {
+            LocationKind::Process(id) => id,
+            LocationKind::Cluster(id) => id,
+        };
+
+        self.location_to_cluster.get(&id).unwrap()
     }
 }

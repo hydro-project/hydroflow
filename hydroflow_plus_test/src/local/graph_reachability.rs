@@ -1,3 +1,4 @@
+use hydroflow_plus::deploy::SingleProcessGraph;
 use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::*;
@@ -10,7 +11,7 @@ pub fn graph_reachability<'a>(
     edges: RuntimeData<UnboundedReceiverStream<(u32, u32)>>,
     reached_out: RuntimeData<&'a UnboundedSender<u32>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let process = flow.process(());
+    let process = flow.process::<()>(());
 
     let roots = flow.source_stream(&process, roots);
     let edges = flow.source_stream(&process, edges);
@@ -29,7 +30,7 @@ pub fn graph_reachability<'a>(
         reached_out.send(v).unwrap();
     }));
 
-    flow.with_default_optimize().compile()
+    flow.with_default_optimize().compile_no_network()
 }
 
 #[stageleft::runtime]

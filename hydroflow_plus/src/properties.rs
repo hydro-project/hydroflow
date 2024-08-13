@@ -76,7 +76,8 @@ pub fn properties_optimize<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{FlowBuilder, SingleProcessGraph};
+    use crate::deploy::SingleProcessGraph;
+    use crate::FlowBuilder;
 
     #[test]
     fn test_property_database() {
@@ -94,7 +95,7 @@ mod tests {
         let flow = FlowBuilder::<SingleProcessGraph>::new();
         let mut database = PropertyDatabase::default();
 
-        let process = flow.process(());
+        let process = flow.process::<()>(());
 
         let counter_func = q!(|count: &mut i32, _| *count += 1);
         let _ = database.add_commutative_tag(counter_func);
@@ -111,6 +112,6 @@ mod tests {
 
         insta::assert_debug_snapshot!(built.ir());
 
-        let _ = built.compile();
+        let _ = built.compile_no_network();
     }
 }

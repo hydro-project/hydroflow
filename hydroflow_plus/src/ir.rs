@@ -10,6 +10,9 @@ use proc_macro2::{Span, TokenStream};
 use quote::ToTokens;
 use syn::parse_quote;
 
+use crate::deploy::Deploy;
+use crate::location::LocationKind;
+
 #[derive(Clone)]
 pub struct DebugExpr(pub syn::Expr);
 
@@ -39,21 +42,19 @@ impl std::fmt::Debug for DebugExpr {
     }
 }
 
-type BuildingOut<'a> = (syn::Expr, syn::Expr, Rc<dyn Fn() + 'a>);
-
 pub enum DebugInstantiate<'a> {
-    Building(Box<dyn Fn() -> BuildingOut<'a> + 'a>),
+    Building(),
     Finalized(syn::Expr, syn::Expr, Rc<dyn Fn() + 'a>),
 }
 
 impl<'a> Clone for DebugInstantiate<'a> {
     fn clone(&self) -> Self {
         match self {
-            DebugInstantiate::Building(_) => {
+            DebugInstantiate::Building() => {
                 panic!("cannot clone building function")
             }
-            DebugInstantiate::Finalized(sink, source, connect) => {
-                DebugInstantiate::Finalized(sink.clone(), source.clone(), connect.clone())
+            DebugInstantiate::Finalized(sink, source, connect_fn) => {
+                DebugInstantiate::Finalized(sink.clone(), source.clone(), connect_fn.clone())
             }
         }
     }
@@ -98,14 +99,23 @@ pub enum HfPlusLeaf<'a> {
     },
     CycleSink {
         ident: syn::Ident,
-        location_id: usize,
+        location_kind: LocationKind,
         input: Box<HfPlusNode<'a>>,
     },
 }
 
 impl<'a> HfPlusLeaf<'a> {
-    pub fn instantiate_network(self, seen_tees: &mut SeenTees<'a>) -> HfPlusLeaf<'a> {
-        self.transform_children(|n, s| n.instantiate_network(s), seen_tees)
+    pub fn compile_network<D: Deploy<'a> + 'a>(
+        self,
+        compile_env: &D::CompileEnv,
+        seen_tees: &mut SeenTees<'a>,
+        nodes: &HashMap<usize, &D::Process>,
+        clusters: &HashMap<usize, &D::Cluster>,
+    ) -> HfPlusLeaf<'a> {
+        self.transform_children(
+            |n, s| n.compile_network::<D>(compile_env, s, nodes, clusters),
+            seen_tees,
+        )
     }
 
     pub fn connect_network(self, seen_tees: &mut SeenTees<'a>) -> HfPlusLeaf<'a> {
@@ -128,11 +138,11 @@ impl<'a> HfPlusLeaf<'a> {
             },
             HfPlusLeaf::CycleSink {
                 ident,
-                location_id,
+                location_kind,
                 input,
             } => HfPlusLeaf::CycleSink {
                 ident,
-                location_id,
+                location_kind,
                 input: Box::new(transform(*input, seen_tees)),
             },
         }
@@ -171,11 +181,16 @@ impl<'a> HfPlusLeaf<'a> {
 
             HfPlusLeaf::CycleSink {
                 ident,
-                location_id,
+                location_kind,
                 input,
             } => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
+
+                let location_id = match location_kind {
+                    LocationKind::Process(id) => id,
+                    LocationKind::Cluster(id) => id,
+                };
 
                 assert_eq!(
                     input_location_id, location_id,
@@ -201,12 +216,12 @@ pub enum HfPlusNode<'a> {
 
     Source {
         source: HfPlusSource,
-        location_id: usize,
+        location_kind: LocationKind,
     },
 
     CycleSource {
         ident: syn::Ident,
-        location_id: usize,
+        location_kind: LocationKind,
     },
 
     Tee {
@@ -271,7 +286,8 @@ pub enum HfPlusNode<'a> {
     },
 
     Network {
-        to_location: usize,
+        from_location: LocationKind,
+        to_location: LocationKind,
         serialize_pipeline: Option<Pipeline>,
         instantiate_fn: DebugInstantiate<'a>,
         deserialize_pipeline: Option<Pipeline>,
@@ -282,9 +298,19 @@ pub enum HfPlusNode<'a> {
 pub type SeenTees<'a> = HashMap<*const RefCell<HfPlusNode<'a>>, Rc<RefCell<HfPlusNode<'a>>>>;
 
 impl<'a> HfPlusNode<'a> {
-    pub fn instantiate_network(self, seen_tees: &mut SeenTees<'a>) -> HfPlusNode<'a> {
-        match self.transform_children(|n, s| n.instantiate_network(s), seen_tees) {
+    pub fn compile_network<D: Deploy<'a> + 'a>(
+        self,
+        compile_env: &D::CompileEnv,
+        seen_tees: &mut SeenTees<'a>,
+        nodes: &HashMap<usize, &D::Process>,
+        clusters: &HashMap<usize, &D::Cluster>,
+    ) -> HfPlusNode<'a> {
+        match self.transform_children(
+            |n, s| n.compile_network::<D>(compile_env, s, nodes, clusters),
+            seen_tees,
+        ) {
             HfPlusNode::Network {
+                from_location,
                 to_location,
                 serialize_pipeline,
                 instantiate_fn,
@@ -292,8 +318,106 @@ impl<'a> HfPlusNode<'a> {
                 input,
             } => {
                 let (sink_expr, source_expr, connect_fn) = match instantiate_fn {
-                    DebugInstantiate::Building(build_fn) => {
-                        let (sink, source, connect_fn) = build_fn();
+                    DebugInstantiate::Building() => {
+                        let ((sink, source), connect_fn) = match (from_location, to_location) {
+                            (LocationKind::Process(from), LocationKind::Process(to)) => {
+                                let sink_port = D::allocate_process_port(nodes[&from]);
+                                let source_port = D::allocate_process_port(nodes[&to]);
+
+                                let from_node = nodes[&from].clone();
+                                let to_node = nodes[&to].clone();
+                                (
+                                    D::o2o_sink_source(
+                                        compile_env,
+                                        nodes[&from],
+                                        &sink_port,
+                                        nodes[&to],
+                                        &source_port,
+                                    ),
+                                    Rc::new(move || {
+                                        D::o2o_connect(
+                                            &from_node,
+                                            &sink_port,
+                                            &to_node,
+                                            &source_port,
+                                        )
+                                    }) as Rc<dyn Fn() + 'a>,
+                                )
+                            }
+                            (LocationKind::Process(from), LocationKind::Cluster(to)) => {
+                                let sink_port = D::allocate_process_port(nodes[&from]);
+                                let source_port = D::allocate_cluster_port(clusters[&to]);
+
+                                let from_node = nodes[&from].clone();
+                                let to_node = clusters[&to].clone();
+                                (
+                                    D::o2m_sink_source(
+                                        compile_env,
+                                        nodes[&from],
+                                        &sink_port,
+                                        clusters[&to],
+                                        &source_port,
+                                    ),
+                                    Rc::new(move || {
+                                        D::o2m_connect(
+                                            &from_node,
+                                            &sink_port,
+                                            &to_node,
+                                            &source_port,
+                                        )
+                                    }) as Rc<dyn Fn() + 'a>,
+                                )
+                            }
+                            (LocationKind::Cluster(from), LocationKind::Process(to)) => {
+                                let sink_port = D::allocate_cluster_port(clusters[&from]);
+                                let source_port = D::allocate_process_port(nodes[&to]);
+
+                                let from_node = clusters[&from].clone();
+                                let to_node = nodes[&to].clone();
+                                (
+                                    D::m2o_sink_source(
+                                        compile_env,
+                                        clusters[&from],
+                                        &sink_port,
+                                        nodes[&to],
+                                        &source_port,
+                                    ),
+                                    Rc::new(move || {
+                                        D::m2o_connect(
+                                            &from_node,
+                                            &sink_port,
+                                            &to_node,
+                                            &source_port,
+                                        )
+                                    }) as Rc<dyn Fn() + 'a>,
+                                )
+                            }
+                            (LocationKind::Cluster(from), LocationKind::Cluster(to)) => {
+                                let sink_port = D::allocate_cluster_port(clusters[&from]);
+                                let source_port = D::allocate_cluster_port(clusters[&to]);
+
+                                let from_node = clusters[&from].clone();
+                                let to_node = clusters[&to].clone();
+                                (
+                                    D::m2m_sink_source(
+                                        compile_env,
+                                        clusters[&from],
+                                        &sink_port,
+                                        clusters[&to],
+                                        &source_port,
+                                    ),
+                                    Rc::new(move || {
+                                        D::m2m_connect(
+                                            &from_node,
+                                            &sink_port,
+                                            &to_node,
+                                            &source_port,
+                                        )
+                                    }) as Rc<dyn Fn() + 'a>,
+                                )
+                            }
+                        };
+
                         (sink, source, connect_fn)
                     }
 
@@ -301,6 +425,7 @@ impl<'a> HfPlusNode<'a> {
                 };
 
                 HfPlusNode::Network {
+                    from_location,
                     to_location,
                     serialize_pipeline,
                     instantiate_fn: DebugInstantiate::Finalized(sink_expr, source_expr, connect_fn),
@@ -316,6 +441,7 @@ impl<'a> HfPlusNode<'a> {
     pub fn connect_network(self, seen_tees: &mut SeenTees<'a>) -> HfPlusNode<'a> {
         match self.transform_children(|n, s| n.connect_network(s), seen_tees) {
             HfPlusNode::Network {
+                from_location,
                 to_location,
                 serialize_pipeline,
                 instantiate_fn,
@@ -323,7 +449,7 @@ impl<'a> HfPlusNode<'a> {
                 input,
             } => {
                 match instantiate_fn {
-                    DebugInstantiate::Building(_) => panic!("network not built"),
+                    DebugInstantiate::Building() => panic!("network not built"),
 
                     DebugInstantiate::Finalized(_, _, ref connect_fn) => {
                         connect_fn();
@@ -331,6 +457,7 @@ impl<'a> HfPlusNode<'a> {
                 };
 
                 HfPlusNode::Network {
+                    from_location,
                     to_location,
                     serialize_pipeline,
                     instantiate_fn,
@@ -353,15 +480,19 @@ impl<'a> HfPlusNode<'a> {
 
             HfPlusNode::Source {
                 source,
-                location_id,
+                location_kind,
             } => HfPlusNode::Source {
                 source,
-                location_id,
+                location_kind,
             },
 
-            HfPlusNode::CycleSource { ident, location_id } => {
-                HfPlusNode::CycleSource { ident, location_id }
-            }
+            HfPlusNode::CycleSource {
+                ident,
+                location_kind,
+            } => HfPlusNode::CycleSource {
+                ident,
+                location_kind,
+            },
 
             HfPlusNode::Tee { inner } => {
                 if let Some(transformed) =
@@ -465,12 +596,14 @@ impl<'a> HfPlusNode<'a> {
             },
 
             HfPlusNode::Network {
+                from_location,
                 to_location,
                 serialize_pipeline,
                 instantiate_fn,
                 deserialize_pipeline,
                 input,
             } => HfPlusNode::Network {
+                from_location,
                 to_location,
                 serialize_pipeline,
                 instantiate_fn,
@@ -527,7 +660,7 @@ impl<'a> HfPlusNode<'a> {
 
             HfPlusNode::Source {
                 source,
-                location_id,
+                location_kind,
             } => {
                 let source_id = *next_stmt_id;
                 *next_stmt_id += 1;
@@ -561,6 +694,11 @@ impl<'a> HfPlusNode<'a> {
                     }
                 };
 
+                let location_id = match location_kind {
+                    LocationKind::Process(id) => id,
+                    LocationKind::Cluster(id) => id,
+                };
+
                 graph_builders
                     .entry(location_id)
                     .or_default()
@@ -569,7 +707,17 @@ impl<'a> HfPlusNode<'a> {
                 (source_ident, location_id)
             }
 
-            HfPlusNode::CycleSource { ident, location_id } => (ident.clone(), location_id),
+            HfPlusNode::CycleSource {
+                ident,
+                location_kind,
+            } => {
+                let location_id = match location_kind {
+                    LocationKind::Process(id) => id,
+                    LocationKind::Cluster(id) => id,
+                };
+
+                (ident.clone(), location_id)
+            }
 
             HfPlusNode::Tee { inner } => {
                 if let Some(ret) = built_tees.get(&(inner.as_ref() as *const RefCell<HfPlusNode>)) {
@@ -1043,6 +1191,7 @@ impl<'a> HfPlusNode<'a> {
             }
 
             HfPlusNode::Network {
+                from_location: _,
                 to_location,
                 serialize_pipeline,
                 instantiate_fn,
@@ -1050,7 +1199,7 @@ impl<'a> HfPlusNode<'a> {
                 input,
             } => {
                 let (sink_expr, source_expr, _connect_fn) = match instantiate_fn {
-                    DebugInstantiate::Building(_) => {
+                    DebugInstantiate::Building() => {
                         panic!("Expected the network to be finalized")
                     }
 
@@ -1074,7 +1223,12 @@ impl<'a> HfPlusNode<'a> {
                     });
                 }
 
-                let receiver_builder = graph_builders.entry(to_location).or_default();
+                let to_id = match to_location {
+                    LocationKind::Process(id) => id,
+                    LocationKind::Cluster(id) => id,
+                };
+
+                let receiver_builder = graph_builders.entry(to_id).or_default();
                 let receiver_stream_id = *next_stmt_id;
                 *next_stmt_id += 1;
 
@@ -1091,7 +1245,7 @@ impl<'a> HfPlusNode<'a> {
                     });
                 }
 
-                (receiver_stream_ident, to_location)
+                (receiver_stream_ident, to_id)
             }
         }
     }

@@ -1,3 +1,4 @@
+use hydroflow_plus::deploy::SingleProcessGraph;
 use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 use hydroflow_plus::*;
 use stageleft::{q, Quoted, RuntimeData};
@@ -9,7 +10,7 @@ pub fn test_difference<'a>(
     persist1: bool,
     persist2: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let process = flow.process(());
+    let process = flow.process::<()>(());
 
     let mut source = flow.source_iter(&process, q!(0..5));
     if persist1 {
@@ -25,7 +26,7 @@ pub fn test_difference<'a>(
         output.send(v).unwrap();
     }));
 
-    flow.with_default_optimize().compile()
+    flow.with_default_optimize().compile_no_network()
 }
 
 #[stageleft::entry]
@@ -35,7 +36,7 @@ pub fn test_anti_join<'a>(
     persist1: bool,
     persist2: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let process = flow.process(());
+    let process = flow.process::<()>(());
 
     let mut source = flow.source_iter(&process, q!(0..5)).map(q!(|v| (v, v)));
     if persist1 {
@@ -52,7 +53,7 @@ pub fn test_anti_join<'a>(
         output.send(v.0).unwrap();
     }));
 
-    flow.with_default_optimize().compile()
+    flow.with_default_optimize().compile_no_network()
 }
 
 #[stageleft::runtime]
