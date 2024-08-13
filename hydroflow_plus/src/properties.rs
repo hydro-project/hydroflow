@@ -41,11 +41,11 @@ impl PropertyDatabase {
 // Dataflow graph optimization rewrite rules based on algebraic property tags
 // TODO add a test that verifies the space of possible graphs after rewrites is correct for each property
 
-fn properties_optimize_node(
-    node: HfPlusNode,
+fn properties_optimize_node<'a>(
+    node: HfPlusNode<'a>,
     db: &PropertyDatabase,
-    seen_tees: &mut SeenTees,
-) -> HfPlusNode {
+    seen_tees: &mut SeenTees<'a>,
+) -> HfPlusNode<'a> {
     match node.transform_children(
         |node, seen_tees| properties_optimize_node(node, db, seen_tees),
         seen_tees,
@@ -58,7 +58,10 @@ fn properties_optimize_node(
     }
 }
 
-pub fn properties_optimize(ir: Vec<HfPlusLeaf>, db: &PropertyDatabase) -> Vec<HfPlusLeaf> {
+pub fn properties_optimize<'a>(
+    ir: Vec<HfPlusLeaf<'a>>,
+    db: &PropertyDatabase,
+) -> Vec<HfPlusLeaf<'a>> {
     let mut seen_tees = Default::default();
     ir.into_iter()
         .map(|l| {
@@ -107,5 +110,7 @@ mod tests {
             .with_default_optimize();
 
         insta::assert_debug_snapshot!(built.ir());
+
+        let _ = built.compile();
     }
 }

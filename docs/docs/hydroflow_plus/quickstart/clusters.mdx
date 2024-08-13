@@ -89,28 +89,26 @@ use hydroflow_plus_cli_integration::{DeployProcessSpec, DeployClusterSpec};
 
 #[tokio::main]
 async fn main() {
-    let deployment = RefCell::new(Deployment::new());
-    let localhost = deployment.borrow_mut().Localhost();
+    let mut deployment = Deployment::new();
+    let localhost = deployment.Localhost();
     let profile = "dev";
 
     let builder = hydroflow_plus::FlowBuilder::new();
+    let localhost_1 = localhost.clone();
+    let localhost_2 = localhost.clone();
     flow::broadcast::broadcast(
         &builder,
-        &DeployProcessSpec::new(|| {
-            let mut deployment = deployment.borrow_mut();
-            deployment.add_service(
-                HydroflowCrate::new(".", localhost.clone())
-                    .bin("broadcast")
-                    .profile(profile)
-                    .display_name("leader"),
-            )
+        &DeployProcessSpec::new(move |deployment| {
+            HydroflowCrate::new(".", localhost_1.clone())
+                .bin("broadcast")
+                .profile(profile)
+                .display_name("leader"),
         }),
-        &DeployClusterSpec::new(|| {
-            let mut deployment = deployment.borrow_mut();
+        &DeployClusterSpec::new(move |deployment| {
             (0..2)
                 .map(|idx| {
                     deployment.add_service(
-                        HydroflowCrate::new(".", localhost.clone())
+                        HydroflowCrate::new(".", localhost_2.clone())
                             .bin("broadcast")
                             .profile(profile)
                             .display_name(format!("worker/{}", idx)),
@@ -119,8 +117,6 @@ async fn main() {
                 .collect()
         }),
     );
-
-    let mut deployment = deployment.into_inner();
 
     deployment.deploy().await.unwrap();
 
