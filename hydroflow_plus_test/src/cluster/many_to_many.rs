@@ -4,10 +4,7 @@ use stageleft::*;
 pub fn many_to_many<'a, D: Deploy<'a>>(
     flow: &FlowBuilder<'a, D>,
     cluster_spec: impl ClusterSpec<'a, D>,
-) -> D::Cluster
-where
-    D::ClusterId: std::fmt::Debug,
-{
+) -> Cluster<'a, ()> {
     let cluster = flow.cluster(cluster_spec);
     flow.source_iter(&cluster, q!(0..2))
         .broadcast_bincode(&cluster)
@@ -24,9 +21,9 @@ pub fn many_to_many_runtime<'a>(
     flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = many_to_many(&flow, &cli);
+    let _ = many_to_many(&flow, ());
     flow.with_default_optimize()
-        .compile()
+        .compile(&cli)
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
@@ -58,12 +55,18 @@ mod tests {
 
         insta::assert_debug_snapshot!(built.ir());
 
-        let _nodes = built.deploy(&mut deployment);
+        let nodes = built.deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
 
-        let cluster_stdouts =
-            futures::future::join_all(cluster.members().iter().map(|node| node.stdout())).await;
+        let cluster_stdouts = futures::future::join_all(
+            nodes
+                .get_cluster(cluster)
+                .members()
+                .iter()
+                .map(|node| node.stdout()),
+        )
+        .await;
 
         deployment.start().await.unwrap();
 

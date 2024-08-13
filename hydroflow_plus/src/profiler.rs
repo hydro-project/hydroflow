@@ -79,12 +79,12 @@ pub fn profiling<'a>(
 mod tests {
     use stageleft::*;
 
-    use crate::MultiGraph;
+    use crate::deploy::MultiGraph;
 
     #[test]
     fn profiler_wrapping_all_operators() {
         let flow = crate::builder::FlowBuilder::<MultiGraph>::new();
-        let process = flow.process(());
+        let process = flow.process::<()>(());
 
         flow.source_iter(&process, q!(0..10))
             .all_ticks()
@@ -111,6 +111,6 @@ mod tests {
 
         insta::assert_debug_snapshot!(&pushed_down.ir);
 
-        let _ = pushed_down.compile();
+        let _ = pushed_down.compile_no_network();
     }
 }

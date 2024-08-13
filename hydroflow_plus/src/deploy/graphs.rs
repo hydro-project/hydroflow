@@ -1,12 +1,10 @@
 use hydroflow_lang::graph::HydroflowGraph;
-use stageleft::{Quoted, RuntimeData};
 
-use super::{Cluster, LocalDeploy, Location, ProcessSpec};
+use super::{LocalDeploy, Node, ProcessSpec};
 
 pub struct SingleProcessGraph {}
 
 impl<'a> LocalDeploy<'a> for SingleProcessGraph {
-    type ClusterId = ();
     type Process = SingleNode;
     type Cluster = SingleNode;
     type Meta = ();
@@ -22,7 +20,7 @@ impl<'a> ProcessSpec<'a, SingleProcessGraph> for () {
 #[derive(Clone)]
 pub struct SingleNode {}
 
-impl Location for SingleNode {
+impl Node for SingleNode {
     type Port = ();
     type Meta = ();
     type InstantiateEnv = ();
@@ -46,26 +44,9 @@ impl Location for SingleNode {
     }
 }
 
-impl<'a> Cluster<'a> for SingleNode {
-    type Id = ();
-
-    fn ids(&self) -> impl Quoted<'a, &'a Vec<()>> + Copy + 'a {
-        panic!();
-        #[allow(unreachable_code)]
-        RuntimeData::new("")
-    }
-
-    fn self_id(&self) -> impl Quoted<'a, Self::Id> + Copy + 'a {
-        panic!();
-        #[allow(unreachable_code)]
-        RuntimeData::new("")
-    }
-}
-
 pub struct MultiGraph {}
 
 impl<'a> LocalDeploy<'a> for MultiGraph {
-    type ClusterId = u32;
     type Process = MultiNode;
     type Cluster = MultiNode;
     type Meta = ();
@@ -83,7 +64,7 @@ pub struct MultiNode {
     id: usize,
 }
 
-impl Location for MultiNode {
+impl Node for MultiNode {
     type Port = ();
     type Meta = ();
     type InstantiateEnv = ();
@@ -104,21 +85,5 @@ impl Location for MultiNode {
         _meta: &mut Self::Meta,
         _graph: HydroflowGraph,
     ) {
-    }
-}
-
-impl<'a> Cluster<'a> for MultiNode {
-    type Id = u32;
-
-    fn ids(&self) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
-        panic!();
-        #[allow(unreachable_code)]
-        RuntimeData::new("")
-    }
-
-    fn self_id(&self) -> impl Quoted<'a, Self::Id> + Copy + 'a {
-        panic!();
-        #[allow(unreachable_code)]
-        RuntimeData::new("")
     }
 }

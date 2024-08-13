@@ -1,3 +1,4 @@
+use hydroflow_plus::deploy::SingleProcessGraph;
 use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::*;
@@ -11,7 +12,7 @@ pub fn chat_app<'a>(
     output: RuntimeData<&'a UnboundedSender<(u32, String)>>,
     replay_messages: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let process = flow.process(());
+    let process = flow.process::<()>(());
 
     let users = flow.source_stream(&process, users_stream).all_ticks();
     let messages = flow.source_stream(&process, messages);
@@ -33,7 +34,7 @@ pub fn chat_app<'a>(
         output.send(t).unwrap();
     }));
 
-    flow.with_default_optimize().compile()
+    flow.with_default_optimize().compile_no_network()
 }
 
 #[stageleft::runtime]
