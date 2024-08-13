@@ -55,22 +55,23 @@ mod tests {
     async fn simple_cluster() {
         let deployment = RefCell::new(Deployment::new());
         let localhost = deployment.borrow_mut().Localhost();
+        let localhost_clone = localhost.clone();
 
         let builder = hydroflow_plus::FlowBuilder::new();
         let (node, cluster) = super::simple_cluster(
             &builder,
-            &DeployProcessSpec::new(|| {
-                deployment.borrow_mut().add_service(
+            &DeployProcessSpec::new(move |deployment| {
+                deployment.add_service(
                     HydroflowCrate::new(".", localhost.clone())
                         .bin("simple_cluster")
                         .profile("dev"),
                 )
             }),
-            &DeployClusterSpec::new(|| {
+            &DeployClusterSpec::new(move |deployment| {
                 (0..2)
                     .map(|_| {
-                        deployment.borrow_mut().add_service(
-                            HydroflowCrate::new(".", localhost.clone())
+                        deployment.add_service(
+                            HydroflowCrate::new(".", localhost_clone.clone())
                                 .bin("simple_cluster")
                                 .profile("dev"),
                         )
@@ -78,16 +79,18 @@ mod tests {
                     .collect()
             }),
         );
+        let built = builder.with_default_optimize();
 
-        insta::assert_debug_snapshot!(builder.finalize().ir());
+        insta::assert_debug_snapshot!(built.ir());
 
         let mut deployment = deployment.into_inner();
+        let _nodes = built.deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
 
         let mut node_stdout = node.stdout().await;
         let cluster_stdouts =
-            futures::future::join_all(cluster.members.iter().map(|node| node.stdout())).await;
+            futures::future::join_all(cluster.members().iter().map(|node| node.stdout())).await;
 
         deployment.start().await.unwrap();
 

@@ -62,7 +62,7 @@ mod tests {
             &RuntimeData::new("FAKE"),
             &RuntimeData::new("FAKE"),
         );
-        let built = builder.finalize();
+        let built = builder.with_default_optimize();
 
         insta::assert_debug_snapshot!(built.ir());
 
