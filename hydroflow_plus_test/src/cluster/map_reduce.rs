@@ -5,7 +5,7 @@ pub fn map_reduce<'a, D: Deploy<'a, ClusterId = u32>>(
     flow: &FlowBuilder<'a, D>,
     process_spec: impl ProcessSpec<'a, D>,
     cluster_spec: impl ClusterSpec<'a, D>,
-) -> (D::Process, D::Cluster) {
+) -> (Process<()>, Cluster<'a, ()>) {
     let process = flow.process(process_spec);
     let cluster = flow.cluster(cluster_spec);
 
@@ -43,9 +43,9 @@ pub fn map_reduce_runtime<'a>(
     flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = map_reduce(&flow, &cli, &cli);
+    let _ = map_reduce(&flow, (), ());
     flow.with_default_optimize()
-        .compile()
+        .compile(&cli)
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
@@ -57,16 +57,16 @@ mod tests {
     #[test]
     fn map_reduce_ir() {
         let builder = hydroflow_plus::FlowBuilder::new();
-        let _ = super::map_reduce(
-            &builder,
-            &RuntimeData::new("FAKE"),
-            &RuntimeData::new("FAKE"),
-        );
+        let _ = super::map_reduce(&builder, (), ());
         let built = builder.with_default_optimize();
 
         insta::assert_debug_snapshot!(built.ir());
 
-        for (id, ir) in built.with_default_optimize().compile().hydroflow_ir() {
+        for (id, ir) in built
+            .with_default_optimize()
+            .compile(&RuntimeData::new("FAKE"))
+            .hydroflow_ir()
+        {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(ir.surface_syntax_string());
             });
