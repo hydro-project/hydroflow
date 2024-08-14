@@ -233,7 +233,7 @@ impl VisitMut for GenFinalPubVistor {
     }
 }
 
-pub fn gen_final_helper(final_crate: &str) {
+pub fn gen_final_helper() {
     let out_dir = env::var_os("OUT_DIR").unwrap();
 
     let mut orig_flow_lib = syn_inline_mod::parse_and_inline_modules(Path::new("src/lib.rs"));
@@ -253,10 +253,6 @@ pub fn gen_final_helper(final_crate: &str) {
     .unwrap();
 
     println!("cargo::rustc-check-cfg=cfg(stageleft_macro)");
-    println!(
-        "cargo::rustc-env=STAGELEFT_FINAL_CRATE_NAME={}",
-        final_crate
-    );
     println!("cargo::rerun-if-changed=build.rs");
     println!("cargo::rerun-if-changed=src");
 }
@@ -264,6 +260,12 @@ pub fn gen_final_helper(final_crate: &str) {
 #[macro_export]
 macro_rules! gen_final {
     () => {
-        $crate::gen_final_helper(env!("CARGO_PKG_NAME"))
+        println!(
+            "cargo::rustc-env=STAGELEFT_FINAL_CRATE_NAME={}",
+            env!("CARGO_PKG_NAME")
+        );
+
+        #[cfg(feature = "stageleft_library")]
+        $crate::gen_final_helper()
     };
 }
