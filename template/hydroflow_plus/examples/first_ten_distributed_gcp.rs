@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use hydro_deploy::gcp::GcpNetwork;
 use hydro_deploy::{Deployment, HydroflowCrate};
-use hydroflow_plus_cli_integration::DeployProcessSpec;
+use hydroflow_plus_cli_integration::TrybuildHost;
 use tokio::sync::RwLock;
 
 #[tokio::main]
@@ -21,33 +21,29 @@ async fn main() {
         .with_default_optimize()
         .with_process(
             &p1,
-            DeployProcessSpec::new({
-                let host = deployment
+            TrybuildHost::new(
+                deployment
                     .GcpComputeEngineHost()
                     .project(gcp_project.clone())
                     .machine_type("e2-micro")
                     .image("debian-cloud/debian-11")
                     .region("us-west1-a")
                     .network(vpc.clone())
-                    .add();
-
-                HydroflowCrate::new(".", host).bin("first_ten_distributed")
-            }),
+                    .add(),
+            ),
         )
         .with_process(
             &p2,
-            DeployProcessSpec::new({
-                let host = deployment
+            TrybuildHost::new(
+                deployment
                     .GcpComputeEngineHost()
                     .project(gcp_project.clone())
                     .machine_type("e2-micro")
                     .image("debian-cloud/debian-11")
                     .region("us-west1-a")
                     .network(vpc.clone())
-                    .add();
-
-                HydroflowCrate::new(".", host).bin("first_ten_distributed")
-            }),
+                    .add(),
+            ),
         )
         .deploy(&mut deployment);
 

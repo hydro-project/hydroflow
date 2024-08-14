@@ -16,26 +16,11 @@ pub fn first_ten_distributed(flow: &FlowBuilder) -> (Process<P1>, Process<P2>) {
     (process, second_process)
 }
 
-use hydroflow_plus::util::cli::HydroCLI;
-use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
-
-#[stageleft::entry]
-pub fn first_ten_distributed_runtime<'a>(
-    flow: FlowBuilder<'a>,
-    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = first_ten_distributed(&flow);
-    flow.with_default_optimize()
-        .compile::<CLIRuntime>(&cli)
-        .with_dynamic_id(q!(cli.meta.subgraph_id))
-}
-
-#[stageleft::runtime]
 #[cfg(test)]
 mod tests {
     use hydro_deploy::{Deployment, HydroflowCrate};
     use hydroflow_plus::futures::StreamExt;
-    use hydroflow_plus_cli_integration::{DeployCrateWrapper, DeployProcessSpec};
+    use hydroflow_plus_cli_integration::{DeployCrateWrapper, TrybuildHost};
     use tokio_stream::wrappers::UnboundedReceiverStream;
 
     #[tokio::test]
@@ -48,22 +33,8 @@ mod tests {
 
         let nodes = flow
             .with_default_optimize()
-            .with_process(
-                &p1,
-                DeployProcessSpec::new({
-                    HydroflowCrate::new(".", localhost.clone())
-                        .bin("first_ten_distributed")
-                        .profile("dev")
-                }),
-            )
-            .with_process(
-                &p2,
-                DeployProcessSpec::new({
-                    HydroflowCrate::new(".", localhost.clone())
-                        .bin("first_ten_distributed")
-                        .profile("dev")
-                }),
-            )
+            .with_process(&p1, TrybuildHost::new(localhost.clone()).profile("dev"))
+            .with_process(&p2, TrybuildHost::new(localhost.clone()).profile("dev"))
             .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
