@@ -1515,7 +1515,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "trybuild",
+ "trybuild 1.0.86",
  "variadics",
  "wasm-bindgen-test",
  "web-time",
@@ -1621,11 +1621,15 @@ version = "0.8.0"
 dependencies = [
  "hydro_deploy",
  "hydroflow_plus",
+ "prettyplease",
  "serde",
+ "sha2",
  "stageleft",
  "stageleft_tool",
  "syn 2.0.60",
  "tokio",
+ "toml",
+ "trybuild 1.0.99",
 ]
 
 [[package]]
@@ -1637,7 +1641,6 @@ dependencies = [
  "hydroflow",
  "hydroflow_plus",
  "hydroflow_plus_cli_integration",
- "hydroflow_plus_test_macro",
  "insta",
  "rand 0.8.5",
  "serde",
@@ -1647,7 +1650,25 @@ dependencies = [
 ]
 
 [[package]]
-name = "hydroflow_plus_test_macro"
+name = "hydroflow_plus_test_local"
+version = "0.0.0"
+dependencies = [
+ "futures",
+ "hydro_deploy",
+ "hydroflow",
+ "hydroflow_plus",
+ "hydroflow_plus_cli_integration",
+ "hydroflow_plus_test_local_macro",
+ "insta",
+ "rand 0.8.5",
+ "serde",
+ "stageleft",
+ "stageleft_tool",
+ "tokio",
+]
+
+[[package]]
+name = "hydroflow_plus_test_local_macro"
 version = "0.0.0"
 dependencies = [
  "hydroflow_plus",
@@ -1852,7 +1873,7 @@ dependencies = [
  "lattices_macro",
  "sealed",
  "serde",
- "trybuild",
+ "trybuild 1.0.86",
 ]
 
 [[package]]
@@ -2433,7 +2454,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f4c021e1093a56626774e81216a4ce732a735e5bad4868a03f3ed65ca0c3919"
 dependencies = [
  "once_cell",
- "toml_edit",
+ "toml_edit 0.19.15",
 ]
 
 [[package]]
@@ -3037,6 +3058,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_spanned"
+version = "0.6.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb5b1b31579f3811bf615c144393417496f152e12ac8b7663bf664f4a815306d"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "sha1"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3547,10 +3577,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "toml"
+version = "0.8.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9dd1545e8208b4a5af1aa9bbd0b4cf7e9ea08fabc5d0a5c67fcaafa17433aa3"
+dependencies = [
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "toml_edit 0.22.12",
+]
+
+[[package]]
 name = "toml_datetime"
 version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3550f4e9685620ac18a50ed434eb3aec30db8ba93b0287467bca5826ea25baf1"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "toml_edit"
@@ -3560,7 +3605,20 @@ checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
 dependencies = [
  "indexmap",
  "toml_datetime",
- "winnow",
+ "winnow 0.5.30",
+]
+
+[[package]]
+name = "toml_edit"
+version = "0.22.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3328d4f68a705b2a4498da1d580585d39a6510f98318a2cec3018a7ec61ddef"
+dependencies = [
+ "indexmap",
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "winnow 0.6.18",
 ]
 
 [[package]]
@@ -3795,6 +3853,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "trybuild"
+version = "1.0.99"
+source = "git+https://github.com/hydro-project/trybuild.git?branch=public-api#1885c37fe5f9c9f4bb570721f8743c0095a6a2cd"
+dependencies = [
+ "glob",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "termcolor",
+ "toml",
+]
+
+[[package]]
 name = "tungstenite"
 version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3898,7 +3969,7 @@ name = "variadics"
 version = "0.0.5"
 dependencies = [
  "sealed",
- "trybuild",
+ "trybuild 1.0.86",
 ]
 
 [[package]]
@@ -4369,6 +4440,15 @@ name = "winnow"
 version = "0.5.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b5c3db89721d50d0e2a673f5043fc4722f76dcc352d7b1ab8b8288bed4ed2c5"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
+name = "winnow"
+version = "0.6.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68a9bda4691f099d435ad181000724da8e5899daa10713c2d432552b9ccd3a6f"
 dependencies = [
  "memchr",
 ]
