@@ -25,6 +25,7 @@ pub struct BuildParams {
     example: Option<String>,
     /// `--profile` parameter.
     profile: Option<String>,
+    target_dir: Option<PathBuf>,
     /// `--target <linux>` if cross-compiling for linux ([`HostTargetType::Linux`]).
     target_type: HostTargetType,
     /// `--features` flags, will be comma-delimited.
@@ -37,6 +38,7 @@ impl BuildParams {
         bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
+        target_dir: Option<PathBuf>,
         target_type: HostTargetType,
         features: Option<Vec<String>>,
     ) -> Self {
@@ -53,6 +55,7 @@ impl BuildParams {
             bin,
             example,
             profile,
+            target_dir,
             target_type,
             features,
         }
@@ -106,6 +109,10 @@ pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildO
                     }
 
                     command.arg("--message-format=json-diagnostic-rendered-ansi");
+
+                    if let Some(target_dir) = params.target_dir.as_ref() {
+                        command.env("CARGO_TARGET_DIR", target_dir);
+                    }
 
                     let mut spawned = command
                         .current_dir(&params.src)
