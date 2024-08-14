@@ -25,26 +25,11 @@ pub fn simple_cluster(flow: &FlowBuilder) -> (Process<()>, Cluster<()>) {
     (process, cluster)
 }
 
-use hydroflow_plus::util::cli::HydroCLI;
-use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
-
-#[stageleft::entry]
-pub fn simple_cluster_runtime<'a>(
-    flow: FlowBuilder<'a>,
-    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = simple_cluster(&flow);
-    flow.with_default_optimize()
-        .compile::<CLIRuntime>(&cli)
-        .with_dynamic_id(q!(cli.meta.subgraph_id))
-}
-
-#[stageleft::runtime]
 #[cfg(test)]
 mod tests {
     use hydro_deploy::{Deployment, HydroflowCrate};
     use hydroflow_plus_cli_integration::{
-        DeployClusterSpec, DeployCrateWrapper, DeployProcessSpec,
+        DeployClusterSpec, DeployCrateWrapper, DeployProcessSpec, TrybuildHost,
     };
 
     #[tokio::test]
@@ -61,23 +46,16 @@ mod tests {
         let nodes = built
             .with_process(
                 &node,
-                DeployProcessSpec::new({
-                    HydroflowCrate::new(".", localhost.clone())
-                        .bin("simple_cluster")
-                        .profile("dev")
-                }),
+                TrybuildHost::new(localhost.clone())
+                    .profile("dev")
             )
             .with_cluster(
                 &cluster,
-                DeployClusterSpec::new({
-                    (0..2)
-                        .map(|_| {
-                            HydroflowCrate::new(".", localhost.clone())
-                                .bin("simple_cluster")
-                                .profile("dev")
-                        })
-                        .collect()
-                }),
+                (0..2)
+                    .map(|_| {
+                        TrybuildHost::new(localhost.clone())
+                            .profile("dev")
+                    }).collect::<Vec<_>>(),
             )
             .deploy(&mut deployment);
 

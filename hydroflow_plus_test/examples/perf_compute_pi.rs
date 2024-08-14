@@ -3,11 +3,13 @@ use std::sync::Arc;
 use hydro_deploy::gcp::GcpNetwork;
 use hydro_deploy::hydroflow_crate::perf_options::PerfOptions;
 use hydro_deploy::{Deployment, Host, HydroflowCrate};
-use hydroflow_plus_cli_integration::{DeployClusterSpec, DeployProcessSpec};
+use hydroflow_plus_cli_integration::{DeployClusterSpec, DeployProcessSpec, TrybuildHost};
 use stageleft::RuntimeData;
 use tokio::sync::RwLock;
 
 type HostCreator = Box<dyn Fn(&mut Deployment) -> Arc<dyn Host>>;
+
+// TODO(shadaj): currently broken due to `profile` profile not being found
 
 // run with no args for localhost, with `gcp <GCP PROJECT>` for GCP
 #[tokio::main]
@@ -44,7 +46,7 @@ async fn main() {
 
     let builder = hydroflow_plus::FlowBuilder::new();
     let (cluster, leader) =
-        hydroflow_plus_test::cluster::compute_pi::compute_pi(&builder, RuntimeData::new("FAKE"));
+        hydroflow_plus_test::cluster::compute_pi::compute_pi(&builder, 8192);
 
     // Uncomment below, change .bin("counter_compute_pi") in order to track cardinality per operation
     // let runtime_context = builder.runtime_context();
@@ -56,41 +58,33 @@ async fn main() {
         .with_default_optimize()
         .with_process(
             &leader,
-            DeployProcessSpec::new({
-                let host = create_host(&mut deployment);
-                let perf_options: PerfOptions = PerfOptions::builder()
-                    .perf_outfile("leader.perf")
-                    .fold_outfile("leader.data.folded")
-                    .flamegraph_outfile("leader.svg")
-                    .frequency(5)
-                    .build();
-                HydroflowCrate::new(".", host.clone())
-                    .bin("compute_pi")
-                    .profile(profile)
-                    .perf(perf_options)
-                    .display_name("leader")
-            }),
+            TrybuildHost::new(create_host(&mut deployment))
+                .profile(profile)
+                .perf(
+                    PerfOptions::builder()
+                        .perf_outfile("leader.perf")
+                        .fold_outfile("leader.data.folded")
+                        .flamegraph_outfile("leader.svg")
+                        .frequency(5)
+                        .build()
+                )
+                .display_name("leader"),
         )
         .with_cluster(
             &cluster,
-            DeployClusterSpec::new({
-                (0..8)
-                    .map(|idx| {
-                        let host = create_host(&mut deployment);
-                        let perf_options = PerfOptions::builder()
+            (0..8).map(|idx| {
+                TrybuildHost::new(create_host(&mut deployment))
+                    .profile(profile)
+                    .perf(
+                        PerfOptions::builder()
                             .perf_outfile(format!("cluster{}.leader.perf", idx))
                             .fold_outfile(format!("cluster{}.data.folded", idx))
                             .flamegraph_outfile(format!("cluster{}.svg", idx))
                             .frequency(5)
-                            .build();
-                        HydroflowCrate::new(".", host.clone())
-                            .bin("compute_pi")
-                            .profile(profile)
-                            .perf(perf_options)
-                            .display_name(format!("cluster/{}", idx))
-                    })
-                    .collect()
-            }),
+                            .build()
+                    )
+                    .display_name(format!("cluster/{}", idx))
+            }).collect::<Vec<_>>(),
         )
         .deploy(&mut deployment);
     deployment.run_ctrl_c().await.unwrap();

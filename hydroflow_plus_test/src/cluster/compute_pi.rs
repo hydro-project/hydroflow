@@ -11,7 +11,7 @@ pub struct Leader {}
 
 pub fn compute_pi(
     flow: &FlowBuilder,
-    batch_size: RuntimeData<usize>,
+    batch_size: usize,
 ) -> (Cluster<Worker>, Process<Leader>) {
     let cluster = flow.cluster();
     let process = flow.process();
@@ -50,36 +50,6 @@ pub fn compute_pi(
     (cluster, process)
 }
 
-use hydroflow_plus::util::cli::HydroCLI;
-use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
-
-#[stageleft::entry]
-pub fn compute_pi_runtime<'a>(
-    flow: FlowBuilder<'a>,
-    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-    batch_size: RuntimeData<usize>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = compute_pi(&flow, batch_size);
-    flow.with_default_optimize()
-        .compile::<CLIRuntime>(&cli)
-        .with_dynamic_id(q!(cli.meta.subgraph_id))
-}
-
-#[stageleft::entry]
-pub fn cardinality_compute_pi_runtime<'a>(
-    flow: FlowBuilder<'a>,
-    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-    batch_size: RuntimeData<usize>,
-    counters: RuntimeData<&'a RefCell<Vec<u64>>>,
-    counter_queue: RuntimeData<&'a RefCell<UnboundedSender<(usize, u64)>>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = compute_pi(&flow, batch_size);
-    let runtime_context = flow.runtime_context();
-    flow.optimize_with(|ir| profiling(ir, runtime_context, counters, counter_queue))
-        .compile::<CLIRuntime>(&cli)
-        .with_dynamic_id(q!(cli.meta.subgraph_id))
-}
-
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
@@ -89,7 +59,7 @@ mod tests {
     #[test]
     fn compute_pi_ir() {
         let builder = hydroflow_plus::FlowBuilder::new();
-        let _ = super::compute_pi(&builder, RuntimeData::new("FAKE"));
+        let _ = super::compute_pi(&builder, 8192);
         let built = builder.with_default_optimize();
 
         insta::assert_debug_snapshot!(built.ir());
