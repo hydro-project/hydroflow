@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use hydro_deploy::gcp::GcpNetwork;
-use hydro_deploy::{Deployment, Host, HydroflowCrate};
-use hydroflow_plus_cli_integration::{DeployClusterSpec, DeployProcessSpec};
+use hydro_deploy::{Deployment, Host};
+use hydroflow_plus_cli_integration::TrybuildHost;
 use tokio::sync::RwLock;
 
 type HostCreator = Box<dyn Fn(&mut Deployment) -> Arc<dyn Host>>;
@@ -45,25 +45,13 @@ async fn main() {
         .with_default_optimize()
         .with_process(
             &process,
-            DeployProcessSpec::new({
-                let host = create_host(&mut deployment);
-                HydroflowCrate::new(".", host)
-                    .bin("simple_cluster")
-                    .profile(profile)
-            }),
+            TrybuildHost::new(create_host(&mut deployment)).profile(profile),
         )
         .with_cluster(
             &cluster,
-            DeployClusterSpec::new({
-                (0..2)
-                    .map(|_| {
-                        let host = create_host(&mut deployment);
-                        HydroflowCrate::new(".", host)
-                            .bin("simple_cluster")
-                            .profile(profile)
-                    })
-                    .collect()
-            }),
+            (0..2)
+                .map(|_| TrybuildHost::new(create_host(&mut deployment)).profile(profile))
+                .collect::<Vec<_>>(),
         )
         .deploy(&mut deployment);
     deployment.run_ctrl_c().await.unwrap();
