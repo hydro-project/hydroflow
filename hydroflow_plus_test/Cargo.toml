@@ -13,8 +13,6 @@ hydroflow_plus_cli_integration = { path = "../hydro_deploy/hydroflow_plus_cli_in
 rand = "0.8.5"
 serde = { version = "1", features = [ "derive" ] }
 
-hydroflow_plus_test_macro = { path = "../hydroflow_plus_test_macro" }
-
 [build-dependencies]
 stageleft_tool = { path = "../stageleft_tool", version = "^0.2.0" }
 
