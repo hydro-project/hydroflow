@@ -24,7 +24,7 @@ impl<'a> LocalDeploy<'a> for SingleProcessGraph {
 }
 
 impl<'a> ProcessSpec<'a, SingleProcessGraph> for () {
-    fn build(self, _id: usize) -> SingleNode {
+    fn build(self, _id: usize, _name_hint: &str) -> SingleNode {
         SingleNode {}
     }
 }
@@ -48,6 +48,7 @@ impl Node for SingleNode {
         _env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
         _graph: HydroflowGraph,
+        _extra_stmts: Vec<syn::Stmt>,
     ) {
     }
 }
@@ -74,7 +75,7 @@ impl<'a> LocalDeploy<'a> for MultiGraph {
 }
 
 impl<'a> ProcessSpec<'a, MultiGraph> for () {
-    fn build(self, _id: usize) -> MultiNode {
+    fn build(self, _id: usize, _name_hint: &str) -> MultiNode {
         MultiNode {}
     }
 }
@@ -98,6 +99,7 @@ impl Node for MultiNode {
         _env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
         _graph: HydroflowGraph,
+        _extra_stmts: Vec<syn::Stmt>,
     ) {
     }
 }
