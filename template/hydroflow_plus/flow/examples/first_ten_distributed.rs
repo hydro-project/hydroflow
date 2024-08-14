@@ -7,16 +7,27 @@ async fn main() {
     let localhost = deployment.Localhost();
 
     let flow = hydroflow_plus::FlowBuilder::new();
-    flow::first_ten_distributed::first_ten_distributed(
-        &flow,
-        DeployProcessSpec::new({
-            HydroflowCrate::new(".", localhost.clone())
-                .bin("first_ten_distributed")
-                .profile("dev")
-        }),
-    );
+    let (p1, p2) = flow::first_ten_distributed::first_ten_distributed(&flow);
 
-    let _nodes = flow.with_default_optimize().deploy(&mut deployment);
+    let nodes = flow
+        .with_default_optimize()
+        .with_process(
+            &p1,
+            DeployProcessSpec::new({
+                HydroflowCrate::new(".", localhost.clone())
+                    .bin("first_ten_distributed")
+                    .profile("dev")
+            }),
+        )
+        .with_process(
+            &p2,
+            DeployProcessSpec::new({
+                HydroflowCrate::new(".", localhost.clone())
+                    .bin("first_ten_distributed")
+                    .profile("dev")
+            }),
+        )
+        .deploy(&mut deployment);
 
     deployment.deploy().await.unwrap();
 
