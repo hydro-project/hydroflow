@@ -16,7 +16,7 @@ async fn main() {
     let flow = hydroflow_plus::FlowBuilder::new();
     flow::first_ten_distributed::first_ten_distributed(
         &flow,
-        &DeployProcessSpec::new(move |deployment| {
+        DeployProcessSpec::new({
             let host = deployment
                 .GcpComputeEngineHost()
                 .project(gcp_project.clone())
@@ -26,7 +26,7 @@ async fn main() {
                 .network(vpc.clone())
                 .add();
 
-            deployment.add_service(HydroflowCrate::new(".", host).bin("first_ten_distributed"))
+            HydroflowCrate::new(".", host).bin("first_ten_distributed")
         }),
     );
 

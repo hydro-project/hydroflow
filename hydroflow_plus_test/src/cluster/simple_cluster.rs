@@ -3,8 +3,8 @@ use stageleft::*;
 
 pub fn simple_cluster<'a, D: Deploy<'a, ClusterId = u32>>(
     flow: &FlowBuilder<'a, D>,
-    process_spec: &impl ProcessSpec<'a, D>,
-    cluster_spec: &impl ClusterSpec<'a, D>,
+    process_spec: impl ProcessSpec<'a, D>,
+    cluster_spec: impl ClusterSpec<'a, D>,
 ) -> (D::Process, D::Cluster) {
     let process = flow.process(process_spec);
     let cluster = flow.cluster(cluster_spec);
@@ -53,26 +53,21 @@ mod tests {
     async fn simple_cluster() {
         let mut deployment = Deployment::new();
         let localhost = deployment.Localhost();
-        let localhost_clone = localhost.clone();
 
         let builder = hydroflow_plus::FlowBuilder::new();
         let (node, cluster) = super::simple_cluster(
             &builder,
-            &DeployProcessSpec::new(move |deployment| {
-                deployment.add_service(
-                    HydroflowCrate::new(".", localhost.clone())
-                        .bin("simple_cluster")
-                        .profile("dev"),
-                )
+            DeployProcessSpec::new({
+                HydroflowCrate::new(".", localhost.clone())
+                    .bin("simple_cluster")
+                    .profile("dev")
             }),
-            &DeployClusterSpec::new(move |deployment| {
+            DeployClusterSpec::new({
                 (0..2)
                     .map(|_| {
-                        deployment.add_service(
-                            HydroflowCrate::new(".", localhost_clone.clone())
-                                .bin("simple_cluster")
-                                .profile("dev"),
-                        )
+                        HydroflowCrate::new(".", localhost.clone())
+                            .bin("simple_cluster")
+                            .profile("dev")
                     })
                     .collect()
             }),

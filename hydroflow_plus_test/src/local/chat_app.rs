@@ -11,7 +11,7 @@ pub fn chat_app<'a>(
     output: RuntimeData<&'a UnboundedSender<(u32, String)>>,
     replay_messages: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let process = flow.process(&());
+    let process = flow.process(());
 
     let users = flow.source_stream(&process, users_stream).all_ticks();
     let messages = flow.source_stream(&process, messages);
