@@ -23,25 +23,10 @@ pub fn first_ten_distributed(flow: &FlowBuilder) -> (Process<P1>, Process<P2>) {
     (process, second_process)
 }
 
-use hydroflow_plus::util::cli::HydroCLI;
-use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
-
-#[stageleft::entry]
-pub fn first_ten_distributed_runtime<'a>(
-    flow: FlowBuilder<'a>,
-    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = first_ten_distributed(&flow);
-    flow.with_default_optimize()
-        .compile::<CLIRuntime>(&cli)
-        .with_dynamic_id(q!(cli.meta.subgraph_id))
-}
-
-#[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use hydro_deploy::{Deployment, HydroflowCrate};
-    use hydroflow_plus_cli_integration::{DeployCrateWrapper, DeployProcessSpec};
+    use hydro_deploy::Deployment;
+    use hydroflow_plus_cli_integration::{DeployCrateWrapper, TrybuildHost};
 
     #[tokio::test]
     async fn first_ten_distributed() {
@@ -59,19 +44,13 @@ mod tests {
         let nodes = built
             .with_process(
                 &first_node,
-                DeployProcessSpec::new({
-                    HydroflowCrate::new(".", localhost.clone())
-                        .bin("first_ten_distributed")
-                        .profile("dev")
-                }),
+                TrybuildHost::new(localhost.clone())
+                    .profile("dev"),
             )
             .with_process(
                 &second_node,
-                DeployProcessSpec::new({
-                    HydroflowCrate::new(".", localhost.clone())
-                        .bin("first_ten_distributed")
-                        .profile("dev")
-                }),
+                TrybuildHost::new(localhost.clone())
+                    .profile("dev"),
             )
             .deploy(&mut deployment);
 

@@ -55,6 +55,7 @@ impl HydroflowCrateService {
         bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
+        target_dir: Option<PathBuf>,
         perf: Option<PerfOptions>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
@@ -63,7 +64,15 @@ impl HydroflowCrateService {
     ) -> Self {
         let target_type = on.target_type();
 
-        let build_params = BuildParams::new(src, bin, example, profile, target_type, features);
+        let build_params = BuildParams::new(
+            src,
+            bin,
+            example,
+            profile,
+            target_dir,
+            target_type,
+            features,
+        );
 
         Self {
             id,

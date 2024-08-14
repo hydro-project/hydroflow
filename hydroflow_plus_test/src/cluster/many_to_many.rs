@@ -10,25 +10,10 @@ pub fn many_to_many(flow: &FlowBuilder) -> Cluster<()> {
     cluster
 }
 
-use hydroflow_plus::util::cli::HydroCLI;
-use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
-
-#[stageleft::entry]
-pub fn many_to_many_runtime<'a>(
-    flow: FlowBuilder<'a>,
-    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = many_to_many(&flow);
-    flow.with_default_optimize()
-        .compile::<CLIRuntime>(&cli)
-        .with_dynamic_id(q!(cli.meta.subgraph_id))
-}
-
-#[stageleft::runtime]
 #[cfg(test)]
 mod tests {
     use hydro_deploy::{Deployment, HydroflowCrate};
-    use hydroflow_plus_cli_integration::{DeployClusterSpec, DeployCrateWrapper};
+    use hydroflow_plus_cli_integration::{DeployClusterSpec, DeployCrateWrapper, TrybuildHost};
 
     #[tokio::test]
     async fn many_to_many() {
@@ -44,15 +29,10 @@ mod tests {
         let nodes = built
             .with_cluster(
                 &cluster,
-                DeployClusterSpec::new({
-                    (0..2)
-                        .map(|_| {
-                            HydroflowCrate::new(".", localhost.clone())
-                                .bin("many_to_many")
-                                .profile("dev")
-                        })
-                        .collect()
-                }),
+                (0..2).map(|_| {
+                    TrybuildHost::new(localhost.clone())
+                        .profile("dev")
+                }).collect::<Vec<_>>(),
             )
             .deploy(&mut deployment);
 
