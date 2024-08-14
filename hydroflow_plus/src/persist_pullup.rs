@@ -24,12 +24,12 @@ pub fn persist_pullup(ir: Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf> {
 mod tests {
     use stageleft::*;
 
-    use crate::MultiGraph;
+    use crate::deploy::MultiGraph;
 
     #[test]
     fn persist_pullup_through_map() {
-        let flow = crate::builder::FlowBuilder::<MultiGraph>::new();
-        let process = flow.process(());
+        let flow = crate::builder::FlowBuilder::new();
+        let process = flow.process::<()>();
 
         flow.source_iter(&process, q!(0..10))
             .all_ticks()
@@ -43,7 +43,7 @@ mod tests {
         let optimized = built.optimize_with(super::persist_pullup);
 
         insta::assert_debug_snapshot!(optimized.ir());
-        for (id, graph) in optimized.compile().hydroflow_ir() {
+        for (id, graph) in optimized.compile_no_network::<MultiGraph>().hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(graph.surface_syntax_string());
             });
@@ -52,8 +52,8 @@ mod tests {
 
     #[test]
     fn persist_pullup_behind_tee() {
-        let flow = crate::builder::FlowBuilder::<MultiGraph>::new();
-        let process = flow.process(());
+        let flow = crate::builder::FlowBuilder::new();
+        let process = flow.process::<()>();
 
         let before_tee = flow
             .source_iter(&process, q!(0..10))
@@ -72,7 +72,7 @@ mod tests {
 
         insta::assert_debug_snapshot!(optimized.ir());
 
-        for (id, graph) in optimized.compile().hydroflow_ir() {
+        for (id, graph) in optimized.compile_no_network::<MultiGraph>().hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(graph.surface_syntax_string());
             });
