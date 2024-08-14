@@ -226,7 +226,7 @@ pub struct RuntimeData<T> {
     _phantom: PhantomData<T>,
 }
 
-impl<'a, T> Quoted<'a, T> for RuntimeData<T> {}
+impl<'a, T: 'a> Quoted<'a, T> for RuntimeData<T> {}
 
 impl<T: Copy> Copy for RuntimeData<T> {}
 
