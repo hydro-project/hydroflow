@@ -480,7 +480,7 @@
     _phantom: PhantomData&lt;T&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Quoted&lt;<span class="lifetime">'a</span>, T&gt; <span class="kw">for </span>RuntimeData&lt;T&gt; {}
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt; Quoted&lt;<span class="lifetime">'a</span>, T&gt; <span class="kw">for </span>RuntimeData&lt;T&gt; {}
 
 <span class="kw">impl</span>&lt;T: Copy&gt; Copy <span class="kw">for </span>RuntimeData&lt;T&gt; {}
 

@@ -370,6 +370,42 @@
 <a href="#370" id="370">370</a>
 <a href="#371" id="371">371</a>
 <a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::marker::PhantomData;
@@ -389,24 +425,18 @@
     ClusterSpec, HfSendOneToMany, HfSendOneToOne, LocalDeploy, Location, ProcessSpec,
 };
 <span class="kw">use </span><span class="kw">crate</span>::stream::{Async, Windowed};
-<span class="kw">use crate</span>::{HfCompiled, HfCycle, RuntimeContext, Stream};
+<span class="kw">use crate</span>::{Deploy, HfCompiled, HfCycle, RuntimeContext, Stream};
 
 <span class="doccomment">/// Tracks the leaves of the dataflow IR. This is referenced by
 /// `Stream` and `HfCycle` to build the IR. The inner option will
 /// be set to `None` when this builder is finalized.
-</span><span class="kw">pub type </span>FlowLeaves = Rc&lt;RefCell&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt;&gt;;
+</span><span class="kw">pub type </span>FlowLeaves&lt;<span class="lifetime">'a</span>&gt; = Rc&lt;RefCell&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;&gt;&gt;&gt;;
 
 <span class="kw">pub struct </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt; + <span class="question-mark">?</span>Sized&gt; {
-    ir_leaves: FlowLeaves,
+    ir_leaves: FlowLeaves&lt;<span class="lifetime">'a</span>&gt;,
     nodes: RefCell&lt;Vec&lt;D::Process&gt;&gt;,
     clusters: RefCell&lt;Vec&lt;D::Cluster&gt;&gt;,
     cycle_ids: RefCell&lt;HashMap&lt;usize, usize&gt;&gt;,
-
-    <span class="doccomment">/// Tracks metadata about concrete deployments in this graph, such
-    /// as the IDs of each node in a cluster. This is written to
-    /// by `ProcessSpec` and `ClusterSpec` and is written to
-    /// each instantiated node and cluster via `HfNode::update_meta`.
-    </span>meta: RefCell&lt;D::Meta&gt;,
 
     next_node_id: RefCell&lt;usize&gt;,
 
@@ -443,7 +473,6 @@
             nodes: RefCell::new(Vec::new()),
             clusters: RefCell::new(Vec::new()),
             cycle_ids: RefCell::new(HashMap::new()),
-            meta: RefCell::new(Default::default()),
             next_node_id: RefCell::new(<span class="number">0</span>),
             finalized: <span class="bool-val">false</span>,
             _phantom: PhantomData,
@@ -452,10 +481,12 @@
 
     <span class="kw">pub fn </span>finalize(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
         <span class="self">self</span>.finalized = <span class="bool-val">true</span>;
+
         BuiltFlow {
             ir: <span class="self">self</span>.ir_leaves.borrow_mut().take().unwrap(),
             nodes: <span class="self">self</span>.nodes.replace(<span class="macro">vec!</span>[]),
             clusters: <span class="self">self</span>.clusters.replace(<span class="macro">vec!</span>[]),
+            used: <span class="bool-val">false</span>,
             _phantom: PhantomData,
         }
     }
@@ -466,12 +497,12 @@
 
     <span class="kw">pub fn </span>optimize_with(
         <span class="self">self</span>,
-        f: <span class="kw">impl </span>FnOnce(Vec&lt;HfPlusLeaf&gt;) -&gt; Vec&lt;HfPlusLeaf&gt;,
+        f: <span class="kw">impl </span>FnOnce(Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;) -&gt; Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;,
     ) -&gt; BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
         <span class="self">self</span>.finalize().optimize_with(f)
     }
 
-    <span class="kw">pub fn </span>ir_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>FlowLeaves {
+    <span class="kw">pub fn </span>ir_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>FlowLeaves&lt;<span class="lifetime">'a</span>&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.ir_leaves
     }
 
@@ -480,10 +511,8 @@
         <span class="kw">let </span>id = <span class="kw-2">*</span>next_node_id;
         <span class="kw-2">*</span>next_node_id += <span class="number">1</span>;
 
-        <span class="kw">let </span>node = spec.build(id, <span class="kw-2">&amp;mut </span><span class="self">self</span>.meta.borrow_mut());
+        <span class="kw">let </span>node = spec.build(id);
         <span class="self">self</span>.nodes.borrow_mut().push(node.clone());
-
-        <span class="self">self</span>.update_metas();
 
         node
     }
@@ -493,10 +522,8 @@
         <span class="kw">let </span>id = <span class="kw-2">*</span>next_node_id;
         <span class="kw-2">*</span>next_node_id += <span class="number">1</span>;
 
-        <span class="kw">let </span>cluster = spec.build(id, <span class="kw-2">&amp;mut </span><span class="self">self</span>.meta.borrow_mut());
+        <span class="kw">let </span>cluster = spec.build(id);
         <span class="self">self</span>.clusters.borrow_mut().push(cluster.clone());
-
-        <span class="self">self</span>.update_metas();
 
         cluster
     }
@@ -665,61 +692,50 @@
             ),
         )
     }
-
-    <span class="kw">fn </span>update_metas(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-        <span class="self">self</span>.nodes
-            .borrow_mut()
-            .iter_mut()
-            .for_each(|n| n.update_meta(<span class="kw-2">&amp;</span><span class="self">self</span>.meta.borrow()));
-        <span class="self">self</span>.clusters
-            .borrow_mut()
-            .iter_mut()
-            .for_each(|n| n.update_meta(<span class="kw-2">&amp;</span><span class="self">self</span>.meta.borrow()));
-    }
 }
 
 <span class="kw">pub struct </span>BuiltFlow&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) ir: Vec&lt;HfPlusLeaf&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) ir: Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;,
     nodes: Vec&lt;D::Process&gt;,
     clusters: Vec&lt;D::Cluster&gt;,
+    used: bool,
 
     _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>D&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; Clone <span class="kw">for </span>BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
-    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
-        BuiltFlow {
-            ir: <span class="self">self</span>.ir.clone(),
-            nodes: <span class="self">self</span>.nodes.clone(),
-            clusters: <span class="self">self</span>.clusters.clone(),
-            _phantom: PhantomData,
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; Drop <span class="kw">for </span>BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">if </span>!<span class="self">self</span>.used {
+            <span class="macro">panic!</span>(<span class="string">"Dropped BuiltFlow without instantiating, you may have forgotten to call `compile` or `deploy`."</span>);
         }
     }
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
-    <span class="kw">pub fn </span>ir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;HfPlusLeaf&gt; {
+    <span class="kw">pub fn </span>ir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.ir
     }
 
     <span class="kw">pub fn </span>optimize_with(
-        <span class="self">self</span>,
-        f: <span class="kw">impl </span>FnOnce(Vec&lt;HfPlusLeaf&gt;) -&gt; Vec&lt;HfPlusLeaf&gt;,
+        <span class="kw-2">mut </span><span class="self">self</span>,
+        f: <span class="kw">impl </span>FnOnce(Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;) -&gt; Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;,
     ) -&gt; BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
+        <span class="self">self</span>.used = <span class="bool-val">true</span>;
         BuiltFlow {
-            ir: f(<span class="self">self</span>.ir),
-            nodes: <span class="self">self</span>.nodes,
-            clusters: <span class="self">self</span>.clusters,
+            ir: f(std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.ir)),
+            nodes: std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.nodes),
+            clusters: std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.clusters),
+            used: <span class="bool-val">false</span>,
             _phantom: PhantomData,
         }
     }
 }
 
-<span class="kw">fn </span>build_inner&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt;(me: BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt;) -&gt; BTreeMap&lt;usize, HydroflowGraph&gt; {
+<span class="kw">fn </span>build_inner(ir: Vec&lt;HfPlusLeaf&gt;) -&gt; BTreeMap&lt;usize, HydroflowGraph&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>builders = BTreeMap::new();
     <span class="kw">let </span><span class="kw-2">mut </span>built_tees = HashMap::new();
     <span class="kw">let </span><span class="kw-2">mut </span>next_stmt_id = <span class="number">0</span>;
-    <span class="kw">for </span>leaf <span class="kw">in </span>me.ir {
+    <span class="kw">for </span>leaf <span class="kw">in </span>ir {
         leaf.emit(<span class="kw-2">&amp;mut </span>builders, <span class="kw-2">&amp;mut </span>built_tees, <span class="kw-2">&amp;mut </span>next_stmt_id);
     }
 
@@ -731,15 +747,71 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
-    <span class="kw">pub fn </span>compile(<span class="self">self</span>) -&gt; HfCompiled&lt;<span class="lifetime">'a</span>, D::GraphId&gt; {
+    <span class="kw">pub fn </span>compile(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; HfCompiled&lt;<span class="lifetime">'a</span>, D::GraphId&gt; {
+        <span class="self">self</span>.used = <span class="bool-val">true</span>;
+
+        <span class="kw">let </span><span class="kw-2">mut </span>seen_tees: HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt; = HashMap::new();
+        <span class="kw">let </span>ir_leaves_networked: Vec&lt;HfPlusLeaf&gt; = std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.ir)
+            .into_iter()
+            .map(|leaf| leaf.instantiate_network(<span class="kw-2">&amp;mut </span>seen_tees))
+            .collect();
+
         HfCompiled {
-            hydroflow_ir: build_inner(<span class="self">self</span>),
+            hydroflow_ir: build_inner(ir_leaves_networked),
             _phantom: PhantomData,
         }
     }
 
     <span class="kw">pub fn </span>with_default_optimize(<span class="self">self</span>) -&gt; BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
         <span class="self">self</span>.optimize_with(<span class="kw">super</span>::persist_pullup::persist_pullup)
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt; BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
+    <span class="attr">#[must_use]
+    </span><span class="kw">pub fn </span>deploy(<span class="kw-2">mut </span><span class="self">self</span>, env: <span class="kw-2">&amp;mut </span>D::InstantiateEnv) -&gt; (Vec&lt;D::Process&gt;, Vec&lt;D::Cluster&gt;) {
+        <span class="self">self</span>.used = <span class="bool-val">true</span>;
+
+        <span class="kw">let </span><span class="kw-2">mut </span>seen_tees_instantiate: HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt; = HashMap::new();
+        <span class="kw">let </span>ir_leaves_networked: Vec&lt;HfPlusLeaf&gt; = std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.ir)
+            .into_iter()
+            .map(|leaf| leaf.instantiate_network(<span class="kw-2">&amp;mut </span>seen_tees_instantiate))
+            .collect();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>compiled = build_inner(ir_leaves_networked.clone());
+        <span class="kw">let </span><span class="kw-2">mut </span>meta = D::Meta::default();
+
+        <span class="kw">let </span>(<span class="kw-2">mut </span>nodes, <span class="kw-2">mut </span>clusters): (Vec&lt;D::Process&gt;, Vec&lt;D::Cluster&gt;) = (
+            std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.nodes)
+                .into_iter()
+                .map(|node| {
+                    node.instantiate(env, <span class="kw-2">&amp;mut </span>meta, compiled.remove(<span class="kw-2">&amp;</span>node.id()).unwrap());
+                    node
+                })
+                .collect(),
+            std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.clusters)
+                .into_iter()
+                .map(|cluster| {
+                    cluster.instantiate(env, <span class="kw-2">&amp;mut </span>meta, compiled.remove(<span class="kw-2">&amp;</span>cluster.id()).unwrap());
+                    cluster
+                })
+                .collect(),
+        );
+
+        <span class="kw">for </span>node <span class="kw">in </span><span class="kw-2">&amp;mut </span>nodes {
+            node.update_meta(<span class="kw-2">&amp;</span>meta);
+        }
+
+        <span class="kw">for </span>cluster <span class="kw">in </span><span class="kw-2">&amp;mut </span>clusters {
+            cluster.update_meta(<span class="kw-2">&amp;</span>meta);
+        }
+
+        <span class="kw">let </span><span class="kw-2">mut </span>seen_tees_connect = HashMap::new();
+        <span class="kw">for </span>leaf <span class="kw">in </span>ir_leaves_networked {
+            leaf.connect_network(<span class="kw-2">&amp;mut </span>seen_tees_connect);
+        }
+
+        (nodes, clusters)
     }
 }
 </code></pre></div></section></main></body></html>

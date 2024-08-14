@@ -109,6 +109,11 @@
 <a href="#109" id="109">109</a>
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashSet;
 
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
@@ -152,11 +157,11 @@
 <span class="comment">// Dataflow graph optimization rewrite rules based on algebraic property tags
 // TODO add a test that verifies the space of possible graphs after rewrites is correct for each property
 
-</span><span class="kw">fn </span>properties_optimize_node(
-    node: HfPlusNode,
+</span><span class="kw">fn </span>properties_optimize_node&lt;<span class="lifetime">'a</span>&gt;(
+    node: HfPlusNode&lt;<span class="lifetime">'a</span>&gt;,
     db: <span class="kw-2">&amp;</span>PropertyDatabase,
-    seen_tees: <span class="kw-2">&amp;mut </span>SeenTees,
-) -&gt; HfPlusNode {
+    seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;,
+) -&gt; HfPlusNode&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">match </span>node.transform_children(
         |node, seen_tees| properties_optimize_node(node, db, seen_tees),
         seen_tees,
@@ -169,7 +174,10 @@
     }
 }
 
-<span class="kw">pub fn </span>properties_optimize(ir: Vec&lt;HfPlusLeaf&gt;, db: <span class="kw-2">&amp;</span>PropertyDatabase) -&gt; Vec&lt;HfPlusLeaf&gt; {
+<span class="kw">pub fn </span>properties_optimize&lt;<span class="lifetime">'a</span>&gt;(
+    ir: Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;,
+    db: <span class="kw-2">&amp;</span>PropertyDatabase,
+) -&gt; Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>seen_tees = Default::default();
     ir.into_iter()
         .map(|l| {
@@ -218,6 +226,8 @@
             .with_default_optimize();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
+
+        <span class="kw">let _ </span>= built.compile();
     }
 }
 </code></pre></div></section></main></body></html>

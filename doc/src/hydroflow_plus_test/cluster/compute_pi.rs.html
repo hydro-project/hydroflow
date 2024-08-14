@@ -199,11 +199,11 @@
             <span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>),
             RuntimeData::new(<span class="string">"FAKE"</span>),
         );
-        <span class="kw">let </span>built = builder.finalize();
+        <span class="kw">let </span>built = builder.with_default_optimize();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
-        <span class="kw">for </span>(id, ir) <span class="kw">in </span>built.with_default_optimize().compile().hydroflow_ir() {
+        <span class="kw">for </span>(id, ir) <span class="kw">in </span>built.compile().hydroflow_ir() {
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="macro">format!</span>(<span class="string">"surface_graph_{id}"</span>)}, {
                 <span class="macro">insta::assert_display_snapshot!</span>(ir.surface_syntax_string());
             });

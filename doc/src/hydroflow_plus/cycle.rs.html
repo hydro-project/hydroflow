@@ -41,7 +41,7 @@
 </span><span class="kw">pub struct </span>HfCycle&lt;<span class="lifetime">'a</span>, T, W, N: Location + Clone&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
     <span class="kw">pub</span>(<span class="kw">crate</span>) node: N,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) ir_leaves: FlowLeaves,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) ir_leaves: FlowLeaves&lt;<span class="lifetime">'a</span>&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), T, W)&gt;,
 }
 

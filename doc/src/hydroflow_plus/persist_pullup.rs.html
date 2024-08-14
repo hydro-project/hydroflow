@@ -81,7 +81,7 @@
 <a href="#81" id="81">81</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::ir::<span class="kw-2">*</span>;
 
-<span class="kw">fn </span>persist_pullup_node(node: HfPlusNode, seen_tees: <span class="kw-2">&amp;mut </span>SeenTees) -&gt; HfPlusNode {
+<span class="kw">fn </span>persist_pullup_node&lt;<span class="lifetime">'a</span>&gt;(node: HfPlusNode&lt;<span class="lifetime">'a</span>&gt;, seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;) -&gt; HfPlusNode&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">match </span>node.transform_children(persist_pullup_node, seen_tees) {
         HfPlusNode::Map {
             f,

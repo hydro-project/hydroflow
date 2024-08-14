@@ -130,6 +130,12 @@
 <a href="#130" id="130">130</a>
 <a href="#131" id="131">131</a>
 <a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::bytes::Bytes;
 <span class="kw">use </span>hydroflow_plus::util::cli::HydroCLI;
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
@@ -203,30 +209,36 @@
     </span><span class="kw">async fn </span>networked_basic() {
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
         <span class="kw">let </span>localhost = deployment.Localhost();
+        <span class="kw">let </span>localhost_clone = localhost.clone();
+        <span class="kw">let </span>localhost_clone_2 = localhost.clone();
 
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let </span>deployment = RefCell::new(deployment);
         <span class="kw">let </span>io = <span class="kw">super</span>::networked_basic(
             <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;</span>DeployProcessSpec::new(|| {
-                deployment.borrow_mut().add_service(
-                    HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
+            <span class="kw-2">&amp;</span>DeployProcessSpec::new(<span class="kw">move </span>|deployment| {
+                deployment.add_service(
+                    HydroflowCrate::new(<span class="string">"."</span>, localhost_clone.clone())
                         .bin(<span class="string">"networked_basic"</span>)
                         .profile(<span class="string">"dev"</span>),
                 )
             }),
-            <span class="kw-2">&amp;</span>DeployClusterSpec::new(|| {
-                <span class="macro">vec!</span>[deployment.borrow_mut().add_service(
-                    HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
+            <span class="kw-2">&amp;</span>DeployClusterSpec::new(<span class="kw">move </span>|deployment| {
+                <span class="macro">vec!</span>[deployment.add_service(
+                    HydroflowCrate::new(<span class="string">"."</span>, localhost_clone_2.clone())
                         .bin(<span class="string">"networked_basic"</span>)
                         .profile(<span class="string">"dev"</span>),
                 )]
             }),
         );
 
-        <span class="macro">insta::assert_debug_snapshot!</span>(builder.finalize().ir());
+        <span class="kw">let </span>built = builder.with_default_optimize();
+        <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = deployment.into_inner();
+
+        <span class="comment">// if we drop this, we drop the references to the deployment nodes
+        </span><span class="kw">let </span>_nodes = built.deploy(<span class="kw-2">&amp;mut </span>deployment);
 
         <span class="kw">let </span>port_to_zero = io
             .source_zero_port
@@ -244,7 +256,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>node_one_stdout = io.process_one.stdout().<span class="kw">await</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>conn_to_cluster = ports_to_cluster[<span class="number">0</span>].connect().<span class="kw">await</span>.into_sink();
-        <span class="kw">let </span><span class="kw-2">mut </span>cluster_stdout = io.cluster.members[<span class="number">0</span>].stdout().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>cluster_stdout = io.cluster.members()[<span class="number">0</span>].stdout().<span class="kw">await</span>;
 
         deployment.start().<span class="kw">await</span>.unwrap();
 

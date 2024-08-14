@@ -137,7 +137,7 @@
             <span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>),
             <span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>),
         );
-        <span class="kw">let </span>built = builder.finalize();
+        <span class="kw">let </span>built = builder.with_default_optimize();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 

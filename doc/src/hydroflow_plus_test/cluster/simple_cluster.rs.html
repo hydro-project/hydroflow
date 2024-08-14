@@ -160,8 +160,6 @@
 <span class="attr">#[stageleft::runtime]
 #[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>std::cell::RefCell;
-
     <span class="kw">use </span>hydro_deploy::{Deployment, HydroflowCrate};
     <span class="kw">use </span>hydroflow_plus_cli_integration::{
         DeployClusterSpec, DeployCrateWrapper, DeployProcessSpec,
@@ -169,24 +167,25 @@
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>simple_cluster() {
-        <span class="kw">let </span>deployment = RefCell::new(Deployment::new());
-        <span class="kw">let </span>localhost = deployment.borrow_mut().Localhost();
+        <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
+        <span class="kw">let </span>localhost = deployment.Localhost();
+        <span class="kw">let </span>localhost_clone = localhost.clone();
 
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let </span>(node, cluster) = <span class="kw">super</span>::simple_cluster(
             <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;</span>DeployProcessSpec::new(|| {
-                deployment.borrow_mut().add_service(
+            <span class="kw-2">&amp;</span>DeployProcessSpec::new(<span class="kw">move </span>|deployment| {
+                deployment.add_service(
                     HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
                         .bin(<span class="string">"simple_cluster"</span>)
                         .profile(<span class="string">"dev"</span>),
                 )
             }),
-            <span class="kw-2">&amp;</span>DeployClusterSpec::new(|| {
+            <span class="kw-2">&amp;</span>DeployClusterSpec::new(<span class="kw">move </span>|deployment| {
                 (<span class="number">0</span>..<span class="number">2</span>)
                     .map(|<span class="kw">_</span>| {
-                        deployment.borrow_mut().add_service(
-                            HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
+                        deployment.add_service(
+                            HydroflowCrate::new(<span class="string">"."</span>, localhost_clone.clone())
                                 .bin(<span class="string">"simple_cluster"</span>)
                                 .profile(<span class="string">"dev"</span>),
                         )
@@ -194,16 +193,17 @@
                     .collect()
             }),
         );
+        <span class="kw">let </span>built = builder.with_default_optimize();
 
-        <span class="macro">insta::assert_debug_snapshot!</span>(builder.finalize().ir());
+        <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
-        <span class="kw">let </span><span class="kw-2">mut </span>deployment = deployment.into_inner();
+        <span class="kw">let </span>_nodes = built.deploy(<span class="kw-2">&amp;mut </span>deployment);
 
         deployment.deploy().<span class="kw">await</span>.unwrap();
 
         <span class="kw">let </span><span class="kw-2">mut </span>node_stdout = node.stdout().<span class="kw">await</span>;
         <span class="kw">let </span>cluster_stdouts =
-            futures::future::join_all(cluster.members.iter().map(|node| node.stdout())).<span class="kw">await</span>;
+            futures::future::join_all(cluster.members().iter().map(|node| node.stdout())).<span class="kw">await</span>;
 
         deployment.start().<span class="kw">await</span>.unwrap();
 

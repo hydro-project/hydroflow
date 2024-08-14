@@ -76,6 +76,8 @@
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
@@ -129,7 +131,7 @@
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let </span>second_node = <span class="kw">super</span>::first_ten_distributed(
             <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;</span>DeployProcessSpec::new(|| {
+            <span class="kw-2">&amp;</span>DeployProcessSpec::new(<span class="kw">move </span>|deployment| {
                 deployment.add_service(
                     HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
                         .bin(<span class="string">"first_ten_distributed"</span>)
@@ -138,10 +140,12 @@
             }),
         );
 
-        <span class="comment">// if we drop this, we drop the references to the deployment nodes
-        </span><span class="kw">let </span>built = builder.finalize();
+        <span class="kw">let </span>built = builder.with_default_optimize();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
+
+        <span class="comment">// if we drop this, we drop the references to the deployment nodes
+        </span><span class="kw">let </span>_nodes = built.deploy(<span class="kw-2">&amp;mut </span>deployment);
 
         deployment.deploy().<span class="kw">await</span>.unwrap();
 

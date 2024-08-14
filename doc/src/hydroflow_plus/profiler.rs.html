@@ -112,6 +112,8 @@
 <a href="#112" id="112">112</a>
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 
 <span class="kw">use </span>hydroflow::futures::channel::mpsc::UnboundedSender;
@@ -125,19 +127,19 @@
     <span class="kw-2">*</span>count += <span class="number">1</span>;
 }
 
-<span class="kw">fn </span>quoted_any_fn&lt;<span class="lifetime">'a</span>, F: Fn(usize) -&gt; usize + <span class="lifetime">'a</span>, Q: IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;&gt;(q: Q) -&gt; Q {
+<span class="kw">fn </span>quoted_any_fn&lt;<span class="lifetime">'a</span>, F: Fn(<span class="kw-2">&amp;</span>usize) + <span class="lifetime">'a</span>, Q: IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;&gt;(q: Q) -&gt; Q {
     q
 }
 
 <span class="doccomment">/// Add a profiling node before each node to count the cardinality of its input
 </span><span class="kw">fn </span>add_profiling_node&lt;<span class="lifetime">'a</span>&gt;(
-    node: HfPlusNode,
+    node: HfPlusNode&lt;<span class="lifetime">'a</span>&gt;,
     _context: RuntimeContext&lt;<span class="lifetime">'a</span>&gt;,
     counters: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;u64&gt;&gt;&gt;,
     counter_queue: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;UnboundedSender&lt;(usize, u64)&gt;&gt;&gt;,
     id: <span class="kw-2">&amp;mut </span>u32,
-    seen_tees: <span class="kw-2">&amp;mut </span>SeenTees,
-) -&gt; HfPlusNode {
+    seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;,
+) -&gt; HfPlusNode&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">let </span>my_id = <span class="kw-2">*</span>id;
     <span class="kw-2">*</span>id += <span class="number">1</span>;
 
@@ -147,7 +149,7 @@
         },
         seen_tees,
     );
-    HfPlusNode::Map {
+    HfPlusNode::Inspect {
         f: quoted_any_fn(<span class="macro">q!</span>({
             <span class="comment">// Put counters on queue
             </span>counter_queue
@@ -155,11 +157,10 @@
                 .unbounded_send((my_id <span class="kw">as </span>usize, counters.borrow()[my_id <span class="kw">as </span>usize]))
                 .unwrap();
             counters.borrow_mut()[my_id <span class="kw">as </span>usize] = <span class="number">0</span>;
-            <span class="kw">move </span>|v| {
+            <span class="kw">move </span>|<span class="kw">_</span>| {
                 hydroflow_plus::profiler::increment_counter(
                     <span class="kw-2">&amp;mut </span>counters.borrow_mut()[my_id <span class="kw">as </span>usize],
                 );
-                v
             }
         }))
         .splice()
@@ -170,11 +171,11 @@
 
 <span class="doccomment">/// Count the cardinality of each input and periodically output to a file
 </span><span class="kw">pub fn </span>profiling&lt;<span class="lifetime">'a</span>&gt;(
-    ir: Vec&lt;HfPlusLeaf&gt;,
+    ir: Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;,
     context: RuntimeContext&lt;<span class="lifetime">'a</span>&gt;,
     counters: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;u64&gt;&gt;&gt;,
     counter_queue: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;UnboundedSender&lt;(usize, u64)&gt;&gt;&gt;,
-) -&gt; Vec&lt;HfPlusLeaf&gt; {
+) -&gt; Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>id = <span class="number">0</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>seen_tees = Default::default();
     ir.into_iter()
@@ -221,9 +222,12 @@
         <span class="kw">let </span>counter_queue = RuntimeData::new(<span class="string">"Fake"</span>);
 
         <span class="kw">let </span>pushed_down = built
-            .optimize_with(|ir| <span class="kw">super</span>::profiling(ir, runtime_context, counters, counter_queue));
+            .optimize_with(|ir| <span class="kw">super</span>::profiling(ir, runtime_context, counters, counter_queue))
+            .with_default_optimize();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(<span class="kw-2">&amp;</span>pushed_down.ir);
+
+        <span class="kw">let _ </span>= pushed_down.compile();
     }
 }
 </code></pre></div></section></main></body></html>
