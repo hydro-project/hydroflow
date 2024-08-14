@@ -22,10 +22,10 @@ pub mod stream;
 pub use stream::Stream;
 
 pub mod location;
-pub use location::{
-    Cluster, ClusterSpec, Deploy, LocalDeploy, Location, MultiGraph, ProcessSpec,
-    SingleProcessGraph,
-};
+pub use location::{Cluster, Process};
+
+pub mod deploy;
+pub use deploy::{ClusterSpec, Deploy, ProcessSpec};
 
 pub mod cycle;
 pub use cycle::HfCycle;
@@ -55,6 +55,7 @@ impl<'a> FreeVariable<&'a Context> for RuntimeContext<'a> {
 
 pub struct HfCompiled<'a, ID> {
     hydroflow_ir: BTreeMap<usize, HydroflowGraph>,
+    extra_stmts: BTreeMap<usize, Vec<syn::Stmt>>,
     _phantom: PhantomData<&'a mut &'a ID>,
 }
 
@@ -90,16 +91,23 @@ impl<'a> HfCompiled<'a, usize> {
             );
 
             let tokens = partitioned_graph.as_code(&root, true, quote::quote!(), &mut diagnostics);
+            let my_extra_stmts = self
+                .extra_stmts
+                .get(&subgraph_id)
+                .cloned()
+                .unwrap_or_default();
 
             if let Some(conditioned_tokens) = conditioned_tokens.as_mut() {
                 *conditioned_tokens = syn::parse_quote! {
                     #conditioned_tokens else if __given_id == #subgraph_id {
+                        #(#my_extra_stmts)*
                         #tokens
                     }
                 };
             } else {
                 conditioned_tokens = Some(syn::parse_quote! {
                     if __given_id == #subgraph_id {
+                        #(#my_extra_stmts)*
                         #tokens
                     }
                 });

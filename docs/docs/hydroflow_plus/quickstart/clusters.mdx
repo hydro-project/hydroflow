@@ -25,13 +25,18 @@ pub mod broadcast;
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn broadcast<'a, D: Deploy<'a>>(
-    flow: &FlowBuilder<'a, D>,
-    process_spec: impl ProcessSpec<'a, D>,
-    cluster_spec: impl ClusterSpec<'a, D>
-) {
-    let leader = flow.process(process_spec);
-    let workers = flow.cluster(cluster_spec);
+pub struct Leader {}
+pub struct Workers {}
+
+pub fn broadcast(
+    flow: &FlowBuilder,
+) -> (Process<Leader>, Cluster<Workers>) {
+    let leader = flow.process();
+    let workers = flow.cluster();
+
+    // ...
+
+    (leader, workers)
 }
 ```
 
@@ -56,12 +61,12 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn broadcast_runtime<'a>(
-    flow: FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    broadcast(&flow, &cli, &cli);
+    broadcast(&flow);
     flow.with_default_optimize()
-        .compile()
+        .compile::<CLIRuntime>()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 ```
@@ -94,15 +99,16 @@ async fn main() {
     let profile = "dev";
 
     let builder = hydroflow_plus::FlowBuilder::new();
-    flow::broadcast::broadcast(
-        &builder,
-        DeployProcessSpec::new({
+    let (leader, workers) = flow::broadcast::broadcast(&builder);
+
+    flow.with_default_optimize()
+        .with_process(&leader, DeployProcessSpec::new({
             HydroflowCrate::new(".", localhost.clone())
                 .bin("broadcast")
                 .profile(profile)
                 .display_name("leader")
-        }),
-        DeployClusterSpec::new({
+        }))
+        .with_cluster(&workers, DeployClusterSpec::new({
             (0..2)
                 .map(|idx| {
                     HydroflowCrate::new(".", localhost.clone())
@@ -111,14 +117,10 @@ async fn main() {
                         .display_name(format!("worker/{}", idx))
                 })
                 .collect()
-        }),
-    );
+        }))
+        .deploy(&mut deployment);
 
-    deployment.deploy().await.unwrap();
-
-    deployment.start().await.unwrap();
-
-    tokio::signal::ctrl_c().await.unwrap()
+    deployment.run_ctrl_c().await.unwrap();
 }
 ```
 
