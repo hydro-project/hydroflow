@@ -3,6 +3,9 @@ stageleft::stageleft_no_entry_crate!();
 mod runtime;
 use std::collections::HashMap;
 
+#[cfg(feature = "deploy")]
+pub(crate) mod trybuild;
+
 pub use runtime::*;
 
 #[cfg(feature = "deploy")]

@@ -51,7 +51,7 @@ expression: built.ir()
                                             input: Map {
                                                 f: { use hydroflow_plus :: __staged :: builder :: * ; | _ | () },
                                                 input: FlatMap {
-                                                    f: { use hydroflow_plus :: __staged :: builder :: * ; let batch_size = { use crate :: __staged :: cluster :: compute_pi :: * ; let batch_size = FAKE ; batch_size } ; move | _ | 0 .. batch_size },
+                                                    f: { use hydroflow_plus :: __staged :: builder :: * ; let batch_size = { use crate :: __staged :: cluster :: compute_pi :: * ; let batch_size = 8192usize ; batch_size } ; move | _ | 0 .. batch_size },
                                                     input: Source {
                                                         source: Spin,
                                                         location_kind: Cluster(
