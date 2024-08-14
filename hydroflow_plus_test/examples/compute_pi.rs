@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
 use hydro_deploy::gcp::GcpNetwork;
-use hydro_deploy::{Deployment, Host, HydroflowCrate};
-use hydroflow_plus_cli_integration::{DeployClusterSpec, DeployProcessSpec};
-use stageleft::RuntimeData;
+use hydro_deploy::{Deployment, Host};
+use hydroflow_plus_cli_integration::TrybuildHost;
 use tokio::sync::RwLock;
 
 type HostCreator = Box<dyn Fn(&mut Deployment) -> Arc<dyn Host>>;
@@ -40,34 +39,25 @@ async fn main() {
     };
 
     let builder = hydroflow_plus::FlowBuilder::new();
-    let (cluster, leader) =
-        hydroflow_plus_test::cluster::compute_pi::compute_pi(&builder, RuntimeData::new("FAKE"));
+    let (cluster, leader) = hydroflow_plus_test::cluster::compute_pi::compute_pi(&builder, 8192);
 
     let _nodes = builder
         .with_default_optimize()
         .with_process(
             &leader,
-            DeployProcessSpec::new({
-                let host = create_host(&mut deployment);
-                HydroflowCrate::new(".", host.clone())
-                    .bin("compute_pi")
-                    .profile(profile)
-                    .display_name("leader")
-            }),
+            TrybuildHost::new(create_host(&mut deployment))
+                .profile(profile)
+                .display_name("leader"),
         )
         .with_cluster(
             &cluster,
-            DeployClusterSpec::new({
-                (0..8)
-                    .map(|idx| {
-                        let host = create_host(&mut deployment);
-                        HydroflowCrate::new(".", host.clone())
-                            .bin("compute_pi")
-                            .profile(profile)
-                            .display_name(format!("cluster/{}", idx))
-                    })
-                    .collect()
-            }),
+            (0..8)
+                .map(|idx| {
+                    TrybuildHost::new(create_host(&mut deployment))
+                        .profile(profile)
+                        .display_name(format!("cluster/{}", idx))
+                })
+                .collect::<Vec<_>>(),
         )
         .deploy(&mut deployment);
 
