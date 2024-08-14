@@ -34,6 +34,7 @@ pub struct BuildParams {
 }
 impl BuildParams {
     /// Creates a new `BuildParams` and canonicalizes the `src` path.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         src: impl AsRef<Path>,
         bin: Option<String>,
