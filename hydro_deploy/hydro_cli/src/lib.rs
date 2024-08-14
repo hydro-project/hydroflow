@@ -279,6 +279,8 @@ impl Deployment {
                 bin,
                 example,
                 profile,
+                None, // Python API doesn't support target_dir
+                false, // Python API doesn't support no_default_features
                 None, // Python API doesn't support perf
                 features,
                 args,

@@ -29,6 +29,9 @@ pub struct HydroflowCrate {
     target: CrateTarget,
     on: Arc<dyn Host>,
     profile: Option<String>,
+    target_dir: Option<PathBuf>,
+    no_default_features: bool,
+    features: Option<Vec<String>>,
     perf: Option<PerfOptions>,
     args: Vec<String>,
     display_name: Option<String>,
@@ -44,6 +47,9 @@ impl HydroflowCrate {
             target: CrateTarget::Default,
             on,
             profile: None,
+            target_dir: None,
+            no_default_features: false,
+            features: None,
             perf: None,
             args: vec![],
             display_name: None,
@@ -80,6 +86,29 @@ impl HydroflowCrate {
         }
 
         self.profile = Some(profile.into());
+        self
+    }
+
+    pub fn target_dir(mut self, target_dir: impl Into<PathBuf>) -> Self {
+        if self.target_dir.is_some() {
+            panic!("target_dir already set");
+        }
+
+        self.target_dir = Some(target_dir.into());
+        self
+    }
+
+    pub fn no_default_features(mut self) -> Self {
+        self.no_default_features = true;
+        self
+    }
+
+    pub fn features(mut self, features: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        if self.features.is_some() {
+            panic!("features already set");
+        }
+
+        self.features = Some(features.into_iter().map(|s| s.into()).collect());
         self
     }
 
@@ -125,8 +154,10 @@ impl ServiceBuilder for HydroflowCrate {
             bin,
             example,
             self.profile,
+            self.target_dir,
+            self.no_default_features,
             self.perf,
-            None,
+            self.features,
             Some(self.args),
             self.display_name,
             vec![],
