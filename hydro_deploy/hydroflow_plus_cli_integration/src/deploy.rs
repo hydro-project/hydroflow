@@ -9,11 +9,8 @@ use hydro_deploy::hydroflow_crate::ports::{
 };
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{Deployment, Host, HydroflowCrate};
+use hydroflow_plus::deploy::{ClusterSpec, Deploy, Node, ProcessSpec};
 use hydroflow_plus::lang::graph::HydroflowGraph;
-use hydroflow_plus::location::{
-    Cluster, ClusterSpec, Deploy, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany,
-    HfSendOneToOne, Location, ProcessSpec,
-};
 use stageleft::internal::syn::parse_quote;
 use stageleft::q;
 use tokio::sync::RwLock;
@@ -23,14 +20,196 @@ use super::HydroflowPlusMeta;
 pub struct HydroDeploy {}
 
 impl<'a> Deploy<'a> for HydroDeploy {
-    type ClusterId = u32;
     type InstantiateEnv = Deployment;
+    type CompileEnv = ();
     type Process = DeployNode;
     type Cluster = DeployCluster;
     type Meta = HashMap<usize, Vec<u32>>;
     type GraphId = ();
     type ProcessPort = DeployPort<DeployNode>;
     type ClusterPort = DeployPort<DeployCluster>;
+
+    fn allocate_process_port(process: &Self::Process) -> Self::ProcessPort {
+        process.next_port()
+    }
+
+    fn allocate_cluster_port(cluster: &Self::Cluster) -> Self::ClusterPort {
+        cluster.next_port()
+    }
+
+    fn o2o_sink_source(
+        _env: &(),
+        _p1: &Self::Process,
+        _p1_port: &Self::ProcessPort,
+        _p2: &Self::Process,
+        _p2_port: &Self::ProcessPort,
+    ) -> (syn::Expr, syn::Expr) {
+        (parse_quote!(null), parse_quote!(null))
+    }
+
+    fn o2o_connect(
+        p1: &Self::Process,
+        p1_port: &Self::ProcessPort,
+        p2: &Self::Process,
+        p2_port: &Self::ProcessPort,
+    ) {
+        let self_underlying_borrow = p1.underlying.borrow();
+        let self_underlying = self_underlying_borrow.as_ref().unwrap();
+        let source_port = self_underlying
+            .try_read()
+            .unwrap()
+            .get_port(p1_port.port.clone(), self_underlying);
+
+        let other_underlying_borrow = p2.underlying.borrow();
+        let other_underlying = other_underlying_borrow.as_ref().unwrap();
+        let recipient_port = other_underlying
+            .try_read()
+            .unwrap()
+            .get_port(p2_port.port.clone(), other_underlying);
+
+        source_port.send_to(&recipient_port);
+    }
+
+    fn o2m_sink_source(
+        _env: &(),
+        _p1: &Self::Process,
+        _p1_port: &Self::ProcessPort,
+        _c2: &Self::Cluster,
+        _c2_port: &Self::ClusterPort,
+    ) -> (syn::Expr, syn::Expr) {
+        (parse_quote!(null), parse_quote!(null))
+    }
+
+    fn o2m_connect(
+        p1: &Self::Process,
+        p1_port: &Self::ProcessPort,
+        c2: &Self::Cluster,
+        c2_port: &Self::ClusterPort,
+    ) {
+        let self_underlying_borrow = p1.underlying.borrow();
+        let self_underlying = self_underlying_borrow.as_ref().unwrap();
+        let source_port = self_underlying
+            .try_read()
+            .unwrap()
+            .get_port(p1_port.port.clone(), self_underlying);
+
+        let recipient_port = DemuxSink {
+            demux: c2
+                .members
+                .borrow()
+                .iter()
+                .enumerate()
+                .map(|(id, c)| {
+                    let n = c.underlying.try_read().unwrap();
+                    (
+                        id as u32,
+                        Arc::new(n.get_port(c2_port.port.clone(), &c.underlying))
+                            as Arc<dyn HydroflowSink + 'static>,
+                    )
+                })
+                .collect(),
+        };
+
+        source_port.send_to(&recipient_port);
+    }
+
+    fn m2o_sink_source(
+        _env: &(),
+        _c1: &Self::Cluster,
+        _c1_port: &Self::ClusterPort,
+        _p2: &Self::Process,
+        _p2_port: &Self::ProcessPort,
+    ) -> (syn::Expr, syn::Expr) {
+        (parse_quote!(null), parse_quote!(null))
+    }
+
+    fn m2o_connect(
+        c1: &Self::Cluster,
+        c1_port: &Self::ClusterPort,
+        p2: &Self::Process,
+        p2_port: &Self::ProcessPort,
+    ) {
+        let other_underlying_borrow = p2.underlying.borrow();
+        let other_underlying = other_underlying_borrow.as_ref().unwrap();
+        let recipient_port = other_underlying
+            .try_read()
+            .unwrap()
+            .get_port(p2_port.port.clone(), other_underlying)
+            .merge();
+
+        for (i, node) in c1.members.borrow().iter().enumerate() {
+            let source_port = node
+                .underlying
+                .try_read()
+                .unwrap()
+                .get_port(c1_port.port.clone(), &node.underlying);
+
+            TaggedSource {
+                source: Arc::new(source_port),
+                tag: i as u32,
+            }
+            .send_to(&recipient_port);
+        }
+    }
+
+    fn m2m_sink_source(
+        _env: &(),
+        _c1: &Self::Cluster,
+        _c1_port: &Self::ClusterPort,
+        _c2: &Self::Cluster,
+        _c2_port: &Self::ClusterPort,
+    ) -> (syn::Expr, syn::Expr) {
+        (parse_quote!(null), parse_quote!(null))
+    }
+
+    fn m2m_connect(
+        c1: &Self::Cluster,
+        c1_port: &Self::ClusterPort,
+        c2: &Self::Cluster,
+        c2_port: &Self::ClusterPort,
+    ) {
+        for (i, sender) in c1.members.borrow().iter().enumerate() {
+            let source_port = sender
+                .underlying
+                .try_read()
+                .unwrap()
+                .get_port(c1_port.port.clone(), &sender.underlying);
+
+            let recipient_port = DemuxSink {
+                demux: c2
+                    .members
+                    .borrow()
+                    .iter()
+                    .enumerate()
+                    .map(|(id, c)| {
+                        let n = c.underlying.try_read().unwrap();
+                        (
+                            id as u32,
+                            Arc::new(n.get_port(c2_port.port.clone(), &c.underlying).merge())
+                                as Arc<dyn HydroflowSink + 'static>,
+                        )
+                    })
+                    .collect(),
+            };
+
+            TaggedSource {
+                source: Arc::new(source_port),
+                tag: i as u32,
+            }
+            .send_to(&recipient_port);
+        }
+    }
+
+    fn cluster_ids(
+        _env: &Self::CompileEnv,
+        _of_cluster: usize,
+    ) -> impl stageleft::Quoted<'a, &'a Vec<u32>> + Copy + 'a {
+        q!(panic!())
+    }
+
+    fn cluster_self_id(_env: &Self::CompileEnv) -> impl stageleft::Quoted<'a, u32> + Copy + 'a {
+        q!(panic!())
+    }
 }
 
 pub trait DeployCrateWrapper {
@@ -110,14 +289,10 @@ impl DeployPort<DeployCluster> {
     }
 }
 
-impl Location for DeployNode {
+impl Node for DeployNode {
     type Port = DeployPort<Self>;
     type Meta = HashMap<usize, Vec<u32>>;
     type InstantiateEnv = Deployment;
-
-    fn id(&self) -> usize {
-        self.id
-    }
 
     fn next_port(&self) -> DeployPort<Self> {
         let next_port = *self.next_port.borrow();
@@ -175,14 +350,10 @@ impl DeployCluster {
     }
 }
 
-impl Location for DeployCluster {
+impl Node for DeployCluster {
     type Port = DeployPort<Self>;
     type Meta = HashMap<usize, Vec<u32>>;
     type InstantiateEnv = Deployment;
-
-    fn id(&self) -> usize {
-        self.id
-    }
 
     fn next_port(&self) -> DeployPort<Self> {
         let next_port = *self.next_port.borrow();
@@ -224,189 +395,6 @@ impl Location for DeployCluster {
                 subgraph_id: self.id,
             });
         }
-    }
-}
-
-impl<'a> Cluster<'a> for DeployCluster {
-    type Id = u32;
-
-    fn ids(&self) -> impl stageleft::Quoted<'a, &'a Vec<u32>> + Copy + 'a {
-        q!(panic!())
-    }
-
-    fn self_id(&self) -> impl stageleft::Quoted<'a, Self::Id> + Copy + 'a {
-        q!(panic!())
-    }
-}
-
-impl HfSendOneToOne<DeployNode> for DeployNode {
-    fn connect(
-        &self,
-        other: &DeployNode,
-        source_port: &DeployPort<DeployNode>,
-        recipient_port: &DeployPort<DeployNode>,
-    ) {
-        let self_underlying_borrow = self.underlying.borrow();
-        let self_underlying = self_underlying_borrow.as_ref().unwrap();
-        let source_port = self_underlying
-            .try_read()
-            .unwrap()
-            .get_port(source_port.port.clone(), self_underlying);
-
-        let other_underlying_borrow = other.underlying.borrow();
-        let other_underlying = other_underlying_borrow.as_ref().unwrap();
-        let recipient_port = other_underlying
-            .try_read()
-            .unwrap()
-            .get_port(recipient_port.port.clone(), other_underlying);
-
-        source_port.send_to(&recipient_port);
-    }
-
-    fn gen_sink_statement(&self, _port: &Self::Port) -> syn::Expr {
-        parse_quote!(null)
-    }
-
-    fn gen_source_statement(_other: &DeployNode, _port: &Self::Port) -> syn::Expr {
-        parse_quote!(null)
-    }
-}
-
-impl HfSendManyToOne<DeployNode, u32> for DeployCluster {
-    fn connect(
-        &self,
-        other: &DeployNode,
-        source_port: &DeployPort<DeployCluster>,
-        recipient_port: &DeployPort<DeployNode>,
-    ) {
-        let other_underlying_borrow = other.underlying.borrow();
-        let other_underlying = other_underlying_borrow.as_ref().unwrap();
-        let recipient_port = other_underlying
-            .try_read()
-            .unwrap()
-            .get_port(recipient_port.port.clone(), other_underlying)
-            .merge();
-
-        for (i, node) in self.members.borrow().iter().enumerate() {
-            let source_port = node
-                .underlying
-                .try_read()
-                .unwrap()
-                .get_port(source_port.port.clone(), &node.underlying);
-
-            TaggedSource {
-                source: Arc::new(source_port),
-                tag: i as u32,
-            }
-            .send_to(&recipient_port);
-        }
-    }
-
-    fn gen_sink_statement(&self, _port: &Self::Port) -> syn::Expr {
-        parse_quote!(null)
-    }
-
-    fn gen_source_statement(_other: &DeployNode, _port: &DeployPort<DeployNode>) -> syn::Expr {
-        parse_quote!(null)
-    }
-}
-
-impl HfSendOneToMany<DeployCluster, u32> for DeployNode {
-    fn connect(
-        &self,
-        other: &DeployCluster,
-        source_port: &DeployPort<DeployNode>,
-        recipient_port: &DeployPort<DeployCluster>,
-    ) {
-        let self_underlying_borrow = self.underlying.borrow();
-        let self_underlying = self_underlying_borrow.as_ref().unwrap();
-        let source_port = self_underlying
-            .try_read()
-            .unwrap()
-            .get_port(source_port.port.clone(), self_underlying);
-
-        let recipient_port = DemuxSink {
-            demux: other
-                .members
-                .borrow()
-                .iter()
-                .enumerate()
-                .map(|(id, c)| {
-                    let n = c.underlying.try_read().unwrap();
-                    (
-                        id as u32,
-                        Arc::new(n.get_port(recipient_port.port.clone(), &c.underlying))
-                            as Arc<dyn HydroflowSink + 'static>,
-                    )
-                })
-                .collect(),
-        };
-
-        source_port.send_to(&recipient_port);
-    }
-
-    fn gen_sink_statement(&self, _port: &Self::Port) -> syn::Expr {
-        parse_quote!(null)
-    }
-
-    fn gen_source_statement(
-        _other: &DeployCluster,
-        _port: &DeployPort<DeployCluster>,
-    ) -> syn::Expr {
-        parse_quote!(null)
-    }
-}
-
-impl HfSendManyToMany<DeployCluster, u32> for DeployCluster {
-    fn connect(
-        &self,
-        other: &DeployCluster,
-        source_port: &DeployPort<DeployCluster>,
-        recipient_port: &DeployPort<DeployCluster>,
-    ) {
-        for (i, sender) in self.members.borrow().iter().enumerate() {
-            let source_port = sender
-                .underlying
-                .try_read()
-                .unwrap()
-                .get_port(source_port.port.clone(), &sender.underlying);
-
-            let recipient_port = DemuxSink {
-                demux: other
-                    .members
-                    .borrow()
-                    .iter()
-                    .enumerate()
-                    .map(|(id, c)| {
-                        let n = c.underlying.try_read().unwrap();
-                        (
-                            id as u32,
-                            Arc::new(
-                                n.get_port(recipient_port.port.clone(), &c.underlying)
-                                    .merge(),
-                            ) as Arc<dyn HydroflowSink + 'static>,
-                        )
-                    })
-                    .collect(),
-            };
-
-            TaggedSource {
-                source: Arc::new(source_port),
-                tag: i as u32,
-            }
-            .send_to(&recipient_port);
-        }
-    }
-
-    fn gen_sink_statement(&self, _port: &Self::Port) -> syn::Expr {
-        parse_quote!(null)
-    }
-
-    fn gen_source_statement(
-        _other: &DeployCluster,
-        _port: &DeployPort<DeployCluster>,
-    ) -> syn::Expr {
-        parse_quote!(null)
     }
 }
 
