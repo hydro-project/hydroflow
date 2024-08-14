@@ -3,8 +3,8 @@ use stageleft::*;
 
 pub fn map_reduce<'a, D: Deploy<'a, ClusterId = u32>>(
     flow: &FlowBuilder<'a, D>,
-    process_spec: &impl ProcessSpec<'a, D>,
-    cluster_spec: &impl ClusterSpec<'a, D>,
+    process_spec: impl ProcessSpec<'a, D>,
+    cluster_spec: impl ClusterSpec<'a, D>,
 ) -> (D::Process, D::Cluster) {
     let process = flow.process(process_spec);
     let cluster = flow.cluster(cluster_spec);

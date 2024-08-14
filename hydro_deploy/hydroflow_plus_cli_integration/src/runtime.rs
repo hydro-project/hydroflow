@@ -230,8 +230,8 @@ impl<'a> HfSendManyToMany<CLIRuntimeCluster<'a>, u32> for CLIRuntimeCluster<'a> 
     }
 }
 
-impl<'cli> ProcessSpec<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<HydroflowPlusMeta>> {
-    fn build(&self, id: usize) -> CLIRuntimeNode<'cli> {
+impl<'cli> ProcessSpec<'cli, CLIRuntime> for &RuntimeData<&'cli HydroCLI<HydroflowPlusMeta>> {
+    fn build(self, id: usize) -> CLIRuntimeNode<'cli> {
         CLIRuntimeNode {
             id,
             next_port: Rc::new(RefCell::new(0)),
@@ -240,8 +240,8 @@ impl<'cli> ProcessSpec<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<Hydroflo
     }
 }
 
-impl<'cli> ClusterSpec<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<HydroflowPlusMeta>> {
-    fn build(&self, id: usize) -> CLIRuntimeCluster<'cli> {
+impl<'cli> ClusterSpec<'cli, CLIRuntime> for &RuntimeData<&'cli HydroCLI<HydroflowPlusMeta>> {
+    fn build(self, id: usize) -> CLIRuntimeCluster<'cli> {
         CLIRuntimeCluster {
             id,
             next_port: Rc::new(RefCell::new(0)),

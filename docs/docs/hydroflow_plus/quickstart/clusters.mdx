@@ -27,8 +27,8 @@ use stageleft::*;
 
 pub fn broadcast<'a, D: Deploy<'a>>(
     flow: &FlowBuilder<'a, D>,
-    process_spec: &impl ProcessSpec<'a, D>,
-    cluster_spec: &impl ClusterSpec<'a, D>
+    process_spec: impl ProcessSpec<'a, D>,
+    cluster_spec: impl ClusterSpec<'a, D>
 ) {
     let leader = flow.process(process_spec);
     let workers = flow.cluster(cluster_spec);
@@ -94,25 +94,21 @@ async fn main() {
     let profile = "dev";
 
     let builder = hydroflow_plus::FlowBuilder::new();
-    let localhost_1 = localhost.clone();
-    let localhost_2 = localhost.clone();
     flow::broadcast::broadcast(
         &builder,
-        &DeployProcessSpec::new(move |deployment| {
-            HydroflowCrate::new(".", localhost_1.clone())
+        DeployProcessSpec::new({
+            HydroflowCrate::new(".", localhost.clone())
                 .bin("broadcast")
                 .profile(profile)
-                .display_name("leader"),
+                .display_name("leader")
         }),
-        &DeployClusterSpec::new(move |deployment| {
+        DeployClusterSpec::new({
             (0..2)
                 .map(|idx| {
-                    deployment.add_service(
-                        HydroflowCrate::new(".", localhost_2.clone())
-                            .bin("broadcast")
-                            .profile(profile)
-                            .display_name(format!("worker/{}", idx)),
-                    )
+                    HydroflowCrate::new(".", localhost.clone())
+                        .bin("broadcast")
+                        .profile(profile)
+                        .display_name(format!("worker/{}", idx))
                 })
                 .collect()
         }),

@@ -8,8 +8,8 @@ use stageleft::*;
 
 pub fn compute_pi<'a, D: Deploy<'a>>(
     flow: &FlowBuilder<'a, D>,
-    process_spec: &impl ProcessSpec<'a, D>,
-    cluster_spec: &impl ClusterSpec<'a, D>,
+    process_spec: impl ProcessSpec<'a, D>,
+    cluster_spec: impl ClusterSpec<'a, D>,
     batch_size: RuntimeData<&'a usize>,
 ) -> D::Process {
     let cluster = flow.cluster(cluster_spec);

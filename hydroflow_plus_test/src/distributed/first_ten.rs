@@ -9,9 +9,9 @@ struct SendOverNetwork {
 
 pub fn first_ten_distributed<'a, D: Deploy<'a>>(
     flow: &FlowBuilder<'a, D>,
-    process_spec: &impl ProcessSpec<'a, D>,
+    process_spec: impl ProcessSpec<'a, D> + Clone,
 ) -> D::Process {
-    let process = flow.process(process_spec);
+    let process = flow.process(process_spec.clone());
     let second_process = flow.process(process_spec);
 
     let numbers = flow.source_iter(&process, q!(0..10));
@@ -51,12 +51,10 @@ mod tests {
         let builder = hydroflow_plus::FlowBuilder::new();
         let second_node = super::first_ten_distributed(
             &builder,
-            &DeployProcessSpec::new(move |deployment| {
-                deployment.add_service(
-                    HydroflowCrate::new(".", localhost.clone())
-                        .bin("first_ten_distributed")
-                        .profile("dev"),
-                )
+            DeployProcessSpec::new({
+                HydroflowCrate::new(".", localhost.clone())
+                    .bin("first_ten_distributed")
+                    .profile("dev")
             }),
         );
 
