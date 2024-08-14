@@ -11,9 +11,9 @@ description = "Functional programming API for hydroflow"
 path = "src/lib.rs"
 
 [features]
-default = []
 diagnostics = [ "hydroflow_lang/diagnostics" ]
 cli_integration = [ "hydroflow/cli_integration" ]
+stageleft_devel = []
 
 [dependencies]
 quote = "1.0.0"
