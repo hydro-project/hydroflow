@@ -9,7 +9,7 @@ async fn main() {
     let flow = hydroflow_plus::FlowBuilder::new();
     flow::first_ten_distributed::first_ten_distributed(
         &flow,
-        &DeployProcessSpec::new(|| {
+        &DeployProcessSpec::new(move |deployment| {
             deployment.add_service(
                 HydroflowCrate::new(".", localhost.clone())
                     .bin("first_ten_distributed")
@@ -17,6 +17,8 @@ async fn main() {
             )
         }),
     );
+
+    let _nodes = flow.with_default_optimize().deploy(&mut deployment);
 
     deployment.deploy().await.unwrap();
 

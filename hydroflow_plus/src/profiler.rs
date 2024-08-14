@@ -11,19 +11,19 @@ pub fn increment_counter(count: &mut u64) {
     *count += 1;
 }
 
-fn quoted_any_fn<'a, F: Fn(usize) -> usize + 'a, Q: IntoQuotedMut<'a, F>>(q: Q) -> Q {
+fn quoted_any_fn<'a, F: Fn(&usize) + 'a, Q: IntoQuotedMut<'a, F>>(q: Q) -> Q {
     q
 }
 
 /// Add a profiling node before each node to count the cardinality of its input
 fn add_profiling_node<'a>(
-    node: HfPlusNode,
+    node: HfPlusNode<'a>,
     _context: RuntimeContext<'a>,
     counters: RuntimeData<&'a RefCell<Vec<u64>>>,
     counter_queue: RuntimeData<&'a RefCell<UnboundedSender<(usize, u64)>>>,
     id: &mut u32,
-    seen_tees: &mut SeenTees,
-) -> HfPlusNode {
+    seen_tees: &mut SeenTees<'a>,
+) -> HfPlusNode<'a> {
     let my_id = *id;
     *id += 1;
 
@@ -33,7 +33,7 @@ fn add_profiling_node<'a>(
         },
         seen_tees,
     );
-    HfPlusNode::Map {
+    HfPlusNode::Inspect {
         f: quoted_any_fn(q!({
             // Put counters on queue
             counter_queue
@@ -41,11 +41,10 @@ fn add_profiling_node<'a>(
                 .unbounded_send((my_id as usize, counters.borrow()[my_id as usize]))
                 .unwrap();
             counters.borrow_mut()[my_id as usize] = 0;
-            move |v| {
+            move |_| {
                 hydroflow_plus::profiler::increment_counter(
                     &mut counters.borrow_mut()[my_id as usize],
                 );
-                v
             }
         }))
         .splice()
@@ -56,11 +55,11 @@ fn add_profiling_node<'a>(
 
 /// Count the cardinality of each input and periodically output to a file
 pub fn profiling<'a>(
-    ir: Vec<HfPlusLeaf>,
+    ir: Vec<HfPlusLeaf<'a>>,
     context: RuntimeContext<'a>,
     counters: RuntimeData<&'a RefCell<Vec<u64>>>,
     counter_queue: RuntimeData<&'a RefCell<UnboundedSender<(usize, u64)>>>,
-) -> Vec<HfPlusLeaf> {
+) -> Vec<HfPlusLeaf<'a>> {
     let mut id = 0;
     let mut seen_tees = Default::default();
     ir.into_iter()
@@ -107,8 +106,11 @@ mod tests {
         let counter_queue = RuntimeData::new("Fake");
 
         let pushed_down = built
-            .optimize_with(|ir| super::profiling(ir, runtime_context, counters, counter_queue));
+            .optimize_with(|ir| super::profiling(ir, runtime_context, counters, counter_queue))
+            .with_default_optimize();
 
         insta::assert_debug_snapshot!(&pushed_down.ir);
+
+        let _ = pushed_down.compile();
     }
 }
