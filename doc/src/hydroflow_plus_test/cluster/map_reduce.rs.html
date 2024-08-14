@@ -78,8 +78,8 @@
 
 <span class="kw">pub fn </span>map_reduce&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>, ClusterId = u32&gt;&gt;(
     flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
-    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
-    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
+    process_spec: <span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
+    cluster_spec: <span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
 ) -&gt; (D::Process, D::Cluster) {
     <span class="kw">let </span>process = flow.process(process_spec);
     <span class="kw">let </span>cluster = flow.cluster(cluster_spec);

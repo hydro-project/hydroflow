@@ -31,7 +31,7 @@
 
 <span class="kw">pub fn </span>first_ten&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
     flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
-    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
+    process_spec: <span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
 ) {
     <span class="kw">let </span>process = flow.process(process_spec);
     <span class="kw">let </span>numbers = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
@@ -42,7 +42,7 @@
 </span><span class="kw">pub fn </span>first_ten_runtime&lt;<span class="lifetime">'a</span>&gt;(
     flow: FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    first_ten(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>());
+    first_ten(<span class="kw-2">&amp;</span>flow, ());
     flow.with_default_optimize().compile()
 }
 

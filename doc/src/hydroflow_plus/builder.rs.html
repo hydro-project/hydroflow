@@ -506,7 +506,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>.ir_leaves
     }
 
-    <span class="kw">pub fn </span>process(<span class="kw-2">&amp;</span><span class="self">self</span>, spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;) -&gt; D::Process {
+    <span class="kw">pub fn </span>process(<span class="kw-2">&amp;</span><span class="self">self</span>, spec: <span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;) -&gt; D::Process {
         <span class="kw">let </span><span class="kw-2">mut </span>next_node_id = <span class="self">self</span>.next_node_id.borrow_mut();
         <span class="kw">let </span>id = <span class="kw-2">*</span>next_node_id;
         <span class="kw-2">*</span>next_node_id += <span class="number">1</span>;
@@ -517,7 +517,7 @@
         node
     }
 
-    <span class="kw">pub fn </span>cluster(<span class="kw-2">&amp;</span><span class="self">self</span>, spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;) -&gt; D::Cluster {
+    <span class="kw">pub fn </span>cluster(<span class="kw-2">&amp;</span><span class="self">self</span>, spec: <span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;) -&gt; D::Cluster {
         <span class="kw">let </span><span class="kw-2">mut </span>next_node_id = <span class="self">self</span>.next_node_id.borrow_mut();
         <span class="kw">let </span>id = <span class="kw-2">*</span>next_node_id;
         <span class="kw-2">*</span>next_node_id += <span class="number">1</span>;

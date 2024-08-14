@@ -110,7 +110,7 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>persist_pullup_through_map() {
         <span class="kw">let </span>flow = <span class="kw">crate</span>::builder::FlowBuilder::&lt;MultiGraph&gt;::new();
-        <span class="kw">let </span>process = flow.process(<span class="kw-2">&amp;</span>());
+        <span class="kw">let </span>process = flow.process(());
 
         flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
             .all_ticks()
@@ -134,7 +134,7 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>persist_pullup_behind_tee() {
         <span class="kw">let </span>flow = <span class="kw">crate</span>::builder::FlowBuilder::&lt;MultiGraph&gt;::new();
-        <span class="kw">let </span>process = flow.process(<span class="kw-2">&amp;</span>());
+        <span class="kw">let </span>process = flow.process(());
 
         <span class="kw">let </span>before_tee = flow
             .source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))

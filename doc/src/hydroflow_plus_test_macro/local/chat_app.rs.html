@@ -143,7 +143,7 @@
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;(u32, String)&gt;&gt;,
     replay_messages: bool,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let </span>process = flow.process(<span class="kw-2">&amp;</span>());
+    <span class="kw">let </span>process = flow.process(());
 
     <span class="kw">let </span>users = flow.source_stream(<span class="kw-2">&amp;</span>process, users_stream).all_ticks();
     <span class="kw">let </span>messages = flow.source_stream(<span class="kw-2">&amp;</span>process, messages);

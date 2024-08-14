@@ -76,8 +76,6 @@
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
-<a href="#79" id="79">79</a>
-<a href="#80" id="80">80</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
@@ -89,9 +87,9 @@
 
 <span class="kw">pub fn </span>first_ten_distributed&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
     flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
-    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
+    process_spec: <span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt; + Clone,
 ) -&gt; D::Process {
-    <span class="kw">let </span>process = flow.process(process_spec);
+    <span class="kw">let </span>process = flow.process(process_spec.clone());
     <span class="kw">let </span>second_process = flow.process(process_spec);
 
     <span class="kw">let </span>numbers = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
@@ -131,12 +129,10 @@
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let </span>second_node = <span class="kw">super</span>::first_ten_distributed(
             <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;</span>DeployProcessSpec::new(<span class="kw">move </span>|deployment| {
-                deployment.add_service(
-                    HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
-                        .bin(<span class="string">"first_ten_distributed"</span>)
-                        .profile(<span class="string">"dev"</span>),
-                )
+            DeployProcessSpec::new({
+                HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
+                    .bin(<span class="string">"first_ten_distributed"</span>)
+                    .profile(<span class="string">"dev"</span>)
             }),
         );
 

@@ -114,8 +114,8 @@
 
 <span class="kw">pub fn </span>compute_pi&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
     flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
-    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
-    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
+    process_spec: <span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
+    cluster_spec: <span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
     batch_size: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>usize&gt;,
 ) -&gt; D::Process {
     <span class="kw">let </span>cluster = flow.cluster(cluster_spec);

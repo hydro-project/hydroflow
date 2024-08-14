@@ -109,18 +109,13 @@
 <a href="#109" id="109">109</a>
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
-<a href="#112" id="112">112</a>
-<a href="#113" id="113">113</a>
-<a href="#114" id="114">114</a>
-<a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
 <span class="kw">pub fn </span>simple_cluster&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>, ClusterId = u32&gt;&gt;(
     flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
-    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
-    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
+    process_spec: <span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
+    cluster_spec: <span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
 ) -&gt; (D::Process, D::Cluster) {
     <span class="kw">let </span>process = flow.process(process_spec);
     <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
@@ -169,26 +164,21 @@
     </span><span class="kw">async fn </span>simple_cluster() {
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
         <span class="kw">let </span>localhost = deployment.Localhost();
-        <span class="kw">let </span>localhost_clone = localhost.clone();
 
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let </span>(node, cluster) = <span class="kw">super</span>::simple_cluster(
             <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;</span>DeployProcessSpec::new(<span class="kw">move </span>|deployment| {
-                deployment.add_service(
-                    HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
-                        .bin(<span class="string">"simple_cluster"</span>)
-                        .profile(<span class="string">"dev"</span>),
-                )
+            DeployProcessSpec::new({
+                HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
+                    .bin(<span class="string">"simple_cluster"</span>)
+                    .profile(<span class="string">"dev"</span>)
             }),
-            <span class="kw-2">&amp;</span>DeployClusterSpec::new(<span class="kw">move </span>|deployment| {
+            DeployClusterSpec::new({
                 (<span class="number">0</span>..<span class="number">2</span>)
                     .map(|<span class="kw">_</span>| {
-                        deployment.add_service(
-                            HydroflowCrate::new(<span class="string">"."</span>, localhost_clone.clone())
-                                .bin(<span class="string">"simple_cluster"</span>)
-                                .profile(<span class="string">"dev"</span>),
-                        )
+                        HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
+                            .bin(<span class="string">"simple_cluster"</span>)
+                            .profile(<span class="string">"dev"</span>)
                     })
                     .collect()
             }),

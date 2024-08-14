@@ -236,7 +236,7 @@
 
 <span class="attr">#[derive(Default)]
 </span><span class="kw">pub struct </span>Deployment {
-    <span class="kw">pub </span>hosts: Vec&lt;Arc&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+    <span class="kw">pub </span>hosts: Vec&lt;Weak&lt;<span class="kw">dyn </span>Host&gt;&gt;,
     <span class="kw">pub </span>services: Vec&lt;Weak&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;&gt;,
     <span class="kw">pub </span>resource_pool: ResourcePool,
     last_resource_result: <span class="prelude-ty">Option</span>&lt;Arc&lt;ResourceResult&gt;&gt;,
@@ -288,7 +288,7 @@
                 service.read().<span class="kw">await</span>.collect_resources(<span class="kw-2">&amp;mut </span>resource_batch);
             }
 
-            <span class="kw">for </span>host <span class="kw">in </span><span class="self">self</span>.hosts.iter() {
+            <span class="kw">for </span>host <span class="kw">in </span><span class="self">self</span>.hosts.iter().filter_map(Weak::upgrade) {
                 host.collect_resources(<span class="kw-2">&amp;mut </span>resource_batch);
             }
 
@@ -302,7 +302,7 @@
             );
             <span class="self">self</span>.last_resource_result = <span class="prelude-val">Some</span>(resource_result.clone());
 
-            <span class="kw">for </span>host <span class="kw">in </span><span class="self">self</span>.hosts.iter() {
+            <span class="kw">for </span>host <span class="kw">in </span><span class="self">self</span>.hosts.iter().filter_map(Weak::upgrade) {
                 host.provision(<span class="kw-2">&amp;</span>resource_result);
             }
 
@@ -380,7 +380,7 @@
         <span class="kw">let </span>arc = Arc::new(host(<span class="self">self</span>.next_host_id));
         <span class="self">self</span>.next_host_id += <span class="number">1</span>;
 
-        <span class="self">self</span>.hosts.push(arc.clone());
+        <span class="self">self</span>.hosts.push(Arc::downgrade(<span class="kw-2">&amp;</span>arc) <span class="kw">as </span>Weak&lt;<span class="kw">dyn </span>Host&gt;);
         arc
     }
 
@@ -391,8 +391,8 @@
         <span class="kw">let </span>arc = Arc::new(RwLock::new(service.build(<span class="self">self</span>.next_service_id)));
         <span class="self">self</span>.next_service_id += <span class="number">1</span>;
 
-        <span class="kw">let </span>dyn_arc: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt; = arc.clone();
-        <span class="self">self</span>.services.push(Arc::downgrade(<span class="kw-2">&amp;</span>dyn_arc));
+        <span class="self">self</span>.services
+            .push(Arc::downgrade(<span class="kw-2">&amp;</span>arc) <span class="kw">as </span>Weak&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;);
         arc
     }
 }

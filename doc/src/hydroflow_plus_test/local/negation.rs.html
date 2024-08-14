@@ -206,7 +206,7 @@
     persist1: bool,
     persist2: bool,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let </span>process = flow.process(<span class="kw-2">&amp;</span>());
+    <span class="kw">let </span>process = flow.process(());
 
     <span class="kw">let </span><span class="kw-2">mut </span>source = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>));
     <span class="kw">if </span>persist1 {
@@ -232,7 +232,7 @@
     persist1: bool,
     persist2: bool,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let </span>process = flow.process(<span class="kw-2">&amp;</span>());
+    <span class="kw">let </span>process = flow.process(());
 
     <span class="kw">let </span><span class="kw-2">mut </span>source = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>)).map(<span class="macro">q!</span>(|v| (v, v)));
     <span class="kw">if </span>persist1 {
