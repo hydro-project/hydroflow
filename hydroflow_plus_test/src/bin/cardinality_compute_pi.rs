@@ -21,7 +21,7 @@ async fn main() {
     hydroflow_plus::launch!(
         |ports| hydroflow_plus_test::cluster::compute_pi::cardinality_compute_pi_runtime!(
             ports,
-            &batch_size,
+            batch_size,
             &counters,
             &counter_queue,
         )

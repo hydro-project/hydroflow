@@ -14,7 +14,9 @@ expression: built.ir()
                     source: Iter(
                         { use crate :: __staged :: properties :: tests :: * ; vec ! [] },
                     ),
-                    location_id: 0,
+                    location_kind: Process(
+                        0,
+                    ),
                 },
             },
         },
