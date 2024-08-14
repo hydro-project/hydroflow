@@ -48,6 +48,7 @@ impl Node for SingleNode {
         _env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
         _graph: HydroflowGraph,
+        _extra_stmts: Vec<syn::Stmt>,
     ) {
     }
 }
@@ -98,6 +99,7 @@ impl Node for MultiNode {
         _env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
         _graph: HydroflowGraph,
+        _extra_stmts: Vec<syn::Stmt>,
     ) {
     }
 }
