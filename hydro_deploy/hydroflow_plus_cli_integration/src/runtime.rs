@@ -1,11 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use hydroflow_plus::deploy::{ClusterSpec, Deploy, Node, ProcessSpec};
 use hydroflow_plus::lang::graph::HydroflowGraph;
-use hydroflow_plus::location::{
-    Cluster, ClusterSpec, Deploy, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany,
-    HfSendOneToOne, Location, ProcessSpec,
-};
 use hydroflow_plus::util::cli::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, HydroCLI,
 };
@@ -16,31 +13,229 @@ use super::HydroflowPlusMeta;
 pub struct CLIRuntime {}
 
 impl<'a> Deploy<'a> for CLIRuntime {
-    type ClusterId = u32;
     type InstantiateEnv = ();
-    type Process = CLIRuntimeNode<'a>;
-    type Cluster = CLIRuntimeCluster<'a>;
+    type CompileEnv = RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>;
+    type Process = CLIRuntimeNode;
+    type Cluster = CLIRuntimeCluster;
     type Meta = ();
     type GraphId = usize;
     type ProcessPort = String;
     type ClusterPort = String;
+
+    fn has_trivial_node() -> bool {
+        true
+    }
+
+    fn trivial_process(_id: usize) -> Self::Process {
+        CLIRuntimeNode {
+            next_port: Rc::new(RefCell::new(0)),
+        }
+    }
+
+    fn trivail_cluster(_id: usize) -> Self::Cluster {
+        CLIRuntimeCluster {
+            next_port: Rc::new(RefCell::new(0)),
+        }
+    }
+
+    fn allocate_process_port(process: &Self::Process) -> Self::ProcessPort {
+        process.next_port()
+    }
+
+    fn allocate_cluster_port(cluster: &Self::Cluster) -> Self::ClusterPort {
+        cluster.next_port()
+    }
+
+    fn o2o_sink_source(
+        env: &Self::CompileEnv,
+        _p1: &Self::Process,
+        p1_port: &Self::ProcessPort,
+        _p2: &Self::Process,
+        p2_port: &Self::ProcessPort,
+    ) -> (syn::Expr, syn::Expr) {
+        let env = *env;
+        (
+            {
+                let port = p1_port.as_str();
+
+                q!({
+                    env.port(port)
+                        .connect_local_blocking::<ConnectedDirect>()
+                        .into_sink()
+                })
+                .splice()
+            },
+            {
+                let port = p2_port.as_str();
+
+                q!({
+                    env.port(port)
+                        .connect_local_blocking::<ConnectedDirect>()
+                        .into_source()
+                })
+                .splice()
+            },
+        )
+    }
+
+    fn o2o_connect(
+        _p1: &Self::Process,
+        _p1_port: &Self::ProcessPort,
+        _p2: &Self::Process,
+        _p2_port: &Self::ProcessPort,
+    ) {
+        panic!()
+    }
+
+    fn o2m_sink_source(
+        env: &Self::CompileEnv,
+        _p1: &Self::Process,
+        p1_port: &Self::ProcessPort,
+        _c2: &Self::Cluster,
+        c2_port: &Self::ClusterPort,
+    ) -> (syn::Expr, syn::Expr) {
+        let env = *env;
+        (
+            {
+                let port = p1_port.as_str();
+
+                q!({
+                    env.port(port)
+                        .connect_local_blocking::<ConnectedDemux<ConnectedDirect>>()
+                        .into_sink()
+                })
+                .splice()
+            },
+            {
+                let port = c2_port.as_str();
+
+                q!({
+                    env.port(port)
+                        .connect_local_blocking::<ConnectedDirect>()
+                        .into_source()
+                })
+                .splice()
+            },
+        )
+    }
+
+    fn o2m_connect(
+        _p1: &Self::Process,
+        _p1_port: &Self::ProcessPort,
+        _c2: &Self::Cluster,
+        _c2_port: &Self::ClusterPort,
+    ) {
+        panic!()
+    }
+
+    fn m2o_sink_source(
+        env: &Self::CompileEnv,
+        _c1: &Self::Cluster,
+        c1_port: &Self::ClusterPort,
+        _p2: &Self::Process,
+        p2_port: &Self::ProcessPort,
+    ) -> (syn::Expr, syn::Expr) {
+        let env = *env;
+        (
+            {
+                let port = c1_port.as_str();
+
+                q!({
+                    env.port(port)
+                        .connect_local_blocking::<ConnectedDirect>()
+                        .into_sink()
+                })
+                .splice()
+            },
+            {
+                let port = p2_port.as_str();
+
+                q!({
+                    env.port(port)
+                        .connect_local_blocking::<ConnectedTagged<ConnectedDirect>>()
+                        .into_source()
+                })
+                .splice()
+            },
+        )
+    }
+
+    fn m2o_connect(
+        _c1: &Self::Cluster,
+        _c1_port: &Self::ClusterPort,
+        _p2: &Self::Process,
+        _p2_port: &Self::ProcessPort,
+    ) {
+        panic!()
+    }
+
+    fn m2m_sink_source(
+        env: &Self::CompileEnv,
+        _c1: &Self::Cluster,
+        c1_port: &Self::ClusterPort,
+        _c2: &Self::Cluster,
+        c2_port: &Self::ClusterPort,
+    ) -> (syn::Expr, syn::Expr) {
+        let env = *env;
+        (
+            {
+                let port = c1_port.as_str();
+
+                q!({
+                    env.port(port)
+                        .connect_local_blocking::<ConnectedDemux<ConnectedDirect>>()
+                        .into_sink()
+                })
+                .splice()
+            },
+            {
+                let port = c2_port.as_str();
+
+                q!({
+                    env.port(port)
+                        .connect_local_blocking::<ConnectedTagged<ConnectedDirect>>()
+                        .into_source()
+                })
+                .splice()
+            },
+        )
+    }
+
+    fn m2m_connect(
+        _c1: &Self::Cluster,
+        _c1_port: &Self::ClusterPort,
+        _c2: &Self::Cluster,
+        _c2_port: &Self::ClusterPort,
+    ) {
+        panic!()
+    }
+
+    fn cluster_ids(
+        env: &Self::CompileEnv,
+        of_cluster: usize,
+    ) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
+        let cli = *env;
+        q!(cli.meta.clusters.get(&of_cluster).unwrap())
+    }
+
+    fn cluster_self_id(env: &Self::CompileEnv) -> impl Quoted<'a, u32> + Copy + 'a {
+        let cli = *env;
+        q!(cli
+            .meta
+            .cluster_id
+            .expect("Tried to read Cluster ID on a non-cluster node"))
+    }
 }
 
 #[derive(Clone)]
-pub struct CLIRuntimeNode<'a> {
-    id: usize,
+pub struct CLIRuntimeNode {
     next_port: Rc<RefCell<usize>>,
-    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 }
 
-impl<'a> Location for CLIRuntimeNode<'a> {
+impl Node for CLIRuntimeNode {
     type Port = String;
     type Meta = ();
     type InstantiateEnv = ();
-
-    fn id(&self) -> usize {
-        self.id
-    }
 
     fn next_port(&self) -> String {
         let next_send_port = *self.next_port.borrow();
@@ -61,20 +256,14 @@ impl<'a> Location for CLIRuntimeNode<'a> {
 }
 
 #[derive(Clone)]
-pub struct CLIRuntimeCluster<'a> {
-    id: usize,
+pub struct CLIRuntimeCluster {
     next_port: Rc<RefCell<usize>>,
-    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 }
 
-impl<'a> Location for CLIRuntimeCluster<'a> {
+impl Node for CLIRuntimeCluster {
     type Port = String;
     type Meta = ();
     type InstantiateEnv = ();
-
-    fn id(&self) -> usize {
-        self.id
-    }
 
     fn next_port(&self) -> String {
         let next_send_port = *self.next_port.borrow();
@@ -94,158 +283,18 @@ impl<'a> Location for CLIRuntimeCluster<'a> {
     }
 }
 
-impl<'a> Cluster<'a> for CLIRuntimeCluster<'a> {
-    type Id = u32;
-
-    fn ids(&self) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
-        let cli = self.cli;
-        let self_id = self.id;
-        q!(cli.meta.clusters.get(&self_id).unwrap())
-    }
-
-    fn self_id(&self) -> impl Quoted<'a, u32> + Copy + 'a {
-        let cli = self.cli;
-        q!(cli
-            .meta
-            .cluster_id
-            .expect("Tried to read Cluster ID on a non-cluster node"))
-    }
-}
-
-impl<'a> HfSendOneToOne<CLIRuntimeNode<'a>> for CLIRuntimeNode<'a> {
-    fn connect(&self, _other: &CLIRuntimeNode, _source_port: &String, _recipient_port: &String) {}
-
-    fn gen_sink_statement(&self, port: &String) -> syn::Expr {
-        let self_cli = self.cli;
-        let port = port.as_str();
-        q!({
-            self_cli
-                .port(port)
-                .connect_local_blocking::<ConnectedDirect>()
-                .into_sink()
-        })
-        .splice()
-    }
-
-    fn gen_source_statement(other: &CLIRuntimeNode<'a>, port: &String) -> syn::Expr {
-        let self_cli = other.cli;
-        let port = port.as_str();
-        q!({
-            self_cli
-                .port(port)
-                .connect_local_blocking::<ConnectedDirect>()
-                .into_source()
-        })
-        .splice()
-    }
-}
-
-impl<'a> HfSendManyToOne<CLIRuntimeNode<'a>, u32> for CLIRuntimeCluster<'a> {
-    fn connect(&self, _other: &CLIRuntimeNode, _source_port: &String, _recipient_port: &String) {}
-
-    fn gen_sink_statement(&self, port: &String) -> syn::Expr {
-        let self_cli = self.cli;
-        let port = port.as_str();
-        q!({
-            self_cli
-                .port(port)
-                .connect_local_blocking::<ConnectedDirect>()
-                .into_sink()
-        })
-        .splice()
-    }
-
-    fn gen_source_statement(other: &CLIRuntimeNode<'a>, port: &String) -> syn::Expr {
-        let self_cli = other.cli;
-        let port = port.as_str();
-        q!({
-            self_cli
-                .port(port)
-                .connect_local_blocking::<ConnectedTagged<ConnectedDirect>>()
-                .into_source()
-        })
-        .splice()
-    }
-}
-
-impl<'a> HfSendOneToMany<CLIRuntimeCluster<'a>, u32> for CLIRuntimeNode<'a> {
-    fn connect(&self, _other: &CLIRuntimeCluster, _source_port: &String, _recipient_port: &String) {
-    }
-
-    fn gen_sink_statement(&self, port: &String) -> syn::Expr {
-        let self_cli = self.cli;
-        let port = port.as_str();
-
-        q!({
-            self_cli
-                .port(port)
-                .connect_local_blocking::<ConnectedDemux<ConnectedDirect>>()
-                .into_sink()
-        })
-        .splice()
-    }
-
-    fn gen_source_statement(other: &CLIRuntimeCluster<'a>, port: &String) -> syn::Expr {
-        let self_cli = other.cli;
-        let port = port.as_str();
-
-        q!({
-            self_cli
-                .port(port)
-                .connect_local_blocking::<ConnectedDirect>()
-                .into_source()
-        })
-        .splice()
-    }
-}
-
-impl<'a> HfSendManyToMany<CLIRuntimeCluster<'a>, u32> for CLIRuntimeCluster<'a> {
-    fn connect(&self, _other: &CLIRuntimeCluster, _source_port: &String, _recipient_port: &String) {
-    }
-
-    fn gen_sink_statement(&self, port: &String) -> syn::Expr {
-        let self_cli = self.cli;
-        let port = port.as_str();
-
-        q!({
-            self_cli
-                .port(port)
-                .connect_local_blocking::<ConnectedDemux<ConnectedDirect>>()
-                .into_sink()
-        })
-        .splice()
-    }
-
-    fn gen_source_statement(other: &CLIRuntimeCluster<'a>, port: &String) -> syn::Expr {
-        let self_cli = other.cli;
-        let port = port.as_str();
-
-        q!({
-            self_cli
-                .port(port)
-                .connect_local_blocking::<ConnectedTagged<ConnectedDirect>>()
-                .into_source()
-        })
-        .splice()
-    }
-}
-
-impl<'cli> ProcessSpec<'cli, CLIRuntime> for &RuntimeData<&'cli HydroCLI<HydroflowPlusMeta>> {
-    fn build(self, id: usize) -> CLIRuntimeNode<'cli> {
+impl<'a> ProcessSpec<'a, CLIRuntime> for () {
+    fn build(self, _id: usize) -> CLIRuntimeNode {
         CLIRuntimeNode {
-            id,
             next_port: Rc::new(RefCell::new(0)),
-            cli: *self,
         }
     }
 }
 
-impl<'cli> ClusterSpec<'cli, CLIRuntime> for &RuntimeData<&'cli HydroCLI<HydroflowPlusMeta>> {
-    fn build(self, id: usize) -> CLIRuntimeCluster<'cli> {
+impl<'cli> ClusterSpec<'cli, CLIRuntime> for () {
+    fn build(self, _id: usize) -> CLIRuntimeCluster {
         CLIRuntimeCluster {
-            id,
             next_port: Rc::new(RefCell::new(0)),
-            cli: *self,
         }
     }
 }

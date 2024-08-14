@@ -79,12 +79,12 @@ pub fn profiling<'a>(
 mod tests {
     use stageleft::*;
 
-    use crate::MultiGraph;
+    use crate::deploy::MultiGraph;
 
     #[test]
     fn profiler_wrapping_all_operators() {
-        let flow = crate::builder::FlowBuilder::<MultiGraph>::new();
-        let process = flow.process(());
+        let flow = crate::builder::FlowBuilder::new();
+        let process = flow.process::<()>();
 
         flow.source_iter(&process, q!(0..10))
             .all_ticks()
@@ -94,7 +94,7 @@ mod tests {
         let runtime_context = flow.runtime_context();
         let built = flow.finalize();
 
-        insta::assert_debug_snapshot!(&built.ir);
+        insta::assert_debug_snapshot!(&built.ir());
 
         // Print mermaid
         // let mut mermaid_config = WriteConfig {op_text_no_imports: true, ..Default::default()};
@@ -109,8 +109,8 @@ mod tests {
             .optimize_with(|ir| super::profiling(ir, runtime_context, counters, counter_queue))
             .with_default_optimize();
 
-        insta::assert_debug_snapshot!(&pushed_down.ir);
+        insta::assert_debug_snapshot!(&pushed_down.ir());
 
-        let _ = pushed_down.compile();
+        let _ = pushed_down.compile_no_network::<MultiGraph>();
     }
 }
