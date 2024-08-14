@@ -29,7 +29,7 @@ mod tests {
     #[test]
     fn persist_pullup_through_map() {
         let flow = crate::builder::FlowBuilder::<MultiGraph>::new();
-        let process = flow.process(&());
+        let process = flow.process(());
 
         flow.source_iter(&process, q!(0..10))
             .all_ticks()
@@ -53,7 +53,7 @@ mod tests {
     #[test]
     fn persist_pullup_behind_tee() {
         let flow = crate::builder::FlowBuilder::<MultiGraph>::new();
-        let process = flow.process(&());
+        let process = flow.process(());
 
         let before_tee = flow
             .source_iter(&process, q!(0..10))
