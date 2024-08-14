@@ -163,5 +163,6 @@ pub trait Node {
         env: &mut Self::InstantiateEnv,
         meta: &mut Self::Meta,
         graph: HydroflowGraph,
+        extra_stmts: Vec<syn::Stmt>,
     );
 }

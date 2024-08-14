@@ -250,6 +250,7 @@ impl Node for CLIRuntimeNode {
         _env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
         _graph: HydroflowGraph,
+        _extra_stmts: Vec<syn::Stmt>,
     ) {
         panic!(".deploy() cannot be called on a CLIRuntimeNode");
     }
@@ -278,6 +279,7 @@ impl Node for CLIRuntimeCluster {
         _env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
         _graph: HydroflowGraph,
+        _extra_stmts: Vec<syn::Stmt>,
     ) {
         panic!(".deploy() cannot be called on a CLIRuntimeCluster");
     }
