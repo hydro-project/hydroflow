@@ -12,7 +12,9 @@ expression: "&built.ir"
                     source: Iter(
                         { use crate :: __staged :: profiler :: tests :: * ; 0 .. 10 },
                     ),
-                    location_id: 0,
+                    location_kind: Process(
+                        0,
+                    ),
                 },
             ),
         },

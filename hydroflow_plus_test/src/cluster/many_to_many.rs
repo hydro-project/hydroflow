@@ -1,14 +1,8 @@
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn many_to_many<'a, D: Deploy<'a>>(
-    flow: &FlowBuilder<'a, D>,
-    cluster_spec: impl ClusterSpec<'a, D>,
-) -> D::Cluster
-where
-    D::ClusterId: std::fmt::Debug,
-{
-    let cluster = flow.cluster(cluster_spec);
+pub fn many_to_many(flow: &FlowBuilder) -> Cluster<()> {
+    let cluster = flow.cluster();
     flow.source_iter(&cluster, q!(0..2))
         .broadcast_bincode(&cluster)
         .for_each(q!(|n| println!("cluster received: {:?}", n)));
@@ -21,12 +15,12 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn many_to_many_runtime<'a>(
-    flow: FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = many_to_many(&flow, &cli);
+    let _ = many_to_many(&flow);
     flow.with_default_optimize()
-        .compile()
+        .compile::<CLIRuntime>(&cli)
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
@@ -42,28 +36,36 @@ mod tests {
         let localhost = deployment.Localhost();
 
         let builder = hydroflow_plus::FlowBuilder::new();
-        let cluster = super::many_to_many(
-            &builder,
-            DeployClusterSpec::new({
-                (0..2)
-                    .map(|_| {
-                        HydroflowCrate::new(".", localhost.clone())
-                            .bin("many_to_many")
-                            .profile("dev")
-                    })
-                    .collect()
-            }),
-        );
+        let cluster = super::many_to_many(&builder);
         let built = builder.with_default_optimize();
 
         insta::assert_debug_snapshot!(built.ir());
 
-        let _nodes = built.deploy(&mut deployment);
+        let nodes = built
+            .with_cluster(
+                &cluster,
+                DeployClusterSpec::new({
+                    (0..2)
+                        .map(|_| {
+                            HydroflowCrate::new(".", localhost.clone())
+                                .bin("many_to_many")
+                                .profile("dev")
+                        })
+                        .collect()
+                }),
+            )
+            .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
 
-        let cluster_stdouts =
-            futures::future::join_all(cluster.members().iter().map(|node| node.stdout())).await;
+        let cluster_stdouts = futures::future::join_all(
+            nodes
+                .get_cluster(cluster)
+                .members()
+                .iter()
+                .map(|node| node.stdout()),
+        )
+        .await;
 
         deployment.start().await.unwrap();
 
