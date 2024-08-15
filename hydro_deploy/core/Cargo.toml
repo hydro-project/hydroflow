@@ -24,6 +24,7 @@ indicatif = "0.17.0"
 inferno = "0.11.0"
 itertools = "0.10.0" # TODO(mingwei): remove when `iter_intersperse` is stabilized.
 memo-map = "0.3.0"
+nameof = "1.0.0"
 nanoid = "0.4.0"
 nix = { version = "0.29.0", features = [ "signal" ] }
 serde = { version = "1.0.197", features = [ "derive" ] }

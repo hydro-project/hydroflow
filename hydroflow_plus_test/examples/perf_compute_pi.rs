@@ -58,6 +58,7 @@ async fn main() {
                 .rustflags(rustflags)
                 .tracing(
                     TracingOptions::builder()
+                        .perf_raw_outfile("leader.perf.data")
                         .dtrace_outfile("leader.stacks")
                         .fold_outfile("leader.data.folded")
                         .flamegraph_outfile("leader.svg")
@@ -73,6 +74,7 @@ async fn main() {
                         .rustflags(rustflags)
                         .tracing(
                             TracingOptions::builder()
+                                .perf_raw_outfile(format!("cluster{}.perf.data", idx))
                                 .dtrace_outfile(format!("cluster{}.leader.stacks", idx))
                                 .fold_outfile(format!("cluster{}.data.folded", idx))
                                 .flamegraph_outfile(format!("cluster{}.svg", idx))

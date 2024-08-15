@@ -4,10 +4,11 @@ use std::net::SocketAddr;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
 use hydroflow_deploy_integration::ServerBindConfig;
+use nameof::name_of;
 
 use super::{
     ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
@@ -161,10 +162,12 @@ impl LaunchedHost for LaunchedLocalhost {
                 ProgressTracker::println(&format!(
                     "[{id} tracing] Profiling binary with `dtrace`.",
                 ));
-                let dtrace_outfile = tracing
-                    .dtrace_outfile
-                    .as_ref()
-                    .expect("`dtrace_outfile` must be set for `dtrace` on localhost.");
+                let dtrace_outfile = tracing.dtrace_outfile.as_ref().ok_or_else(|| {
+                    anyhow!(
+                        "`{}` must be set for `dtrace` on localhost.",
+                        name_of!(dtrace_outfile in TracingOptions)
+                    )
+                })?;
 
                 let mut command = Command::new("dtrace");
                 command
@@ -213,6 +216,13 @@ impl LaunchedHost for LaunchedLocalhost {
             else if cfg!(target_family = "unix") {
                 // perf
                 ProgressTracker::println(&format!("[{} tracing] Tracing binary with `perf`.", id));
+                let perf_outfile = tracing.perf_raw_outfile.as_ref().ok_or_else(|| {
+                    anyhow!(
+                        "`{}` must be set for `perf` on localhost.",
+                        name_of!(perf_raw_outfile in TracingOptions)
+                    )
+                })?;
+
                 let mut command = Command::new("perf");
                 command
                     .args([
@@ -223,15 +233,11 @@ impl LaunchedHost for LaunchedLocalhost {
                         "dwarf,64000",
                         "-o",
                     ])
-                    .arg(format!(
-                        "./perf-{}.perf",
-                        nanoid::nanoid!(5), // TODO!
-                    ))
+                    .arg(perf_outfile)
                     .arg(&binary.bin_path)
                     .args(args);
                 command
             } else {
-                // UNKNOWN OS!
                 bail!(
                     "Unknown OS for perf/dtrace tracing: {}",
                     std::env::consts::OS
