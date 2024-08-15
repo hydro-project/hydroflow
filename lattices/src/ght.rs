@@ -5,17 +5,18 @@ use std::marker::PhantomData;
 
 use sealed::sealed;
 use variadics::{
-    var_args, var_expr, var_type, PartialEqVariadic, RefVariadic, Split, SplitBySuffix, VariadicExt,
+    var_args, var_type, PartialEqVariadic, RefVariadic, Split, SplitBySuffix, VariadicExt,
 };
 
 use crate::ght_lattice::DeepJoinLatticeBimorphism;
 
+// TODO(mingwei): GET RID OF THIS TRAIT, MERGE INTO IMPL FOR GHT.
 /// GeneralizedHashTrie wraps up a root GeneralizedHashTrieNode with metadata
 /// for the key and value types associated with the full trie.
 pub trait GeneralizedHashTrie {
     //+ for<'a> HtPrefixIter<var_type!(&'a Self::Head)> {
     /// Schema variadic: the type of rows we're storing
-    type Schema: VariadicExt;
+    type Schema: VariadicExt + Eq + Hash;
 
     /// the prefix of the Schema representing the Key type
     type KeyType: VariadicExt;
@@ -26,7 +27,11 @@ pub trait GeneralizedHashTrie {
     // /// The type of the Node in the root
     // type Node: GeneralizedHashTrieNode;
     /// The underlying root Trie Node
-    type Trie: GeneralizedHashTrieNode;
+    type Trie: GeneralizedHashTrieNode<
+        Schema = Self::Schema,
+        ValType = Self::ValType,
+        SuffixSchema = Self::Schema,
+    >;
 
     /// Create a new Ght from the iterator.
     fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self;
@@ -89,26 +94,28 @@ pub trait GeneralizedHashTrie {
 
     /// get a mutable ref to the underlying root note of the trie
     fn get_mut_trie(&mut self) -> &mut Self::Trie;
+
+    fn find_containing_leaf(
+        &self,
+        row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
+    ) -> Option<&'_ GhtLeaf<Self::Schema, Self::ValType>>;
 }
 
 /// GeneralizedHashTrie is a metadata node pointing to a root GeneralizedHashTrieNode.
 #[derive(Debug, Clone)]
-pub struct GHT<KeyType, ValType, TrieRoot>
+pub struct GHT<KeyType, TrieRoot>
 where
     KeyType: VariadicExt, // + AsRefVariadicPartialEq
-    ValType: VariadicExt, // + AsRefVariadicPartialEq
     TrieRoot: GeneralizedHashTrieNode,
 {
     pub(crate) trie: TrieRoot,
     pub(crate) _key: PhantomData<KeyType>,
-    pub(crate) _val: PhantomData<ValType>,
 }
 
-impl<K, V, TrieRoot> GHT<K, V, TrieRoot>
+impl<K, TrieRoot> GHT<K, TrieRoot>
 where
     K: VariadicExt, // + AsRefVariadicPartialEq
-    V: VariadicExt, // + AsRefVariadicPartialEq
-    TrieRoot: GeneralizedHashTrieNode,
+    TrieRoot: GeneralizedHashTrieNode<SuffixSchema = <TrieRoot as GeneralizedHashTrieNode>::Schema>,
 {
     /// Just calls `prefix_iter` on the underlying trie.
     pub fn prefix_iter<'a, KeyPrefix>(
@@ -123,15 +130,15 @@ where
     }
 }
 
-impl<K, V, TrieRoot> GeneralizedHashTrie for GHT<K, V, TrieRoot>
+impl<K, TrieRoot, Schema> GeneralizedHashTrie for GHT<K, TrieRoot>
 where
-    K: VariadicExt,             // + AsRefVariadicPartialEq
-    V: VariadicExt + Hash + Eq, // + AsRefVariadicPartialEq
-    TrieRoot: GeneralizedHashTrieNode<SuffixSchema = <TrieRoot as GeneralizedHashTrieNode>::Schema>,
+    K: VariadicExt, // + AsRefVariadicPartialEq
+    Schema: VariadicExt + Eq + Hash,
+    TrieRoot: GeneralizedHashTrieNode<Schema = Schema, SuffixSchema = Schema>,
 {
     type KeyType = K;
-    type ValType = V;
-    type Schema = TrieRoot::Schema;
+    type ValType = TrieRoot::ValType;
+    type Schema = Schema;
     type Trie = TrieRoot;
 
     fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self {
@@ -139,7 +146,6 @@ where
         GHT {
             trie,
             _key: Default::default(),
-            _val: Default::default(),
         }
     }
 
@@ -177,23 +183,24 @@ where
     fn get_mut_trie(&mut self) -> &mut Self::Trie {
         &mut self.trie
     }
+
+    fn find_containing_leaf(
+        &self,
+        row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
+    ) -> Option<&'_ GhtLeaf<Self::Schema, Self::ValType>> {
+        self.trie.find_containing_leaf(row)
+    }
 }
 
-impl<K, V, TrieRoot> Default for GHT<K, V, TrieRoot>
+impl<K, TrieRoot> Default for GHT<K, TrieRoot>
 where
     K: VariadicExt, // + AsRefVariadicPartialEq
-    V: VariadicExt, // + AsRefVariadicPartialEq
-    TrieRoot: GeneralizedHashTrieNode,
+    TrieRoot: GeneralizedHashTrieNode<SuffixSchema = <TrieRoot as GeneralizedHashTrieNode>::Schema>,
 {
     fn default() -> Self {
         let tree = TrieRoot::default();
         let _key: PhantomData<K> = Default::default();
-        let _val: PhantomData<V> = Default::default();
-        Self {
-            trie: tree,
-            _key,
-            _val,
-        }
+        Self { trie: tree, _key }
     }
 }
 
@@ -202,11 +209,13 @@ where
 pub trait GeneralizedHashTrieNode: Default {
     /// Schema variadic: the schema of the relation stored in this trie.
     /// This type is the same in all nodes of the trie.
-    type Schema: VariadicExt + Clone + SplitBySuffix<Self::SuffixSchema>;
+    type Schema: VariadicExt + Eq + Hash + Clone + SplitBySuffix<Self::SuffixSchema>;
 
     /// SuffixSchema variadic: the suffix of the schema from this node of the trie
     /// downward. First entry in the variadic is of type Head
-    type SuffixSchema: VariadicExt + Clone;
+    type SuffixSchema: VariadicExt + Eq + Hash + Clone;
+
+    type ValType: VariadicExt + Eq + Hash + Clone;
 
     /// The type of the first column in the SuffixSchema
     type Head: Eq + Hash;
@@ -266,6 +275,11 @@ pub trait GeneralizedHashTrieNode: Default {
 
     // /// Cast as Some<&mut GhtInner> if this is an inner node, else return None
     // fn cast_as_inner_mut(&mut self) -> Option<&mut Self>;
+
+    fn find_containing_leaf(
+        &self,
+        row: <Self::SuffixSchema as VariadicExt>::AsRefVar<'_>,
+    ) -> Option<&'_ GhtLeaf<Self::Schema, Self::ValType>>;
 }
 
 /// A trait for internal nodes of a GHT
@@ -308,6 +322,7 @@ where
 {
     type Schema = Node::Schema;
     type SuffixSchema = var_type!(Head, ...Node::SuffixSchema);
+    type ValType = Node::ValType;
 
     type Head = Head;
 
@@ -383,6 +398,16 @@ where
     // fn cast_as_inner_mut(&mut self) -> Option<&mut Self> {
     //     Some(self)
     // }
+
+    fn find_containing_leaf(
+        &self,
+        row: <Self::SuffixSchema as VariadicExt>::AsRefVar<'_>,
+    ) -> Option<&'_ GhtLeaf<Self::Schema, Self::ValType>> {
+        let var_args!(head, ...rest) = row;
+        self.children
+            .get(head)
+            .and_then(|child| child.find_containing_leaf(rest))
+    }
 }
 impl<Head, Node> FromIterator<Node::Schema> for GhtInner<Head, Node>
 where
@@ -399,7 +424,7 @@ where
     }
 }
 
-impl<Schema, SuffixSchema> FromIterator<Schema> for GhtLeaf<Schema, SuffixSchema>
+impl<Schema, ValType> FromIterator<Schema> for GhtLeaf<Schema, ValType>
 where
     Schema: Eq + Hash,
 {
@@ -426,14 +451,15 @@ where
 
 /// leaf node of a HashTrie
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct GhtLeaf<Schema, SuffixSchema>
+#[repr(transparent)]
+pub struct GhtLeaf<Schema, ValType>
 where
     Schema: Eq + Hash,
 {
     pub(crate) elements: HashSet<Schema>,
-    pub(crate) _suffix_schema: PhantomData<SuffixSchema>,
+    pub(crate) _suffix_schema: PhantomData<ValType>,
 }
-impl<Schema, SuffixSchema> Default for GhtLeaf<Schema, SuffixSchema>
+impl<Schema, ValType> Default for GhtLeaf<Schema, ValType>
 where
     Schema: Eq + Hash,
 {
@@ -446,14 +472,15 @@ where
     }
 }
 #[sealed]
-impl<Schema, SuffixSchema> GeneralizedHashTrieNode for GhtLeaf<Schema, SuffixSchema>
+impl<Schema, ValType> GeneralizedHashTrieNode for GhtLeaf<Schema, ValType>
 where
-    Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<SuffixSchema>,
-    SuffixSchema: VariadicExt + Clone,
-    for<'a> Schema::AsRefVar<'a>: PartialEq,
+    Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<ValType> + PartialEqVariadic,
+    ValType: VariadicExt + Clone + Eq + Hash + PartialEqVariadic,
+    // for<'a> Schema::AsRefVar<'a>: PartialEq,
 {
     type Schema = Schema;
-    type SuffixSchema = SuffixSchema;
+    type SuffixSchema = ValType;
+    type ValType = ValType;
     type Head = Schema;
 
     fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self {
@@ -477,7 +504,9 @@ where
     }
 
     fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
-        self.elements.iter().any(|r| r.as_ref_var() == row)
+        self.elements
+            .iter()
+            .any(|r| Schema::eq_ref(r.as_ref_var(), row))
     }
 
     fn iter(&self) -> impl Iterator<Item = &'_ Self::Head> {
@@ -504,110 +533,115 @@ where
     where
         Other: GeneralizedHashTrieNode,
         (Self, Other): DeepJoinLatticeBimorphism;
-}
 
-#[sealed]
-/// iterators for HashTries based on a prefix search
-pub trait FindLeaf<Schema, LeafType> {
-    /// type of the suffix of this prefix
-    type Suffix: VariadicExt;
-    /// given a prefix, return an iterator through the items below
-    fn find_containing_leaf<'a>(&'a self, row: Schema) -> Option<&'a LeafType>
-    where
-        Self::Suffix: 'a,
-        LeafType: GeneralizedHashTrieNode;
-}
-
-#[sealed]
-impl<KeyType, ValType, TrieRoot, Schema, SuffixSchema>
-    FindLeaf<Schema, GhtLeaf<ValType, SuffixSchema>> for GHT<KeyType, ValType, TrieRoot>
-where
-    TrieRoot: FindLeaf<Schema, GhtLeaf<ValType, SuffixSchema>>,
-    KeyType: VariadicExt,
-    ValType: 'static + VariadicExt + Eq + Hash + PartialEqVariadic + Clone,
-    TrieRoot: GeneralizedHashTrieNode,
-    Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
-    for<'a> ValType::AsRefVar<'a>: PartialEq,
-
-    ValType: SplitBySuffix<SuffixSchema>,
-    SuffixSchema: Clone + VariadicExt,
-{
-    // type Suffix = <TrieRoot as HtPrefixIter<KeyPrefix>>::Suffix;
-    type Suffix = <TrieRoot as FindLeaf<Schema, GhtLeaf<ValType, SuffixSchema>>>::Suffix;
-
-    fn find_containing_leaf<'a>(&'a self, row: Schema) -> Option<&'a GhtLeaf<ValType, SuffixSchema>>
-    where
-        Self::Suffix: 'a,
-    {
-        self.trie.find_containing_leaf(row)
-    }
-}
-
-#[sealed]
-impl<'k, Head, Node, SchemaRest, LeafType> FindLeaf<var_type!(&'k Head, ...SchemaRest), LeafType>
-    for GhtInner<Head, Node>
-where
-    Head: Eq + Hash + Clone,
-    Node: GeneralizedHashTrieNode + FindLeaf<SchemaRest, LeafType>,
-    SchemaRest: Eq + Hash + VariadicExt + PartialEqVariadic,
-{
-    type Suffix = <Node as FindLeaf<SchemaRest, LeafType>>::Suffix;
-    fn find_containing_leaf<'a>(
-        &'a self,
-        row: var_type!(&'k Head, ...SchemaRest),
-    ) -> Option<&'a LeafType>
-    where
-        Self::Suffix: 'a,
-        LeafType: GeneralizedHashTrieNode,
-    {
-        let var_args!(head, ...rest) = row;
-        self.children
-            .get(head)
-            .and_then(|child| child.find_containing_leaf(rest))
-    }
-}
-
-// #[sealed]
-// impl<'k, Head, PrefixRest> HtPrefixIter<var_type!(&'k Head, ...PrefixRest::AsRefVar<'k>)>
-//     for GhtLeaf<var_type!(Head, ...PrefixRest)>
-// where
-//     Head: Eq + Hash,
-//     PrefixRest: Eq + Hash + VariadicExt + PartialEqVariadic,
-
-/// This case only splits HEAD and REST in order to prevent a conflict with the `HtPrefixIter<var_type!()>` impl.
-/// If not for that, we could just use a single variadic type parameter.
-#[sealed]
-impl<'k, Schema, SuffixSchema> FindLeaf<Schema::AsRefVar<'k>, GhtLeaf<Schema, SuffixSchema>>
-    for GhtLeaf<Schema, SuffixSchema>
-where
-    Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
-    // Head: Eq + Hash + RefVariadic, /* TODO(mingwei): `Hash` actually use hash set contains instead of iterate. */
-    // Head::UnRefVar: 'static + Eq + Hash,
-    // for<'a> PrefixRest::AsRefVar<'a>: PartialEq<PrefixRest::AsRefVar<'a>>,
-    // Head::UnRefVar: for<'a> VariadicExt<AsRefVar<'a> = Head>,
-{
-    type Suffix = var_expr!();
-    fn find_containing_leaf<'a>(
-        &'a self,
-        row: Schema::AsRefVar<'k>,
-    ) -> Option<&'a GhtLeaf<Schema, SuffixSchema>>
-    where
-        Self::Suffix: 'a,
-    {
+    fn find_containing_leaf(
+        &self,
+        row: <Self::SuffixSchema as VariadicExt>::AsRefVar<'_>,
+    ) -> Option<&'_ GhtLeaf<<Self as GeneralizedHashTrieNode>::Schema, Self::ValType>> {
         // TODO(mingwei): actually use the hash set as a hash set
-        if self
-            .elements
-            .iter()
-            .any(|x| Schema::eq_ref(row, x.as_ref_var()))
-        {
+        if self.elements.iter().any(|x| {
+            let (_prefix, suffix) = Schema::split_by_suffix_ref(x.as_ref_var());
+            <ValType as PartialEqVariadic>::eq_ref(row, suffix)
+        }) {
             Some(self)
         } else {
             None
         }
-        // let var_args!(head) = prefix;
-        // self.elements.contains(head).then_some(()).into_iter()
     }
 }
+
+// #[sealed]
+// /// iterators for HashTries based on a prefix search
+// pub trait FindLeaf: GeneralizedHashTrieNode {
+//     /// given a prefix, return an iterator through the items below
+//     fn find_containing_leaf(
+//         &self,
+//         row: <Self::SuffixSchema as VariadicExt>::AsRefVar<'_>,
+//     ) -> Option<&'_ GhtLeaf<Self::Schema, Self::ValType>>;
+// }
+
+// // #[sealed]
+// // impl<KeyType, ValType, TrieRoot, Schema> FindLeaf<Schema> for GHT<KeyType, ValType, TrieRoot>
+// // where
+// //     TrieRoot: FindLeaf<Schema>,
+// //     KeyType: VariadicExt,
+// //     ValType: 'static + VariadicExt + Eq + Hash + PartialEqVariadic + Clone,
+// //     TrieRoot: GeneralizedHashTrieNode,
+// //     Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
+// //     for<'a> ValType::AsRefVar<'a>: PartialEq,
+// //     // ValType: SplitBySuffix<SuffixSchema>,
+// //     // SuffixSchema: Clone + VariadicExt,
+// // {
+// //     type Schema = Schema;
+
+// //     // type Suffix = <TrieRoot as HtPrefixIter<KeyPrefix>>::Suffix;
+// //     type Suffix = <TrieRoot as FindLeaf<Schema>>::Suffix;
+
+// //     fn find_containing_leaf(&self, row: Schema) -> Option<&'_ GhtLeaf<Schema, ValType>> {
+// //         self.trie.find_containing_leaf(row)
+// //     }
+// // }
+
+// // var_type!(&'k Head, ...SchemaRest)
+// // var_type!(&'k Head, ...Node::SuffixSchema)
+// #[sealed]
+// impl<'k, Head, Node> FindLeaf for GhtInner<Head, Node>
+// where
+//     Self: GeneralizedHashTrieNode,
+//     Head: Eq + Hash + Clone,
+//     Node: FindLeaf<
+//         Schema = <Self as GeneralizedHashTrieNode>::Schema,
+//         ValType = <Self as GeneralizedHashTrieNode>::ValType,
+//     >,
+// {
+//     fn find_containing_leaf(
+//         &self,
+//         row: <Self::SuffixSchema as VariadicExt>::AsRefVar<'_>,
+//     ) -> Option<&'_ GhtLeaf<Self::Schema, Self::ValType>> {
+//         let var_args!(head, ...rest) = row;
+//         self.children
+//             .get(head)
+//             .and_then(|child| child.find_containing_leaf(rest))
+//     }
+// }
+
+// // #[sealed]
+// // impl<'k, Head, PrefixRest> HtPrefixIter<var_type!(&'k Head, ...PrefixRest::AsRefVar<'k>)>
+// //     for GhtLeaf<var_type!(Head, ...PrefixRest)>
+// // where
+// //     Head: Eq + Hash,
+// //     PrefixRest: Eq + Hash + VariadicExt + PartialEqVariadic,
+
+// /// This case only splits HEAD and REST in order to prevent a conflict with the `HtPrefixIter<var_type!()>` impl.
+// /// If not for that, we could just use a single variadic type parameter.
+// #[sealed]
+// impl<'k, Schema, ValType> FindLeaf for GhtLeaf<Schema, ValType>
+// where
+//     Self: GeneralizedHashTrieNode<Schema = Schema, ValType = ValType, SuffixSchema = ValType>,
+//     Schema: Eq + Hash + SplitBySuffix<ValType>,
+//     ValType: Eq + Hash + PartialEqVariadic,
+//     // Head: Eq + Hash + RefVariadic, /* TODO(mingwei): `Hash` actually use hash set contains instead of iterate. */
+//     // Head::UnRefVar: 'static + Eq + Hash,
+//     // for<'a> PrefixRest::AsRefVar<'a>: PartialEq<PrefixRest::AsRefVar<'a>>,
+//     // Head::UnRefVar: for<'a> VariadicExt<AsRefVar<'a> = Head>,
+// {
+//     fn find_containing_leaf(
+//         &self,
+//         row: <Self::SuffixSchema as VariadicExt>::AsRefVar<'_>,
+//     ) -> Option<&'_ GhtLeaf<<Self as GeneralizedHashTrieNode>::Schema, Self::ValType>> {
+//         // TODO(mingwei): actually use the hash set as a hash set
+//         if self.elements.iter().any(|x| {
+//             let (_prefix, suffix) = Schema::split_by_suffix_ref(x.as_ref_var());
+//             <ValType as PartialEqVariadic>::eq_ref(row, suffix)
+//         }) {
+//             Some(self)
+//         } else {
+//             None
+//         }
+//         // let var_args!(head) = prefix;
+//         // self.elements.contains(head).then_some(()).into_iter()
+//     }
+// }
 
 #[sealed]
 /// iterators for HashTries based on a prefix search
@@ -668,14 +702,13 @@ where
 /// This case only splits HEAD and REST in order to prevent a conflict with the `HtPrefixIter<var_type!()>` impl.
 /// If not for that, we could just use a single variadic type parameter.
 #[sealed]
-impl<KeyPrefixRef, Schema, SuffixSchema> HtPrefixIter<KeyPrefixRef>
-    for GhtLeaf<Schema, SuffixSchema>
+impl<KeyPrefixRef, Schema, ValType> HtPrefixIter<KeyPrefixRef> for GhtLeaf<Schema, ValType>
 where
     KeyPrefixRef: 'static + RefVariadic,
-    Schema: 'static + VariadicExt + Hash + Eq + SplitBySuffix<SuffixSchema>,
-    SuffixSchema: VariadicExt,
+    Schema: 'static + VariadicExt + Hash + Eq + SplitBySuffix<ValType>,
+    ValType: VariadicExt,
     // for<'a> SuffixSchema::AsRefVar<'a>: Split<KeyPrefixRef>,
-    SuffixSchema: Split<KeyPrefixRef::UnRefVar>,
+    ValType: Split<KeyPrefixRef::UnRefVar>,
     KeyPrefixRef::UnRefVar: PartialEqVariadic,
 {
     type Item = Schema;
@@ -691,11 +724,11 @@ where
             .map(Schema::as_ref_var)
             .filter(move |&row| {
                 let (_row_prefix, row_mid_suffix) =
-                    <Schema as SplitBySuffix<SuffixSchema>>::split_by_suffix_ref(row);
+                    <Schema as SplitBySuffix<ValType>>::split_by_suffix_ref(row);
                 let (row_mid, _row_suffix): (
                     <KeyPrefixRef::UnRefVar as VariadicExt>::AsRefVar<'_>,
                     _,
-                ) = <SuffixSchema as Split<KeyPrefixRef::UnRefVar>>::split_ref(row_mid_suffix);
+                ) = <ValType as Split<KeyPrefixRef::UnRefVar>>::split_ref(row_mid_suffix);
                 <KeyPrefixRef::UnRefVar as PartialEqVariadic>::eq_ref(prefix.unref_ref(), row_mid)
             })
     }
@@ -833,10 +866,16 @@ macro_rules! GhtNodeType {
 /// and a pointer to the GhtInner at the root of the Trie
 #[macro_export]
 macro_rules! GhtType {
+    // ($a:ty => $( $z:ty ),* ) => (
+    //     $crate::ght::GHT::<$crate::variadics::var_type!($a), $crate::variadics::var_type!($( $z ),*), $crate::GhtNodeType!($a => $( $z ),*)>
+    // );
+    // ($a:ty, $( $b:ty ),+  => $( $z:ty ),* ) => (
+    //     $crate::ght::GHT::<$crate::variadics::var_type!( $a, $( $b ),+ ), $crate::variadics::var_type!($( $z ),*), $crate::GhtNodeType!($a, $( $b ),+ => $( $z ),*)>
+    // );
     ($a:ty => $( $z:ty ),* ) => (
-        $crate::ght::GHT::<$crate::variadics::var_type!($a), $crate::variadics::var_type!($( $z ),*), $crate::GhtNodeType!($a => $( $z ),*)>
+        $crate::ght::GHT::<$crate::variadics::var_type!($a), $crate::GhtNodeType!($a => $( $z ),*)>
     );
     ($a:ty, $( $b:ty ),+  => $( $z:ty ),* ) => (
-        $crate::ght::GHT::<$crate::variadics::var_type!( $a, $( $b ),+ ), $crate::variadics::var_type!($( $z ),*), $crate::GhtNodeType!($a, $( $b ),+ => $( $z ),*)>
+        $crate::ght::GHT::<$crate::variadics::var_type!( $a, $( $b ),+ ), $crate::GhtNodeType!($a, $( $b ),+ => $( $z ),*)>
     );
 }

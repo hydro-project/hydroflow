@@ -5,14 +5,12 @@ mod test {
 
     use variadics::{var_expr, var_type, VariadicExt};
 
-    use crate::ght::{
-        FindLeaf, GeneralizedHashTrie, GeneralizedHashTrieNode, GhtInner, GhtLeaf, GHT,
-    };
+    use crate::ght::{GeneralizedHashTrie, GeneralizedHashTrieNode, GhtInner, GhtLeaf, GHT};
     use crate::ght_lattice::{
         DeepJoinLatticeBimorphism, GhtBimorphism, GhtCartesianProductBimorphism,
         GhtNodeKeyedBimorphism, GhtSuffixProductBimorphism,
     };
-    use crate::lazy_trie::{ColumnLazyTrieNode, GhtForest, GhtForestStruct};
+    use crate::ght_lazy::{ColumnLazyTrieNode, ForestFindLeaf, GhtForest, GhtForestStruct};
     use crate::{GhtForestType, GhtNodeType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
 
     #[test]
@@ -538,6 +536,10 @@ mod test {
         let mut ght_a = MyGhtA::default();
         let mut ght_b = MyGhtB::default();
 
+        fn is_clone(_: &impl Clone) {}
+        is_clone(&ght_a);
+        is_clone(&ght_b);
+
         ght_a.insert(var_expr!(123, 2, 5, "hello"));
         ght_a.insert(var_expr!(50, 1, 1, "hi"));
         ght_a.insert(var_expr!(5, 1, 7, "hi"));
@@ -589,7 +591,7 @@ mod test {
                     CartProd,
                 >::default()));
             let out = bim.call(ght_a.clone(), ght_b.clone());
-            let out: HashSet<MyResultType> = out.recursive_iter().collect();
+            let out: HashSet<MyResultType> = GeneralizedHashTrie::recursive_iter(&out).collect();
             assert_eq!(out, result.iter().copied().collect());
         }
 
@@ -1016,7 +1018,7 @@ mod test {
     fn test_force() {
         type LeafType = GhtNodeType!(() => u16, u32, u64);
 
-        let mut colt = GHT::<var_type!(u16, u32), var_type!(u64), LeafType>::default();
+        let mut colt = <GHT<var_type!(), LeafType> as Default>::default();
 
         let n = LeafType::new_from(vec![
             var_expr!(1, 1, 1),
@@ -1157,5 +1159,10 @@ mod test {
                 .is_none()
         );
         println!("{:?}", forest.forest);
+        let j = ForestFindLeaf::<var_type!(u8, u16, u32, u64)>::find_containing_leaf(
+            &forest.forest,
+            var_expr!(4, 4, 4, 4).as_ref_var(),
+        );
+        // let j = forest.find_containing_leaf();
     }
 }

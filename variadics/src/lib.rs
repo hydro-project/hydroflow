@@ -748,7 +748,7 @@ where
     }
 
     fn split_by_suffix_ref(
-        _this: Self::AsRefVar<'_>,
+        this: Self::AsRefVar<'_>,
     ) -> (
         <Self::Prefix as VariadicExt>::AsRefVar<'_>,
         Suffix::AsRefVar<'_>,

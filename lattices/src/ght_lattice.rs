@@ -13,13 +13,12 @@ use crate::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
 //////////////////////////
 
 /// Merge
-impl<KeyType, ValType, Inner> Merge<GHT<KeyType, ValType, Inner>> for GHT<KeyType, ValType, Inner>
+impl<KeyType, Inner> Merge<GHT<KeyType, Inner>> for GHT<KeyType, Inner>
 where
     KeyType: VariadicExt,
-    ValType: VariadicExt,
     Inner: GeneralizedHashTrieNode + Merge<Inner>,
 {
-    fn merge(&mut self, other: GHT<KeyType, ValType, Inner>) -> bool {
+    fn merge(&mut self, other: GHT<KeyType, Inner>) -> bool {
         self.trie.merge(other.trie)
     }
 }
@@ -60,14 +59,12 @@ where
 }
 
 /// PartialEq
-impl<KeyType, ValType, Inner> PartialEq<GHT<KeyType, ValType, Inner>>
-    for GHT<KeyType, ValType, Inner>
+impl<KeyType, Inner> PartialEq<GHT<KeyType, Inner>> for GHT<KeyType, Inner>
 where
     KeyType: VariadicExt,
-    ValType: VariadicExt,
     Inner: GeneralizedHashTrieNode + Merge<Inner> + PartialEq,
 {
-    fn eq(&self, other: &GHT<KeyType, ValType, Inner>) -> bool {
+    fn eq(&self, other: &GHT<KeyType, Inner>) -> bool {
         self.trie.eq(&other.trie)
     }
 }
@@ -96,14 +93,12 @@ where
 }
 
 // PartialOrd
-impl<KeyType, ValType, Inner> PartialOrd<GHT<KeyType, ValType, Inner>>
-    for GHT<KeyType, ValType, Inner>
+impl<KeyType, Inner> PartialOrd<GHT<KeyType, Inner>> for GHT<KeyType, Inner>
 where
     KeyType: VariadicExt, // + AsRefVariadicPartialEq
-    ValType: VariadicExt, // + AsRefVariadicPartialEq
     Inner: GeneralizedHashTrieNode + Merge<Inner> + PartialOrd,
 {
-    fn partial_cmp(&self, other: &GHT<KeyType, ValType, Inner>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &GHT<KeyType, Inner>) -> Option<Ordering> {
         self.trie.partial_cmp(&other.trie)
     }
 }
@@ -207,13 +202,11 @@ where
 }
 
 // LatticeOrd
-impl<KeyType, ValType, Inner> LatticeOrd<GHT<KeyType, ValType, Inner>>
-    for GHT<KeyType, ValType, Inner>
+impl<KeyType, Inner> LatticeOrd<GHT<KeyType, Inner>> for GHT<KeyType, Inner>
 where
     KeyType: VariadicExt, // + AsRefVariadicPartialEq
-    ValType: VariadicExt, // + AsRefVariadicPartialEq
     Inner: GeneralizedHashTrieNode,
-    Self: PartialOrd<GHT<KeyType, ValType, Inner>>,
+    Self: PartialOrd<Self>,
 {
 }
 
@@ -233,10 +226,9 @@ where
 }
 
 // IsBot
-impl<KeyType, ValType, Inner> IsBot for GHT<KeyType, ValType, Inner>
+impl<KeyType, Inner> IsBot for GHT<KeyType, Inner>
 where
     KeyType: VariadicExt, // + AsRefVariadicPartialEq
-    ValType: VariadicExt, // + AsRefVariadicPartialEq
     Inner: GeneralizedHashTrieNode + IsBot,
 {
     fn is_bot(&self) -> bool {
@@ -265,10 +257,9 @@ where
 }
 
 // IsTop
-impl<KeyType, ValType, Inner> IsTop for GHT<KeyType, ValType, Inner>
+impl<KeyType, Inner> IsTop for GHT<KeyType, Inner>
 where
     KeyType: VariadicExt, // + AsRefVariadicPartialEq
-    ValType: VariadicExt, // + AsRefVariadicPartialEq
     Inner: GeneralizedHashTrieNode + IsTop,
 {
     fn is_top(&self) -> bool {
@@ -401,7 +392,7 @@ where
     //     <GhtB as GeneralizedHashTrie>::ValType,
     // >: + AsRefVariadicPartialEq
 {
-    type Output = GHT<GhtA::KeyType, var_type!(...GhtA::ValType, ...GhtB::ValType), Output>; // HashMap<Head, ValFunc::Output>; // GhtOut;
+    type Output = GHT<GhtA::KeyType, Output>; // HashMap<Head, ValFunc::Output>; // GhtOut;
 
     fn call(&mut self, ght_a: GhtA, ght_b: GhtB) -> Self::Output {
         let node_bim = &mut self.bimorphism; // GhtNodeKeyedBimorphism::<ValFunc>::new(self.bimorphism);
@@ -409,7 +400,6 @@ where
         GHT {
             trie,
             _key: std::marker::PhantomData,
-            _val: std::marker::PhantomData,
         }
     }
 }

@@ -15,10 +15,10 @@ mod dom_pair;
 pub mod ght;
 /// Lattice methods for GHT
 pub mod ght_lattice;
+/// COLT from the Wang/Willsey/Suciu Freejoin work
+pub mod ght_lazy;
 /// Tests for GHT
 pub mod ght_test;
-/// COLT from the Wang/Willsey/Suciu Freejoin work
-pub mod lazy_trie;
 pub mod map_union;
 pub mod map_union_with_tombstones;
 mod ord;

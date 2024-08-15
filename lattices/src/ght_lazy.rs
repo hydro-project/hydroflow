@@ -2,7 +2,7 @@ use std::hash::Hash;
 
 use ref_cast::RefCast;
 use sealed::sealed;
-use variadics::{var_expr, var_type, RefVariadic, SplitBySuffix, VariadicExt};
+use variadics::{var_expr, var_type, PartialEqVariadic, RefVariadic, SplitBySuffix, VariadicExt};
 
 use crate::ght::{
     GeneralizedHashTrie, GeneralizedHashTrieNode, GhtHasChildren, GhtInner, GhtLeaf, HtPrefixIter,
@@ -60,11 +60,12 @@ impl<Schema, Head, Rest> ColumnLazyTrieNode for GhtLeaf<Schema, var_type!(Head, 
 where
     Head: 'static + Clone + Hash + Eq,
     Rest: 'static + Clone + Hash + Eq + VariadicExt,
-    Schema: 'static + Hash + Eq + Clone + VariadicExt,
+    Schema: 'static + Hash + Eq + Clone + VariadicExt + PartialEqVariadic,
     // for<'r, 's> <var_type!(Head, ...Rest) as VariadicExt>::AsRefVar<'r>:
     //     PartialEq<<var_type!(Head, ...Rest) as VariadicExt>::AsRefVar<'s>>,
-    for<'r> Rest::AsRefVar<'r>: PartialEq<Rest::AsRefVar<'r>>,
-    for<'r> Schema::AsRefVar<'r>: PartialEq<Schema::AsRefVar<'r>>,
+    Rest: PartialEqVariadic,
+    // for<'r> Rest::AsRefVar<'r>: PartialEq<Rest::AsRefVar<'r>>,
+    // for<'r> Schema::AsRefVar<'r>: PartialEq<Schema::AsRefVar<'r>>,
     Schema: SplitBySuffix<var_type!(Head, ...Rest)>,
     Schema: SplitBySuffix<Rest>,
 {
@@ -448,6 +449,49 @@ where
     }
     fn force_and_merge<'a>(&self, _search_key: SearchKey) -> bool {
         false
+    }
+}
+
+pub trait ForestFindLeaf<Schema>
+where
+    Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
+{
+    fn find_containing_leaf(&self, row: Schema::AsRefVar<'_>) -> Option<&'_ GhtLeaf<Schema, ()>>;
+}
+
+impl<TrieFirst, TrieRest> ForestFindLeaf<TrieFirst::Schema> for var_type!(TrieFirst, ...TrieRest)
+where
+    TrieFirst::Schema: PartialEqVariadic,
+    TrieFirst: GeneralizedHashTrie,
+    TrieRest: VariadicExt + ForestFindLeaf<TrieFirst::Schema>,
+{
+    fn find_containing_leaf(
+        &self,
+        row: <TrieFirst::Schema as VariadicExt>::AsRefVar<'_>,
+    ) -> Option<&'_ GhtLeaf<TrieFirst::Schema, ()>> {
+        let var_expr!(first, ...rest) = &self;
+        if let Some(leaf) = first.find_containing_leaf(row) {
+            // TODO!!!!
+            unsafe { std::mem::transmute(leaf) }
+        } else {
+            rest.find_containing_leaf(row)
+            // let remainder = GhtForestStruct::<TrieRest>::ref_cast(rest);
+            // <GhtForestStruct<TrieRest> as ForestFindLeaf<Schema, ValType>>::find_containing_leaf(
+            //     remainder, row,
+            // )
+        }
+    }
+}
+
+impl<Schema> ForestFindLeaf<Schema> for var_type!()
+where
+    Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
+{
+    fn find_containing_leaf(
+        &self,
+        _row: <Schema as VariadicExt>::AsRefVar<'_>,
+    ) -> Option<&'_ GhtLeaf<Schema, ()>> {
+        None
     }
 }
 
