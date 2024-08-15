@@ -53,9 +53,10 @@ macro_rules! stageleft_crate {
             "lib_macro.rs"
         ));
 
+        #[cfg(not(feature = "stageleft_devel"))]
         #[cfg(not(stageleft_macro))]
         #[doc(hidden)]
-        #[allow(unused, ambiguous_glob_reexports)]
+        #[allow(unused, ambiguous_glob_reexports, clippy::suspicious_else_formatting)]
         pub mod __staged {
             include!(concat!(
                 env!("OUT_DIR"),
@@ -69,8 +70,9 @@ macro_rules! stageleft_crate {
 #[macro_export]
 macro_rules! stageleft_no_entry_crate {
     () => {
+        #[cfg(not(feature = "stageleft_devel"))]
         #[doc(hidden)]
-        #[allow(unused, ambiguous_glob_reexports)]
+        #[allow(unused, ambiguous_glob_reexports, clippy::suspicious_else_formatting)]
         pub mod __staged {
             include!(concat!(
                 env!("OUT_DIR"),
