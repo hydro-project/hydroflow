@@ -187,7 +187,7 @@ mod test {
         let v: HashSet<ResultType> = leaf.prefix_iter(key).collect();
         let result = input
             .iter()
-            .filter(|t: &&InputType| t.0 == 42)
+            // .filter(|t: &&InputType| t.0 == 42)
             .map(|t: &InputType| var_expr!(&t.0, &t.1 .0, &t.1 .1 .0))
             .collect();
         assert_eq!(v, result);

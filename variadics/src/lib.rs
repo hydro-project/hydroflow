@@ -125,6 +125,7 @@ pub trait VariadicExt: Variadic {
     type Reverse: VariadicExt;
     /// Reverses this variadic value.
     fn reverse(self) -> Self::Reverse;
+    fn reverse_ref(this: Self::AsRefVar<'_>) -> <Self::Reverse as VariadicExt>::AsRefVar<'_>;
 
     /// The length of this variadic type
     fn len(&self) -> usize {
@@ -208,6 +209,14 @@ where
         let (item, rest) = self;
         rest.reverse().extend((item, ()))
     }
+    fn reverse_ref(this: Self::AsRefVar<'_>) -> <Self::Reverse as VariadicExt>::AsRefVar<'_> {
+        let (item, rest) = this;
+        let out = Rest::reverse_ref(rest).extend((item, ()));
+        // TODO!!!
+        let out2 = unsafe { std::mem::transmute_copy(&out) };
+        std::mem::forget(out);
+        out2
+    }
 
     type AsRefVar<'a> = (&'a Item, Rest::AsRefVar<'a>)
     where
@@ -263,6 +272,7 @@ impl VariadicExt for () {
 
     type Reverse = ();
     fn reverse(self) -> Self::Reverse {}
+    fn reverse_ref(_this: Self::AsRefVar<'_>) -> <Self::Reverse as VariadicExt>::AsRefVar<'_> {}
 
     type AsRefVar<'a> = ();
     fn as_ref_var(&self) -> Self::AsRefVar<'_> {}
@@ -753,9 +763,13 @@ where
         <Self::Prefix as VariadicExt>::AsRefVar<'_>,
         Suffix::AsRefVar<'_>,
     ) {
-        todo!();
-        // let (rsuffix, rprefix) = this.reverse().split();
-        // (rprefix.reverse(), rsuffix.reverse())
+        let rev = This::reverse_ref(this);
+        let (rsuffix, rprefix) = <This::Reverse as Split<Suffix::Reverse>>::split_ref(rev);
+        let out = (rprefix.reverse(), rsuffix.reverse());
+        // TODO!!!!
+        let out2 = unsafe { std::mem::transmute_copy(&out) };
+        std::mem::forget(out);
+        out2
     }
 }
 
