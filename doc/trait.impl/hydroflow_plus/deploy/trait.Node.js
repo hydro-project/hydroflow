@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"hydroflow_plus":[],
+"hydroflow_plus_cli_integration":[["impl Node for <a class=\"struct\" href=\"hydroflow_plus_cli_integration/struct.CLIRuntimeCluster.html\" title=\"struct hydroflow_plus_cli_integration::CLIRuntimeCluster\">CLIRuntimeCluster</a>"],["impl Node for <a class=\"struct\" href=\"hydroflow_plus_cli_integration/struct.CLIRuntimeNode.html\" title=\"struct hydroflow_plus_cli_integration::CLIRuntimeNode\">CLIRuntimeNode</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

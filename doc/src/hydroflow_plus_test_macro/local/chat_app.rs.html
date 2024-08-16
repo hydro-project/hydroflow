@@ -130,20 +130,23 @@
 <a href="#130" id="130">130</a>
 <a href="#131" id="131">131</a>
 <a href="#132" id="132">132</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
+<span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>chat_app&lt;<span class="lifetime">'a</span>&gt;(
-    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
     users_stream: RuntimeData&lt;UnboundedReceiverStream&lt;u32&gt;&gt;,
     messages: RuntimeData&lt;UnboundedReceiverStream&lt;String&gt;&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;(u32, String)&gt;&gt;,
     replay_messages: bool,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let </span>process = flow.process(());
+    <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
     <span class="kw">let </span>users = flow.source_stream(<span class="kw-2">&amp;</span>process, users_stream).all_ticks();
     <span class="kw">let </span>messages = flow.source_stream(<span class="kw-2">&amp;</span>process, messages);
@@ -165,7 +168,8 @@
         output.send(t).unwrap();
     }));
 
-    flow.with_default_optimize().compile()
+    flow.with_default_optimize()
+        .compile_no_network::&lt;SingleProcessGraph&gt;()
 }
 
 <span class="attr">#[stageleft::runtime]

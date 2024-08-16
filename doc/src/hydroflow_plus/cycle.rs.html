@@ -31,27 +31,27 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::builder::FlowLeaves;
 <span class="kw">use </span><span class="kw">crate</span>::ir::HfPlusLeaf;
-<span class="kw">use </span><span class="kw">crate</span>::location::Location;
+<span class="kw">use </span><span class="kw">crate</span>::location::{Location, LocationId};
 <span class="kw">use </span><span class="kw">crate</span>::Stream;
 
 <span class="doccomment">/// Represents a fixpoint cycle in the graph that will be fulfilled
 /// by a stream that is not yet known.
 ///
 /// See [`Stream`] for an explainer on the type parameters.
-</span><span class="kw">pub struct </span>HfCycle&lt;<span class="lifetime">'a</span>, T, W, N: Location + Clone&gt; {
+</span><span class="kw">pub struct </span>HfCycle&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) node: N,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) location_kind: LocationId,
     <span class="kw">pub</span>(<span class="kw">crate</span>) ir_leaves: FlowLeaves&lt;<span class="lifetime">'a</span>&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), T, W)&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(N, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), T, W)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location + Clone&gt; HfCycle&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; HfCycle&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
     <span class="kw">pub fn </span>complete(<span class="self">self</span>, stream: Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt;) {
         <span class="kw">let </span>ident = <span class="self">self</span>.ident;
 
         <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a cycle to a flow that has already been finalized. No cycles can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
             ident,
-            location_id: <span class="self">self</span>.node.id(),
+            location_kind: <span class="self">self</span>.location_kind,
             input: Box::new(stream.ir_node.into_inner()),
         });
     }

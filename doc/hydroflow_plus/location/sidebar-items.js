@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["graphs","network"],"trait":["Cluster","ClusterSpec","Deploy","LocalDeploy","Location","ProcessSpec"]};
+window.SIDEBAR_ITEMS = {"enum":["LocationId"],"struct":["Cluster","Process"],"trait":["CanSend","Location"]};

@@ -23,27 +23,21 @@
 <a href="#23" id="23">23</a>
 <a href="#24" id="24">24</a>
 <a href="#25" id="25">25</a>
-<a href="#26" id="26">26</a>
-<a href="#27" id="27">27</a>
-<a href="#28" id="28">28</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
+</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
+<span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-<span class="kw">pub fn </span>first_ten&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
-    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
-    process_spec: <span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
-) {
-    <span class="kw">let </span>process = flow.process(process_spec);
+<span class="kw">pub fn </span>first_ten(flow: <span class="kw-2">&amp;</span>FlowBuilder) {
+    <span class="kw">let </span>process = flow.process::&lt;()&gt;();
     <span class="kw">let </span>numbers = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
     numbers.for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n)));
 }
 
 <span class="attr">#[stageleft::entry]
-</span><span class="kw">pub fn </span>first_ten_runtime&lt;<span class="lifetime">'a</span>&gt;(
-    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    first_ten(<span class="kw-2">&amp;</span>flow, ());
-    flow.with_default_optimize().compile()
+</span><span class="kw">pub fn </span>first_ten_runtime&lt;<span class="lifetime">'a</span>&gt;(flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
+    first_ten(<span class="kw-2">&amp;</span>flow);
+    flow.with_default_optimize()
+        .compile_no_network::&lt;SingleProcessGraph&gt;()
 }
 
 <span class="attr">#[stageleft::runtime]

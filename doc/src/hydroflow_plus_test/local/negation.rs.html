@@ -195,18 +195,22 @@
 <a href="#195" id="195">195</a>
 <a href="#196" id="196">196</a>
 <a href="#197" id="197">197</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
+<span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>test_difference&lt;<span class="lifetime">'a</span>&gt;(
-    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
     persist1: bool,
     persist2: bool,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let </span>process = flow.process(());
+    <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
     <span class="kw">let </span><span class="kw-2">mut </span>source = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>));
     <span class="kw">if </span>persist1 {
@@ -222,17 +226,18 @@
         output.send(v).unwrap();
     }));
 
-    flow.with_default_optimize().compile()
+    flow.with_default_optimize()
+        .compile_no_network::&lt;SingleProcessGraph&gt;()
 }
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>test_anti_join&lt;<span class="lifetime">'a</span>&gt;(
-    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
     persist1: bool,
     persist2: bool,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let </span>process = flow.process(());
+    <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
     <span class="kw">let </span><span class="kw-2">mut </span>source = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>)).map(<span class="macro">q!</span>(|v| (v, v)));
     <span class="kw">if </span>persist1 {
@@ -249,7 +254,8 @@
         output.send(v.<span class="number">0</span>).unwrap();
     }));
 
-    flow.with_default_optimize().compile()
+    flow.with_default_optimize()
+        .compile_no_network::&lt;SingleProcessGraph&gt;()
 }
 
 <span class="attr">#[stageleft::runtime]

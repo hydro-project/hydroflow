@@ -14,7 +14,7 @@
     <span class="kw">let </span>batch_size = <span class="number">8192</span>;
 
     <span class="macro">hydroflow_plus::launch!</span>(
-        |ports| <span class="macro">hydroflow_plus_test::cluster::compute_pi::compute_pi_runtime!</span>(ports, <span class="kw-2">&amp;</span>batch_size,)
+        |ports| <span class="macro">hydroflow_plus_test::cluster::compute_pi::compute_pi_runtime!</span>(ports, batch_size)
     )
     .<span class="kw">await</span>;
 }

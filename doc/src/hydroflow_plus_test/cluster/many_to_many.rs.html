@@ -87,17 +87,13 @@
 <a href="#87" id="87">87</a>
 <a href="#88" id="88">88</a>
 <a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-<span class="kw">pub fn </span>many_to_many&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
-    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
-    cluster_spec: <span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
-) -&gt; D::Cluster
-<span class="kw">where
-    </span>D::ClusterId: std::fmt::Debug,
-{
-    <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
+<span class="kw">pub fn </span>many_to_many(flow: <span class="kw-2">&amp;</span>FlowBuilder) -&gt; Cluster&lt;()&gt; {
+    <span class="kw">let </span>cluster = flow.cluster();
     flow.source_iter(<span class="kw-2">&amp;</span>cluster, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">2</span>))
         .broadcast_bincode(<span class="kw-2">&amp;</span>cluster)
         .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"cluster received: {:?}"</span>, n)));
@@ -110,12 +106,12 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>many_to_many_runtime&lt;<span class="lifetime">'a</span>&gt;(
-    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= many_to_many(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>cli);
+    <span class="kw">let _ </span>= many_to_many(<span class="kw-2">&amp;</span>flow);
     flow.with_default_optimize()
-        .compile()
+        .compile::&lt;CLIRuntime&gt;(<span class="kw-2">&amp;</span>cli)
         .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
@@ -131,28 +127,36 @@
         <span class="kw">let </span>localhost = deployment.Localhost();
 
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
-        <span class="kw">let </span>cluster = <span class="kw">super</span>::many_to_many(
-            <span class="kw-2">&amp;</span>builder,
-            DeployClusterSpec::new({
-                (<span class="number">0</span>..<span class="number">2</span>)
-                    .map(|<span class="kw">_</span>| {
-                        HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
-                            .bin(<span class="string">"many_to_many"</span>)
-                            .profile(<span class="string">"dev"</span>)
-                    })
-                    .collect()
-            }),
-        );
+        <span class="kw">let </span>cluster = <span class="kw">super</span>::many_to_many(<span class="kw-2">&amp;</span>builder);
         <span class="kw">let </span>built = builder.with_default_optimize();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
-        <span class="kw">let </span>_nodes = built.deploy(<span class="kw-2">&amp;mut </span>deployment);
+        <span class="kw">let </span>nodes = built
+            .with_cluster(
+                <span class="kw-2">&amp;</span>cluster,
+                DeployClusterSpec::new({
+                    (<span class="number">0</span>..<span class="number">2</span>)
+                        .map(|<span class="kw">_</span>| {
+                            HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
+                                .bin(<span class="string">"many_to_many"</span>)
+                                .profile(<span class="string">"dev"</span>)
+                        })
+                        .collect()
+                }),
+            )
+            .deploy(<span class="kw-2">&amp;mut </span>deployment);
 
         deployment.deploy().<span class="kw">await</span>.unwrap();
 
-        <span class="kw">let </span>cluster_stdouts =
-            futures::future::join_all(cluster.members().iter().map(|node| node.stdout())).<span class="kw">await</span>;
+        <span class="kw">let </span>cluster_stdouts = futures::future::join_all(
+            nodes
+                .get_cluster(<span class="kw-2">&amp;</span>cluster)
+                .members()
+                .iter()
+                .map(|node| node.stdout()),
+        )
+        .<span class="kw">await</span>;
 
         deployment.start().<span class="kw">await</span>.unwrap();
 

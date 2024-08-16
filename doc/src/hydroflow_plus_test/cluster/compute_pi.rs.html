@@ -112,17 +112,18 @@
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-<span class="kw">pub fn </span>compute_pi&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
-    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
-    process_spec: <span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
-    cluster_spec: <span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
-    batch_size: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>usize&gt;,
-) -&gt; D::Process {
-    <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
-    <span class="kw">let </span>process = flow.process(process_spec);
+<span class="kw">pub struct </span>Worker {}
+<span class="kw">pub struct </span>Leader {}
+
+<span class="kw">pub fn </span>compute_pi(
+    flow: <span class="kw-2">&amp;</span>FlowBuilder,
+    batch_size: RuntimeData&lt;usize&gt;,
+) -&gt; (Cluster&lt;Worker&gt;, Process&lt;Leader&gt;) {
+    <span class="kw">let </span>cluster = flow.cluster();
+    <span class="kw">let </span>process = flow.process();
 
     <span class="kw">let </span>trials = flow
-        .spin_batch(<span class="kw-2">&amp;</span>cluster, <span class="macro">q!</span>(<span class="kw-2">*</span>batch_size))
+        .spin_batch(<span class="kw-2">&amp;</span>cluster, <span class="macro">q!</span>(batch_size))
         .map(<span class="macro">q!</span>(|<span class="kw">_</span>| rand::random::&lt;(f64, f64)&gt;()))
         .map(<span class="macro">q!</span>(|(x, y)| x * x + y * y &lt; <span class="number">1.0</span>))
         .fold(
@@ -152,7 +153,7 @@
             );
         }));
 
-    process
+    (cluster, process)
 }
 
 <span class="kw">use </span>hydroflow_plus::util::cli::HydroCLI;
@@ -160,50 +161,49 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>compute_pi_runtime&lt;<span class="lifetime">'a</span>&gt;(
-    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
-    batch_size: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>usize&gt;,
+    batch_size: RuntimeData&lt;usize&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= compute_pi(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli, batch_size);
+    <span class="kw">let _ </span>= compute_pi(<span class="kw-2">&amp;</span>flow, batch_size);
     flow.with_default_optimize()
-        .compile()
+        .compile::&lt;CLIRuntime&gt;(<span class="kw-2">&amp;</span>cli)
         .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>cardinality_compute_pi_runtime&lt;<span class="lifetime">'a</span>&gt;(
-    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
-    batch_size: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>usize&gt;,
+    batch_size: RuntimeData&lt;usize&gt;,
     counters: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;u64&gt;&gt;&gt;,
     counter_queue: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;UnboundedSender&lt;(usize, u64)&gt;&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= compute_pi(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli, batch_size);
+    <span class="kw">let _ </span>= compute_pi(<span class="kw-2">&amp;</span>flow, batch_size);
     <span class="kw">let </span>runtime_context = flow.runtime_context();
     flow.optimize_with(|ir| profiling(ir, runtime_context, counters, counter_queue))
-        .compile()
+        .compile::&lt;CLIRuntime&gt;(<span class="kw-2">&amp;</span>cli)
         .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::runtime]
 #[cfg(test)]
 </span><span class="kw">mod </span>tests {
+    <span class="kw">use </span>hydroflow_plus_cli_integration::CLIRuntime;
     <span class="kw">use </span>stageleft::RuntimeData;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>compute_pi_ir() {
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
-        <span class="kw">let _ </span>= <span class="kw">super</span>::compute_pi(
-            <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>),
-            <span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>),
-            RuntimeData::new(<span class="string">"FAKE"</span>),
-        );
+        <span class="kw">let _ </span>= <span class="kw">super</span>::compute_pi(<span class="kw-2">&amp;</span>builder, RuntimeData::new(<span class="string">"FAKE"</span>));
         <span class="kw">let </span>built = builder.with_default_optimize();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
-        <span class="kw">for </span>(id, ir) <span class="kw">in </span>built.compile().hydroflow_ir() {
+        <span class="kw">for </span>(id, ir) <span class="kw">in </span>built
+            .compile::&lt;CLIRuntime&gt;(<span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>))
+            .hydroflow_ir()
+        {
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="macro">format!</span>(<span class="string">"surface_graph_{id}"</span>)}, {
                 <span class="macro">insta::assert_display_snapshot!</span>(ir.surface_syntax_string());
             });

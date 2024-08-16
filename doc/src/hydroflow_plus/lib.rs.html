@@ -166,6 +166,14 @@
 <a href="#166" id="166">166</a>
 <a href="#167" id="167">167</a>
 <a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
 </pre></div><pre class="rust"><code><span class="attr">#![feature(box_patterns)]
 
 </span><span class="macro">stageleft::stageleft_no_entry_crate!</span>();
@@ -190,10 +198,10 @@
 <span class="kw">pub use </span>stream::Stream;
 
 <span class="kw">pub mod </span>location;
-<span class="kw">pub use </span>location::{
-    Cluster, ClusterSpec, Deploy, LocalDeploy, Location, MultiGraph, ProcessSpec,
-    SingleProcessGraph,
-};
+<span class="kw">pub use </span>location::{Cluster, Process};
+
+<span class="kw">pub mod </span>deploy;
+<span class="kw">pub use </span>deploy::{ClusterSpec, Deploy, ProcessSpec};
 
 <span class="kw">pub mod </span>cycle;
 <span class="kw">pub use </span>cycle::HfCycle;
@@ -223,6 +231,7 @@
 
 <span class="kw">pub struct </span>HfCompiled&lt;<span class="lifetime">'a</span>, ID&gt; {
     hydroflow_ir: BTreeMap&lt;usize, HydroflowGraph&gt;,
+    extra_stmts: BTreeMap&lt;usize, Vec&lt;syn::Stmt&gt;&gt;,
     _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>ID&gt;,
 }
 
@@ -258,16 +267,23 @@
             );
 
             <span class="kw">let </span>tokens = partitioned_graph.as_code(<span class="kw-2">&amp;</span>root, <span class="bool-val">true</span>, <span class="macro">quote::quote!</span>(), <span class="kw-2">&amp;mut </span>diagnostics);
+            <span class="kw">let </span>my_extra_stmts = <span class="self">self
+                </span>.extra_stmts
+                .get(<span class="kw-2">&amp;</span>subgraph_id)
+                .cloned()
+                .unwrap_or_default();
 
             <span class="kw">if let </span><span class="prelude-val">Some</span>(conditioned_tokens) = conditioned_tokens.as_mut() {
                 <span class="kw-2">*</span>conditioned_tokens = <span class="macro">syn::parse_quote!</span> {
                     #conditioned_tokens <span class="kw">else if </span>__given_id == #subgraph_id {
+                        #(#my_extra_stmts)*
                         #tokens
                     }
                 };
             } <span class="kw">else </span>{
                 conditioned_tokens = <span class="prelude-val">Some</span>(<span class="macro">syn::parse_quote!</span> {
                     <span class="kw">if </span>__given_id == #subgraph_id {
+                        #(#my_extra_stmts)*
                         #tokens
                     }
                 });

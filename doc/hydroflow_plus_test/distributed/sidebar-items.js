@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["first_ten","networked"]};
+window.SIDEBAR_ITEMS = {"mod":["first_ten"]};
