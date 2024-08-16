@@ -459,16 +459,16 @@ where
     fn find_containing_leaf(&self, row: Schema::AsRefVar<'_>) -> Option<&'_ GhtLeaf<Schema, ()>>;
 }
 
-impl<TrieFirst, TrieRest> ForestFindLeaf<TrieFirst::Schema> for var_type!(TrieFirst, ...TrieRest)
+impl<TrieFirst, TrieRest> ForestFindLeaf<<TrieFirst::Trie as GeneralizedHashTrieNode>::Schema> for var_type!(TrieFirst, ...TrieRest)
 where
-    TrieFirst::Schema: PartialEqVariadic,
+    <TrieFirst::Trie as GeneralizedHashTrieNode>::Schema: PartialEqVariadic,
     TrieFirst: GeneralizedHashTrie,
-    TrieRest: VariadicExt + ForestFindLeaf<TrieFirst::Schema>,
+    TrieRest: VariadicExt + ForestFindLeaf<<TrieFirst::Trie as GeneralizedHashTrieNode>::Schema>,
 {
     fn find_containing_leaf(
         &self,
-        row: <TrieFirst::Schema as VariadicExt>::AsRefVar<'_>,
-    ) -> Option<&'_ GhtLeaf<TrieFirst::Schema, ()>> {
+        row: <<TrieFirst::Trie as GeneralizedHashTrieNode>::Schema as VariadicExt>::AsRefVar<'_>,
+    ) -> Option<&'_ GhtLeaf<<TrieFirst::Trie as GeneralizedHashTrieNode>::Schema, ()>> {
         let var_expr!(first, ...rest) = &self;
         if let Some(leaf) = first.find_containing_leaf(row) {
             // TODO!!!!

@@ -14,37 +14,29 @@ use crate::ght_lattice::DeepJoinLatticeBimorphism;
 /// GeneralizedHashTrie wraps up a root GeneralizedHashTrieNode with metadata
 /// for the key and value types associated with the full trie.
 pub trait GeneralizedHashTrie {
-    //+ for<'a> HtPrefixIter<var_type!(&'a Self::Head)> {
-    /// Schema variadic: the type of rows we're storing
-    type Schema: VariadicExt + Eq + Hash;
-
     /// the prefix of the Schema representing the Key type
     type KeyType: VariadicExt;
-    /// the last column of the Schema, i.e. the Value type
-    type ValType: VariadicExt + Eq + Hash;
-    // /// The type of the first column in the Schema
-    // type Head: Eq + Hash;
-    // /// The type of the Node in the root
-    // type Node: GeneralizedHashTrieNode;
-    /// The underlying root Trie Node
     type Trie: GeneralizedHashTrieNode<
-        Schema = Self::Schema,
-        ValType = Self::ValType,
-        SuffixSchema = Self::Schema,
+        SuffixSchema = <Self::Trie as GeneralizedHashTrieNode>::Schema,
     >;
 
     /// Create a new Ght from the iterator.
-    fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self;
+    fn new_from(
+        input: impl IntoIterator<Item = <Self::Trie as GeneralizedHashTrieNode>::Schema>,
+    ) -> Self;
 
     /// Report the height of the tree if its not empty. This is the length of a root to leaf path -1.
     /// E.g. if we have GhtInner<GhtInner<GhtLeaf...>> the height is 2
     fn height(&self) -> Option<usize>;
 
     /// Inserts items into the hash trie.
-    fn insert(&mut self, row: Self::Schema) -> bool;
+    fn insert(&mut self, row: <Self::Trie as GeneralizedHashTrieNode>::Schema) -> bool;
 
     /// Returns `true` if the (entire) row is found in the trie, `false` otherwise.
-    fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool;
+    fn contains<'a>(
+        &'a self,
+        row: <<Self::Trie as GeneralizedHashTrieNode>::Schema as VariadicExt>::AsRefVar<'a>,
+    ) -> bool;
 
     // /// walk to the leaf from any inner node
     // fn walk_to_leaf<Node, Head, Rest>(
@@ -57,7 +49,11 @@ pub trait GeneralizedHashTrie {
 
     /// Iterate through the (entire) rows stored in this HashTrie.
     /// Returns Variadics, not tuples.
-    fn recursive_iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>>;
+    fn recursive_iter(
+        &self,
+    ) -> impl Iterator<
+        Item = <<Self::Trie as GeneralizedHashTrieNode>::Schema as VariadicExt>::AsRefVar<'_>,
+    >;
 
     /// Iterate through the (entire) rows stored in this HashTrie, but with the leaf
     /// values stubbed out ((), ()).
@@ -97,8 +93,13 @@ pub trait GeneralizedHashTrie {
 
     fn find_containing_leaf(
         &self,
-        row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
-    ) -> Option<&'_ GhtLeaf<Self::Schema, Self::ValType>>;
+        row: <<Self::Trie as GeneralizedHashTrieNode>::Schema as VariadicExt>::AsRefVar<'_>,
+    ) -> Option<
+        &'_ GhtLeaf<
+            <Self::Trie as GeneralizedHashTrieNode>::Schema,
+            <Self::Trie as GeneralizedHashTrieNode>::ValType,
+        >,
+    >;
 }
 
 /// GeneralizedHashTrie is a metadata node pointing to a root GeneralizedHashTrieNode.
@@ -137,11 +138,11 @@ where
     TrieRoot: GeneralizedHashTrieNode<Schema = Schema, SuffixSchema = Schema>,
 {
     type KeyType = K;
-    type ValType = TrieRoot::ValType;
-    type Schema = Schema;
     type Trie = TrieRoot;
 
-    fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self {
+    fn new_from(
+        input: impl IntoIterator<Item = <Self::Trie as GeneralizedHashTrieNode>::Schema>,
+    ) -> Self {
         let trie = GeneralizedHashTrieNode::new_from(input);
         GHT {
             trie,
@@ -153,17 +154,24 @@ where
         self.trie.height()
     }
 
-    fn insert(&mut self, row: Self::Schema) -> bool {
+    fn insert(&mut self, row: <Self::Trie as GeneralizedHashTrieNode>::Schema) -> bool {
         self.trie.insert(row)
     }
 
-    fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
+    fn contains<'a>(
+        &'a self,
+        row: <<Self::Trie as GeneralizedHashTrieNode>::Schema as VariadicExt>::AsRefVar<'a>,
+    ) -> bool {
         self.trie.contains(row)
     }
 
     /// Iterate through the (entire) rows stored in this HashTrie.
     /// Returns Variadics, not tuples.
-    fn recursive_iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
+    fn recursive_iter(
+        &self,
+    ) -> impl Iterator<
+        Item = <<Self::Trie as GeneralizedHashTrieNode>::Schema as VariadicExt>::AsRefVar<'_>,
+    > {
         self.trie.recursive_iter()
     }
 
@@ -186,8 +194,13 @@ where
 
     fn find_containing_leaf(
         &self,
-        row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
-    ) -> Option<&'_ GhtLeaf<Self::Schema, Self::ValType>> {
+        row: <<Self::Trie as GeneralizedHashTrieNode>::Schema as VariadicExt>::AsRefVar<'_>,
+    ) -> Option<
+        &'_ GhtLeaf<
+            <Self::Trie as GeneralizedHashTrieNode>::Schema,
+            <Self::Trie as GeneralizedHashTrieNode>::ValType,
+        >,
+    > {
         self.trie.find_containing_leaf(row)
     }
 }
