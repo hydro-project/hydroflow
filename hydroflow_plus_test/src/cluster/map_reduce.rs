@@ -34,20 +34,6 @@ pub fn map_reduce(flow: &FlowBuilder) -> (Process<Leader>, Cluster<Worker>) {
     (process, cluster)
 }
 
-use hydroflow_plus::util::cli::HydroCLI;
-use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
-
-#[stageleft::entry]
-pub fn map_reduce_runtime<'a>(
-    flow: FlowBuilder<'a>,
-    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = map_reduce(&flow);
-    flow.with_default_optimize()
-        .compile::<CLIRuntime>(&cli)
-        .with_dynamic_id(q!(cli.meta.subgraph_id))
-}
-
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {

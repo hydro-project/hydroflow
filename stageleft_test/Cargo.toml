@@ -4,6 +4,9 @@ publish = false
 version = "0.0.0"
 edition = "2021"
 
+[features]
+stageleft_devel = []
+
 [dependencies]
 stageleft = { path = "../stageleft", version = "^0.3.0" }
 stageleft_test_macro = { path = "../stageleft_test_macro" }
