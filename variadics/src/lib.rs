@@ -125,6 +125,7 @@ pub trait VariadicExt: Variadic {
     type Reverse: VariadicExt;
     /// Reverses this variadic value.
     fn reverse(self) -> Self::Reverse;
+    /// Reverses an AsRefVar variadic value
     fn reverse_ref(this: Self::AsRefVar<'_>) -> <Self::Reverse as VariadicExt>::AsRefVar<'_>;
 
     /// The length of this variadic type
@@ -340,6 +341,7 @@ pub trait EitherRefVariadic: VariadicExt {
     /// Conversion from `&` to `&mut` is generally invalid, so a `ref_to_mut()` method does not exist.
     type MutVar: MutVariadic<UnRefVar = Self::UnRefVar, MutVar = Self::MutVar>;
 
+    /// convert entries to <UnRefVar as VariadicExt>::AsRefVar
     fn unref_ref(&self) -> <Self::UnRefVar as VariadicExt>::AsRefVar<'_>;
 }
 #[sealed]
@@ -502,6 +504,7 @@ impl CopyRefVariadic for () {
 /// ```
 #[sealed]
 pub trait CloneVariadic: VariadicExt {
+    /// Clone a variadic of references [`EitherRefVariadic`] into a variadic of owned values [`EitherRefVariadic::UnRefVar`]
     fn clone_var(&self) -> Self
     where
         Self: Sized,

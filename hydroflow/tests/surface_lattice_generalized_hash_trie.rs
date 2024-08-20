@@ -1,5 +1,5 @@
 use hydroflow::hydroflow_syntax;
-use hydroflow::lattices::ght::GeneralizedHashTrie;
+use hydroflow::lattices::ght::GeneralizedHashTrieNode;
 use hydroflow::lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
 use hydroflow::lattices::GhtType;
 use hydroflow::util::collect_ready;
@@ -34,7 +34,6 @@ fn test_basic() {
 #[test]
 fn test_join() {
     type MyGht = GhtType!(u8 => u16);
-    type MyGhtTrie = <MyGht as GeneralizedHashTrie>::Trie;
     type ResultGht = GhtType!(u8 => u16, u16);
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
@@ -46,13 +45,8 @@ fn test_join() {
     ];
     let s = vec![var_expr!(1, 10), var_expr!(5, 50)];
 
-    type MyNodeBim =
-        <(MyGhtTrie, MyGhtTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
+    type MyNodeBim = <(MyGht, MyGht) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
     type MyBim = GhtBimorphism<MyNodeBim>;
-
-    let my_ght1 = MyGht::default();
-    let my_ght2 = MyGht::default();
-    let me_node_bim = MyNodeBim::default();
 
     let mut df = hydroflow_syntax! {
         R = source_iter(r)

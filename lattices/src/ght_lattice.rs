@@ -5,7 +5,7 @@ use std::hash::Hash;
 
 use variadics::{var_expr, var_type, CloneVariadic, SplitBySuffix, VariadicExt};
 
-use crate::ght::{GeneralizedHashTrie, GeneralizedHashTrieNode, GhtInner, GhtLeaf, GHT};
+use crate::ght::{GeneralizedHashTrieNode, GhtInner, GhtLeaf};
 use crate::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
 
 //////////////////////////
@@ -13,15 +13,15 @@ use crate::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
 //////////////////////////
 
 /// Merge
-impl<KeyType, Inner> Merge<GHT<KeyType, Inner>> for GHT<KeyType, Inner>
-where
-    KeyType: VariadicExt,
-    Inner: GeneralizedHashTrieNode + Merge<Inner>,
-{
-    fn merge(&mut self, other: GHT<KeyType, Inner>) -> bool {
-        self.trie.merge(other.trie)
-    }
-}
+// impl<KeyType, Inner> Merge<GHT<KeyType, Inner>> for GHT<KeyType, Inner>
+// where
+//     KeyType: VariadicExt,
+//     Inner: GeneralizedHashTrieNode + Merge<Inner>,
+// {
+//     fn merge(&mut self, other: GHT<KeyType, Inner>) -> bool {
+//         self.trie.merge(other.trie)
+//     }
+// }
 
 impl<Head, Node> Merge<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
@@ -59,15 +59,15 @@ where
 }
 
 /// PartialEq
-impl<KeyType, Inner> PartialEq<GHT<KeyType, Inner>> for GHT<KeyType, Inner>
-where
-    KeyType: VariadicExt,
-    Inner: GeneralizedHashTrieNode + Merge<Inner> + PartialEq,
-{
-    fn eq(&self, other: &GHT<KeyType, Inner>) -> bool {
-        self.trie.eq(&other.trie)
-    }
-}
+// impl<KeyType, Inner> PartialEq<GHT<KeyType, Inner>> for GHT<KeyType, Inner>
+// where
+//     KeyType: VariadicExt,
+//     Inner: GeneralizedHashTrieNode + Merge<Inner> + PartialEq,
+// {
+//     fn eq(&self, other: &GHT<KeyType, Inner>) -> bool {
+//         self.trie.eq(&other.trie)
+//     }
+// }
 
 impl<Head, Node> PartialEq<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
@@ -93,15 +93,15 @@ where
 }
 
 // PartialOrd
-impl<KeyType, Inner> PartialOrd<GHT<KeyType, Inner>> for GHT<KeyType, Inner>
-where
-    KeyType: VariadicExt, // + AsRefVariadicPartialEq
-    Inner: GeneralizedHashTrieNode + Merge<Inner> + PartialOrd,
-{
-    fn partial_cmp(&self, other: &GHT<KeyType, Inner>) -> Option<Ordering> {
-        self.trie.partial_cmp(&other.trie)
-    }
-}
+// impl<KeyType, Inner> PartialOrd<GHT<KeyType, Inner>> for GHT<KeyType, Inner>
+// where
+//     KeyType: VariadicExt, // + AsRefVariadicPartialEq
+//     Inner: GeneralizedHashTrieNode + Merge<Inner> + PartialOrd,
+// {
+//     fn partial_cmp(&self, other: &GHT<KeyType, Inner>) -> Option<Ordering> {
+//         self.trie.partial_cmp(&other.trie)
+//     }
+// }
 
 impl<Head, Node> PartialOrd<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
@@ -202,13 +202,13 @@ where
 }
 
 // LatticeOrd
-impl<KeyType, Inner> LatticeOrd<GHT<KeyType, Inner>> for GHT<KeyType, Inner>
-where
-    KeyType: VariadicExt, // + AsRefVariadicPartialEq
-    Inner: GeneralizedHashTrieNode,
-    Self: PartialOrd<Self>,
-{
-}
+// impl<KeyType, Inner> LatticeOrd<GHT<KeyType, Inner>> for GHT<KeyType, Inner>
+// where
+//     KeyType: VariadicExt, // + AsRefVariadicPartialEq
+//     Inner: GeneralizedHashTrieNode,
+//     Self: PartialOrd<Self>,
+// {
+// }
 
 impl<Head, Node> LatticeOrd<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
@@ -226,15 +226,15 @@ where
 }
 
 // IsBot
-impl<KeyType, Inner> IsBot for GHT<KeyType, Inner>
-where
-    KeyType: VariadicExt, // + AsRefVariadicPartialEq
-    Inner: GeneralizedHashTrieNode + IsBot,
-{
-    fn is_bot(&self) -> bool {
-        self.trie.is_bot()
-    }
-}
+// impl<KeyType, Inner> IsBot for GHT<KeyType, Inner>
+// where
+//     KeyType: VariadicExt, // + AsRefVariadicPartialEq
+//     Inner: GeneralizedHashTrieNode + IsBot,
+// {
+//     fn is_bot(&self) -> bool {
+//         self.trie.is_bot()
+//     }
+// }
 
 impl<Head, Node> IsBot for GhtInner<Head, Node>
 where
@@ -257,15 +257,15 @@ where
 }
 
 // IsTop
-impl<KeyType, Inner> IsTop for GHT<KeyType, Inner>
-where
-    KeyType: VariadicExt, // + AsRefVariadicPartialEq
-    Inner: GeneralizedHashTrieNode + IsTop,
-{
-    fn is_top(&self) -> bool {
-        self.trie.is_top()
-    }
-}
+// impl<KeyType, Inner> IsTop for GHT<KeyType, Inner>
+// where
+//     KeyType: VariadicExt, // + AsRefVariadicPartialEq
+//     Inner: GeneralizedHashTrieNode + IsTop,
+// {
+//     fn is_top(&self) -> bool {
+//         self.trie.is_top()
+//     }
+// }
 
 impl<Head, Node> IsTop for GhtInner<Head, Node>
 where
@@ -290,8 +290,10 @@ where
 //////////////////////////
 /// BiMorphisms for GHT
 //////////////////////////
-/// Bimorphism for the cartesian product of two GHTs. Output is a set of all possible pairs of
-/// items from the two input sets.
+/// Bimorphism for the cartesian product of two GHT *subtries*. Output is a set of all possible pairs of
+/// *suffixes* from the two subtries. If you use this at the root of a GHT, it's a full cross-product.
+/// If you use this at an internal node, it provides a 'factorized' representation with only the suffix
+/// cross-products expanded.
 pub struct GhtCartesianProductBimorphism<GhtOut> {
     _phantom: std::marker::PhantomData<fn() -> GhtOut>,
 }
@@ -326,12 +328,12 @@ where
     }
 }
 
-/// Forms the cartesian product of the SchemaSuffix only
+/// Forms the cartesian product of the ValTypes only
 /// Used on GhtLeaf nodes to implement DeepJoinLatticeBimorphism
-pub struct GhtSuffixProductBimorphism<GhtOut> {
+pub struct GhtValTypeProductBimorphism<GhtOut> {
     _phantom: std::marker::PhantomData<fn() -> GhtOut>,
 }
-impl<GhtOut> Default for GhtSuffixProductBimorphism<GhtOut> {
+impl<GhtOut> Default for GhtValTypeProductBimorphism<GhtOut> {
     fn default() -> Self {
         Self {
             _phantom: Default::default(),
@@ -339,14 +341,14 @@ impl<GhtOut> Default for GhtSuffixProductBimorphism<GhtOut> {
     }
 }
 impl<'a, 'b, GhtA, GhtB, GhtOut> LatticeBimorphism<&'a GhtA, &'b GhtB>
-    for GhtSuffixProductBimorphism<GhtOut>
+    for GhtValTypeProductBimorphism<GhtOut>
 where
     GhtA: GeneralizedHashTrieNode,
     GhtB: GeneralizedHashTrieNode,
-    GhtOut: FromIterator<var_type!(...GhtA::Schema, ...GhtB::SuffixSchema)>,
+    GhtOut: FromIterator<var_type!(...GhtA::Schema, ...GhtB::ValType)>,
     GhtA::Schema: Eq + Hash + CloneVariadic,
-    GhtB::Schema: Eq + Hash + SplitBySuffix<GhtB::SuffixSchema>,
-    GhtB::SuffixSchema: CloneVariadic,
+    GhtB::Schema: Eq + Hash + SplitBySuffix<GhtB::ValType>,
+    GhtB::ValType: CloneVariadic,
 {
     type Output = GhtOut;
 
@@ -356,8 +358,8 @@ where
                 .recursive_iter()
                 .map(move |b| {
                     let (_prefix_b, suffix_b)
-                        = <GhtB::Schema as SplitBySuffix<GhtB::SuffixSchema>>::split_by_suffix_ref(b);
-                    var_expr!(...<GhtA::Schema as CloneVariadic>::clone_var_ref(a), ...<GhtB::SuffixSchema as CloneVariadic>::clone_var_ref(suffix_b))
+                        = <GhtB::Schema as SplitBySuffix<GhtB::ValType>>::split_by_suffix_ref(b);
+                    var_expr!(...<GhtA::Schema as CloneVariadic>::clone_var_ref(a), ...<GhtB::ValType as CloneVariadic>::clone_var_ref(suffix_b))
                 }
             )
         }).collect()
@@ -382,25 +384,41 @@ impl<Bimorphism> GhtBimorphism<Bimorphism> {
     }
 }
 
-impl<GhtA, GhtB, ValFunc, Output> LatticeBimorphism<GhtA, GhtB> for GhtBimorphism<ValFunc>
+// impl<GhtA, GhtB, ValFunc, Output> LatticeBimorphism<GhtA, GhtB> for GhtBimorphism<ValFunc>
+// where
+//     GhtA: GeneralizedHashTrie,
+//     GhtB: GeneralizedHashTrie,
+//     for<'a, 'b> ValFunc: LatticeBimorphism<&'a GhtA::Trie, &'b GhtB::Trie, Output = Output>,
+//     Output: GeneralizedHashTrieNode,
+//     // <<GhtA as GeneralizedHashTrie>::ValType as VariadicExt>::Extend<
+//     //     <GhtB as GeneralizedHashTrie>::ValType,
+//     // >: + AsRefVariadicPartialEq
+// {
+//     type Output = GHT<GhtA::KeyType, Output>; // HashMap<Head, ValFunc::Output>; // GhtOut;
+
+//     fn call(&mut self, ght_a: GhtA, ght_b: GhtB) -> Self::Output {
+//         let node_bim = &mut self.bimorphism; // GhtNodeKeyedBimorphism::<ValFunc>::new(self.bimorphism);
+//         let trie = node_bim.call(ght_a.get_trie(), ght_b.get_trie());
+//         GHT {
+//             trie,
+//             _key: std::marker::PhantomData,
+//         }
+//     }
+// }
+
+impl<GhtA, GhtB, ValFunc, GhtOut> LatticeBimorphism<GhtA, GhtB> for GhtBimorphism<ValFunc>
 where
-    GhtA: GeneralizedHashTrie,
-    GhtB: GeneralizedHashTrie,
-    for<'a, 'b> ValFunc: LatticeBimorphism<&'a GhtA::Trie, &'b GhtB::Trie, Output = Output>,
-    Output: GeneralizedHashTrieNode,
-    // <<GhtA as GeneralizedHashTrie>::ValType as VariadicExt>::Extend<
-    //     <GhtB as GeneralizedHashTrie>::ValType,
-    // >: + AsRefVariadicPartialEq
+    GhtA: GeneralizedHashTrieNode,
+    GhtA::Head: Clone,
+    GhtB: GeneralizedHashTrieNode,
+    GhtOut: GeneralizedHashTrieNode, // FromIterator<var_type!(...GhtA::Schema, ...GhtB::ValType)>,
+    for<'a, 'b> ValFunc: LatticeBimorphism<&'a GhtA, &'b GhtB, Output = GhtOut>,
 {
-    type Output = GHT<GhtA::KeyType, Output>; // HashMap<Head, ValFunc::Output>; // GhtOut;
+    type Output = GhtOut;
 
     fn call(&mut self, ght_a: GhtA, ght_b: GhtB) -> Self::Output {
         let node_bim = &mut self.bimorphism; // GhtNodeKeyedBimorphism::<ValFunc>::new(self.bimorphism);
-        let trie = node_bim.call(ght_a.get_trie(), ght_b.get_trie());
-        GHT {
-            trie,
-            _key: std::marker::PhantomData,
-        }
+        node_bim.call(&ght_a, &ght_b)
     }
 }
 
@@ -473,18 +491,9 @@ where
     SuffixSchemaB: 'static + VariadicExt + Eq + Hash, // + AsRefVariadicPartialEq
     for<'x> SchemaA::AsRefVar<'x>: CloneVariadic,
     for<'x> SchemaB::AsRefVar<'x>: CloneVariadic,
-    // for<'a, 'b> A::AsRefVar<'a>: PartialEq<A::AsRefVar<'b>>,
-    // for<'a, 'b> B::AsRefVar<'a>: PartialEq<B::AsRefVar<'b>>,
     var_type!(...SchemaA, ...SuffixSchemaB): Eq + Hash,
-    // <<SchemaA as SplitBySuffix<SuffixSchemaA>>::Prefix as VariadicExt>::Extend<
-    //     // <<SchemaB as SplitBySuffix<SuffixSchemaB>>::Prefix as VariadicExt>::Extend<
-    //     <SuffixSchemaA as VariadicExt>::Extend<SuffixSchemaB>,
-    //     // >,
-    // >: Eq + Hash,
-    // for<'a, 'b> <var_type!(...A, ...B) as VariadicExt>::AsRefVar<'a>:
-    //     PartialEq<<var_type!(...A, ...B) as VariadicExt>::AsRefVar<'b>>,
 {
-    type DeepJoinLatticeBimorphism = GhtSuffixProductBimorphism<
+    type DeepJoinLatticeBimorphism = GhtValTypeProductBimorphism<
         GhtLeaf<
             var_type!(...SchemaA, ...SuffixSchemaB),
             var_type!(...SuffixSchemaA, ...SuffixSchemaB),

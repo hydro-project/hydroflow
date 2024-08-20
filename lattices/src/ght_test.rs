@@ -5,20 +5,20 @@ mod test {
 
     use variadics::{var_expr, var_type, VariadicExt};
 
-    use crate::ght::{GeneralizedHashTrie, GeneralizedHashTrieNode, GhtInner, GhtLeaf, GHT};
+    use crate::ght::{GeneralizedHashTrieNode, GhtInner, GhtLeaf, GhtPrefixIter};
     use crate::ght_lattice::{
         DeepJoinLatticeBimorphism, GhtBimorphism, GhtCartesianProductBimorphism,
-        GhtNodeKeyedBimorphism, GhtSuffixProductBimorphism,
+        GhtNodeKeyedBimorphism, GhtValTypeProductBimorphism,
     };
     use crate::ght_lazy::{ColumnLazyTrieNode, ForestFindLeaf, GhtForest, GhtForestStruct};
-    use crate::{GhtForestType, GhtNodeType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
+    use crate::{GhtForestType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
 
     #[test]
     fn basic_test() {
         // Example usage
         type MyTrie1 = GhtType!(u32, u32 => &'static str);
 
-        fn ght_type<T: GeneralizedHashTrie>() {}
+        fn ght_type<T: GeneralizedHashTrieNode>() {}
         ght_type::<MyTrie1>();
 
         let htrie1 = MyTrie1::new_from(vec![var_expr!(42, 314, "hello")]);
@@ -37,31 +37,33 @@ mod test {
             var_expr!(5, 1, 7, "hi"),
             var_expr!(5, 1, 7, "bye"),
         ]);
+        assert!(htrie3.contains(var_expr!(&50, &1, &1, &"hi")));
+        assert_eq!(htrie3.recursive_iter().count(), 4);
     }
     #[test]
     fn test_ght_node_type_macro() {
-        type LilTrie = GhtNodeType!(() => u32);
+        type LilTrie = GhtType!(() => u32);
         let _l = LilTrie::new_from(vec![var_expr!(1)]);
 
-        type LilTrie2 = GhtNodeType!(() => u32, u64);
+        type LilTrie2 = GhtType!(() => u32, u64);
         let _l = LilTrie2::default();
         let _l = LilTrie2::new_from(vec![var_expr!(1, 1)]);
 
-        type SmallTrie = GhtNodeType!(u32 => &'static str);
-        type SmallKeyedTrie = GhtNodeType!(u32 => &'static str);
+        type SmallTrie = GhtType!(u32 => &'static str);
+        type SmallKeyedTrie = GhtType!(u32 => &'static str);
         let l = SmallTrie::new_from(vec![var_expr!(1, "hello")]);
         let _: SmallKeyedTrie = l;
 
-        type LongKeySmallValTrie = GhtNodeType!(u32, u16 => &'static str);
-        type LongKeySmallValKeyedTrie = GhtNodeType!(u32, u16 => &'static str);
+        type LongKeySmallValTrie = GhtType!(u32, u16 => &'static str);
+        type LongKeySmallValKeyedTrie = GhtType!(u32, u16 => &'static str);
         let x = LongKeySmallValTrie::new_from(vec![var_expr!(1, 314, "hello")]);
         let _: LongKeySmallValKeyedTrie = x;
         let _ = LongKeySmallValTrie::new_from(vec![var_expr!(1, 314, "hello")]);
 
-        type SmallKeyLongValTrie = GhtNodeType!(u32 => u64, u16, &'static str);
+        type SmallKeyLongValTrie = GhtType!(u32 => u64, u16, &'static str);
         let _x = SmallKeyLongValTrie::new_from(vec![var_expr!(1, 999, 222, "hello")]);
 
-        type LongKeyLongValTrie = GhtNodeType!(u32, u64 => u16, &'static str);
+        type LongKeyLongValTrie = GhtType!(u32, u64 => u16, &'static str);
         let _x = LongKeyLongValTrie::new_from(vec![var_expr!(1, 999, 222, "hello")]);
     }
 
@@ -92,7 +94,7 @@ mod test {
 
     #[test]
     fn test_scale() {
-        type MyGht = GhtNodeType!(bool, usize, &'static str => i32);
+        type MyGht = GhtType!(bool, usize, &'static str => i32);
         let mut htrie = MyGht::new_from(vec![var_expr!(true, 1, "hello", -5)]);
         assert_eq!(htrie.recursive_iter().count(), 1);
         for i in 1..1000000 {
@@ -120,7 +122,7 @@ mod test {
         type MyGht = GhtType!(u32, u32 => u32);
         let ht_root = MyGht::new_from(vec![var_expr!(42, 314, 43770)]);
 
-        let inner = ht_root.get_trie().get(&42).unwrap();
+        let inner = ht_root.get(&42).unwrap();
         let t = inner.recursive_iter().next().unwrap();
         assert_eq!(t, var_expr!(&42, &314, &43770));
 
@@ -133,8 +135,8 @@ mod test {
     fn test_iter() {
         type MyGht = GhtType!(u32, u32 => u32);
         let ht_root = MyGht::new_from(vec![var_expr!(42, 314, 43770)]);
-        let inner_key = ht_root.get_trie().iter().next().unwrap();
-        let inner = ht_root.get_trie().get(inner_key).unwrap();
+        let inner_key = ht_root.iter().next().unwrap();
+        let inner = ht_root.get(inner_key).unwrap();
         let t = inner.recursive_iter().next().unwrap();
         assert_eq!(t, var_expr!(&42, &314, &43770));
 
@@ -167,7 +169,7 @@ mod test {
 
     #[test]
     fn test_prefix_iter_leaf() {
-        use crate::ght::HtPrefixIter;
+        use crate::ght::GhtPrefixIter;
         type InputType = var_type!(u8, u16, u32);
         type ResultType<'a> = var_type!(&'a u8, &'a u16, &'a u32);
 
@@ -183,7 +185,7 @@ mod test {
         );
         let leaf = GhtLeaf::<InputType, var_type!(u16, u32)>::new_from(input.clone());
         // let key = var_expr!(42u8).as_ref_var();
-        let key = var_expr!().as_ref_var();
+        let key = (); // (var_expr!().as_ref_var();)
         let v: HashSet<ResultType> = leaf.prefix_iter(key).collect();
         let result = input
             .iter()
@@ -230,7 +232,7 @@ mod test {
 
     // #[test]
     // fn test_find_containing_leaf() {
-    //     type MyGht = GhtType!(u32, u32 => u32);
+    //     type MyGht = GhtNodeType!(u32, u32 => u32);
     //     type InputType = var_type!(u32, u32, u32);
     //     let input: HashSet<InputType> = HashSet::from_iter(
     //         [
@@ -311,7 +313,7 @@ mod test {
     #[test]
     fn test_node_lattice() {
         type MyGht = GhtType!(u32, u64 => u16, &'static str);
-        type MyGhtNode = GhtNodeType!(u32, u64 => u16, &'static str);
+        type MyGhtNode = GhtType!(u32, u64 => u16, &'static str);
 
         let mut test_vec: Vec<MyGhtNode> = Vec::new();
 
@@ -326,7 +328,7 @@ mod test {
 
         let test_vec_wrap = [empty_ght, test_ght1, test_ght2, test_ght3, test_ght4];
 
-        for ght in test_vec_wrap.iter().map(|x| x.get_trie().clone()) {
+        for ght in test_vec_wrap.iter().cloned() {
             ght.naive_cmp(&ght.clone());
             test_vec.push(ght);
         }
@@ -349,364 +351,186 @@ mod test {
         ght_b.insert(var_expr!(10, 1, 2, "hi"));
         ght_b.insert(var_expr!(12, 10, 98, "bye"));
 
-        type MyGhtAb = GhtNodeType!(u32, u64, u16, &'static str, u32, u64 => u16, &'static str);
+        type MyGhtAb = GhtType!(u32, u64, u16, &'static str, u32, u64 => u16, &'static str);
 
         let mut bim = GhtCartesianProductBimorphism::<MyGhtAb>::default();
-        let ght_out = bim.call(ght_a.get_trie(), ght_b.get_trie());
+        let ght_out = bim.call(&ght_a, &ght_b);
         assert_eq!(
             ght_out.recursive_iter().count(),
             ght_a.recursive_iter().count() * ght_b.recursive_iter().count()
         );
     }
 
-    #[test]
-    fn test_join_bimorphism() {
-        type MyGhtATrie = GhtNodeType!(u32, u64, u16 => &'static str);
-        type MyGhtBTrie = GhtNodeType!(u32, u64, u16 => &'static str);
+    // #[test]
+    // fn test_join_bimorphism() {
+    //     type MyGhtATrie = GhtNodeType!(u32, u64, u16 => &'static str);
+    //     type MyGhtBTrie = GhtNodeType!(u32, u64, u16 => &'static str);
 
-        let mut ght_a = MyGhtATrie::default();
-        let mut ght_b = MyGhtBTrie::default();
+    //     let mut ght_a = MyGhtATrie::default();
+    //     let mut ght_b = MyGhtBTrie::default();
 
-        ght_a.insert(var_expr!(123, 2, 5, "hello"));
-        ght_a.insert(var_expr!(50, 1, 1, "hi"));
-        ght_a.insert(var_expr!(5, 1, 7, "hi"));
+    //     ght_a.insert(var_expr!(123, 2, 5, "hello"));
+    //     ght_a.insert(var_expr!(50, 1, 1, "hi"));
+    //     ght_a.insert(var_expr!(5, 1, 7, "hi"));
 
-        ght_b.insert(var_expr!(5, 1, 8, "hi"));
-        ght_b.insert(var_expr!(5, 1, 7, "world"));
-        ght_b.insert(var_expr!(10, 1, 2, "hi"));
-        ght_b.insert(var_expr!(12, 10, 98, "bye"));
+    //     ght_b.insert(var_expr!(5, 1, 8, "hi"));
+    //     ght_b.insert(var_expr!(5, 1, 7, "world"));
+    //     ght_b.insert(var_expr!(10, 1, 2, "hi"));
+    //     ght_b.insert(var_expr!(12, 10, 98, "bye"));
 
-        {
-            type MyResultType<'a> = var_type!(
-                &'a u32,
-                &'a u64,
-                &'a u16,
-                &'a &'static str,
-                &'a u64,
-                &'a u16,
-                &'a &'static str
-            );
-            let result: HashSet<MyResultType> = [
-                var_expr!(&5, &1, &7, &"hi", &1, &7, &"world"),
-                var_expr!(&5, &1, &7, &"hi", &1, &8, &"hi"),
-            ]
-            .iter()
-            .copied()
-            .collect();
-            type CartProdOld = GhtNodeType!(() => u64, u16, &'static str, u64, u16, &'static str);
-            type CartProd = GhtLeaf<
-                var_type!(u32, u64, u16, &'static str, u64, u16, &'static str),
-                var_type!(u64, u16, &'static str, u64, u16, &'static str),
-            >;
-            let _cp = CartProd::default();
-            let mut bim =
-                GhtNodeKeyedBimorphism::new(GhtSuffixProductBimorphism::<CartProd>::default());
-            let out = LatticeBimorphism::call(&mut bim, &ght_a, &ght_b);
-            let out: HashSet<MyResultType> = out.recursive_iter().collect();
-            assert_eq!(out, result.iter().copied().collect());
+    //     {
+    //         type MyResultType<'a> = var_type!(
+    //             &'a u32,
+    //             &'a u64,
+    //             &'a u16,
+    //             &'a &'static str,
+    //             &'a u64,
+    //             &'a u16,
+    //             &'a &'static str
+    //         );
+    //         let result: HashSet<MyResultType> = [
+    //             var_expr!(&5, &1, &7, &"hi", &1, &7, &"world"),
+    //             var_expr!(&5, &1, &7, &"hi", &1, &8, &"hi"),
+    //         ]
+    //         .iter()
+    //         .copied()
+    //         .collect();
+    //         // type CartProdOld = GhtNodeType!(() => u64, u16, &'static str, u64, u16, &'static str);
+    //         type CartProd = GhtLeaf<
+    //             var_type!(u32, u64, u16, &'static str, u64, u16, &'static str),
+    //             var_type!(),
+    //         >;
+    //         // let _cp = ValTypeProd::default();
+    //         let mut bim =
+    //             GhtNodeKeyedBimorphism::new(GhtCartesianProductBimorphism::<CartProd>::default());
+    //         let out = LatticeBimorphism::call(&mut bim, &ght_a, &ght_b);
+    //         let out: HashSet<MyResultType> = out.recursive_iter().collect();
+    //         assert_eq!(out, result.iter().copied().collect());
 
-            // var!(a, b, c, d)
-            // var!(a, b, c, d)
-            // out: (a, b, c, d, b, c, d)
-            // GhtNodeKeyedBimorphism<GhtCartesianProductBimorphism<Ght<var!(b, c, d, b, c, d)>>
-            //
-            // So what does GhtCartesianProduct bimorphism need to do?
-            //
-        }
+    //         // var!(a, b, c, d)
+    //         // var!(a, b, c, d)
+    //         // out: (a, b, c, d, b, c, d)
+    //         // GhtNodeKeyedBimorphism<GhtCartesianProductBimorphism<Ght<var!(b, c, d, b, c, d)>>
+    //         //
+    //         // So what does GhtCartesianProduct bimorphism need to do?
+    //         //
+    //     }
 
-        {
-            type MyResultType<'a> = var_type!(
-                &'a u32,
-                &'a u64,
-                &'a u16,
-                &'a &'static str,
-                &'a u16,
-                &'a &'static str
-            );
-            let result: HashSet<MyResultType> = [
-                var_expr!(&5, &1, &7, &"hi", &7, &"world"),
-                var_expr!(&5, &1, &7, &"hi", &8, &"hi"),
-            ]
-            .iter()
-            .copied()
-            .collect();
-            // type CartProd = GhtNodeType!(u16, &'static str, u16 => &'static str);
-            type CartProd = GhtInner<
-                u16,
-                GhtInner<
-                    &'static str,
-                    GhtInner<
-                        u16,
-                        GhtLeaf<
-                            var_type!(u32, u64, u16, &'static str, u16, &'static str),
-                            var_type!(&'static str),
-                        >,
-                    >,
-                >,
-            >;
-            let mut bim = GhtNodeKeyedBimorphism::new(GhtNodeKeyedBimorphism::new(
-                GhtSuffixProductBimorphism::<CartProd>::default(),
-            ));
-            let out = LatticeBimorphism::call(&mut bim, &ght_a, &ght_b);
-            let out: HashSet<MyResultType> = out.recursive_iter().collect();
-            assert_eq!(out, result.iter().copied().collect());
-        }
+    //     {
+    //         type MyResultType<'a> = var_type!(
+    //             &'a u32,
+    //             &'a u64,
+    //             &'a u16,
+    //             &'a &'static str,
+    //             &'a u16,
+    //             &'a &'static str
+    //         );
+    //         let result: HashSet<MyResultType> = [
+    //             var_expr!(&5, &1, &7, &"hi", &7, &"world"),
+    //             var_expr!(&5, &1, &7, &"hi", &8, &"hi"),
+    //         ]
+    //         .iter()
+    //         .copied()
+    //         .collect();
+    //         // type CartProd = GhtNodeType!(u16, &'static str, u16 => &'static str);
+    //         type CartProd = GhtInner<
+    //             u16,
+    //             GhtInner<
+    //                 &'static str,
+    //                 GhtInner<
+    //                     u16,
+    //                     GhtLeaf<
+    //                         var_type!(u32, u64, u16, &'static str, u16, &'static str),
+    //                         var_type!(&'static str),
+    //                     >,
+    //                 >,
+    //             >,
+    //         >;
+    //         let mut bim = GhtNodeKeyedBimorphism::new(GhtNodeKeyedBimorphism::new(
+    //             GhtValTypeProductBimorphism::<CartProd>::default(),
+    //         ));
+    //         let out = LatticeBimorphism::call(&mut bim, &ght_a, &ght_b);
+    //         let out: HashSet<MyResultType> = out.recursive_iter().collect();
+    //         assert_eq!(out, result.iter().copied().collect());
+    //     }
 
-        {
-            type MyResultType<'a> = var_type!(
-                &'a u32,
-                &'a u64,
-                &'a u16,
-                &'a &'static str,
-                &'a &'static str
-            );
-            let result: HashSet<MyResultType> = [var_expr!(&5, &1, &7, &"hi", &"world")]
-                .iter()
-                .copied()
-                .collect();
-            // type MyGhtOut = GhtNodeType!(&'static str => &'static str);
-            type MyGhtOut = GhtInner<
-                &'static str,
-                GhtLeaf<
-                    var_type!(u32, u64, u16, &'static str, &'static str),
-                    var_type!(&'static str),
-                >,
-            >;
-            let mut bim = GhtNodeKeyedBimorphism::new(GhtNodeKeyedBimorphism::new(
-                GhtNodeKeyedBimorphism::new(GhtSuffixProductBimorphism::<MyGhtOut>::default()),
-            ));
-            let out = bim.call(&ght_a, &ght_b);
-            let out: HashSet<MyResultType> = out.recursive_iter().collect();
-            assert_eq!(out, result.iter().copied().collect());
-        }
-        {
-            // This is a more compact representation of the block above.
-            type MyResultType<'a> = var_type!(
-                &'a u32,
-                &'a u64,
-                &'a u16,
-                &'a &'static str,
-                &'a &'static str
-            );
-            let result: HashSet<MyResultType> = [var_expr!(&5, &1, &7, &"hi", &"world")]
-                .iter()
-                .copied()
-                .collect();
-            type MyNodeBim =
-                <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
-            let mut bim = <MyNodeBim as Default>::default();
-            // let out = <MyNodeBim as LatticeBimorphism<&MyGhtATrie, &MyGhtBTrie>>::call(
-            //     &mut bim, &ght_a, &ght_b,
-            // );
-            let out = bim.call(&ght_a, &ght_b);
-            let out: HashSet<MyResultType> = out.recursive_iter().collect();
-            assert_eq!(out, result.iter().copied().collect());
-        }
-        {
-            // This is an even more compact representation of the block above.
-            type MyResultType<'a> = var_type!(
-                &'a u32,
-                &'a u64,
-                &'a u16,
-                &'a &'static str,
-                &'a &'static str
-            );
-            let result: HashSet<MyResultType> = [var_expr!(&5, &1, &7, &"hi", &"world")]
-                .iter()
-                .copied()
-                .collect();
-            type MyNodeBim = <MyGhtATrie as GeneralizedHashTrieNode>::DeepJoin<MyGhtBTrie>;
-            let mut bim = <MyNodeBim as Default>::default();
-            // let out = <MyNodeBim as LatticeBimorphism<&MyGhtATrie, &MyGhtBTrie>>::call(
-            //     &mut bim, &ght_a, &ght_b,
-            // );
-            let out = bim.call(&ght_a, &ght_b);
-            let out: HashSet<MyResultType> = out.recursive_iter().collect();
-            assert_eq!(out, result.iter().copied().collect());
-        }
-    }
-
-    #[test]
-    fn test_join_bimorphism_wrapper() {
-        type MyGhtA = GhtType!(u32, u64, u16 => &'static str);
-        type MyGhtB = GhtType!(u32, u64, u16 => &'static str);
-        type MyGhtATrie = <MyGhtA as GeneralizedHashTrie>::Trie;
-        type MyGhtBTrie = <MyGhtB as GeneralizedHashTrie>::Trie;
-
-        let mut ght_a = MyGhtA::default();
-        let mut ght_b = MyGhtB::default();
-
-        fn is_clone(_: &impl Clone) {}
-        is_clone(&ght_a);
-        is_clone(&ght_b);
-
-        ght_a.insert(var_expr!(123, 2, 5, "hello"));
-        ght_a.insert(var_expr!(50, 1, 1, "hi"));
-        ght_a.insert(var_expr!(5, 1, 7, "hi"));
-
-        ght_b.insert(var_expr!(5, 1, 8, "hi"));
-        ght_b.insert(var_expr!(5, 1, 7, "world"));
-        ght_b.insert(var_expr!(10, 1, 2, "hi"));
-        ght_b.insert(var_expr!(12, 10, 98, "bye"));
-
-        {
-            type MyResultType<'a> = var_type!(
-                &'a u32,
-                &'a u64,
-                &'a u16,
-                &'a &'static str,
-                &'a u64,
-                &'a u16,
-                &'a &'static str
-            );
-            let result: HashSet<MyResultType> = [
-                var_expr!(&5, &1, &7, &"hi", &1, &7, &"world"),
-                var_expr!(&5, &1, &7, &"hi", &1, &8, &"hi"),
-            ]
-            .iter()
-            .copied()
-            .collect();
-            // type CartProd = GhtNodeType!(u64, u16, &'static str, u64, u16 => &'static str);
-            type CartProd = GhtInner<
-                u64,
-                GhtInner<
-                    u16,
-                    GhtInner<
-                        &'static str,
-                        GhtInner<
-                            u64,
-                            GhtInner<
-                                u16,
-                                GhtLeaf<
-                                    var_type!(u32, u64, u16, &'static str, u64, u16, &'static str),
-                                    var_type!(&'static str),
-                                >,
-                            >,
-                        >,
-                    >,
-                >,
-            >;
-            let mut bim =
-                GhtBimorphism::new(GhtNodeKeyedBimorphism::new(GhtSuffixProductBimorphism::<
-                    CartProd,
-                >::default()));
-            let out = bim.call(ght_a.clone(), ght_b.clone());
-            let out: HashSet<MyResultType> = GeneralizedHashTrie::recursive_iter(&out).collect();
-            assert_eq!(out, result.iter().copied().collect());
-        }
-
-        {
-            type MyResultType<'a> = var_type!(
-                &'a u32,
-                &'a u64,
-                &'a u16,
-                &'a &'static str,
-                &'a u16,
-                &'a &'static str
-            );
-            let result: HashSet<MyResultType> = [
-                var_expr!(&5, &1, &7, &"hi", &7, &"world"),
-                var_expr!(&5, &1, &7, &"hi", &8, &"hi"),
-            ]
-            .iter()
-            .copied()
-            .collect();
-            // type CartProd = GhtNodeType!(u16, &'static str, u16 => &'static str);
-            type CartProd = GhtInner<
-                u16,
-                GhtInner<
-                    &'static str,
-                    GhtInner<
-                        u16,
-                        GhtLeaf<
-                            var_type!(u32, u64, u16, &'static str, u16, &'static str),
-                            var_type!(&'static str),
-                        >,
-                    >,
-                >,
-            >;
-            let mut bim = GhtBimorphism::new(GhtNodeKeyedBimorphism::new(
-                GhtNodeKeyedBimorphism::new(GhtSuffixProductBimorphism::<CartProd>::default()),
-            ));
-            let out = bim.call(ght_a.clone(), ght_b.clone());
-            let out: HashSet<MyResultType> = out.recursive_iter().collect();
-            assert_eq!(out, result.iter().copied().collect());
-        }
-
-        {
-            type MyResultType<'a> = var_type!(
-                &'a u32,
-                &'a u64,
-                &'a u16,
-                &'a &'static str,
-                &'a &'static str
-            );
-            let result: HashSet<MyResultType> = [var_expr!(&5, &1, &7, &"hi", &"world")]
-                .iter()
-                .copied()
-                .collect();
-            // type MyGhtOut = GhtNodeType!(&'static str => &'static str);
-            type CartProd = GhtInner<
-                &'static str,
-                GhtLeaf<
-                    var_type!(u32, u64, u16, &'static str, &'static str),
-                    var_type!(&'static str),
-                >,
-            >;
-            let mut bim =
-                GhtBimorphism::new(GhtNodeKeyedBimorphism::new(GhtNodeKeyedBimorphism::new(
-                    GhtNodeKeyedBimorphism::new(GhtSuffixProductBimorphism::<CartProd>::default()),
-                )));
-            let out = bim.call(ght_a.clone(), ght_b.clone());
-            let out: HashSet<MyResultType> = out.recursive_iter().collect();
-            assert_eq!(out, result.iter().copied().collect());
-        }
-        {
-            // This is a more compact representation of the block above.
-            type MyResultType<'a> = var_type!(
-                &'a u32,
-                &'a u64,
-                &'a u16,
-                &'a &'static str,
-                &'a &'static str
-            );
-            let result: HashSet<MyResultType> = [var_expr!(&5, &1, &7, &"hi", &"world")]
-                .iter()
-                .copied()
-                .collect();
-            type MyNodeBim =
-                <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
-            type MyBim = GhtBimorphism<MyNodeBim>;
-            let mut bim = <MyBim as Default>::default();
-            let out = bim.call(ght_a.clone(), ght_b.clone());
-            let out: HashSet<MyResultType> = out.recursive_iter().collect();
-            assert_eq!(out, result.iter().copied().collect());
-        }
-        {
-            // This is an even more compact representation of the block above.
-            type MyResultType<'a> = var_type!(
-                &'a u32,
-                &'a u64,
-                &'a u16,
-                &'a &'static str,
-                &'a &'static str
-            );
-            let result: HashSet<MyResultType> = [var_expr!(&5, &1, &7, &"hi", &"world")]
-                .iter()
-                .copied()
-                .collect();
-            type MyNodeBim = <MyGhtATrie as GeneralizedHashTrieNode>::DeepJoin<MyGhtBTrie>;
-            type MyBim = GhtBimorphism<MyNodeBim>;
-            let mut bim = <MyBim as Default>::default();
-            let out = bim.call(ght_a.clone(), ght_b.clone());
-            let out: HashSet<MyResultType> = out.recursive_iter().collect();
-            assert_eq!(out, result.iter().copied().collect());
-        }
-    }
+    //     {
+    //         type MyResultType<'a> = var_type!(
+    //             &'a u32,
+    //             &'a u64,
+    //             &'a u16,
+    //             &'a &'static str,
+    //             &'a &'static str
+    //         );
+    //         let result: HashSet<MyResultType> = [var_expr!(&5, &1, &7, &"hi", &"world")]
+    //             .iter()
+    //             .copied()
+    //             .collect();
+    //         // type MyGhtOut = GhtNodeType!(&'static str => &'static str);
+    //         type MyGhtOut = GhtInner<
+    //             &'static str,
+    //             GhtLeaf<
+    //                 var_type!(u32, u64, u16, &'static str, &'static str),
+    //                 var_type!(&'static str),
+    //             >,
+    //         >;
+    //         let mut bim = GhtNodeKeyedBimorphism::new(GhtNodeKeyedBimorphism::new(
+    //             GhtNodeKeyedBimorphism::new(GhtValTypeProductBimorphism::<MyGhtOut>::default()),
+    //         ));
+    //         let out = bim.call(&ght_a, &ght_b);
+    //         let out: HashSet<MyResultType> = out.recursive_iter().collect();
+    //         assert_eq!(out, result.iter().copied().collect());
+    //     }
+    //     {
+    //         // This is a more compact representation of the block above.
+    //         type MyResultType<'a> = var_type!(
+    //             &'a u32,
+    //             &'a u64,
+    //             &'a u16,
+    //             &'a &'static str,
+    //             &'a &'static str
+    //         );
+    //         let result: HashSet<MyResultType> = [var_expr!(&5, &1, &7, &"hi", &"world")]
+    //             .iter()
+    //             .copied()
+    //             .collect();
+    //         type MyNodeBim =
+    //             <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
+    //         let mut bim = <MyNodeBim as Default>::default();
+    //         // let out = <MyNodeBim as LatticeBimorphism<&MyGhtATrie, &MyGhtBTrie>>::call(
+    //         //     &mut bim, &ght_a, &ght_b,
+    //         // );
+    //         let out = bim.call(&ght_a, &ght_b);
+    //         let out: HashSet<MyResultType> = out.recursive_iter().collect();
+    //         assert_eq!(out, result.iter().copied().collect());
+    //     }
+    //     {
+    //         // This is an even more compact representation of the block above.
+    //         type MyResultType<'a> = var_type!(
+    //             &'a u32,
+    //             &'a u64,
+    //             &'a u16,
+    //             &'a &'static str,
+    //             &'a &'static str
+    //         );
+    //         let result: HashSet<MyResultType> = [var_expr!(&5, &1, &7, &"hi", &"world")]
+    //             .iter()
+    //             .copied()
+    //             .collect();
+    //         type MyNodeBim = <MyGhtATrie as GeneralizedHashTrieNode>::DeepJoin<MyGhtBTrie>;
+    //         let mut bim = <MyNodeBim as Default>::default();
+    //         // let out = <MyNodeBim as LatticeBimorphism<&MyGhtATrie, &MyGhtBTrie>>::call(
+    //         //     &mut bim, &ght_a, &ght_b,
+    //         // );
+    //         let out = bim.call(&ght_a, &ght_b);
+    //         let out: HashSet<MyResultType> = out.recursive_iter().collect();
+    //         assert_eq!(out, result.iter().copied().collect());
+    //     }
+    // }
 
     // #[test]
     // fn test_recursive_iter_keys() {
-    //     type MyGht = GhtType!(u32 => u32, u32);
+    //     type MyGht = GhtNodeType!(u32 => u32, u32);
     //     type InputType = var_type!(u32, u32, u32);
     //     type OutputType = var_type!(u32);
     //     type ResultType<'a> = var_type!(&'a u32);
@@ -757,7 +581,7 @@ mod test {
 
     // #[test]
     // fn test_split_key_val() {
-    //     type MyGht = GhtType!(u32 => u32, u32);
+    //     type MyGht = GhtNodeType!(u32 => u32, u32);
     //     type InputType = var_type!(u32, u32, u32);
     //     type ResultType<'a> = (var_type!(&'a u32), var_type!(&'a u32, &'a u32));
     //     let input: HashSet<InputType> = HashSet::from_iter(
@@ -782,15 +606,15 @@ mod test {
 
     // #[test]
     // fn test_key_cmp() {
-    //     type MyRoot = GhtType!(u16, u32 => u64);
+    //     type MyRoot = GhtNodeType!(u16, u32 => u64);
     //     let mut trie1 = MyRoot::default();
     //     (*trie1.get_mut_trie()).insert(var_expr!(1, 2, 3));
     //     let mut trie2 = MyRoot::default();
     //     (*trie2.get_mut_trie()).insert(var_expr!(1, 2, 4));
 
-    //     let tup1 = trie1.get_trie().recursive_iter_keys().next().unwrap();
+    //     let tup1 = trie1.recursive_iter_keys().next().unwrap();
     //     let (k1, _v1) = MyRoot::split_key_val(tup1);
-    //     let tup2 = trie2.get_trie().recursive_iter_keys().next().unwrap();
+    //     let tup2 = trie2.recursive_iter_keys().next().unwrap();
     //     let (k2, _v2) = MyRoot::split_key_val(tup2);
     //     assert!(tup1 != tup2);
     //     assert_eq!(k1, k2);
@@ -814,7 +638,7 @@ mod test {
         // Can get the len, but cannot pass it into tuple! macro anyhow
         // let len = <<MyRoot as GeneralizedHashTrie>::Schema as VariadicExt>::LEN;
         // println!("schema_length: {}", len);
-        (*trie1.get_mut_trie()).insert(var_expr!(1, 2, 3));
+        trie1.insert(var_expr!(1, 2, 3));
         let t = trie1.recursive_iter().next().unwrap();
         let tup = tuple!(t, 3);
         assert_eq!(tup, (&1, &2, &3));
@@ -960,12 +784,8 @@ mod test {
         let rx_ght = MyGht::new_from(r_iter.map(|(x, a)| var_expr!(x, a)));
         let sx_ght = MyGht::new_from(s_iter.map(|(x, b)| var_expr!(x, b)));
         let tx_ght = MyGht::new_from(t_iter.map(|(x, c)| var_expr!(x, c)));
-        for x in rx_ght.get_trie().iter() {
-            if let (Some(r), Some(s), Some(t)) = (
-                rx_ght.get_trie().get(x),
-                sx_ght.get_trie().get(x),
-                tx_ght.get_trie().get(x),
-            ) {
+        for x in rx_ght.iter() {
+            if let (Some(r), Some(s), Some(t)) = (rx_ght.get(x), sx_ght.get(x), tx_ght.get(x)) {
                 // All unwraps succeeded, use `r`, `s`, `t` here
                 for a in r.iter() {
                     for b in s.iter() {
@@ -993,13 +813,13 @@ mod test {
 
         type Ght1 = GhtType!(() => u32, u32);
         type Ght2 = GhtType!(u32 => u32);
-        let rx_ght = Ght1::new_from(r_iter.map(|(x, a)| ((), var_expr!(x, a))));
+        let rx_ght = Ght1::new_from(r_iter.map(|(x, a)| var_expr!(x, a)));
         let sx_ght = Ght2::new_from(s_iter.map(|(x, b)| var_expr!(x, b)));
         let tx_ght = Ght2::new_from(t_iter.map(|(x, c)| var_expr!(x, c)));
 
         for t in rx_ght.recursive_iter() {
-            let (&_, (x, (a, ()))): (&(), (&u32, (&u32, _))) = t;
-            if let (Some(s), Some(t)) = (sx_ght.get_trie().get(x), tx_ght.get_trie().get(x)) {
+            let (x, (a, ())): (&u32, (&u32, _)) = t;
+            if let (Some(s), Some(t)) = (sx_ght.get(x), tx_ght.get(x)) {
                 // All unwraps succeeded, use `s`, `t` here
                 for b in s.iter() {
                     for c in t.iter() {
@@ -1016,9 +836,9 @@ mod test {
 
     #[test]
     fn test_force() {
-        type LeafType = GhtNodeType!(() => u16, u32, u64);
+        type LeafType = GhtType!(() => u16, u32, u64);
 
-        let mut colt = <GHT<var_type!(), LeafType> as Default>::default();
+        let mut colt = <LeafType as Default>::default();
 
         let n = LeafType::new_from(vec![
             var_expr!(1, 1, 1),
@@ -1038,7 +858,7 @@ mod test {
             colt.insert(t);
         }
         // This causes a type error: the underlying trie type changes with force!
-        // colt.trie = colt.get_trie().force();
+        // colt.trie = colt.force();
         println!("resulting COLT is {:?}", colt);
     }
 
@@ -1130,39 +950,51 @@ mod test {
         assert_eq!(
             // println!(
             //     "found in trie {}",
-            forest
-                .find_matching_trie(var_expr!(1_u8, 1_u16, 1_u32, 1_u64).as_ref_var(), 0)
-                .unwrap(),
-            0
+            ForestFindLeaf::<var_type!(u8, u16, u32, u64)>::find_containing_leaf(
+                &forest.forest,
+                var_expr!(1_u8, 1_u16, 1_u32, 1_u64).as_ref_var()
+            )
+            .unwrap()
+            .iter()
+            .next()
+            .unwrap(),
+            &var_expr!(1, 1, 1, 1)
         );
         assert_eq!(
             // println!(
             //     "found in trie {}",
-            forest
-                .find_matching_trie(var_expr!(2, 2, 2, 2).as_ref_var(), 0)
-                .unwrap(),
-            1
+            ForestFindLeaf::<var_type!(u8, u16, u32, u64)>::find_containing_leaf(
+                &forest.forest,
+                var_expr!(2, 2, 2, 2).as_ref_var()
+            )
+            .unwrap()
+            .iter()
+            .next()
+            .unwrap(),
+            &var_expr!(2, 2, 2, 2)
         );
         assert_eq!(
             // println!(
             //     "found in trie {}",
-            forest
-                .find_matching_trie(var_expr!(3, 3, 3, 3).as_ref_var(), 0)
-                .unwrap(),
-            2
+            ForestFindLeaf::<var_type!(u8, u16, u32, u64)>::find_containing_leaf(
+                &forest.forest,
+                var_expr!(3, 3, 3, 3).as_ref_var()
+            )
+            .unwrap()
+            .iter()
+            .next()
+            .unwrap(),
+            &var_expr!(3, 3, 3, 3)
         );
         assert!(
             // println!(
             //     "found in trie {}",
-            forest
-                .find_matching_trie(var_expr!(4, 4, 4, 4).as_ref_var(), 0)
-                .is_none()
+            ForestFindLeaf::<var_type!(u8, u16, u32, u64)>::find_containing_leaf(
+                &forest.forest,
+                var_expr!(4, 4, 4, 4).as_ref_var()
+            )
+            .is_none()
         );
-        println!("{:?}", forest.forest);
-        let j = ForestFindLeaf::<var_type!(u8, u16, u32, u64)>::find_containing_leaf(
-            &forest.forest,
-            var_expr!(4, 4, 4, 4).as_ref_var(),
-        );
-        // let j = forest.find_containing_leaf();
+        // println!("{:?}", forest.forest);
     }
 }

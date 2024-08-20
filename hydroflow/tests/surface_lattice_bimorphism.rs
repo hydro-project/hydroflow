@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow::util::collect_ready;
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
-use lattices::ght::GeneralizedHashTrie;
+use lattices::ght::GeneralizedHashTrieNode;
 use lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
 use lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap};
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
@@ -141,10 +141,12 @@ pub fn test_cartesian_product_tick_state() {
 
 #[test]
 fn test_ght_join_bimorphism() {
-    type MyGhtA = GhtType!(u32, u64, u16 => &'static str);
-    type MyGhtB = GhtType!(u32, u64, u16 => &'static str);
-    type MyGhtATrie = <MyGhtA as GeneralizedHashTrie>::Trie;
-    type MyGhtBTrie = <MyGhtB as GeneralizedHashTrie>::Trie;
+    // type MyGhtA = GhtType!(u32, u64, u16 => &'static str);
+    // type MyGhtB = GhtType!(u32, u64, u16 => &'static str);
+    // type MyGhtATrie = <MyGhtA as GeneralizedHashTrie>::Trie;
+    // type MyGhtBTrie = <MyGhtB as GeneralizedHashTrie>::Trie;
+    type MyGhtATrie = GhtType!(u32, u64, u16 => &'static str);
+    type MyGhtBTrie = GhtType!(u32, u64, u16 => &'static str);
 
     type Output = variadics::var_type!(u32, u64, u16, &'static str, &'static str);
 
@@ -160,8 +162,8 @@ fn test_ght_join_bimorphism() {
                 var_expr!(5, 1, 7, "hi"),
                 var_expr!(5, 1, 7, "bye"),
             ])
-            -> map(|row| MyGhtA::new_from([row]))
-            -> state::<'tick, MyGhtA>();
+            -> map(|row| MyGhtATrie::new_from([row]))
+            -> state::<'tick, MyGhtATrie>();
         rhs = source_iter_delta([
                 var_expr!(5, 1, 8, "hi"),
                 var_expr!(5, 1, 7, "world"),
@@ -169,8 +171,8 @@ fn test_ght_join_bimorphism() {
                 var_expr!(10, 1, 2, "hi"),
                 var_expr!(12, 10, 98, "bye"),
             ])
-            -> map(|row| MyGhtB::new_from([row]))
-            -> state::<'tick, MyGhtB>();
+            -> map(|row| MyGhtBTrie::new_from([row]))
+            -> state::<'tick, MyGhtBTrie>();
 
         lhs[items] -> [0]my_join;
         rhs[items] -> [1]my_join;
