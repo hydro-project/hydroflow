@@ -143,10 +143,8 @@ mod tests {
     async fn test_crate_panic() {
         let mut deployment = deployment::Deployment::new();
 
-        let localhost = deployment.Localhost();
-
         let service = deployment.add_service(
-            HydroflowCrate::new("../hydro_cli_examples", localhost.clone())
+            HydroflowCrate::new("../hydro_cli_examples", deployment.Localhost())
                 .example("panic_program")
                 .profile("dev"),
         );

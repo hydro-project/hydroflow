@@ -4,7 +4,6 @@ use hydroflow_plus_cli_integration::DeployProcessSpec;
 #[tokio::main]
 async fn main() {
     let mut deployment = Deployment::new();
-    let localhost = deployment.Localhost();
 
     let flow = hydroflow_plus::FlowBuilder::new();
     let (p1, p2) = flow::first_ten_distributed::first_ten_distributed(&flow);
@@ -14,7 +13,7 @@ async fn main() {
         .with_process(
             &p1,
             DeployProcessSpec::new({
-                HydroflowCrate::new(".", localhost.clone())
+                HydroflowCrate::new(".", deployment.Localhost())
                     .bin("first_ten_distributed")
                     .profile("dev")
             }),
@@ -22,7 +21,7 @@ async fn main() {
         .with_process(
             &p2,
             DeployProcessSpec::new({
-                HydroflowCrate::new(".", localhost.clone())
+                HydroflowCrate::new(".", deployment.Localhost())
                     .bin("first_ten_distributed")
                     .profile("dev")
             }),
