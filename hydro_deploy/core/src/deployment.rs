@@ -23,6 +23,12 @@ pub struct Deployment {
     next_service_id: usize,
 }
 
+impl Default for Deployment {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Deployment {
     pub fn new() -> Self {
         let mut ret = Self {
