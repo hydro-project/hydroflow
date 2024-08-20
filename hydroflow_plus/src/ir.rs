@@ -113,37 +113,50 @@ impl<'a> HfPlusLeaf<'a> {
         clusters: &HashMap<usize, D::Cluster>,
     ) -> HfPlusLeaf<'a> {
         self.transform_children(
-            |n, s| n.compile_network::<D>(compile_env, s, nodes, clusters),
+            |mut n, s| {
+                n.compile_network::<D>(compile_env, s, nodes, clusters);
+            },
             seen_tees,
         )
     }
 
     pub fn connect_network(self, seen_tees: &mut SeenTees<'a>) -> HfPlusLeaf<'a> {
-        self.transform_children(|n, s| n.connect_network(s), seen_tees)
+        self.transform_children(|mut n, s| {
+            n.connect_network(s);
+        }, seen_tees)
     }
 
     pub fn transform_children(
         self,
-        mut transform: impl FnMut(HfPlusNode<'a>, &mut SeenTees<'a>) -> HfPlusNode<'a>,
+        mut transform: impl FnMut(&mut HfPlusNode<'a>, &mut SeenTees<'a>),
         seen_tees: &mut SeenTees<'a>,
     ) -> HfPlusLeaf<'a> {
         match self {
-            HfPlusLeaf::ForEach { f, input } => HfPlusLeaf::ForEach {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
+            HfPlusLeaf::ForEach { f, mut input } => {
+                transform(&mut input, seen_tees);
+                HfPlusLeaf::ForEach {
+                    f,
+                    input,
+                }
             },
-            HfPlusLeaf::DestSink { sink, input } => HfPlusLeaf::DestSink {
-                sink,
-                input: Box::new(transform(*input, seen_tees)),
+            HfPlusLeaf::DestSink { sink, mut input } => {
+                transform(&mut input, seen_tees);
+                HfPlusLeaf::DestSink {
+                    sink,
+                    input,
+                }
             },
             HfPlusLeaf::CycleSink {
                 ident,
                 location_kind,
-                input,
-            } => HfPlusLeaf::CycleSink {
-                ident,
-                location_kind,
-                input: Box::new(transform(*input, seen_tees)),
+                mut input,
+            } => {
+                transform(&mut input, seen_tees);
+                HfPlusLeaf::CycleSink {
+                    ident,
+                    location_kind,
+                    input,
+                }
             },
         }
     }
@@ -299,16 +312,18 @@ pub type SeenTees<'a> = HashMap<*const RefCell<HfPlusNode<'a>>, Rc<RefCell<HfPlu
 
 impl<'a> HfPlusNode<'a> {
     pub fn compile_network<D: Deploy<'a> + 'a>(
-        self,
+        &mut self,
         compile_env: &D::CompileEnv,
         seen_tees: &mut SeenTees<'a>,
         nodes: &HashMap<usize, D::Process>,
         clusters: &HashMap<usize, D::Cluster>,
-    ) -> HfPlusNode<'a> {
-        match self.transform_children(
+    ) {
+        self.transform_children(
             |n, s| n.compile_network::<D>(compile_env, s, nodes, clusters),
             seen_tees,
-        ) {
+        );
+
+        match self {
             HfPlusNode::Network {
                 from_location,
                 to_location,
@@ -492,22 +507,16 @@ impl<'a> HfPlusNode<'a> {
                     DebugInstantiate::Finalized(_, _, _) => panic!("network already finalized"),
                 };
 
-                HfPlusNode::Network {
-                    from_location,
-                    to_location,
-                    serialize_pipeline,
-                    instantiate_fn: DebugInstantiate::Finalized(sink_expr, source_expr, connect_fn),
-                    deserialize_pipeline,
-                    input,
-                }
+                *instantiate_fn = DebugInstantiate::Finalized(sink_expr, source_expr, connect_fn);
             }
 
-            o => o,
+            o => {},
         }
     }
 
-    pub fn connect_network(self, seen_tees: &mut SeenTees<'a>) -> HfPlusNode<'a> {
-        match self.transform_children(|n, s| n.connect_network(s), seen_tees) {
+    pub fn connect_network(&mut self, seen_tees: &mut SeenTees<'a>) {
+        self.transform_children(|n, s| n.connect_network(s), seen_tees);
+        match self {
             HfPlusNode::Network {
                 from_location,
                 to_location,
@@ -522,145 +531,122 @@ impl<'a> HfPlusNode<'a> {
                     DebugInstantiate::Finalized(_, _, ref connect_fn) => {
                         connect_fn();
                     }
-                };
-
-                HfPlusNode::Network {
-                    from_location,
-                    to_location,
-                    serialize_pipeline,
-                    instantiate_fn,
-                    deserialize_pipeline,
-                    input,
                 }
             }
 
-            o => o,
+            o => {},
         }
     }
 
     pub fn transform_children(
-        self,
-        mut transform: impl FnMut(HfPlusNode<'a>, &mut SeenTees<'a>) -> HfPlusNode<'a>,
+        &mut self,
+        mut transform: impl FnMut(&mut HfPlusNode<'a>, &mut SeenTees<'a>),
         seen_tees: &mut SeenTees<'a>,
-    ) -> HfPlusNode<'a> {
+    ) {
         match self {
-            HfPlusNode::Placeholder => HfPlusNode::Placeholder,
+            HfPlusNode::Placeholder => {},
 
             HfPlusNode::Source {
                 source,
                 location_kind,
-            } => HfPlusNode::Source {
-                source,
-                location_kind,
-            },
+            } => {},
 
             HfPlusNode::CycleSource {
                 ident,
                 location_kind,
-            } => HfPlusNode::CycleSource {
-                ident,
-                location_kind,
-            },
+            } => {},
 
             HfPlusNode::Tee { inner } => {
                 if let Some(transformed) =
                     seen_tees.get(&(inner.as_ref() as *const RefCell<HfPlusNode>))
                 {
-                    HfPlusNode::Tee {
-                        inner: transformed.clone(),
-                    }
+                    *inner = transformed.clone();
                 } else {
                     let transformed_cell = Rc::new(RefCell::new(HfPlusNode::Placeholder));
                     seen_tees.insert(
                         inner.as_ref() as *const RefCell<HfPlusNode>,
                         transformed_cell.clone(),
                     );
-                    let orig = inner.replace(HfPlusNode::Placeholder);
-                    *transformed_cell.borrow_mut() = transform(orig, seen_tees);
-                    HfPlusNode::Tee {
-                        inner: transformed_cell,
-                    }
+                    let mut orig = inner.replace(HfPlusNode::Placeholder);
+                    transform(&mut orig, seen_tees);
+                    *transformed_cell.borrow_mut() = orig;
+                    *inner = transformed_cell;
                 }
             }
 
             HfPlusNode::Persist(inner) => {
-                HfPlusNode::Persist(Box::new(transform(*inner, seen_tees)))
+                transform(inner.as_mut(), seen_tees)
             }
-            HfPlusNode::Delta(inner) => HfPlusNode::Delta(Box::new(transform(*inner, seen_tees))),
+            HfPlusNode::Delta(inner) => {
+                transform(inner.as_mut(), seen_tees)
+            },
 
-            HfPlusNode::Union(left, right) => HfPlusNode::Union(
-                Box::new(transform(*left, seen_tees)),
-                Box::new(transform(*right, seen_tees)),
-            ),
-            HfPlusNode::CrossProduct(left, right) => HfPlusNode::CrossProduct(
-                Box::new(transform(*left, seen_tees)),
-                Box::new(transform(*right, seen_tees)),
-            ),
-            HfPlusNode::CrossSingleton(left, right) => HfPlusNode::CrossSingleton(
-                Box::new(transform(*left, seen_tees)),
-                Box::new(transform(*right, seen_tees)),
-            ),
-            HfPlusNode::Join(left, right) => HfPlusNode::Join(
-                Box::new(transform(*left, seen_tees)),
-                Box::new(transform(*right, seen_tees)),
-            ),
-            HfPlusNode::Difference(left, right) => HfPlusNode::Difference(
-                Box::new(transform(*left, seen_tees)),
-                Box::new(transform(*right, seen_tees)),
-            ),
-            HfPlusNode::AntiJoin(left, right) => HfPlusNode::AntiJoin(
-                Box::new(transform(*left, seen_tees)),
-                Box::new(transform(*right, seen_tees)),
-            ),
+            HfPlusNode::Union(left, right) => {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            },
+            HfPlusNode::CrossProduct(left, right) => {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            },
+            HfPlusNode::CrossSingleton(left, right) => {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            },
+            HfPlusNode::Join(left, right) => {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            },
+            HfPlusNode::Difference(left, right) => {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            },
+            HfPlusNode::AntiJoin(left, right) => {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            },
 
-            HfPlusNode::Map { f, input } => HfPlusNode::Map {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
+            HfPlusNode::Map { f, input } => {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::FlatMap { f, input } => {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::Filter { f, input } => {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::FilterMap { f, input } => {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::Sort(input) => {
+                transform(input.as_mut(), seen_tees);
             },
-            HfPlusNode::FlatMap { f, input } => HfPlusNode::FlatMap {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
-            },
-            HfPlusNode::Filter { f, input } => HfPlusNode::Filter {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
-            },
-            HfPlusNode::FilterMap { f, input } => HfPlusNode::FilterMap {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
-            },
-            HfPlusNode::Sort(input) => HfPlusNode::Sort(Box::new(transform(*input, seen_tees))),
             HfPlusNode::DeferTick(input) => {
-                HfPlusNode::DeferTick(Box::new(transform(*input, seen_tees)))
+                transform(input.as_mut(), seen_tees);
             }
             HfPlusNode::Enumerate(input) => {
-                HfPlusNode::Enumerate(Box::new(transform(*input, seen_tees)))
+                transform(input.as_mut(), seen_tees);
             }
-            HfPlusNode::Inspect { f, input } => HfPlusNode::Inspect {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
+            HfPlusNode::Inspect { f, input } => {
+                transform(input.as_mut(), seen_tees);
             },
 
-            HfPlusNode::Unique(input) => HfPlusNode::Unique(Box::new(transform(*input, seen_tees))),
-
-            HfPlusNode::Fold { init, acc, input } => HfPlusNode::Fold {
-                init,
-                acc,
-                input: Box::new(transform(*input, seen_tees)),
-            },
-            HfPlusNode::FoldKeyed { init, acc, input } => HfPlusNode::FoldKeyed {
-                init,
-                acc,
-                input: Box::new(transform(*input, seen_tees)),
+            HfPlusNode::Unique(input) => {
+                transform(input.as_mut(), seen_tees);
             },
 
-            HfPlusNode::Reduce { f, input } => HfPlusNode::Reduce {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
+            HfPlusNode::Fold { init, acc, input } => {
+                transform(input.as_mut(), seen_tees);
             },
-            HfPlusNode::ReduceKeyed { f, input } => HfPlusNode::ReduceKeyed {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
+            HfPlusNode::FoldKeyed { init, acc, input } => {
+                transform(input.as_mut(), seen_tees);
+            },
+
+            HfPlusNode::Reduce { f, input } => {
+                transform(input.as_mut(), seen_tees);
+            },
+            HfPlusNode::ReduceKeyed { f, input } => {
+                transform(input.as_mut(), seen_tees);
             },
 
             HfPlusNode::Network {
@@ -670,13 +656,8 @@ impl<'a> HfPlusNode<'a> {
                 instantiate_fn,
                 deserialize_pipeline,
                 input,
-            } => HfPlusNode::Network {
-                from_location,
-                to_location,
-                serialize_pipeline,
-                instantiate_fn,
-                deserialize_pipeline,
-                input: Box::new(transform(*input, seen_tees)),
+            } => {
+                transform(input.as_mut(), seen_tees);
             },
         }
     }
