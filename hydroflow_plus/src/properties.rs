@@ -42,19 +42,19 @@ impl PropertyDatabase {
 // TODO add a test that verifies the space of possible graphs after rewrites is correct for each property
 
 fn properties_optimize_node<'a>(
-    node: HfPlusNode<'a>,
+    node: &mut HfPlusNode<'a>,
     db: &PropertyDatabase,
     seen_tees: &mut SeenTees<'a>,
-) -> HfPlusNode<'a> {
-    match node.transform_children(
+) {
+    node.transform_children(
         |node, seen_tees| properties_optimize_node(node, db, seen_tees),
         seen_tees,
-    ) {
+    );
+    match node {
         HfPlusNode::ReduceKeyed { f, input } if db.is_tagged_commutative(&f.0) => {
             dbg!("IDENTIFIED COMMUTATIVE OPTIMIZATION for {:?}", &f);
-            HfPlusNode::ReduceKeyed { f, input }
         }
-        o => o,
+        o => {},
     }
 }
 
