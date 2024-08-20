@@ -50,7 +50,6 @@ mod tests {
     #[tokio::test]
     async fn simple_cluster() {
         let mut deployment = Deployment::new();
-        let localhost = deployment.Localhost();
 
         let builder = hydroflow_plus::FlowBuilder::new();
         let (node, cluster) = super::simple_cluster(&builder);
@@ -62,7 +61,7 @@ mod tests {
             .with_process(
                 &node,
                 DeployProcessSpec::new({
-                    HydroflowCrate::new(".", localhost.clone())
+                    HydroflowCrate::new(".", deployment.Localhost())
                         .bin("simple_cluster")
                         .profile("dev")
                 }),
@@ -72,7 +71,7 @@ mod tests {
                 DeployClusterSpec::new({
                     (0..2)
                         .map(|_| {
-                            HydroflowCrate::new(".", localhost.clone())
+                            HydroflowCrate::new(".", deployment.Localhost())
                                 .bin("simple_cluster")
                                 .profile("dev")
                         })

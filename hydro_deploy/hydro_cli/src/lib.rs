@@ -155,13 +155,13 @@ impl Deployment {
     #[new]
     fn new() -> Self {
         Deployment {
-            underlying: Arc::new(RwLock::new(core::Deployment::default())),
+            underlying: Arc::new(RwLock::new(core::Deployment::new())),
         }
     }
 
     #[allow(non_snake_case)]
     fn Localhost(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let arc = self.underlying.blocking_write().Localhost();
+        let arc = self.underlying.blocking_read().Localhost();
 
         Ok(Py::new(
             py,

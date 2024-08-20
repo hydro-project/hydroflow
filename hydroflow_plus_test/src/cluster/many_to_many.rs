@@ -33,7 +33,6 @@ mod tests {
     #[tokio::test]
     async fn many_to_many() {
         let mut deployment = Deployment::new();
-        let localhost = deployment.Localhost();
 
         let builder = hydroflow_plus::FlowBuilder::new();
         let cluster = super::many_to_many(&builder);
@@ -47,7 +46,7 @@ mod tests {
                 DeployClusterSpec::new({
                     (0..2)
                         .map(|_| {
-                            HydroflowCrate::new(".", localhost.clone())
+                            HydroflowCrate::new(".", deployment.Localhost())
                                 .bin("many_to_many")
                                 .profile("dev")
                         })
