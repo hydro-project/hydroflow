@@ -12,16 +12,16 @@ We start with the standard architecture, with a flow graph and a runtime entrypo
 
 :::tip
 
-If you have been following along with the Hydroflow+ template, you'll now need to declare a new module for this example. Create a new file at `flow/src/broadcast.rs` and add the following to `flow/src/lib.rs`:
+If you have been following along with the Hydroflow+ template, you'll now need to declare a new module for this example. Create a new file at `src/broadcast.rs` and add the following to `src/lib.rs`:
 
-```rust title="flow/src/lib.rs"
+```rust title="src/lib.rs"
 pub mod broadcast;
 ```
 
 :::
 
 
-```rust title="flow/src/broadcast.rs"
+```rust title="src/broadcast.rs"
 use hydroflow_plus::*;
 use stageleft::*;
 
@@ -53,71 +53,28 @@ data
 The `Stream` returned by `broadcast_bincode` represents the data received on _each_ process in the cluster. Because all processes in a cluster run the exact same computation, we can then use the `for_each` operator directly on that stream to print the data on each process.
 
 ## Deploying Graphs with Clusters
-To deploy this application, we must set up the runtime entrypoint and the Hydro Deploy configuration. The entrypoint looks similar to before, but now uses the CLI data to instantiate the cluster as well.
+To deploy this application, we must set up the Hydro Deploy configuration as before. Our deployment script (`examples/broadcast.rs`) instantiates multiple services for the leader process and the workers. Since this script defines the physical deployment, we explicitly instantiate multiple services for the cluster spec, returning a `Vec` of services. We also set a display name for each service so that we can tell them apart in the logs.
 
-```rust title="flow/src/broadcast.rs"
-use hydroflow_plus::util::cli::HydroCLI;
-use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
-
-#[stageleft::entry]
-pub fn broadcast_runtime<'a>(
-    flow: FlowBuilder<'a>,
-    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
-    broadcast(&flow);
-    flow.with_default_optimize()
-        .compile::<CLIRuntime>()
-        .with_dynamic_id(q!(cli.meta.subgraph_id))
-}
-```
-
-Our binary (`src/bin/broadcast.rs`) looks similar to before:
-
-```rust title="flow/src/bin/broadcast.rs"
-#[tokio::main]
-async fn main() {
-    let ports = hydroflow_plus::util::cli::init().await;
-
-    hydroflow_plus::util::cli::launch_flow(
-        flow::broadcast::broadcast_runtime!(&ports)
-    ).await;
-}
-```
-
-Finally, our deployment script (`examples/broadcast.rs`) instantiates multiple services for the leader process and the workers. Because we are sharing the deployment across multiple builders, we wrap it in a `RefCell`. Since this script defines the physical deployment, we explicitly instantiate multiple services for the cluster spec, returning a `Vec` of services. We also set a display name for each service so that we can tell them apart in the logs.
-
-```rust title="flow/examples/broadcast.rs"
+```rust title="examples/broadcast.rs"
 use std::cell::RefCell;
 
 use hydro_deploy::{Deployment, HydroflowCrate};
-use hydroflow_plus_cli_integration::{DeployProcessSpec, DeployClusterSpec};
+use hydroflow_plus_cli_integration::TrybuildHost;
 
 #[tokio::main]
 async fn main() {
     let mut deployment = Deployment::new();
     let localhost = deployment.Localhost();
-    let profile = "dev";
 
     let builder = hydroflow_plus::FlowBuilder::new();
     let (leader, workers) = flow::broadcast::broadcast(&builder);
 
     flow.with_default_optimize()
-        .with_process(&leader, DeployProcessSpec::new({
-            HydroflowCrate::new(".", localhost.clone())
-                .bin("broadcast")
-                .profile(profile)
-                .display_name("leader")
-        }))
-        .with_cluster(&workers, DeployClusterSpec::new({
-            (0..2)
-                .map(|idx| {
-                    HydroflowCrate::new(".", localhost.clone())
-                        .bin("broadcast")
-                        .profile(profile)
-                        .display_name(format!("worker/{}", idx))
-                })
-                .collect()
-        }))
+        .with_process(&leader, TrybuildHost::new(localhost.clone))
+        .with_cluster(&workers, (0..2)
+            .map(|idx| TrybuildHost::new(localhost.clone()))
+            .collect::<Vec<_>>()
+        )
         .deploy(&mut deployment);
 
     deployment.run_ctrl_c().await.unwrap();
@@ -128,7 +85,7 @@ If we run this script, we should see the following output:
 
 ```bash
 #shell-command-next-line
-cargo run -p flow --example broadcast
+cargo run --example broadcast
 [worker/0] 0
 [worker/1] 0
 [worker/0] 1
