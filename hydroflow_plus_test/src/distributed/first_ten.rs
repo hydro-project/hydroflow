@@ -46,7 +46,6 @@ mod tests {
     #[tokio::test]
     async fn first_ten_distributed() {
         let mut deployment = Deployment::new();
-        let localhost = deployment.Localhost();
 
         let builder = hydroflow_plus::FlowBuilder::new();
         let (first_node, second_node) = super::first_ten_distributed(&builder);
@@ -60,7 +59,7 @@ mod tests {
             .with_process(
                 &first_node,
                 DeployProcessSpec::new({
-                    HydroflowCrate::new(".", localhost.clone())
+                    HydroflowCrate::new(".", deployment.Localhost())
                         .bin("first_ten_distributed")
                         .profile("dev")
                 }),
@@ -68,7 +67,7 @@ mod tests {
             .with_process(
                 &second_node,
                 DeployProcessSpec::new({
-                    HydroflowCrate::new(".", localhost.clone())
+                    HydroflowCrate::new(".", deployment.Localhost())
                         .bin("first_ten_distributed")
                         .profile("dev")
                 }),

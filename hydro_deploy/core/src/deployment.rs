@@ -18,6 +18,7 @@ pub struct Deployment {
     pub hosts: Vec<Weak<dyn Host>>,
     pub services: Vec<Weak<RwLock<dyn Service>>>,
     pub resource_pool: ResourcePool,
+    localhost_host: Option<Arc<LocalhostHost>>,
     last_resource_result: Option<Arc<ResourceResult>>,
     next_host_id: usize,
     next_service_id: usize,
@@ -25,12 +26,14 @@ pub struct Deployment {
 
 impl Deployment {
     pub fn new() -> Self {
-        Self::default()
+        let mut ret = Self::default();
+        ret.localhost_host = Some(ret.add_host(LocalhostHost::new));
+        ret
     }
 
     #[allow(non_snake_case)]
-    pub fn Localhost(&mut self) -> Arc<LocalhostHost> {
-        self.add_host(LocalhostHost::new)
+    pub fn Localhost(&self) -> Arc<LocalhostHost> {
+        self.localhost_host.clone().unwrap()
     }
 
     #[allow(non_snake_case)]
