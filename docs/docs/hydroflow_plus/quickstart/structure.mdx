@@ -2,15 +2,13 @@
 sidebar_position: 1
 ---
 import CodeBlock from '@theme/CodeBlock';
-import firstTenSrc from '!!raw-loader!../../../../template/hydroflow_plus/flow/src/first_ten.rs';
-import firstTenBin from '!!raw-loader!../../../../template/hydroflow_plus/flow/src/bin/first_ten.rs';
+import firstTenSrc from '!!raw-loader!../../../../template/hydroflow_plus/src/first_ten_distributed.rs';
 import { getLines, extractOutput } from '../../../src/util';
 
 # Your First Dataflow
-Hydroflow+ programs require special structure to support code generation and distributed deployments. There are three main components of a Hydroflow+ program:
+Hydroflow+ programs require special structure to support code generation and distributed deployments. There are two main components of a Hydroflow+ program:
 - The **flow graph** describes the dataflow logic of the program.
-- The **runtime** wraps the dataflow in an executable Rust binary.
-- The **deployment** describes how to map the flow graph to instances of the runtime. This is only needed for distributed deployments.
+- The **deployment** describes how to map the flow graph to a physical deployment.
 
 :::tip
 
@@ -41,53 +39,20 @@ Let's look a minimal example of a Hydroflow+ program. We'll start with a simple 
 
 ## The Flow Graph
 
-<CodeBlock language="rust" title="flow/src/first_ten.rs">{getLines(firstTenSrc, 3, 9)}</CodeBlock>
+<CodeBlock language="rust" title="src/first_ten_distributed.rs">{getLines(firstTenSrc, 1, 17)}</CodeBlock>
 
-To build a Hydroflow+ application, we need to define a dataflow that spans multiple processes. The `FlowBuilder` parameter captures the global dataflow, while the `process_spec` variable defines how to construct the processes where the dataflow will be executed. For now, we will only use the `ProcessSpec` once, to add a single process to our global dataflow.
+To build a Hydroflow+ application, we need to define a dataflow that spans multiple processes. The `FlowBuilder` parameter captures the global dataflow, and we can instantiate processes to define boundaries between distributed logic. When defining a process, we also pass in a type parameter to a "tag" that identifies the process. When transforming streams, the Rust type system will guarantee that we are operating on streams on the same process.
 
-<CodeBlock language="rust">{getLines(firstTenSrc, 10)}</CodeBlock>
+<CodeBlock language="rust">{getLines(firstTenSrc, 8, 9)}</CodeBlock>
 
 Now, we can build out the dataflow to run on this process. Every dataflow starts at a source that is bound to a specific process. First, we instantiate a stream that emits the first 10 natural numbers.
 
-<CodeBlock language="rust">{getLines(firstTenSrc, 12)}</CodeBlock>
+<CodeBlock language="rust">{getLines(firstTenSrc, 11)}</CodeBlock>
 
 In Hydroflow+, whenever there are snippets of Rust code passed to operators (like `source_iter`, `map`, or `for_each`), we use the `q!` macro to mark them. For example, we may use Rust snippets to define static sources of data or closures that transform them.
 
 To print out these numbers, we can use the `for_each` operator (note that the body of `for_each` is a closure wrapped in `q!`):
 
-<CodeBlock language="rust">{getLines(firstTenSrc, 13)}</CodeBlock>
+<CodeBlock language="rust">{getLines(firstTenSrc, 12, 14)}</CodeBlock>
 
-## The Runtime
-Next, we need to instantiate our dataflow into a runnable Rust binary. We do this by defining a [Stageleft entrypoint](../stageleft.mdx) for the graph, and then invoking the entrypoint inside a separate Rust binary.
-
-To define the entrypoint, we use the `#[stageleft::entry]` macro, which takes the graph being built and returns a generated Hydroflow program. We define this as a new function `first_ten_runtime`. In this first example, we assume there is a single process so that we do not need to specify how the graph is laid out across processes. We specify this by using the `SingleProcessGraph` type parameter on `FlowBuilder`.
-
-Having done that, we can use some simple defaults for "distributing" this single-process deployment. First, we use `()` as an argument to `first_ten` to choose the default process spec. Then we use the `optimize_default` method to generate the Hydroflow program with default optimizations.
-
-<CodeBlock language="rust" title="flow/src/first_ten.rs">{getLines(firstTenSrc, 16, 22)}</CodeBlock>
-
-Finally, it's time to write our `main` function.
-Stageleft entries are usable as macros from other programs. In our case, we will instantiate our entrypoint from the Rust binary for our dataflow. We can create a new file `src/bin/first_ten.rs` with the following contents. Note that Hydroflow+ requires that we use `tokio` and its `async` function specification:
-
-<CodeBlock language="rust" title="flow/src/bin/first_ten.rs">{firstTenBin}</CodeBlock>
-
-We can now run this binary to see the output of our dataflow:
-
-<>{/* TODO(mingwei): grab this output from a tested snapshot file */}</>
-
-```bash
-#shell-command-next-line
-cargo run -p flow --bin first_ten
-0
-1
-2
-3
-4
-5
-6
-7
-8
-9
-```
-
-In the next section, we will look at how to extend this program to run on multiple processs.
+In the next section, we will look at how to deploy this program to run on multiple processs.
