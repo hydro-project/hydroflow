@@ -114,6 +114,7 @@
 <a href="#114" id="114">114</a>
 <a href="#115" id="115">115</a>
 <a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 
 <span class="kw">use </span>hydroflow::futures::channel::mpsc::UnboundedSender;
@@ -133,23 +134,24 @@
 
 <span class="doccomment">/// Add a profiling node before each node to count the cardinality of its input
 </span><span class="kw">fn </span>add_profiling_node&lt;<span class="lifetime">'a</span>&gt;(
-    node: HfPlusNode&lt;<span class="lifetime">'a</span>&gt;,
+    node: <span class="kw-2">&amp;mut </span>HfPlusNode&lt;<span class="lifetime">'a</span>&gt;,
     _context: RuntimeContext&lt;<span class="lifetime">'a</span>&gt;,
     counters: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;u64&gt;&gt;&gt;,
     counter_queue: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;UnboundedSender&lt;(usize, u64)&gt;&gt;&gt;,
     id: <span class="kw-2">&amp;mut </span>u32,
     seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;,
-) -&gt; HfPlusNode&lt;<span class="lifetime">'a</span>&gt; {
+) {
     <span class="kw">let </span>my_id = <span class="kw-2">*</span>id;
     <span class="kw-2">*</span>id += <span class="number">1</span>;
 
-    <span class="kw">let </span>child = node.transform_children(
+    node.transform_children(
         |node, seen_tees| {
             add_profiling_node(node, _context, counters, counter_queue, id, seen_tees)
         },
         seen_tees,
     );
-    HfPlusNode::Inspect {
+    <span class="kw">let </span>orig_node = std::mem::replace(node, HfPlusNode::Placeholder);
+    <span class="kw-2">*</span>node = HfPlusNode::Inspect {
         f: quoted_any_fn(<span class="macro">q!</span>({
             <span class="comment">// Put counters on queue
             </span>counter_queue
@@ -165,7 +167,7 @@
         }))
         .splice()
         .into(),
-        input: Box::new(child),
+        input: Box::new(orig_node),
     }
 }
 

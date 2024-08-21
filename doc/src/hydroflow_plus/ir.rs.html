@@ -1238,86 +1238,6 @@
 <a href="#1238" id="1238">1238</a>
 <a href="#1239" id="1239">1239</a>
 <a href="#1240" id="1240">1240</a>
-<a href="#1241" id="1241">1241</a>
-<a href="#1242" id="1242">1242</a>
-<a href="#1243" id="1243">1243</a>
-<a href="#1244" id="1244">1244</a>
-<a href="#1245" id="1245">1245</a>
-<a href="#1246" id="1246">1246</a>
-<a href="#1247" id="1247">1247</a>
-<a href="#1248" id="1248">1248</a>
-<a href="#1249" id="1249">1249</a>
-<a href="#1250" id="1250">1250</a>
-<a href="#1251" id="1251">1251</a>
-<a href="#1252" id="1252">1252</a>
-<a href="#1253" id="1253">1253</a>
-<a href="#1254" id="1254">1254</a>
-<a href="#1255" id="1255">1255</a>
-<a href="#1256" id="1256">1256</a>
-<a href="#1257" id="1257">1257</a>
-<a href="#1258" id="1258">1258</a>
-<a href="#1259" id="1259">1259</a>
-<a href="#1260" id="1260">1260</a>
-<a href="#1261" id="1261">1261</a>
-<a href="#1262" id="1262">1262</a>
-<a href="#1263" id="1263">1263</a>
-<a href="#1264" id="1264">1264</a>
-<a href="#1265" id="1265">1265</a>
-<a href="#1266" id="1266">1266</a>
-<a href="#1267" id="1267">1267</a>
-<a href="#1268" id="1268">1268</a>
-<a href="#1269" id="1269">1269</a>
-<a href="#1270" id="1270">1270</a>
-<a href="#1271" id="1271">1271</a>
-<a href="#1272" id="1272">1272</a>
-<a href="#1273" id="1273">1273</a>
-<a href="#1274" id="1274">1274</a>
-<a href="#1275" id="1275">1275</a>
-<a href="#1276" id="1276">1276</a>
-<a href="#1277" id="1277">1277</a>
-<a href="#1278" id="1278">1278</a>
-<a href="#1279" id="1279">1279</a>
-<a href="#1280" id="1280">1280</a>
-<a href="#1281" id="1281">1281</a>
-<a href="#1282" id="1282">1282</a>
-<a href="#1283" id="1283">1283</a>
-<a href="#1284" id="1284">1284</a>
-<a href="#1285" id="1285">1285</a>
-<a href="#1286" id="1286">1286</a>
-<a href="#1287" id="1287">1287</a>
-<a href="#1288" id="1288">1288</a>
-<a href="#1289" id="1289">1289</a>
-<a href="#1290" id="1290">1290</a>
-<a href="#1291" id="1291">1291</a>
-<a href="#1292" id="1292">1292</a>
-<a href="#1293" id="1293">1293</a>
-<a href="#1294" id="1294">1294</a>
-<a href="#1295" id="1295">1295</a>
-<a href="#1296" id="1296">1296</a>
-<a href="#1297" id="1297">1297</a>
-<a href="#1298" id="1298">1298</a>
-<a href="#1299" id="1299">1299</a>
-<a href="#1300" id="1300">1300</a>
-<a href="#1301" id="1301">1301</a>
-<a href="#1302" id="1302">1302</a>
-<a href="#1303" id="1303">1303</a>
-<a href="#1304" id="1304">1304</a>
-<a href="#1305" id="1305">1305</a>
-<a href="#1306" id="1306">1306</a>
-<a href="#1307" id="1307">1307</a>
-<a href="#1308" id="1308">1308</a>
-<a href="#1309" id="1309">1309</a>
-<a href="#1310" id="1310">1310</a>
-<a href="#1311" id="1311">1311</a>
-<a href="#1312" id="1312">1312</a>
-<a href="#1313" id="1313">1313</a>
-<a href="#1314" id="1314">1314</a>
-<a href="#1315" id="1315">1315</a>
-<a href="#1316" id="1316">1316</a>
-<a href="#1317" id="1317">1317</a>
-<a href="#1318" id="1318">1318</a>
-<a href="#1319" id="1319">1319</a>
-<a href="#1320" id="1320">1320</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::panic;
 <span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap};
@@ -1364,20 +1284,7 @@
 
 <span class="kw">pub enum </span>DebugInstantiate&lt;<span class="lifetime">'a</span>&gt; {
     Building(),
-    Finalized(syn::Expr, syn::Expr, Rc&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;),
-}
-
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Clone <span class="kw">for </span>DebugInstantiate&lt;<span class="lifetime">'a</span>&gt; {
-    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
-        <span class="kw">match </span><span class="self">self </span>{
-            DebugInstantiate::Building() =&gt; {
-                <span class="macro">panic!</span>(<span class="string">"cannot clone building function"</span>)
-            }
-            DebugInstantiate::Finalized(sink, source, connect_fn) =&gt; {
-                DebugInstantiate::Finalized(sink.clone(), source.clone(), connect_fn.clone())
-            }
-        }
-    }
+    Finalized(syn::Expr, syn::Expr, Box&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;),
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; std::fmt::Debug <span class="kw">for </span>DebugInstantiate&lt;<span class="lifetime">'a</span>&gt; {
@@ -1396,7 +1303,7 @@
 }
 
 <span class="doccomment">/// A source in a Hydroflow+ graph, where data enters the graph.
-</span><span class="attr">#[derive(Clone, Debug)]
+</span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub enum </span>HfPlusSource {
     Stream(DebugExpr),
     Iter(DebugExpr),
@@ -1407,7 +1314,7 @@
 <span class="doccomment">/// An leaf in a Hydroflow+ graph, which is an pipeline that doesn't emit
 /// any downstream values. Traversals over the dataflow graph and
 /// generating Hydroflow IR start from leaves.
-</span><span class="attr">#[derive(Clone, Debug)]
+</span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub enum </span>HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt; {
     ForEach {
         f: DebugExpr,
@@ -1433,43 +1340,53 @@
         clusters: <span class="kw-2">&amp;</span>HashMap&lt;usize, D::Cluster&gt;,
     ) -&gt; HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt; {
         <span class="self">self</span>.transform_children(
-            |n, s| n.compile_network::&lt;D&gt;(compile_env, s, nodes, clusters),
+            |n, s| {
+                n.compile_network::&lt;D&gt;(compile_env, s, nodes, clusters);
+            },
             seen_tees,
         )
     }
 
     <span class="kw">pub fn </span>connect_network(<span class="self">self</span>, seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;) -&gt; HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt; {
-        <span class="self">self</span>.transform_children(|n, s| n.connect_network(s), seen_tees)
+        <span class="self">self</span>.transform_children(
+            |n, s| {
+                n.connect_network(s);
+            },
+            seen_tees,
+        )
     }
 
     <span class="kw">pub fn </span>transform_children(
         <span class="self">self</span>,
-        <span class="kw-2">mut </span>transform: <span class="kw">impl </span>FnMut(HfPlusNode&lt;<span class="lifetime">'a</span>&gt;, <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;) -&gt; HfPlusNode&lt;<span class="lifetime">'a</span>&gt;,
+        <span class="kw-2">mut </span>transform: <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut </span>HfPlusNode&lt;<span class="lifetime">'a</span>&gt;, <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;),
         seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;,
     ) -&gt; HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt; {
         <span class="kw">match </span><span class="self">self </span>{
-            HfPlusLeaf::ForEach { f, input } =&gt; HfPlusLeaf::ForEach {
-                f,
-                input: Box::new(transform(<span class="kw-2">*</span>input, seen_tees)),
-            },
-            HfPlusLeaf::DestSink { sink, input } =&gt; HfPlusLeaf::DestSink {
-                sink,
-                input: Box::new(transform(<span class="kw-2">*</span>input, seen_tees)),
-            },
+            HfPlusLeaf::ForEach { f, <span class="kw-2">mut </span>input } =&gt; {
+                transform(<span class="kw-2">&amp;mut </span>input, seen_tees);
+                HfPlusLeaf::ForEach { f, input }
+            }
+            HfPlusLeaf::DestSink { sink, <span class="kw-2">mut </span>input } =&gt; {
+                transform(<span class="kw-2">&amp;mut </span>input, seen_tees);
+                HfPlusLeaf::DestSink { sink, input }
+            }
             HfPlusLeaf::CycleSink {
                 ident,
                 location_kind,
-                input,
-            } =&gt; HfPlusLeaf::CycleSink {
-                ident,
-                location_kind,
-                input: Box::new(transform(<span class="kw-2">*</span>input, seen_tees)),
-            },
+                <span class="kw-2">mut </span>input,
+            } =&gt; {
+                transform(<span class="kw-2">&amp;mut </span>input, seen_tees);
+                HfPlusLeaf::CycleSink {
+                    ident,
+                    location_kind,
+                    input,
+                }
+            }
         }
     }
 
     <span class="kw">pub fn </span>emit(
-        <span class="self">self</span>,
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
         graph_builders: <span class="kw-2">&amp;mut </span>BTreeMap&lt;usize, FlatGraphBuilder&gt;,
         built_tees: <span class="kw-2">&amp;mut </span>HashMap&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;, (syn::Ident, usize)&gt;,
         next_stmt_id: <span class="kw-2">&amp;mut </span>usize,
@@ -1513,12 +1430,12 @@
                 };
 
                 <span class="macro">assert_eq!</span>(
-                    input_location_id, location_id,
+                    input_location_id, <span class="kw-2">*</span>location_id,
                     <span class="string">"cycle_sink location mismatch"
                 </span>);
 
                 graph_builders
-                    .entry(location_id)
+                    .entry(<span class="kw-2">*</span>location_id)
                     .or_default()
                     .add_statement(<span class="macro">parse_quote!</span> {
                         #ident = #input_ident;
@@ -1530,7 +1447,7 @@
 
 <span class="doccomment">/// An intermediate node in a Hydroflow+ graph, which consumes data
 /// from upstream nodes and emits data to downstream nodes.
-</span><span class="attr">#[derive(Clone, Debug)]
+</span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub enum </span>HfPlusNode&lt;<span class="lifetime">'a</span>&gt; {
     Placeholder,
 
@@ -1619,390 +1536,307 @@
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; HfPlusNode&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">pub fn </span>compile_network&lt;D: Deploy&lt;<span class="lifetime">'a</span>&gt; + <span class="lifetime">'a</span>&gt;(
-        <span class="self">self</span>,
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         compile_env: <span class="kw-2">&amp;</span>D::CompileEnv,
         seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;,
         nodes: <span class="kw-2">&amp;</span>HashMap&lt;usize, D::Process&gt;,
         clusters: <span class="kw-2">&amp;</span>HashMap&lt;usize, D::Cluster&gt;,
-    ) -&gt; HfPlusNode&lt;<span class="lifetime">'a</span>&gt; {
-        <span class="kw">match </span><span class="self">self</span>.transform_children(
+    ) {
+        <span class="self">self</span>.transform_children(
             |n, s| n.compile_network::&lt;D&gt;(compile_env, s, nodes, clusters),
             seen_tees,
-        ) {
-            HfPlusNode::Network {
-                from_location,
-                to_location,
-                serialize_pipeline,
-                instantiate_fn,
-                deserialize_pipeline,
-                input,
-            } =&gt; {
-                <span class="kw">let </span>(sink_expr, source_expr, connect_fn) = <span class="kw">match </span>instantiate_fn {
-                    DebugInstantiate::Building() =&gt; {
-                        <span class="kw">let </span>((sink, source), connect_fn) = <span class="kw">match </span>(from_location, to_location) {
-                            (LocationId::Process(from), LocationId::Process(to)) =&gt; {
-                                <span class="kw">let </span>from_node = nodes
-                                    .get(<span class="kw-2">&amp;</span>from)
-                                    .unwrap_or_else(|| {
-                                        <span class="macro">panic!</span>(
-                                            <span class="string">"A location used in the graph was not instantiated: {}"</span>,
-                                            from
-                                        )
-                                    })
-                                    .clone();
-                                <span class="kw">let </span>to_node = nodes
-                                    .get(<span class="kw-2">&amp;</span>to)
-                                    .unwrap_or_else(|| {
-                                        <span class="macro">panic!</span>(
-                                            <span class="string">"A location used in the graph was not instantiated: {}"</span>,
-                                            to
-                                        )
-                                    })
-                                    .clone();
+        );
 
-                                <span class="kw">let </span>sink_port = D::allocate_process_port(<span class="kw-2">&amp;</span>from_node);
-                                <span class="kw">let </span>source_port = D::allocate_process_port(<span class="kw-2">&amp;</span>to_node);
+        <span class="kw">if let </span>HfPlusNode::Network {
+            from_location,
+            to_location,
+            instantiate_fn,
+            ..
+        } = <span class="self">self
+        </span>{
+            <span class="kw">let </span>(sink_expr, source_expr, connect_fn) = <span class="kw">match </span>instantiate_fn {
+                DebugInstantiate::Building() =&gt; {
+                    <span class="kw">let </span>((sink, source), connect_fn) = <span class="kw">match </span>(from_location, to_location) {
+                        (LocationId::Process(from), LocationId::Process(to)) =&gt; {
+                            <span class="kw">let </span>from_node = nodes
+                                .get(from)
+                                .unwrap_or_else(|| {
+                                    <span class="macro">panic!</span>(
+                                        <span class="string">"A location used in the graph was not instantiated: {}"</span>,
+                                        from
+                                    )
+                                })
+                                .clone();
+                            <span class="kw">let </span>to_node = nodes
+                                .get(to)
+                                .unwrap_or_else(|| {
+                                    <span class="macro">panic!</span>(
+                                        <span class="string">"A location used in the graph was not instantiated: {}"</span>,
+                                        to
+                                    )
+                                })
+                                .clone();
 
-                                (
-                                    D::o2o_sink_source(
-                                        compile_env,
-                                        <span class="kw-2">&amp;</span>from_node,
-                                        <span class="kw-2">&amp;</span>sink_port,
-                                        <span class="kw-2">&amp;</span>to_node,
-                                        <span class="kw-2">&amp;</span>source_port,
-                                    ),
-                                    Rc::new(<span class="kw">move </span>|| {
-                                        D::o2o_connect(
-                                            <span class="kw-2">&amp;</span>from_node,
-                                            <span class="kw-2">&amp;</span>sink_port,
-                                            <span class="kw-2">&amp;</span>to_node,
-                                            <span class="kw-2">&amp;</span>source_port,
-                                        )
-                                    }) <span class="kw">as </span>Rc&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;,
-                                )
-                            }
-                            (LocationId::Process(from), LocationId::Cluster(to)) =&gt; {
-                                <span class="kw">let </span>from_node = nodes
-                                    .get(<span class="kw-2">&amp;</span>from)
-                                    .unwrap_or_else(|| {
-                                        <span class="macro">panic!</span>(
-                                            <span class="string">"A location used in the graph was not instantiated: {}"</span>,
-                                            from
-                                        )
-                                    })
-                                    .clone();
-                                <span class="kw">let </span>to_node = clusters
-                                    .get(<span class="kw-2">&amp;</span>to)
-                                    .unwrap_or_else(|| {
-                                        <span class="macro">panic!</span>(
-                                            <span class="string">"A location used in the graph was not instantiated: {}"</span>,
-                                            to
-                                        )
-                                    })
-                                    .clone();
+                            <span class="kw">let </span>sink_port = D::allocate_process_port(<span class="kw-2">&amp;</span>from_node);
+                            <span class="kw">let </span>source_port = D::allocate_process_port(<span class="kw-2">&amp;</span>to_node);
 
-                                <span class="kw">let </span>sink_port = D::allocate_process_port(<span class="kw-2">&amp;</span>from_node);
-                                <span class="kw">let </span>source_port = D::allocate_cluster_port(<span class="kw-2">&amp;</span>to_node);
+                            (
+                                D::o2o_sink_source(
+                                    compile_env,
+                                    <span class="kw-2">&amp;</span>from_node,
+                                    <span class="kw-2">&amp;</span>sink_port,
+                                    <span class="kw-2">&amp;</span>to_node,
+                                    <span class="kw-2">&amp;</span>source_port,
+                                ),
+                                Box::new(<span class="kw">move </span>|| {
+                                    D::o2o_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port)
+                                }) <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;,
+                            )
+                        }
+                        (LocationId::Process(from), LocationId::Cluster(to)) =&gt; {
+                            <span class="kw">let </span>from_node = nodes
+                                .get(from)
+                                .unwrap_or_else(|| {
+                                    <span class="macro">panic!</span>(
+                                        <span class="string">"A location used in the graph was not instantiated: {}"</span>,
+                                        from
+                                    )
+                                })
+                                .clone();
+                            <span class="kw">let </span>to_node = clusters
+                                .get(to)
+                                .unwrap_or_else(|| {
+                                    <span class="macro">panic!</span>(
+                                        <span class="string">"A location used in the graph was not instantiated: {}"</span>,
+                                        to
+                                    )
+                                })
+                                .clone();
 
-                                (
-                                    D::o2m_sink_source(
-                                        compile_env,
-                                        <span class="kw-2">&amp;</span>from_node,
-                                        <span class="kw-2">&amp;</span>sink_port,
-                                        <span class="kw-2">&amp;</span>to_node,
-                                        <span class="kw-2">&amp;</span>source_port,
-                                    ),
-                                    Rc::new(<span class="kw">move </span>|| {
-                                        D::o2m_connect(
-                                            <span class="kw-2">&amp;</span>from_node,
-                                            <span class="kw-2">&amp;</span>sink_port,
-                                            <span class="kw-2">&amp;</span>to_node,
-                                            <span class="kw-2">&amp;</span>source_port,
-                                        )
-                                    }) <span class="kw">as </span>Rc&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;,
-                                )
-                            }
-                            (LocationId::Cluster(from), LocationId::Process(to)) =&gt; {
-                                <span class="kw">let </span>from_node = clusters
-                                    .get(<span class="kw-2">&amp;</span>from)
-                                    .unwrap_or_else(|| {
-                                        <span class="macro">panic!</span>(
-                                            <span class="string">"A location used in the graph was not instantiated: {}"</span>,
-                                            from
-                                        )
-                                    })
-                                    .clone();
-                                <span class="kw">let </span>to_node = nodes
-                                    .get(<span class="kw-2">&amp;</span>to)
-                                    .unwrap_or_else(|| {
-                                        <span class="macro">panic!</span>(
-                                            <span class="string">"A location used in the graph was not instantiated: {}"</span>,
-                                            to
-                                        )
-                                    })
-                                    .clone();
+                            <span class="kw">let </span>sink_port = D::allocate_process_port(<span class="kw-2">&amp;</span>from_node);
+                            <span class="kw">let </span>source_port = D::allocate_cluster_port(<span class="kw-2">&amp;</span>to_node);
 
-                                <span class="kw">let </span>sink_port = D::allocate_cluster_port(<span class="kw-2">&amp;</span>from_node);
-                                <span class="kw">let </span>source_port = D::allocate_process_port(<span class="kw-2">&amp;</span>to_node);
+                            (
+                                D::o2m_sink_source(
+                                    compile_env,
+                                    <span class="kw-2">&amp;</span>from_node,
+                                    <span class="kw-2">&amp;</span>sink_port,
+                                    <span class="kw-2">&amp;</span>to_node,
+                                    <span class="kw-2">&amp;</span>source_port,
+                                ),
+                                Box::new(<span class="kw">move </span>|| {
+                                    D::o2m_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port)
+                                }) <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;,
+                            )
+                        }
+                        (LocationId::Cluster(from), LocationId::Process(to)) =&gt; {
+                            <span class="kw">let </span>from_node = clusters
+                                .get(from)
+                                .unwrap_or_else(|| {
+                                    <span class="macro">panic!</span>(
+                                        <span class="string">"A location used in the graph was not instantiated: {}"</span>,
+                                        from
+                                    )
+                                })
+                                .clone();
+                            <span class="kw">let </span>to_node = nodes
+                                .get(to)
+                                .unwrap_or_else(|| {
+                                    <span class="macro">panic!</span>(
+                                        <span class="string">"A location used in the graph was not instantiated: {}"</span>,
+                                        to
+                                    )
+                                })
+                                .clone();
 
-                                (
-                                    D::m2o_sink_source(
-                                        compile_env,
-                                        <span class="kw-2">&amp;</span>from_node,
-                                        <span class="kw-2">&amp;</span>sink_port,
-                                        <span class="kw-2">&amp;</span>to_node,
-                                        <span class="kw-2">&amp;</span>source_port,
-                                    ),
-                                    Rc::new(<span class="kw">move </span>|| {
-                                        D::m2o_connect(
-                                            <span class="kw-2">&amp;</span>from_node,
-                                            <span class="kw-2">&amp;</span>sink_port,
-                                            <span class="kw-2">&amp;</span>to_node,
-                                            <span class="kw-2">&amp;</span>source_port,
-                                        )
-                                    }) <span class="kw">as </span>Rc&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;,
-                                )
-                            }
-                            (LocationId::Cluster(from), LocationId::Cluster(to)) =&gt; {
-                                <span class="kw">let </span>from_node = clusters
-                                    .get(<span class="kw-2">&amp;</span>from)
-                                    .unwrap_or_else(|| {
-                                        <span class="macro">panic!</span>(
-                                            <span class="string">"A location used in the graph was not instantiated: {}"</span>,
-                                            from
-                                        )
-                                    })
-                                    .clone();
-                                <span class="kw">let </span>to_node = clusters
-                                    .get(<span class="kw-2">&amp;</span>to)
-                                    .unwrap_or_else(|| {
-                                        <span class="macro">panic!</span>(
-                                            <span class="string">"A location used in the graph was not instantiated: {}"</span>,
-                                            to
-                                        )
-                                    })
-                                    .clone();
+                            <span class="kw">let </span>sink_port = D::allocate_cluster_port(<span class="kw-2">&amp;</span>from_node);
+                            <span class="kw">let </span>source_port = D::allocate_process_port(<span class="kw-2">&amp;</span>to_node);
 
-                                <span class="kw">let </span>sink_port = D::allocate_cluster_port(<span class="kw-2">&amp;</span>from_node);
-                                <span class="kw">let </span>source_port = D::allocate_cluster_port(<span class="kw-2">&amp;</span>to_node);
+                            (
+                                D::m2o_sink_source(
+                                    compile_env,
+                                    <span class="kw-2">&amp;</span>from_node,
+                                    <span class="kw-2">&amp;</span>sink_port,
+                                    <span class="kw-2">&amp;</span>to_node,
+                                    <span class="kw-2">&amp;</span>source_port,
+                                ),
+                                Box::new(<span class="kw">move </span>|| {
+                                    D::m2o_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port)
+                                }) <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;,
+                            )
+                        }
+                        (LocationId::Cluster(from), LocationId::Cluster(to)) =&gt; {
+                            <span class="kw">let </span>from_node = clusters
+                                .get(from)
+                                .unwrap_or_else(|| {
+                                    <span class="macro">panic!</span>(
+                                        <span class="string">"A location used in the graph was not instantiated: {}"</span>,
+                                        from
+                                    )
+                                })
+                                .clone();
+                            <span class="kw">let </span>to_node = clusters
+                                .get(to)
+                                .unwrap_or_else(|| {
+                                    <span class="macro">panic!</span>(
+                                        <span class="string">"A location used in the graph was not instantiated: {}"</span>,
+                                        to
+                                    )
+                                })
+                                .clone();
 
-                                (
-                                    D::m2m_sink_source(
-                                        compile_env,
-                                        <span class="kw-2">&amp;</span>from_node,
-                                        <span class="kw-2">&amp;</span>sink_port,
-                                        <span class="kw-2">&amp;</span>to_node,
-                                        <span class="kw-2">&amp;</span>source_port,
-                                    ),
-                                    Rc::new(<span class="kw">move </span>|| {
-                                        D::m2m_connect(
-                                            <span class="kw-2">&amp;</span>from_node,
-                                            <span class="kw-2">&amp;</span>sink_port,
-                                            <span class="kw-2">&amp;</span>to_node,
-                                            <span class="kw-2">&amp;</span>source_port,
-                                        )
-                                    }) <span class="kw">as </span>Rc&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;,
-                                )
-                            }
-                        };
+                            <span class="kw">let </span>sink_port = D::allocate_cluster_port(<span class="kw-2">&amp;</span>from_node);
+                            <span class="kw">let </span>source_port = D::allocate_cluster_port(<span class="kw-2">&amp;</span>to_node);
 
-                        (sink, source, connect_fn)
-                    }
+                            (
+                                D::m2m_sink_source(
+                                    compile_env,
+                                    <span class="kw-2">&amp;</span>from_node,
+                                    <span class="kw-2">&amp;</span>sink_port,
+                                    <span class="kw-2">&amp;</span>to_node,
+                                    <span class="kw-2">&amp;</span>source_port,
+                                ),
+                                Box::new(<span class="kw">move </span>|| {
+                                    D::m2m_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port)
+                                }) <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;,
+                            )
+                        }
+                    };
 
-                    DebugInstantiate::Finalized(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">"network already finalized"</span>),
-                };
-
-                HfPlusNode::Network {
-                    from_location,
-                    to_location,
-                    serialize_pipeline,
-                    instantiate_fn: DebugInstantiate::Finalized(sink_expr, source_expr, connect_fn),
-                    deserialize_pipeline,
-                    input,
+                    (sink, source, connect_fn)
                 }
-            }
 
-            o =&gt; o,
+                DebugInstantiate::Finalized(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">"network already finalized"</span>),
+            };
+
+            <span class="kw-2">*</span>instantiate_fn = DebugInstantiate::Finalized(sink_expr, source_expr, connect_fn);
         }
     }
 
-    <span class="kw">pub fn </span>connect_network(<span class="self">self</span>, seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;) -&gt; HfPlusNode&lt;<span class="lifetime">'a</span>&gt; {
-        <span class="kw">match </span><span class="self">self</span>.transform_children(|n, s| n.connect_network(s), seen_tees) {
-            HfPlusNode::Network {
-                from_location,
-                to_location,
-                serialize_pipeline,
-                instantiate_fn,
-                deserialize_pipeline,
-                input,
-            } =&gt; {
-                <span class="kw">match </span>instantiate_fn {
-                    DebugInstantiate::Building() =&gt; <span class="macro">panic!</span>(<span class="string">"network not built"</span>),
+    <span class="kw">pub fn </span>connect_network(<span class="kw-2">&amp;mut </span><span class="self">self</span>, seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;) {
+        <span class="self">self</span>.transform_children(|n, s| n.connect_network(s), seen_tees);
+        <span class="kw">if let </span>HfPlusNode::Network { instantiate_fn, .. } = <span class="self">self </span>{
+            <span class="kw">match </span>instantiate_fn {
+                DebugInstantiate::Building() =&gt; <span class="macro">panic!</span>(<span class="string">"network not built"</span>),
 
-                    DebugInstantiate::Finalized(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw-2">ref </span>connect_fn) =&gt; {
-                        connect_fn();
-                    }
-                };
-
-                HfPlusNode::Network {
-                    from_location,
-                    to_location,
-                    serialize_pipeline,
-                    instantiate_fn,
-                    deserialize_pipeline,
-                    input,
+                DebugInstantiate::Finalized(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw-2">ref </span>connect_fn) =&gt; {
+                    connect_fn();
                 }
             }
-
-            o =&gt; o,
         }
     }
 
     <span class="kw">pub fn </span>transform_children(
-        <span class="self">self</span>,
-        <span class="kw-2">mut </span>transform: <span class="kw">impl </span>FnMut(HfPlusNode&lt;<span class="lifetime">'a</span>&gt;, <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;) -&gt; HfPlusNode&lt;<span class="lifetime">'a</span>&gt;,
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        <span class="kw-2">mut </span>transform: <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut </span>HfPlusNode&lt;<span class="lifetime">'a</span>&gt;, <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;),
         seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;,
-    ) -&gt; HfPlusNode&lt;<span class="lifetime">'a</span>&gt; {
+    ) {
         <span class="kw">match </span><span class="self">self </span>{
-            HfPlusNode::Placeholder =&gt; HfPlusNode::Placeholder,
+            HfPlusNode::Placeholder =&gt; {
+                <span class="macro">panic!</span>();
+            }
 
-            HfPlusNode::Source {
-                source,
-                location_kind,
-            } =&gt; HfPlusNode::Source {
-                source,
-                location_kind,
-            },
+            HfPlusNode::Source { .. } =&gt; {}
 
-            HfPlusNode::CycleSource {
-                ident,
-                location_kind,
-            } =&gt; HfPlusNode::CycleSource {
-                ident,
-                location_kind,
-            },
+            HfPlusNode::CycleSource { .. } =&gt; {}
 
             HfPlusNode::Tee { inner } =&gt; {
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(transformed) =
                     seen_tees.get(<span class="kw-2">&amp;</span>(inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;))
                 {
-                    HfPlusNode::Tee {
-                        inner: transformed.clone(),
-                    }
+                    <span class="kw-2">*</span>inner = transformed.clone();
                 } <span class="kw">else </span>{
                     <span class="kw">let </span>transformed_cell = Rc::new(RefCell::new(HfPlusNode::Placeholder));
                     seen_tees.insert(
                         inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;,
                         transformed_cell.clone(),
                     );
-                    <span class="kw">let </span>orig = inner.replace(HfPlusNode::Placeholder);
-                    <span class="kw-2">*</span>transformed_cell.borrow_mut() = transform(orig, seen_tees);
-                    HfPlusNode::Tee {
-                        inner: transformed_cell,
-                    }
+                    <span class="kw">let </span><span class="kw-2">mut </span>orig = inner.replace(HfPlusNode::Placeholder);
+                    transform(<span class="kw-2">&amp;mut </span>orig, seen_tees);
+                    <span class="kw-2">*</span>transformed_cell.borrow_mut() = orig;
+                    <span class="kw-2">*</span>inner = transformed_cell;
                 }
             }
 
-            HfPlusNode::Persist(inner) =&gt; {
-                HfPlusNode::Persist(Box::new(transform(<span class="kw-2">*</span>inner, seen_tees)))
+            HfPlusNode::Persist(inner) =&gt; transform(inner.as_mut(), seen_tees),
+            HfPlusNode::Delta(inner) =&gt; transform(inner.as_mut(), seen_tees),
+
+            HfPlusNode::Union(left, right) =&gt; {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
             }
-            HfPlusNode::Delta(inner) =&gt; HfPlusNode::Delta(Box::new(transform(<span class="kw-2">*</span>inner, seen_tees))),
+            HfPlusNode::CrossProduct(left, right) =&gt; {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            }
+            HfPlusNode::CrossSingleton(left, right) =&gt; {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            }
+            HfPlusNode::Join(left, right) =&gt; {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            }
+            HfPlusNode::Difference(left, right) =&gt; {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            }
+            HfPlusNode::AntiJoin(left, right) =&gt; {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            }
 
-            HfPlusNode::Union(left, right) =&gt; HfPlusNode::Union(
-                Box::new(transform(<span class="kw-2">*</span>left, seen_tees)),
-                Box::new(transform(<span class="kw-2">*</span>right, seen_tees)),
-            ),
-            HfPlusNode::CrossProduct(left, right) =&gt; HfPlusNode::CrossProduct(
-                Box::new(transform(<span class="kw-2">*</span>left, seen_tees)),
-                Box::new(transform(<span class="kw-2">*</span>right, seen_tees)),
-            ),
-            HfPlusNode::CrossSingleton(left, right) =&gt; HfPlusNode::CrossSingleton(
-                Box::new(transform(<span class="kw-2">*</span>left, seen_tees)),
-                Box::new(transform(<span class="kw-2">*</span>right, seen_tees)),
-            ),
-            HfPlusNode::Join(left, right) =&gt; HfPlusNode::Join(
-                Box::new(transform(<span class="kw-2">*</span>left, seen_tees)),
-                Box::new(transform(<span class="kw-2">*</span>right, seen_tees)),
-            ),
-            HfPlusNode::Difference(left, right) =&gt; HfPlusNode::Difference(
-                Box::new(transform(<span class="kw-2">*</span>left, seen_tees)),
-                Box::new(transform(<span class="kw-2">*</span>right, seen_tees)),
-            ),
-            HfPlusNode::AntiJoin(left, right) =&gt; HfPlusNode::AntiJoin(
-                Box::new(transform(<span class="kw-2">*</span>left, seen_tees)),
-                Box::new(transform(<span class="kw-2">*</span>right, seen_tees)),
-            ),
-
-            HfPlusNode::Map { f, input } =&gt; HfPlusNode::Map {
-                f,
-                input: Box::new(transform(<span class="kw-2">*</span>input, seen_tees)),
-            },
-            HfPlusNode::FlatMap { f, input } =&gt; HfPlusNode::FlatMap {
-                f,
-                input: Box::new(transform(<span class="kw-2">*</span>input, seen_tees)),
-            },
-            HfPlusNode::Filter { f, input } =&gt; HfPlusNode::Filter {
-                f,
-                input: Box::new(transform(<span class="kw-2">*</span>input, seen_tees)),
-            },
-            HfPlusNode::FilterMap { f, input } =&gt; HfPlusNode::FilterMap {
-                f,
-                input: Box::new(transform(<span class="kw-2">*</span>input, seen_tees)),
-            },
-            HfPlusNode::Sort(input) =&gt; HfPlusNode::Sort(Box::new(transform(<span class="kw-2">*</span>input, seen_tees))),
+            HfPlusNode::Map { input, .. } =&gt; {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::FlatMap { input, .. } =&gt; {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::Filter { input, .. } =&gt; {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::FilterMap { input, .. } =&gt; {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::Sort(input) =&gt; {
+                transform(input.as_mut(), seen_tees);
+            }
             HfPlusNode::DeferTick(input) =&gt; {
-                HfPlusNode::DeferTick(Box::new(transform(<span class="kw-2">*</span>input, seen_tees)))
+                transform(input.as_mut(), seen_tees);
             }
             HfPlusNode::Enumerate(input) =&gt; {
-                HfPlusNode::Enumerate(Box::new(transform(<span class="kw-2">*</span>input, seen_tees)))
+                transform(input.as_mut(), seen_tees);
             }
-            HfPlusNode::Inspect { f, input } =&gt; HfPlusNode::Inspect {
-                f,
-                input: Box::new(transform(<span class="kw-2">*</span>input, seen_tees)),
-            },
+            HfPlusNode::Inspect { input, .. } =&gt; {
+                transform(input.as_mut(), seen_tees);
+            }
 
-            HfPlusNode::Unique(input) =&gt; HfPlusNode::Unique(Box::new(transform(<span class="kw-2">*</span>input, seen_tees))),
+            HfPlusNode::Unique(input) =&gt; {
+                transform(input.as_mut(), seen_tees);
+            }
 
-            HfPlusNode::Fold { init, acc, input } =&gt; HfPlusNode::Fold {
-                init,
-                acc,
-                input: Box::new(transform(<span class="kw-2">*</span>input, seen_tees)),
-            },
-            HfPlusNode::FoldKeyed { init, acc, input } =&gt; HfPlusNode::FoldKeyed {
-                init,
-                acc,
-                input: Box::new(transform(<span class="kw-2">*</span>input, seen_tees)),
-            },
+            HfPlusNode::Fold { input, .. } =&gt; {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::FoldKeyed { input, .. } =&gt; {
+                transform(input.as_mut(), seen_tees);
+            }
 
-            HfPlusNode::Reduce { f, input } =&gt; HfPlusNode::Reduce {
-                f,
-                input: Box::new(transform(<span class="kw-2">*</span>input, seen_tees)),
-            },
-            HfPlusNode::ReduceKeyed { f, input } =&gt; HfPlusNode::ReduceKeyed {
-                f,
-                input: Box::new(transform(<span class="kw-2">*</span>input, seen_tees)),
-            },
+            HfPlusNode::Reduce { input, .. } =&gt; {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::ReduceKeyed { input, .. } =&gt; {
+                transform(input.as_mut(), seen_tees);
+            }
 
-            HfPlusNode::Network {
-                from_location,
-                to_location,
-                serialize_pipeline,
-                instantiate_fn,
-                deserialize_pipeline,
-                input,
-            } =&gt; HfPlusNode::Network {
-                from_location,
-                to_location,
-                serialize_pipeline,
-                instantiate_fn,
-                deserialize_pipeline,
-                input: Box::new(transform(<span class="kw-2">*</span>input, seen_tees)),
-            },
+            HfPlusNode::Network { input, .. } =&gt; {
+                transform(input.as_mut(), seen_tees);
+            }
         }
     }
 
     <span class="kw">pub fn </span>emit(
-        <span class="self">self</span>,
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
         graph_builders: <span class="kw-2">&amp;mut </span>BTreeMap&lt;usize, FlatGraphBuilder&gt;,
         built_tees: <span class="kw-2">&amp;mut </span>HashMap&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;, (syn::Ident, usize)&gt;,
         next_stmt_id: <span class="kw-2">&amp;mut </span>usize,
@@ -2088,11 +1922,11 @@
                 };
 
                 graph_builders
-                    .entry(location_id)
+                    .entry(<span class="kw-2">*</span>location_id)
                     .or_default()
                     .add_statement(source_stmt);
 
-                (source_ident, location_id)
+                (source_ident, <span class="kw-2">*</span>location_id)
             }
 
             HfPlusNode::CycleSource {
@@ -2104,16 +1938,17 @@
                     LocationId::Cluster(id) =&gt; id,
                 };
 
-                (ident.clone(), location_id)
+                (ident.clone(), <span class="kw-2">*</span>location_id)
             }
 
             HfPlusNode::Tee { inner } =&gt; {
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(ret) = built_tees.get(<span class="kw-2">&amp;</span>(inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;)) {
                     ret.clone()
                 } <span class="kw">else </span>{
-                    <span class="kw">let </span>(inner_ident, inner_location_id) = inner
-                        .replace(HfPlusNode::Placeholder)
-                        .emit(graph_builders, built_tees, next_stmt_id);
+                    <span class="kw">let </span>(inner_ident, inner_location_id) =
+                        inner
+                            .borrow()
+                            .emit(graph_builders, built_tees, next_stmt_id);
 
                     <span class="kw">let </span>tee_id = <span class="kw-2">*</span>next_stmt_id;
                     <span class="kw-2">*</span>next_stmt_id += <span class="number">1</span>;
@@ -2213,17 +2048,19 @@
                     <span class="macro">unreachable!</span>()
                 };
 
-                <span class="kw">let </span>(left_inner, left_was_persist) = <span class="kw">if let </span>HfPlusNode::Persist(left) = <span class="kw-2">*</span>left {
-                    (left, <span class="bool-val">true</span>)
-                } <span class="kw">else </span>{
-                    (left, <span class="bool-val">false</span>)
-                };
+                <span class="kw">let </span>(left_inner, left_was_persist) =
+                    <span class="kw">if let </span>HfPlusNode::Persist(left) = left.as_ref() {
+                        (left, <span class="bool-val">true</span>)
+                    } <span class="kw">else </span>{
+                        (left, <span class="bool-val">false</span>)
+                    };
 
-                <span class="kw">let </span>(right_inner, right_was_persist) = <span class="kw">if let </span>HfPlusNode::Persist(right) = <span class="kw-2">*</span>right {
-                    (right, <span class="bool-val">true</span>)
-                } <span class="kw">else </span>{
-                    (right, <span class="bool-val">false</span>)
-                };
+                <span class="kw">let </span>(right_inner, right_was_persist) =
+                    <span class="kw">if let </span>HfPlusNode::Persist(right) = right.as_ref() {
+                        (right, <span class="bool-val">true</span>)
+                    } <span class="kw">else </span>{
+                        (right, <span class="bool-val">false</span>)
+                    };
 
                 <span class="kw">let </span>(left_ident, left_location_id) =
                     left_inner.emit(graph_builders, built_tees, next_stmt_id);
@@ -2290,7 +2127,8 @@
                     <span class="macro">unreachable!</span>()
                 };
 
-                <span class="kw">let </span>(right, right_was_persist) = <span class="kw">if let </span>HfPlusNode::Persist(right) = <span class="kw-2">*</span>right {
+                <span class="kw">let </span>(right, right_was_persist) = <span class="kw">if let </span>HfPlusNode::Persist(right) = right.as_ref()
+                {
                     (right, <span class="bool-val">true</span>)
                 } <span class="kw">else </span>{
                     (right, <span class="bool-val">false</span>)
@@ -2508,7 +2346,8 @@
                     <span class="macro">unreachable!</span>()
                 };
 
-                <span class="kw">let </span>(input, input_was_persist) = <span class="kw">if let </span>HfPlusNode::Persist(input) = <span class="kw-2">*</span>input {
+                <span class="kw">let </span>(input, input_was_persist) = <span class="kw">if let </span>HfPlusNode::Persist(input) = input.as_ref()
+                {
                     (input, <span class="bool-val">true</span>)
                 } <span class="kw">else </span>{
                     (input, <span class="bool-val">false</span>)
@@ -2549,7 +2388,8 @@
                     <span class="macro">unreachable!</span>()
                 };
 
-                <span class="kw">let </span>(input, input_was_persist) = <span class="kw">if let </span>HfPlusNode::Persist(input) = <span class="kw-2">*</span>input {
+                <span class="kw">let </span>(input, input_was_persist) = <span class="kw">if let </span>HfPlusNode::Persist(input) = input.as_ref()
+                {
                     (input, <span class="bool-val">true</span>)
                 } <span class="kw">else </span>{
                     (input, <span class="bool-val">false</span>)
@@ -2616,7 +2456,7 @@
                     LocationId::Cluster(id) =&gt; id,
                 };
 
-                <span class="kw">let </span>receiver_builder = graph_builders.entry(to_id).or_default();
+                <span class="kw">let </span>receiver_builder = graph_builders.entry(<span class="kw-2">*</span>to_id).or_default();
                 <span class="kw">let </span>receiver_stream_id = <span class="kw-2">*</span>next_stmt_id;
                 <span class="kw-2">*</span>next_stmt_id += <span class="number">1</span>;
 
@@ -2633,7 +2473,7 @@
                     });
                 }
 
-                (receiver_stream_ident, to_id)
+                (receiver_stream_ident, <span class="kw-2">*</span>to_id)
             }
         }
     }

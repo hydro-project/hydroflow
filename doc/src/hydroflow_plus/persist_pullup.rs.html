@@ -79,18 +79,36 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::ir::<span class="kw-2">*</span>;
 
-<span class="kw">fn </span>persist_pullup_node&lt;<span class="lifetime">'a</span>&gt;(node: HfPlusNode&lt;<span class="lifetime">'a</span>&gt;, seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;) -&gt; HfPlusNode&lt;<span class="lifetime">'a</span>&gt; {
-    <span class="kw">match </span>node.transform_children(persist_pullup_node, seen_tees) {
-        HfPlusNode::Map {
+<span class="kw">fn </span>persist_pullup_node&lt;<span class="lifetime">'a</span>&gt;(node: <span class="kw-2">&amp;mut </span>HfPlusNode&lt;<span class="lifetime">'a</span>&gt;, seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;) {
+    node.transform_children(persist_pullup_node, seen_tees);
+    <span class="kw">if let </span>HfPlusNode::Map {
+        f: <span class="kw">_</span>,
+        input: <span class="kw">box </span>HfPlusNode::Persist(<span class="kw">_</span>),
+    } = node
+    {
+        <span class="kw">if let </span>HfPlusNode::Map {
             f,
             input: <span class="kw">box </span>HfPlusNode::Persist(behind_persist),
-        } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::Map {
-            f,
-            input: behind_persist,
-        })),
-        o =&gt; o,
+        } = std::mem::replace(node, HfPlusNode::Placeholder)
+        {
+            <span class="kw-2">*</span>node = HfPlusNode::Persist(Box::new(HfPlusNode::Map {
+                f,
+                input: behind_persist,
+            }));
+        } <span class="kw">else </span>{
+            <span class="macro">unreachable!</span>()
+        }
     }
 }
 

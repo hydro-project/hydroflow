@@ -548,7 +548,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         on: <span class="kw-2">&amp;</span>L,
         interval: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Duration&gt; + Copy + <span class="lifetime">'a</span>,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, hydroflow::tokio::time::Instant, Async, L&gt; {
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (), Async, L&gt; {
         <span class="kw">let </span>interval = interval.splice();
 
         Stream::new(

@@ -183,7 +183,7 @@
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>build_inner(ir: Vec&lt;HfPlusLeaf&gt;) -&gt; BTreeMap&lt;usize, HydroflowGraph&gt; {
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>build_inner(ir: <span class="kw-2">&amp;mut </span>Vec&lt;HfPlusLeaf&gt;) -&gt; BTreeMap&lt;usize, HydroflowGraph&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>builders = BTreeMap::new();
     <span class="kw">let </span><span class="kw-2">mut </span>built_tees = HashMap::new();
     <span class="kw">let </span><span class="kw-2">mut </span>next_stmt_id = <span class="number">0</span>;
@@ -206,7 +206,7 @@
         <span class="self">self</span>.used = <span class="bool-val">true</span>;
 
         HfCompiled {
-            hydroflow_ir: build_inner(std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.ir)),
+            hydroflow_ir: build_inner(<span class="kw-2">&amp;mut </span><span class="self">self</span>.ir),
             extra_stmts: BTreeMap::new(),
             _phantom: PhantomData,
         }

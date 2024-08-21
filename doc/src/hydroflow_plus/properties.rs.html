@@ -159,19 +159,19 @@
 // TODO add a test that verifies the space of possible graphs after rewrites is correct for each property
 
 </span><span class="kw">fn </span>properties_optimize_node&lt;<span class="lifetime">'a</span>&gt;(
-    node: HfPlusNode&lt;<span class="lifetime">'a</span>&gt;,
+    node: <span class="kw-2">&amp;mut </span>HfPlusNode&lt;<span class="lifetime">'a</span>&gt;,
     db: <span class="kw-2">&amp;</span>PropertyDatabase,
     seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;,
-) -&gt; HfPlusNode&lt;<span class="lifetime">'a</span>&gt; {
-    <span class="kw">match </span>node.transform_children(
+) {
+    node.transform_children(
         |node, seen_tees| properties_optimize_node(node, db, seen_tees),
         seen_tees,
-    ) {
-        HfPlusNode::ReduceKeyed { f, input } <span class="kw">if </span>db.is_tagged_commutative(<span class="kw-2">&amp;</span>f.<span class="number">0</span>) =&gt; {
+    );
+    <span class="kw">match </span>node {
+        HfPlusNode::ReduceKeyed { f, .. } <span class="kw">if </span>db.is_tagged_commutative(<span class="kw-2">&amp;</span>f.<span class="number">0</span>) =&gt; {
             <span class="macro">dbg!</span>(<span class="string">"IDENTIFIED COMMUTATIVE OPTIMIZATION for {:?}"</span>, <span class="kw-2">&amp;</span>f);
-            HfPlusNode::ReduceKeyed { f, input }
         }
-        o =&gt; o,
+        <span class="kw">_ </span>=&gt; {}
     }
 }
 
