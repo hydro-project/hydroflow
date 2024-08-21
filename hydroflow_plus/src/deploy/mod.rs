@@ -142,11 +142,11 @@ impl<
 }
 
 pub trait ProcessSpec<'a, D: LocalDeploy<'a> + ?Sized> {
-    fn build(self, id: usize) -> D::Process;
+    fn build(self, id: usize, name_hint: &str) -> D::Process;
 }
 
 pub trait ClusterSpec<'a, D: LocalDeploy<'a> + ?Sized> {
-    fn build(self, id: usize) -> D::Cluster;
+    fn build(self, id: usize, name_hint: &str) -> D::Cluster;
 }
 
 pub trait Node {
@@ -163,5 +163,6 @@ pub trait Node {
         env: &mut Self::InstantiateEnv,
         meta: &mut Self::Meta,
         graph: HydroflowGraph,
+        extra_stmts: Vec<syn::Stmt>,
     );
 }
