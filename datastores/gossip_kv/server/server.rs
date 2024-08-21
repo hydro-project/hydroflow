@@ -62,7 +62,7 @@ where
         // Setup seed nodes.
         seed_nodes = source_iter(seed_nodes)
            -> inspect( |seed_node| info!("Adding seed node: {:?}", seed_node))
-           -> persist()
+           -> persist::<'static>()
            -> null();
 
         outbound_messages =
