@@ -250,6 +250,7 @@ impl Node for CLIRuntimeNode {
         _env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
         _graph: HydroflowGraph,
+        _extra_stmts: Vec<syn::Stmt>,
     ) {
         panic!(".deploy() cannot be called on a CLIRuntimeNode");
     }
@@ -278,13 +279,14 @@ impl Node for CLIRuntimeCluster {
         _env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
         _graph: HydroflowGraph,
+        _extra_stmts: Vec<syn::Stmt>,
     ) {
         panic!(".deploy() cannot be called on a CLIRuntimeCluster");
     }
 }
 
 impl<'a> ProcessSpec<'a, CLIRuntime> for () {
-    fn build(self, _id: usize) -> CLIRuntimeNode {
+    fn build(self, _id: usize, _name_hint: &str) -> CLIRuntimeNode {
         CLIRuntimeNode {
             next_port: Rc::new(RefCell::new(0)),
         }
@@ -292,7 +294,7 @@ impl<'a> ProcessSpec<'a, CLIRuntime> for () {
 }
 
 impl<'cli> ClusterSpec<'cli, CLIRuntime> for () {
-    fn build(self, _id: usize) -> CLIRuntimeCluster {
+    fn build(self, _id: usize, _name_hint: &str) -> CLIRuntimeCluster {
         CLIRuntimeCluster {
             next_port: Rc::new(RefCell::new(0)),
         }
