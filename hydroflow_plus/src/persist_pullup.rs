@@ -1,15 +1,24 @@
 use crate::ir::*;
 
-fn persist_pullup_node<'a>(node: HfPlusNode<'a>, seen_tees: &mut SeenTees<'a>) -> HfPlusNode<'a> {
-    match node.transform_children(persist_pullup_node, seen_tees) {
-        HfPlusNode::Map {
+fn persist_pullup_node<'a>(node: &mut HfPlusNode<'a>, seen_tees: &mut SeenTees<'a>) {
+    node.transform_children(persist_pullup_node, seen_tees);
+    if let HfPlusNode::Map {
+        f: _,
+        input: box HfPlusNode::Persist(_),
+    } = node
+    {
+        if let HfPlusNode::Map {
             f,
             input: box HfPlusNode::Persist(behind_persist),
-        } => HfPlusNode::Persist(Box::new(HfPlusNode::Map {
-            f,
-            input: behind_persist,
-        })),
-        o => o,
+        } = std::mem::replace(node, HfPlusNode::Placeholder)
+        {
+            *node = HfPlusNode::Persist(Box::new(HfPlusNode::Map {
+                f,
+                input: behind_persist,
+            }));
+        } else {
+            unreachable!()
+        }
     }
 }
 

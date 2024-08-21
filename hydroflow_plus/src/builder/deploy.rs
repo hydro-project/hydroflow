@@ -44,7 +44,7 @@ impl<'a, D: Deploy<'a>> DeployFlow<'a, D> {
         self.used = true;
 
         let mut seen_tees: HashMap<_, _> = HashMap::new();
-        let ir_leaves_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
+        let mut ir_leaves_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
             .into_iter()
             .map(|leaf| leaf.compile_network::<D>(env, &mut seen_tees, &self.nodes, &self.clusters))
             .collect();
@@ -81,7 +81,7 @@ impl<'a, D: Deploy<'a>> DeployFlow<'a, D> {
         }
 
         HfCompiled {
-            hydroflow_ir: build_inner(ir_leaves_networked),
+            hydroflow_ir: build_inner(&mut ir_leaves_networked),
             extra_stmts,
             _phantom: PhantomData,
         }
@@ -94,7 +94,7 @@ impl<'a, D: Deploy<'a, CompileEnv = ()>> DeployFlow<'a, D> {
         self.used = true;
 
         let mut seen_tees_instantiate: HashMap<_, _> = HashMap::new();
-        let ir_leaves_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
+        let mut ir_leaves_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
             .into_iter()
             .map(|leaf| {
                 leaf.compile_network::<D>(
@@ -106,7 +106,7 @@ impl<'a, D: Deploy<'a, CompileEnv = ()>> DeployFlow<'a, D> {
             })
             .collect();
 
-        let mut compiled = build_inner(ir_leaves_networked.clone());
+        let mut compiled = build_inner(&mut ir_leaves_networked);
         let mut meta = D::Meta::default();
 
         let (mut processes, mut clusters) = (

@@ -46,7 +46,7 @@ impl<'a> BuiltFlow<'a> {
     }
 }
 
-pub(crate) fn build_inner(ir: Vec<HfPlusLeaf>) -> BTreeMap<usize, HydroflowGraph> {
+pub(crate) fn build_inner(ir: &mut Vec<HfPlusLeaf>) -> BTreeMap<usize, HydroflowGraph> {
     let mut builders = BTreeMap::new();
     let mut built_tees = HashMap::new();
     let mut next_stmt_id = 0;
@@ -69,7 +69,7 @@ impl<'a> BuiltFlow<'a> {
         self.used = true;
 
         HfCompiled {
-            hydroflow_ir: build_inner(std::mem::take(&mut self.ir)),
+            hydroflow_ir: build_inner(&mut self.ir),
             extra_stmts: BTreeMap::new(),
             _phantom: PhantomData,
         }

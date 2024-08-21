@@ -74,11 +74,19 @@ impl<'a, T: Clone, W, N: Location> Clone for Stream<'a, T, W, N> {
             };
         }
 
-        Stream::new(
-            self.location_kind,
-            self.ir_leaves.clone(),
-            self.ir_node.borrow().clone(),
-        )
+        if let HfPlusNode::Tee { inner } = self.ir_node.borrow().deref() {
+            Stream {
+                location_kind: self.location_kind,
+                ir_leaves: self.ir_leaves.clone(),
+                ir_node: HfPlusNode::Tee {
+                    inner: inner.clone(),
+                }
+                .into(),
+                _phantom: PhantomData,
+            }
+        } else {
+            unreachable!()
+        }
     }
 }
 
