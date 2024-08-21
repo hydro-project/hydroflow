@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use hydro_deploy::custom_service::CustomClientPort;
+use hydro_deploy::hydroflow_crate::perf_options::PerfOptions;
 use hydro_deploy::hydroflow_crate::ports::{
     DemuxSink, HydroflowSink, HydroflowSource, TaggedSource,
 };
@@ -11,11 +12,13 @@ use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{Deployment, Host, HydroflowCrate};
 use hydroflow_plus::deploy::{ClusterSpec, Deploy, Node, ProcessSpec};
 use hydroflow_plus::lang::graph::HydroflowGraph;
-use stageleft::internal::syn::parse_quote;
-use stageleft::q;
+use sha2::{Digest, Sha256};
+use stageleft::Quoted;
 use tokio::sync::RwLock;
 
 use super::HydroflowPlusMeta;
+use crate::deploy_runtime::*;
+use crate::trybuild::{compile_graph_trybuild, create_trybuild};
 
 pub struct HydroDeploy {}
 
@@ -40,11 +43,13 @@ impl<'a> Deploy<'a> for HydroDeploy {
     fn o2o_sink_source(
         _env: &(),
         _p1: &Self::Process,
-        _p1_port: &Self::ProcessPort,
+        p1_port: &Self::ProcessPort,
         _p2: &Self::Process,
-        _p2_port: &Self::ProcessPort,
+        p2_port: &Self::ProcessPort,
     ) -> (syn::Expr, syn::Expr) {
-        (parse_quote!(null), parse_quote!(null))
+        let p1_port = p1_port.port.as_str();
+        let p2_port = p2_port.port.as_str();
+        deploy_o2o(p1_port, p2_port)
     }
 
     fn o2o_connect(
@@ -73,11 +78,13 @@ impl<'a> Deploy<'a> for HydroDeploy {
     fn o2m_sink_source(
         _env: &(),
         _p1: &Self::Process,
-        _p1_port: &Self::ProcessPort,
+        p1_port: &Self::ProcessPort,
         _c2: &Self::Cluster,
-        _c2_port: &Self::ClusterPort,
+        c2_port: &Self::ClusterPort,
     ) -> (syn::Expr, syn::Expr) {
-        (parse_quote!(null), parse_quote!(null))
+        let p1_port = p1_port.port.as_str();
+        let c2_port = c2_port.port.as_str();
+        deploy_o2m(p1_port, c2_port)
     }
 
     fn o2m_connect(
@@ -116,11 +123,13 @@ impl<'a> Deploy<'a> for HydroDeploy {
     fn m2o_sink_source(
         _env: &(),
         _c1: &Self::Cluster,
-        _c1_port: &Self::ClusterPort,
+        c1_port: &Self::ClusterPort,
         _p2: &Self::Process,
-        _p2_port: &Self::ProcessPort,
+        p2_port: &Self::ProcessPort,
     ) -> (syn::Expr, syn::Expr) {
-        (parse_quote!(null), parse_quote!(null))
+        let c1_port = c1_port.port.as_str();
+        let p2_port = p2_port.port.as_str();
+        deploy_m2o(c1_port, p2_port)
     }
 
     fn m2o_connect(
@@ -155,11 +164,13 @@ impl<'a> Deploy<'a> for HydroDeploy {
     fn m2m_sink_source(
         _env: &(),
         _c1: &Self::Cluster,
-        _c1_port: &Self::ClusterPort,
+        c1_port: &Self::ClusterPort,
         _c2: &Self::Cluster,
-        _c2_port: &Self::ClusterPort,
+        c2_port: &Self::ClusterPort,
     ) -> (syn::Expr, syn::Expr) {
-        (parse_quote!(null), parse_quote!(null))
+        let c1_port = c1_port.port.as_str();
+        let c2_port = c2_port.port.as_str();
+        deploy_m2m(c1_port, c2_port)
     }
 
     fn m2m_connect(
@@ -202,13 +213,13 @@ impl<'a> Deploy<'a> for HydroDeploy {
 
     fn cluster_ids(
         _env: &Self::CompileEnv,
-        _of_cluster: usize,
-    ) -> impl stageleft::Quoted<'a, &'a Vec<u32>> + Copy + 'a {
-        q!(panic!())
+        of_cluster: usize,
+    ) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
+        cluster_members(of_cluster)
     }
 
-    fn cluster_self_id(_env: &Self::CompileEnv) -> impl stageleft::Quoted<'a, u32> + Copy + 'a {
-        q!(panic!())
+    fn cluster_self_id(_env: &Self::CompileEnv) -> impl Quoted<'a, u32> + Copy + 'a {
+        cluster_self_id()
     }
 }
 
@@ -246,10 +257,84 @@ pub trait DeployCrateWrapper {
 }
 
 #[derive(Clone)]
+pub struct TrybuildHost {
+    pub host: Arc<dyn Host>,
+    pub display_name: Option<String>,
+    pub rustflags: Option<String>,
+    pub perf: Option<PerfOptions>,
+    pub name_hint: Option<String>,
+    pub cluster_idx: Option<usize>,
+}
+
+impl TrybuildHost {
+    pub fn new(host: Arc<dyn Host>) -> Self {
+        Self {
+            host,
+            display_name: None,
+            rustflags: None,
+            perf: None,
+            name_hint: None,
+            cluster_idx: None,
+        }
+    }
+
+    pub fn display_name(self, name: impl Into<String>) -> Self {
+        if self.display_name.is_some() {
+            panic!("display_name already set");
+        }
+
+        Self {
+            display_name: Some(name.into()),
+            ..self
+        }
+    }
+
+    pub fn rustflags(self, rustflags: impl Into<String>) -> Self {
+        if self.rustflags.is_some() {
+            panic!("rustflags already set");
+        }
+
+        Self {
+            rustflags: Some(rustflags.into()),
+            ..self
+        }
+    }
+
+    pub fn perf(self, perf: PerfOptions) -> Self {
+        if self.perf.is_some() {
+            panic!("perf already set");
+        }
+
+        Self {
+            perf: Some(perf),
+            ..self
+        }
+    }
+}
+
+impl From<Arc<dyn Host>> for TrybuildHost {
+    fn from(h: Arc<dyn Host>) -> Self {
+        Self {
+            host: h,
+            display_name: None,
+            rustflags: None,
+            perf: None,
+            name_hint: None,
+            cluster_idx: None,
+        }
+    }
+}
+
+pub enum CrateOrTrybuild {
+    Crate(HydroflowCrate),
+    Trybuild(TrybuildHost),
+}
+
+#[derive(Clone)]
 pub struct DeployNode {
     id: usize,
     next_port: Rc<RefCell<usize>>,
-    node_fn: Rc<RefCell<Option<HydroflowCrate>>>,
+    service_spec: Rc<RefCell<Option<CrateOrTrybuild>>>,
     underlying: Rc<RefCell<Option<Arc<RwLock<HydroflowCrateService>>>>>,
 }
 
@@ -318,10 +403,41 @@ impl Node for DeployNode {
         &self,
         env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
-        _graph: HydroflowGraph,
+        graph: HydroflowGraph,
+        extra_stmts: Vec<syn::Stmt>,
     ) {
-        *self.underlying.borrow_mut() =
-            Some(env.add_service(self.node_fn.borrow_mut().take().unwrap()));
+        let service = match self.service_spec.borrow_mut().take().unwrap() {
+            CrateOrTrybuild::Crate(c) => c,
+            CrateOrTrybuild::Trybuild(trybuild) => {
+                let source_ast = compile_graph_trybuild(graph, extra_stmts);
+
+                let source_dir = trybuild::cargo::manifest_dir().unwrap();
+                let source_manifest = trybuild::dependencies::get_manifest(&source_dir).unwrap();
+                let crate_name = &source_manifest.package.name.to_string().replace("-", "_");
+                let source = prettyplease::unparse(&source_ast)
+                    .to_string()
+                    .replace(crate_name, &format!("{crate_name}::__staged"))
+                    .replace("crate::__staged", &format!("{crate_name}::__staged"));
+
+                let mut hasher = Sha256::new();
+                hasher.update(&source);
+                let hash = format!("{:X}", hasher.finalize())
+                    .chars()
+                    .take(8)
+                    .collect::<String>();
+
+                let bin_name = if let Some(name_hint) = &trybuild.name_hint {
+                    format!("{}_{}", clean_name_hint(name_hint), &hash)
+                } else {
+                    hash
+                };
+
+                let (dir, target_dir, features) = create_trybuild(&source, &bin_name).unwrap();
+                create_trybuild_service(trybuild, &dir, &target_dir, &features, &bin_name)
+            }
+        };
+
+        *self.underlying.borrow_mut() = Some(env.add_service(service));
     }
 }
 
@@ -340,8 +456,9 @@ impl DeployCrateWrapper for DeployClusterNode {
 pub struct DeployCluster {
     id: usize,
     next_port: Rc<RefCell<usize>>,
-    cluster_fn: Rc<RefCell<Option<Vec<HydroflowCrate>>>>,
+    cluster_spec: Rc<RefCell<Option<Vec<CrateOrTrybuild>>>>,
     members: Rc<RefCell<Vec<DeployClusterNode>>>,
+    name_hint: Option<String>,
 }
 
 impl DeployCluster {
@@ -369,15 +486,67 @@ impl Node for DeployCluster {
         &self,
         env: &mut Self::InstantiateEnv,
         meta: &mut Self::Meta,
-        _graph: HydroflowGraph,
+        graph: HydroflowGraph,
+        extra_stmts: Vec<syn::Stmt>,
     ) {
+        let has_trybuild = self
+            .cluster_spec
+            .borrow()
+            .as_ref()
+            .unwrap()
+            .iter()
+            .any(|spec| matches!(spec, CrateOrTrybuild::Trybuild { .. }));
+
+        let maybe_trybuild = if has_trybuild {
+            let source_ast = compile_graph_trybuild(graph, extra_stmts);
+
+            let source_dir = trybuild::cargo::manifest_dir().unwrap();
+            let source_manifest = trybuild::dependencies::get_manifest(&source_dir).unwrap();
+            let crate_name = &source_manifest.package.name.to_string().replace("-", "_");
+            let source = prettyplease::unparse(&source_ast)
+                .to_string()
+                .replace(crate_name, &format!("{crate_name}::__staged"))
+                .replace("crate::__staged", &format!("{crate_name}::__staged"));
+
+            let mut hasher = Sha256::new();
+            hasher.update(&source);
+            let hash = format!("{:X}", hasher.finalize())
+                .chars()
+                .take(8)
+                .collect::<String>();
+
+            let bin_name = if let Some(name_hint) = &self.name_hint {
+                format!("{}_{}", clean_name_hint(name_hint), &hash)
+            } else {
+                hash
+            };
+
+            Some((
+                bin_name.clone(),
+                create_trybuild(&source, &bin_name).unwrap(),
+            ))
+        } else {
+            None
+        };
+
         let cluster_nodes = self
-            .cluster_fn
+            .cluster_spec
             .borrow_mut()
             .take()
             .unwrap()
             .into_iter()
-            .map(|c| env.add_service(c))
+            .map(|spec| {
+                let service = match spec {
+                    CrateOrTrybuild::Crate(c) => c,
+                    CrateOrTrybuild::Trybuild(trybuild) => {
+                        let (bin_name, (dir, target_dir, features)) =
+                            maybe_trybuild.as_ref().unwrap();
+                        create_trybuild_service(trybuild, dir, target_dir, features, bin_name)
+                    }
+                };
+
+                env.add_service(service)
+            })
             .collect::<Vec<_>>();
         meta.insert(self.id, (0..(cluster_nodes.len() as u32)).collect());
         *self.members.borrow_mut() = cluster_nodes
@@ -408,11 +577,23 @@ impl DeployProcessSpec {
 }
 
 impl<'a> ProcessSpec<'a, HydroDeploy> for DeployProcessSpec {
-    fn build(self, id: usize) -> DeployNode {
+    fn build(self, id: usize, _name_hint: &str) -> DeployNode {
         DeployNode {
             id,
             next_port: Rc::new(RefCell::new(0)),
-            node_fn: Rc::new(RefCell::new(Some(self.0))),
+            service_spec: Rc::new(RefCell::new(Some(CrateOrTrybuild::Crate(self.0)))),
+            underlying: Rc::new(RefCell::new(None)),
+        }
+    }
+}
+
+impl<'a> ProcessSpec<'a, HydroDeploy> for TrybuildHost {
+    fn build(mut self, id: usize, name_hint: &str) -> DeployNode {
+        self.name_hint = Some(format!("{} (process {id})", name_hint));
+        DeployNode {
+            id,
+            next_port: Rc::new(RefCell::new(0)),
+            service_spec: Rc::new(RefCell::new(Some(CrateOrTrybuild::Trybuild(self)))),
             underlying: Rc::new(RefCell::new(None)),
         }
     }
@@ -428,12 +609,85 @@ impl DeployClusterSpec {
 }
 
 impl<'a> ClusterSpec<'a, HydroDeploy> for DeployClusterSpec {
-    fn build(self, id: usize) -> DeployCluster {
+    fn build(self, id: usize, _name_hint: &str) -> DeployCluster {
         DeployCluster {
             id,
             next_port: Rc::new(RefCell::new(0)),
-            cluster_fn: Rc::new(RefCell::new(Some(self.0))),
+            cluster_spec: Rc::new(RefCell::new(Some(
+                self.0.into_iter().map(CrateOrTrybuild::Crate).collect(),
+            ))),
             members: Rc::new(RefCell::new(vec![])),
+            name_hint: None,
         }
     }
+}
+
+impl<'a> ClusterSpec<'a, HydroDeploy> for Vec<TrybuildHost> {
+    fn build(self, id: usize, name_hint: &str) -> DeployCluster {
+        let name_hint = format!("{} (cluster {id})", name_hint);
+        DeployCluster {
+            id,
+            next_port: Rc::new(RefCell::new(0)),
+            cluster_spec: Rc::new(RefCell::new(Some(
+                self.into_iter()
+                    .enumerate()
+                    .map(|(idx, mut b)| {
+                        b.name_hint = Some(name_hint.clone());
+                        b.cluster_idx = Some(idx);
+                        CrateOrTrybuild::Trybuild(b)
+                    })
+                    .collect(),
+            ))),
+            members: Rc::new(RefCell::new(vec![])),
+            name_hint: Some(name_hint),
+        }
+    }
+}
+
+fn clean_name_hint(name_hint: &str) -> String {
+    name_hint
+        .replace("::", "__")
+        .replace(" ", "_")
+        .replace(",", "_")
+        .replace("<", "_")
+        .replace(">", "")
+        .replace("(", "")
+        .replace(")", "")
+}
+
+fn create_trybuild_service(
+    trybuild: TrybuildHost,
+    dir: &std::path::PathBuf,
+    target_dir: &std::path::PathBuf,
+    features: &Option<Vec<String>>,
+    bin_name: &str,
+) -> HydroflowCrate {
+    let mut ret = HydroflowCrate::new(dir, trybuild.host)
+        .target_dir(target_dir)
+        .bin(bin_name)
+        .no_default_features();
+
+    if let Some(display_name) = trybuild.display_name {
+        ret = ret.display_name(display_name);
+    } else if let Some(name_hint) = trybuild.name_hint {
+        if let Some(cluster_idx) = trybuild.cluster_idx {
+            ret = ret.display_name(format!("{} / {}", name_hint, cluster_idx));
+        } else {
+            ret = ret.display_name(name_hint);
+        }
+    }
+
+    if let Some(rustflags) = trybuild.rustflags {
+        ret = ret.rustflags(rustflags);
+    }
+
+    if let Some(perf) = trybuild.perf {
+        ret = ret.perf(perf);
+    }
+
+    if let Some(features) = features {
+        ret = ret.features(features.clone());
+    }
+
+    ret
 }
