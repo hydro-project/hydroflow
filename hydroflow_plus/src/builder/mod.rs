@@ -249,7 +249,7 @@ impl<'a> FlowBuilder<'a> {
         &self,
         on: &L,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
-    ) -> Stream<'a, hydroflow::tokio::time::Instant, Async, L> {
+    ) -> Stream<'a, (), Async, L> {
         let interval = interval.splice();
 
         Stream::new(
