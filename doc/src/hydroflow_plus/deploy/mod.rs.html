@@ -165,6 +165,7 @@
 <a href="#165" id="165">165</a>
 <a href="#166" id="166">166</a>
 <a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
 <span class="kw">use </span>stageleft::Quoted;
 
@@ -309,11 +310,11 @@
 }
 
 <span class="kw">pub trait </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt; + <span class="question-mark">?</span>Sized&gt; {
-    <span class="kw">fn </span>build(<span class="self">self</span>, id: usize) -&gt; D::Process;
+    <span class="kw">fn </span>build(<span class="self">self</span>, id: usize, name_hint: <span class="kw-2">&amp;</span>str) -&gt; D::Process;
 }
 
 <span class="kw">pub trait </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt; + <span class="question-mark">?</span>Sized&gt; {
-    <span class="kw">fn </span>build(<span class="self">self</span>, id: usize) -&gt; D::Cluster;
+    <span class="kw">fn </span>build(<span class="self">self</span>, id: usize, name_hint: <span class="kw-2">&amp;</span>str) -&gt; D::Cluster;
 }
 
 <span class="kw">pub trait </span>Node {
@@ -330,6 +331,7 @@
         env: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::InstantiateEnv,
         meta: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Meta,
         graph: HydroflowGraph,
+        extra_stmts: Vec&lt;syn::Stmt&gt;,
     );
 }
 </code></pre></div></section></main></body></html>

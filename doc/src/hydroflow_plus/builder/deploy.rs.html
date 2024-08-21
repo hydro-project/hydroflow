@@ -170,6 +170,26 @@
 <a href="#170" id="170">170</a>
 <a href="#171" id="171">171</a>
 <a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -201,12 +221,16 @@
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; DeployFlow&lt;<span class="lifetime">'a</span>, D&gt; {
     <span class="kw">pub fn </span>with_process&lt;P&gt;(<span class="kw-2">mut </span><span class="self">self</span>, process: <span class="kw-2">&amp;</span>Process&lt;P&gt;, spec: <span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;) -&gt; <span class="self">Self </span>{
-        <span class="self">self</span>.nodes.insert(process.id, spec.build(process.id));
+        <span class="kw">let </span>tag_name = std::any::type_name::&lt;P&gt;().to_string();
+        <span class="self">self</span>.nodes
+            .insert(process.id, spec.build(process.id, <span class="kw-2">&amp;</span>tag_name));
         <span class="self">self
     </span>}
 
     <span class="kw">pub fn </span>with_cluster&lt;C&gt;(<span class="kw-2">mut </span><span class="self">self</span>, cluster: <span class="kw-2">&amp;</span>Cluster&lt;C&gt;, spec: <span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;) -&gt; <span class="self">Self </span>{
-        <span class="self">self</span>.clusters.insert(cluster.id, spec.build(cluster.id));
+        <span class="kw">let </span>tag_name = std::any::type_name::&lt;C&gt;().to_string();
+        <span class="self">self</span>.clusters
+            .insert(cluster.id, spec.build(cluster.id, <span class="kw-2">&amp;</span>tag_name));
         <span class="self">self
     </span>}
 }
@@ -221,6 +245,16 @@
             .map(|leaf| leaf.compile_network::&lt;D&gt;(env, <span class="kw-2">&amp;mut </span>seen_tees, <span class="kw-2">&amp;</span><span class="self">self</span>.nodes, <span class="kw-2">&amp;</span><span class="self">self</span>.clusters))
             .collect();
 
+        <span class="kw">let </span>extra_stmts = <span class="self">self</span>.extra_stmts(env);
+
+        HfCompiled {
+            hydroflow_ir: build_inner(<span class="kw-2">&amp;mut </span>ir_leaves_networked),
+            extra_stmts,
+            _phantom: PhantomData,
+        }
+    }
+
+    <span class="kw">fn </span>extra_stmts(<span class="kw-2">&amp;</span><span class="self">self</span>, env: <span class="kw-2">&amp;</span>&lt;D <span class="kw">as </span>Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;::CompileEnv) -&gt; BTreeMap&lt;usize, Vec&lt;syn::Stmt&gt;&gt; {
         <span class="kw">let </span>all_locations_count = <span class="self">self</span>.nodes.len() + <span class="self">self</span>.clusters.len();
 
         <span class="kw">let </span><span class="kw-2">mut </span>extra_stmts: BTreeMap&lt;usize, Vec&lt;syn::Stmt&gt;&gt; = BTreeMap::new();
@@ -251,12 +285,7 @@
                     });
             }
         }
-
-        HfCompiled {
-            hydroflow_ir: build_inner(<span class="kw-2">&amp;mut </span>ir_leaves_networked),
-            extra_stmts,
-            _phantom: PhantomData,
-        }
+        extra_stmts
     }
 }
 
@@ -279,20 +308,31 @@
             .collect();
 
         <span class="kw">let </span><span class="kw-2">mut </span>compiled = build_inner(<span class="kw-2">&amp;mut </span>ir_leaves_networked);
+        <span class="kw">let </span><span class="kw-2">mut </span>extra_stmts = <span class="self">self</span>.extra_stmts(<span class="kw-2">&amp;</span>());
         <span class="kw">let </span><span class="kw-2">mut </span>meta = D::Meta::default();
 
         <span class="kw">let </span>(<span class="kw-2">mut </span>processes, <span class="kw-2">mut </span>clusters) = (
             std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.nodes)
                 .into_iter()
                 .map(|(node_id, node)| {
-                    node.instantiate(env, <span class="kw-2">&amp;mut </span>meta, compiled.remove(<span class="kw-2">&amp;</span>node_id).unwrap());
+                    node.instantiate(
+                        env,
+                        <span class="kw-2">&amp;mut </span>meta,
+                        compiled.remove(<span class="kw-2">&amp;</span>node_id).unwrap(),
+                        extra_stmts.remove(<span class="kw-2">&amp;</span>node_id).unwrap_or_default(),
+                    );
                     (node_id, node)
                 })
                 .collect::&lt;HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;(),
             std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.clusters)
                 .into_iter()
                 .map(|(cluster_id, cluster)| {
-                    cluster.instantiate(env, <span class="kw-2">&amp;mut </span>meta, compiled.remove(<span class="kw-2">&amp;</span>cluster_id).unwrap());
+                    cluster.instantiate(
+                        env,
+                        <span class="kw-2">&amp;mut </span>meta,
+                        compiled.remove(<span class="kw-2">&amp;</span>cluster_id).unwrap(),
+                        extra_stmts.remove(<span class="kw-2">&amp;</span>cluster_id).unwrap_or_default(),
+                    );
                     (cluster_id, cluster)
                 })
                 .collect::&lt;HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;(),

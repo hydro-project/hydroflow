@@ -1,1 +1,0 @@
-searchState.loadedDescShard("map_reduce", 0, "")

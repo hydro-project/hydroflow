@@ -252,6 +252,8 @@
 <a href="#252" id="252">252</a>
 <a href="#253" id="253">253</a>
 <a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::panic;
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -307,9 +309,10 @@
             <span class="string">"lib_macro.rs"
         </span>));
 
-        <span class="attr">#[<span class="macro-nonterminal">cfg</span>(not(stageleft_macro))]
+        <span class="attr">#[<span class="macro-nonterminal">cfg</span>(not(feature = <span class="string">"stageleft_devel"</span>))]
+        #[cfg(not(stageleft_macro))]
         #[doc(hidden)]
-        #[allow(unused, ambiguous_glob_reexports)]
+        #[allow(unused, ambiguous_glob_reexports, clippy::suspicious_else_formatting)]
         </span><span class="kw">pub mod </span>__staged {
             <span class="macro">include!</span>(<span class="macro">concat!</span>(
                 <span class="macro">env!</span>(<span class="string">"OUT_DIR"</span>),
@@ -323,8 +326,9 @@
 <span class="attr">#[<span class="macro-nonterminal">macro_export</span>]
 </span><span class="macro">macro_rules!</span> stageleft_no_entry_crate {
     () =&gt; {
-        <span class="attr">#[doc(hidden)]
-        #[allow(unused, ambiguous_glob_reexports)]
+        <span class="attr">#[cfg(not(feature = <span class="string">"stageleft_devel"</span>))]
+        #[doc(hidden)]
+        #[allow(unused, ambiguous_glob_reexports, clippy::suspicious_else_formatting)]
         </span><span class="kw">pub mod </span>__staged {
             <span class="macro">include!</span>(<span class="macro">concat!</span>(
                 <span class="macro">env!</span>(<span class="string">"OUT_DIR"</span>),

@@ -1,1 +1,0 @@
-searchState.loadedDescShard("compute_pi", 0, "")

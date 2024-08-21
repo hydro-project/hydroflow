@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["simple_cluster"],"macro":["simple_cluster_runtime"]};
+window.SIDEBAR_ITEMS = {"fn":["simple_cluster"]};

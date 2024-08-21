@@ -854,6 +854,9 @@
 <a href="#854" id="854">854</a>
 <a href="#855" id="855">855</a>
 <a href="#856" id="856">856</a>
+<a href="#857" id="857">857</a>
+<a href="#858" id="858">858</a>
+<a href="#859" id="859">859</a>
 </pre></div><pre class="rust"><code><span class="comment">// TODO(mingwei): For pyo3 generated code.
 </span><span class="attr">#![allow(unused_qualifications, non_local_definitions)]
 
@@ -1135,7 +1138,10 @@
                 bin,
                 example,
                 profile,
-                <span class="prelude-val">None</span>, <span class="comment">// Python API doesn't support perf
+                <span class="prelude-val">None</span>,  <span class="comment">// Python API doesn't support rustflags
+                </span><span class="prelude-val">None</span>,  <span class="comment">// Python API doesn't support target_dir
+                </span><span class="bool-val">false</span>, <span class="comment">// Python API doesn't support no_default_features
+                </span><span class="prelude-val">None</span>,  <span class="comment">// Python API doesn't support perf
                 </span>features,
                 args,
                 display_id,

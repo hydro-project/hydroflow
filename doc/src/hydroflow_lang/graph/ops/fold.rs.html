@@ -155,15 +155,11 @@
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
 <a href="#157" id="157">157</a>
-<a href="#158" id="158">158</a>
-<a href="#159" id="159">159</a>
-<a href="#160" id="160">160</a>
-<a href="#161" id="161">161</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
-    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints,
-    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 
@@ -305,12 +301,8 @@
                 };
             }
         };
-        <span class="kw">let </span>write_iterator_after = <span class="kw">if </span>Persistence::Static == persistence {
-            <span class="macro">quote_spanned!</span> {op_span=&gt;
-                #context.schedule_subgraph(#context.current_subgraph(), <span class="bool-val">false</span>);
-            }
-        } <span class="kw">else </span>{
-            Default::default()
+        <span class="kw">let </span>write_iterator_after = <span class="macro">quote_spanned!</span> {op_span=&gt;
+            #context.schedule_subgraph(#context.current_subgraph(), <span class="bool-val">false</span>);
         };
 
         <span class="prelude-val">Ok</span>(OperatorWriteOutput {

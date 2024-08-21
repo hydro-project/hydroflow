@@ -267,6 +267,8 @@
 <a href="#267" id="267">267</a>
 <a href="#268" id="268">268</a>
 <a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeSet;
 <span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::{env, fs};
@@ -502,7 +504,7 @@
     }
 }
 
-<span class="kw">pub fn </span>gen_final_helper(final_crate: <span class="kw-2">&amp;</span>str) {
+<span class="kw">pub fn </span>gen_final_helper() {
     <span class="kw">let </span>out_dir = env::var_os(<span class="string">"OUT_DIR"</span>).unwrap();
 
     <span class="kw">let </span><span class="kw-2">mut </span>orig_flow_lib = syn_inline_mod::parse_and_inline_modules(Path::new(<span class="string">"src/lib.rs"</span>));
@@ -522,10 +524,6 @@
     .unwrap();
 
     <span class="macro">println!</span>(<span class="string">"cargo::rustc-check-cfg=cfg(stageleft_macro)"</span>);
-    <span class="macro">println!</span>(
-        <span class="string">"cargo::rustc-env=STAGELEFT_FINAL_CRATE_NAME={}"</span>,
-        final_crate
-    );
     <span class="macro">println!</span>(<span class="string">"cargo::rerun-if-changed=build.rs"</span>);
     <span class="macro">println!</span>(<span class="string">"cargo::rerun-if-changed=src"</span>);
 }
@@ -533,7 +531,13 @@
 <span class="attr">#[macro_export]
 </span><span class="macro">macro_rules!</span> gen_final {
     () =&gt; {
-        <span class="macro-nonterminal">$crate::gen_final_helper</span>(<span class="macro">env!</span>(<span class="string">"CARGO_PKG_NAME"</span>))
+        <span class="macro">println!</span>(
+            <span class="string">"cargo::rustc-env=STAGELEFT_FINAL_CRATE_NAME={}"</span>,
+            <span class="macro">env!</span>(<span class="string">"CARGO_PKG_NAME"</span>)
+        );
+
+        <span class="attr">#[cfg(not(feature = <span class="string">"stageleft_devel"</span>))]
+        </span><span class="macro-nonterminal">$crate::gen_final_helper</span>()
     };
 }
 </code></pre></div></section></main></body></html>

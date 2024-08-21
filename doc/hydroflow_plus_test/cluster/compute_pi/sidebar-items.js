@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["compute_pi"],"macro":["cardinality_compute_pi_runtime","compute_pi_runtime"],"struct":["Leader","Worker"]};
+window.SIDEBAR_ITEMS = {"fn":["compute_pi"],"struct":["Leader","Worker"]};
