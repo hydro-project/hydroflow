@@ -19,7 +19,7 @@ async fn main() {
     });
 
     hydroflow_plus::launch!(
-        |ports| hydroflow_plus_test::cluster::cardinality_compute_pi_runtime!(
+        |ports| hydroflow_plus_test::cluster::compute_pi::cardinality_compute_pi_runtime!(
             ports,
             &batch_size,
             &counters,
