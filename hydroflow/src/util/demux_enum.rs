@@ -18,7 +18,10 @@ pub trait DemuxEnum<Outputs>: DemuxEnumBase {
 }
 
 /// Special case of [`DemuxEnum`] for when there is only one variant.
-#[diagnostic::on_unimplemented(note = "requires that the enum only have one variant.")]
+#[diagnostic::on_unimplemented(
+    note = "requires that the enum have only one variant.",
+    note = "ensure there are no missing outputs; there must be exactly one output for each enum variant."
+)]
 pub trait SingleVariant: DemuxEnumBase {
     /// Output tuple type.
     type Output;

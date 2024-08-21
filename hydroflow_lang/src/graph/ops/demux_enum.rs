@@ -132,7 +132,8 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
         let write_iterator = match outputs.len() {
             // 0 => super::null_write_iterator_fn(wc),
             1 => {
-                let map_fn = quote_spanned! {op_span=>
+                // Use `enum_type`'s span.
+                let map_fn = quote_spanned! {enum_type.span()=>
                     <#enum_type as #root::util::demux_enum::SingleVariant>::single_variant
                 };
                 if is_pull {
