@@ -169,18 +169,22 @@ impl GcpNetwork {
 }
 
 pub struct GcpComputeEngineHost {
-    pub id: usize,
-    pub project: String,
-    pub machine_type: String,
-    pub image: String,
-    pub region: String,
-    pub network: Arc<RwLock<GcpNetwork>>,
-    pub user: Option<String>,
-    pub launched: OnceLock<Arc<LaunchedComputeEngine>>,
+    /// ID from [`crate::Deployment::add_host`].
+    id: usize,
+
+    project: String,
+    machine_type: String,
+    image: String,
+    region: String,
+    network: Arc<RwLock<GcpNetwork>>,
+    user: Option<String>,
+    startup_script: Option<String>,
+    pub launched: OnceLock<Arc<LaunchedComputeEngine>>, // TODO(mingwei): fix pub
     external_ports: Mutex<Vec<u16>>,
 }
 
 impl GcpComputeEngineHost {
+    #[allow(clippy::too_many_arguments)] // TODO(mingwei)
     pub fn new(
         id: usize,
         project: impl Into<String>,
@@ -189,6 +193,7 @@ impl GcpComputeEngineHost {
         region: impl Into<String>,
         network: Arc<RwLock<GcpNetwork>>,
         user: Option<String>,
+        startup_script: Option<String>,
     ) -> Self {
         Self {
             id,
@@ -198,6 +203,7 @@ impl GcpComputeEngineHost {
             region: region.into(),
             network,
             user,
+            startup_script,
             launched: OnceLock::new(),
             external_ports: Mutex::new(Vec::new()),
         }
@@ -412,7 +418,8 @@ impl Host for GcpComputeEngineHost {
                             ]
                         }
                     ],
-                    "network_interface": external_interfaces
+                    "network_interface": external_interfaces,
+                    "metadata_startup_script": self.startup_script,
                 }),
             );
 

@@ -11,6 +11,7 @@ use serde::Serialize;
 use tokio::sync::{mpsc, RwLock};
 
 use super::build::{build_crate_memoized, BuildError, BuildOutput, BuildParams};
+use super::perf_options::PerfOptions;
 use super::ports::{self, HydroflowPortConfig, HydroflowSink, SourcePath};
 use crate::progress::ProgressTracker;
 use crate::{
@@ -21,7 +22,7 @@ pub struct HydroflowCrateService {
     id: usize,
     pub(super) on: Arc<dyn Host>,
     build_params: BuildParams,
-    perf: Option<PathBuf>,
+    perf: Option<PerfOptions>,
     args: Option<Vec<String>>,
     display_id: Option<String>,
     external_ports: Vec<u16>,
@@ -54,7 +55,7 @@ impl HydroflowCrateService {
         bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
-        perf: Option<PathBuf>,
+        perf: Option<PerfOptions>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,
@@ -286,7 +287,10 @@ impl Service for HydroflowCrateService {
             .unwrap();
 
         let start_ack_line = ProgressTracker::leaf(
-            "waiting for ack start".to_string(),
+            self.display_id
+                .clone()
+                .unwrap_or_else(|| format!("service/{}", self.id))
+                + " / waiting for ack start",
             tokio::time::timeout(Duration::from_secs(60), stdout_receiver),
         )
         .await??;
@@ -299,14 +303,31 @@ impl Service for HydroflowCrateService {
     }
 
     async fn stop(&mut self) -> Result<()> {
-        self.launched_binary
-            .as_ref()
-            .unwrap()
-            .stdin()
-            .send("stop\n".to_string())?;
+        ProgressTracker::with_group(
+            &self
+                .display_id
+                .clone()
+                .unwrap_or_else(|| format!("service/{}", self.id)),
+            None,
+            || async {
+                let launched_binary = self.launched_binary.as_mut().unwrap();
+                launched_binary.stdin().send("stop\n".to_string())?;
 
-        self.launched_binary.as_mut().unwrap().wait().await;
+                let timeout_result = ProgressTracker::leaf(
+                    "waiting for exit".to_owned(),
+                    tokio::time::timeout(Duration::from_secs(60), launched_binary.wait()),
+                )
+                .await;
+                match timeout_result {
+                    Err(_timeout) => {} // `wait()` timed out, but stop will force quit.
+                    Ok(Err(unexpected_error)) => return Err(unexpected_error), // `wait()` errored.
+                    Ok(Ok(_exit_status)) => {}
+                }
+                launched_binary.stop().await?;
 
-        Ok(())
+                Ok(())
+            },
+        )
+        .await
     }
 }

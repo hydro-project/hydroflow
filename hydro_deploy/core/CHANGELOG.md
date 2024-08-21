@@ -5,6 +5,91 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.8.0 (2024-07-23)
+
+### Refactor
+
+ - <csr-id-e3e69334fcba8488b6fad3975fb0ba88e82a4b02/> remove unneeded `Arc<RwLock<` wrapping of `launch_binary` return value (1/3)
+   > Curious if there was any intention behind why it was `Arc<RwLock<`?
+   
+   > I think before some refactors we took the I/O handles instead of using broadcast channels.
+ - <csr-id-0feae7454e4674eea1f3308b3d6d4e9d459cda67/> build cache cleanup
+   * Replace mystery tuple with new `struct BuildOutput`
+   * Replace `Mutex` and `Arc`-infested `HashMap` with `memo-map` crate,
+   greatly simplifying build cache typing
+   * Remove redundant build caching in `HydroflowCrateService`, expose and
+   use cache parameters as `BuildParams`
+   * Remove `once_cell` and `async-once-cell` dependencies, use `std`'s
+   `OnceLock`
+   * Add `Failed to execute command: {}` context to `perf` error message
+   * Cleanup some repeated `format!` expressions
+
+### Style
+
+ - <csr-id-947ebc1cb21a07fbfacae4ac956dbd0015a8a418/> rename `SSH` -> `Ssh`
+
+### Refactor (BREAKING)
+
+ - <csr-id-22865583a4260fe401c28aa39a74987478edc73d/> make `Service::collect_resources` take `&self` instead of `&mut self`
+   #430 but still has `RwLock` wrapping
+   
+   Depends on #1347
+ - <csr-id-c5a8de28e7844b3c29d58116d8340967f2e6bcc4/> make `Host` trait use `&self` interior mutability to remove `RwLock` wrappings #430
+   Depends on #1346
+ - <csr-id-f536eccf7297be8185108b60897e92ad0efffe4a/> Make `Host::provision` not async anymore
+   I noticed that none of the method impls have any `await`s
+ - <csr-id-057a0a510568cf81932368c8c65e056f91af7202/> make `HydroflowSource`, `HydroflowSink` traits use `&self` interior mutability to remove `RwLock` wrappings #430
+   Depends on #1339
+ - <csr-id-60390782dd7dcec18d193c800af716843a944dba/> replace `async-channel` with `tokio::sync::mpsc::unbounded_channel`
+   Depends on #1339
+   
+   We could make the publicly facing `stdout`, `stderr` APIs return `impl Stream<Output = String>` in the future, maybe
+ - <csr-id-141eae1c3a1869fa42756250618a21ea2a2c7e34/> replace some uses of `tokio::sync::RwLock` with `std::sync::Mutex` #430 (3/3)
+
+### Style (BREAKING)
+
+ - <csr-id-12b8ba53f28eb9de1318b41cdf1e23282f6f0eb6/> enable clippy `upper-case-acronyms-aggressive`
+   * rename `GCP` -> `Gcp`, `NodeID` -> `NodeId`
+   * update CI `cargo-generate` template testing to use PR's branch instead
+   of whatever `main` happens to be
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 10 commits contributed to the release over the course of 10 calendar days.
+ - 59 days passed between releases.
+ - 10 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 10 unique issues were worked on: [#1334](https://github.com/hydro-project/hydroflow/issues/1334), [#1338](https://github.com/hydro-project/hydroflow/issues/1338), [#1339](https://github.com/hydro-project/hydroflow/issues/1339), [#1340](https://github.com/hydro-project/hydroflow/issues/1340), [#1343](https://github.com/hydro-project/hydroflow/issues/1343), [#1345](https://github.com/hydro-project/hydroflow/issues/1345), [#1346](https://github.com/hydro-project/hydroflow/issues/1346), [#1347](https://github.com/hydro-project/hydroflow/issues/1347), [#1348](https://github.com/hydro-project/hydroflow/issues/1348), [#1356](https://github.com/hydro-project/hydroflow/issues/1356)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1334](https://github.com/hydro-project/hydroflow/issues/1334)**
+    - Build cache cleanup ([`0feae74`](https://github.com/hydro-project/hydroflow/commit/0feae7454e4674eea1f3308b3d6d4e9d459cda67))
+ * **[#1338](https://github.com/hydro-project/hydroflow/issues/1338)**
+    - Remove unneeded `Arc<RwLock<` wrapping of `launch_binary` return value (1/3) ([`e3e6933`](https://github.com/hydro-project/hydroflow/commit/e3e69334fcba8488b6fad3975fb0ba88e82a4b02))
+ * **[#1339](https://github.com/hydro-project/hydroflow/issues/1339)**
+    - Replace some uses of `tokio::sync::RwLock` with `std::sync::Mutex` #430 (3/3) ([`141eae1`](https://github.com/hydro-project/hydroflow/commit/141eae1c3a1869fa42756250618a21ea2a2c7e34))
+ * **[#1340](https://github.com/hydro-project/hydroflow/issues/1340)**
+    - Rename `SSH` -> `Ssh` ([`947ebc1`](https://github.com/hydro-project/hydroflow/commit/947ebc1cb21a07fbfacae4ac956dbd0015a8a418))
+ * **[#1343](https://github.com/hydro-project/hydroflow/issues/1343)**
+    - Make `Host::provision` not async anymore ([`f536ecc`](https://github.com/hydro-project/hydroflow/commit/f536eccf7297be8185108b60897e92ad0efffe4a))
+ * **[#1345](https://github.com/hydro-project/hydroflow/issues/1345)**
+    - Enable clippy `upper-case-acronyms-aggressive` ([`12b8ba5`](https://github.com/hydro-project/hydroflow/commit/12b8ba53f28eb9de1318b41cdf1e23282f6f0eb6))
+ * **[#1346](https://github.com/hydro-project/hydroflow/issues/1346)**
+    - Make `HydroflowSource`, `HydroflowSink` traits use `&self` interior mutability to remove `RwLock` wrappings #430 ([`057a0a5`](https://github.com/hydro-project/hydroflow/commit/057a0a510568cf81932368c8c65e056f91af7202))
+ * **[#1347](https://github.com/hydro-project/hydroflow/issues/1347)**
+    - Make `Host` trait use `&self` interior mutability to remove `RwLock` wrappings #430 ([`c5a8de2`](https://github.com/hydro-project/hydroflow/commit/c5a8de28e7844b3c29d58116d8340967f2e6bcc4))
+ * **[#1348](https://github.com/hydro-project/hydroflow/issues/1348)**
+    - Make `Service::collect_resources` take `&self` instead of `&mut self` ([`2286558`](https://github.com/hydro-project/hydroflow/commit/22865583a4260fe401c28aa39a74987478edc73d))
+ * **[#1356](https://github.com/hydro-project/hydroflow/issues/1356)**
+    - Replace `async-channel` with `tokio::sync::mpsc::unbounded_channel` ([`6039078`](https://github.com/hydro-project/hydroflow/commit/60390782dd7dcec18d193c800af716843a944dba))
+</details>
+
 ## v0.7.0 (2024-05-24)
 
 ### New Features
@@ -20,7 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release over the course of 41 calendar days.
+ - 3 commits contributed to the release over the course of 41 calendar days.
  - 44 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1129](https://github.com/hydro-project/hydroflow/issues/1129), [#1157](https://github.com/hydro-project/hydroflow/issues/1157)
@@ -35,6 +120,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - End processes with SIGTERM instead of SIGKILL ([`92c72ba`](https://github.com/hydro-project/hydroflow/commit/92c72ba9527241f88dfb23f64b999c8e4bd2b26c))
  * **[#1157](https://github.com/hydro-project/hydroflow/issues/1157)**
     - Add support for collecting counts and running perf ([`29a263f`](https://github.com/hydro-project/hydroflow/commit/29a263fb564c5ce4bc495ea4e9d20b8b2621b645))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.7.0, hydroflow_datalog_core v0.7.0, hydroflow_datalog v0.7.0, hydroflow_macro v0.7.0, lattices v0.5.5, multiplatform_test v0.1.0, pusherator v0.0.6, hydroflow v0.7.0, stageleft_macro v0.2.0, stageleft v0.3.0, stageleft_tool v0.2.0, hydroflow_plus v0.7.0, hydro_deploy v0.7.0, hydro_cli v0.7.0, hydroflow_plus_cli_integration v0.7.0, safety bump 8 crates ([`2852147`](https://github.com/hydro-project/hydroflow/commit/285214740627685e911781793e05d234ab2ad2bd))
 </details>
 
 ## v0.6.1 (2024-04-09)

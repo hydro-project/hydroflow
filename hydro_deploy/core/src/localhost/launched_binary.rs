@@ -1,12 +1,15 @@
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
+use std::process::ExitStatus;
 use std::sync::{Arc, Mutex};
 
+use anyhow::Result;
 use async_trait::async_trait;
 use futures::io::BufReader;
 use futures::{AsyncBufReadExt, AsyncWriteExt};
 use tokio::sync::{mpsc, oneshot};
 
+use crate::progress::ProgressTracker;
 use crate::util::prioritized_broadcast;
 use crate::LaunchedBinary;
 
@@ -32,7 +35,7 @@ impl Drop for LaunchedLocalhostBinary {
             nix::unistd::Pid::from_raw(pid as i32),
             nix::sys::signal::SIGTERM,
         ) {
-            eprintln!("Failed to SIGTERM process {}: {}", pid, e);
+            ProgressTracker::println(format!("Failed to SIGTERM process {}: {}", pid, e));
         }
     }
 }
@@ -54,11 +57,11 @@ impl LaunchedLocalhostBinary {
         let id_clone = id.clone();
         let (stdout_cli_receivers, stdout_receivers) = prioritized_broadcast(
             BufReader::new(child.stdout.take().unwrap()).lines(),
-            move |s| println!("[{id_clone}] {s}"),
+            move |s| ProgressTracker::println(format!("[{id_clone}] {s}")),
         );
         let (_, stderr_receivers) = prioritized_broadcast(
             BufReader::new(child.stderr.take().unwrap()).lines(),
-            move |s| eprintln!("[{id}] {s}"),
+            move |s| ProgressTracker::println(format!("[{id} stderr] {s}")),
         );
 
         Self {
@@ -110,16 +113,22 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
             .try_status()
             .ok()
             .flatten()
-            .and_then(|c| {
-                #[cfg(unix)]
-                return c.code().or(c.signal());
-                #[cfg(not(unix))]
-                return c.code();
-            })
+            .map(exit_code)
     }
 
-    async fn wait(&mut self) -> Option<i32> {
-        let _ = self.child.get_mut().unwrap().status().await;
-        self.exit_code()
+    async fn wait(&mut self) -> Result<i32> {
+        Ok(exit_code(self.child.get_mut().unwrap().status().await?))
     }
+
+    async fn stop(&mut self) -> Result<()> {
+        self.child.get_mut().unwrap().kill()?;
+        Ok(())
+    }
+}
+
+fn exit_code(c: ExitStatus) -> i32 {
+    #[cfg(unix)]
+    return c.code().or(c.signal()).unwrap();
+    #[cfg(not(unix))]
+    return c.code().unwrap();
 }

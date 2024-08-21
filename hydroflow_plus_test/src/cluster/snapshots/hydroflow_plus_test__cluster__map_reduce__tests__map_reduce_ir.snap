@@ -11,7 +11,12 @@ expression: built.ir()
                 Map {
                     f: { use hydroflow_plus :: __staged :: stream :: * ; | (_ , b) | b },
                     input: Network {
-                        to_location: 0,
+                        from_location: Cluster(
+                            1,
+                        ),
+                        to_location: Process(
+                            0,
+                        ),
                         serialize_pipeline: Some(
                             Operator(
                                 Operator {
@@ -22,8 +27,7 @@ expression: built.ir()
                                 },
                             ),
                         ),
-                        sink_expr: { use hydroflow_plus_cli_integration :: __staged :: runtime :: * ; let port = "port_1" ; let self_cli = FAKE ; { self_cli . port (port) . connect_local_blocking :: < ConnectedDirect > () . into_sink () } },
-                        source_expr: { use hydroflow_plus_cli_integration :: __staged :: runtime :: * ; let port = "port_1" ; let self_cli = FAKE ; { self_cli . port (port) . connect_local_blocking :: < ConnectedTagged < ConnectedDirect > > () . into_source () } },
+                        instantiate_fn: <network instantiate>,
                         deserialize_pipeline: Some(
                             Operator(
                                 Operator {
@@ -42,7 +46,12 @@ expression: built.ir()
                                 input: Map {
                                     f: { use crate :: __staged :: cluster :: map_reduce :: * ; | string | (string , ()) },
                                     input: Network {
-                                        to_location: 1,
+                                        from_location: Process(
+                                            0,
+                                        ),
+                                        to_location: Cluster(
+                                            1,
+                                        ),
                                         serialize_pipeline: Some(
                                             Operator(
                                                 Operator {
@@ -53,8 +62,7 @@ expression: built.ir()
                                                 },
                                             ),
                                         ),
-                                        sink_expr: { use hydroflow_plus_cli_integration :: __staged :: runtime :: * ; let port = "port_0" ; let self_cli = FAKE ; { self_cli . port (port) . connect_local_blocking :: < ConnectedDemux < ConnectedDirect > > () . into_sink () } },
-                                        source_expr: { use hydroflow_plus_cli_integration :: __staged :: runtime :: * ; let port = "port_0" ; let self_cli = FAKE ; { self_cli . port (port) . connect_local_blocking :: < ConnectedDirect > () . into_source () } },
+                                        instantiate_fn: <network instantiate>,
                                         deserialize_pipeline: Some(
                                             Operator(
                                                 Operator {
@@ -66,7 +74,7 @@ expression: built.ir()
                                             ),
                                         ),
                                         input: Map {
-                                            f: { use crate :: __staged :: cluster :: map_reduce :: * ; let all_ids_vec = { use hydroflow_plus_cli_integration :: __staged :: runtime :: * ; let cli = FAKE ; let self_id = 1usize ; cli . meta . clusters . get (& self_id) . unwrap () } ; | (i , w) | ((i % all_ids_vec . len ()) as u32 , w) },
+                                            f: { use crate :: __staged :: cluster :: map_reduce :: * ; let all_ids_vec = __hydroflow_plus_cluster_ids_1 ; | (i , w) | ((i % all_ids_vec . len ()) as u32 , w) },
                                             input: Enumerate(
                                                 Map {
                                                     f: { use crate :: __staged :: cluster :: map_reduce :: * ; | s | s . to_string () },
@@ -74,7 +82,9 @@ expression: built.ir()
                                                         source: Iter(
                                                             { use crate :: __staged :: cluster :: map_reduce :: * ; vec ! ["abc" , "abc" , "xyz" , "abc"] },
                                                         ),
-                                                        location_id: 0,
+                                                        location_kind: Process(
+                                                            0,
+                                                        ),
                                                     },
                                                 },
                                             ),

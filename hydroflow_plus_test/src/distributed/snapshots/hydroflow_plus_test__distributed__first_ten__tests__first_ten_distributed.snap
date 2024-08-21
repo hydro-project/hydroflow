@@ -6,7 +6,12 @@ expression: built.ir()
     ForEach {
         f: { use crate :: __staged :: distributed :: first_ten :: * ; | n : SendOverNetwork | println ! ("{}" , n . n) },
         input: Network {
-            to_location: 1,
+            from_location: Process(
+                0,
+            ),
+            to_location: Process(
+                1,
+            ),
             serialize_pipeline: Some(
                 Operator(
                     Operator {
@@ -17,8 +22,7 @@ expression: built.ir()
                     },
                 ),
             ),
-            sink_expr: null,
-            source_expr: null,
+            instantiate_fn: <network instantiate>,
             deserialize_pipeline: Some(
                 Operator(
                     Operator {
@@ -35,7 +39,9 @@ expression: built.ir()
                     source: Iter(
                         { use crate :: __staged :: distributed :: first_ten :: * ; 0 .. 10 },
                     ),
-                    location_id: 0,
+                    location_kind: Process(
+                        0,
+                    ),
                 },
             },
         },

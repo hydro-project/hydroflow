@@ -1,15 +1,16 @@
+use hydroflow_plus::deploy::SingleProcessGraph;
 use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 use hydroflow_plus::*;
 use stageleft::{q, Quoted, RuntimeData};
 
 #[stageleft::entry]
 pub fn test_difference<'a>(
-    flow: FlowBuilder<'a, SingleProcessGraph>,
+    flow: FlowBuilder<'a>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
     persist1: bool,
     persist2: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let process = flow.process(&());
+    let process = flow.process::<()>();
 
     let mut source = flow.source_iter(&process, q!(0..5));
     if persist1 {
@@ -25,17 +26,18 @@ pub fn test_difference<'a>(
         output.send(v).unwrap();
     }));
 
-    flow.extract().optimize_default()
+    flow.with_default_optimize()
+        .compile_no_network::<SingleProcessGraph>()
 }
 
 #[stageleft::entry]
 pub fn test_anti_join<'a>(
-    flow: FlowBuilder<'a, SingleProcessGraph>,
+    flow: FlowBuilder<'a>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
     persist1: bool,
     persist2: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let process = flow.process(&());
+    let process = flow.process::<()>();
 
     let mut source = flow.source_iter(&process, q!(0..5)).map(q!(|v| (v, v)));
     if persist1 {
@@ -52,7 +54,8 @@ pub fn test_anti_join<'a>(
         output.send(v.0).unwrap();
     }));
 
-    flow.extract().optimize_default()
+    flow.with_default_optimize()
+        .compile_no_network::<SingleProcessGraph>()
 }
 
 #[stageleft::runtime]

@@ -1,14 +1,8 @@
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn many_to_many<'a, D: Deploy<'a>>(
-    flow: &FlowBuilder<'a, D>,
-    cluster_spec: &impl ClusterSpec<'a, D>,
-) -> D::Cluster
-where
-    D::ClusterId: std::fmt::Debug,
-{
-    let cluster = flow.cluster(cluster_spec);
+pub fn many_to_many(flow: &FlowBuilder) -> Cluster<()> {
+    let cluster = flow.cluster();
     flow.source_iter(&cluster, q!(0..2))
         .broadcast_bincode(&cluster)
         .for_each(q!(|n| println!("cluster received: {:?}", n)));
@@ -21,52 +15,57 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn many_to_many_runtime<'a>(
-    flow: FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = many_to_many(&flow, &cli);
-    flow.extract()
-        .optimize_default()
+    let _ = many_to_many(&flow);
+    flow.with_default_optimize()
+        .compile::<CLIRuntime>(&cli)
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use std::cell::RefCell;
-
     use hydro_deploy::{Deployment, HydroflowCrate};
     use hydroflow_plus_cli_integration::{DeployClusterSpec, DeployCrateWrapper};
 
     #[tokio::test]
     async fn many_to_many() {
-        let deployment = RefCell::new(Deployment::new());
-        let localhost = deployment.borrow_mut().Localhost();
+        let mut deployment = Deployment::new();
+        let localhost = deployment.Localhost();
 
         let builder = hydroflow_plus::FlowBuilder::new();
-        let cluster = super::many_to_many(
-            &builder,
-            &DeployClusterSpec::new(|| {
-                (0..2)
-                    .map(|_| {
-                        deployment.borrow_mut().add_service(
+        let cluster = super::many_to_many(&builder);
+        let built = builder.with_default_optimize();
+
+        insta::assert_debug_snapshot!(built.ir());
+
+        let nodes = built
+            .with_cluster(
+                &cluster,
+                DeployClusterSpec::new({
+                    (0..2)
+                        .map(|_| {
                             HydroflowCrate::new(".", localhost.clone())
                                 .bin("many_to_many")
-                                .profile("dev"),
-                        )
-                    })
-                    .collect()
-            }),
-        );
-
-        insta::assert_debug_snapshot!(builder.extract().ir());
-
-        let mut deployment = deployment.into_inner();
+                                .profile("dev")
+                        })
+                        .collect()
+                }),
+            )
+            .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
 
-        let cluster_stdouts =
-            futures::future::join_all(cluster.members.iter().map(|node| node.stdout())).await;
+        let cluster_stdouts = futures::future::join_all(
+            nodes
+                .get_cluster(&cluster)
+                .members()
+                .iter()
+                .map(|node| node.stdout()),
+        )
+        .await;
 
         deployment.start().await.unwrap();
 

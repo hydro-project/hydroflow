@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::net::SocketAddr;
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
 use hydroflow_cli_integration::ServerBindConfig;
+use hydroflow_crate::perf_options::PerfOptions;
 
 pub mod deployment;
 pub use deployment::Deployment;
@@ -85,7 +85,10 @@ pub trait LaunchedBinary: Send + Sync {
 
     fn exit_code(&self) -> Option<i32>;
 
-    async fn wait(&mut self) -> Option<i32>;
+    /// Wait for the process to stop on its own. Returns the exit code.
+    async fn wait(&mut self) -> Result<i32>;
+    /// If the process is still running, force stop it. Then run post-run tasks.
+    async fn stop(&mut self) -> Result<()>;
 }
 
 #[async_trait]
@@ -101,7 +104,7 @@ pub trait LaunchedHost: Send + Sync {
         id: String,
         binary: &BuildOutput,
         args: &[String],
-        perf: Option<PathBuf>,
+        perf: Option<PerfOptions>,
     ) -> Result<Box<dyn LaunchedBinary>>;
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr>;

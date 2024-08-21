@@ -1,26 +1,38 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::future::Future;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Error, Result};
 use async_ssh2_lite::ssh2::ErrorCode;
-use async_ssh2_lite::{AsyncChannel, AsyncSession, Error, SessionConfiguration};
+use async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
 use async_trait::async_trait;
-use futures::io::BufReader;
+use futures::io::BufReader as FuturesBufReader;
+use futures::stream::FuturesUnordered;
 use futures::{AsyncBufReadExt, AsyncWriteExt};
 use hydroflow_cli_integration::ServerBindConfig;
+use inferno::collapse::perf::Folder;
+use inferno::collapse::Collapse;
 use nanoid::nanoid;
+use tokio::io::BufReader as TokioBufReader;
 use tokio::net::{TcpListener, TcpStream};
+use tokio::runtime::Handle;
 use tokio::sync::{mpsc, oneshot};
+use tokio_stream::StreamExt;
+use tokio_util::io::SyncIoBridge;
 
 use super::progress::ProgressTracker;
 use super::util::async_retry;
 use super::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
 use crate::hydroflow_crate::build::BuildOutput;
+use crate::hydroflow_crate::perf_options::PerfOptions;
 use crate::util::prioritized_broadcast;
+
+const PERF_OUTFILE: &str = "__profile.perf.data";
 
 struct LaunchedSshBinary {
     _resource_result: Arc<ResourceResult>,
@@ -30,6 +42,7 @@ struct LaunchedSshBinary {
     stdout_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
     stdout_cli_receivers: Arc<Mutex<Option<oneshot::Sender<String>>>>,
     stderr_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
+    perf: Option<PerfOptions>,
 }
 
 #[async_trait]
@@ -73,27 +86,149 @@ impl LaunchedBinary for LaunchedSshBinary {
         }
     }
 
-    async fn wait(&mut self) -> Option<i32> {
+    async fn wait(&mut self) -> Result<i32> {
         self.channel.wait_eof().await.unwrap();
-        let ret = self.exit_code();
+        let exit_code = self.channel.exit_status()?;
         self.channel.wait_close().await.unwrap();
-        ret
+
+        Ok(exit_code)
+    }
+
+    async fn stop(&mut self) -> Result<()> {
+        if !self.channel.eof() {
+            ProgressTracker::leaf("force stopping".to_owned(), async {
+                self.channel.write_all(b"\x03").await?; // `^C`
+                self.channel.send_eof().await?;
+                self.channel.wait_eof().await?;
+                // `exit_status()`
+                self.channel.wait_close().await?;
+                Result::<_>::Ok(())
+            })
+            .await?;
+        }
+
+        // Run perf post-processing and download perf output.
+        if let Some(perf) = &mut self.perf {
+            let mut script_channel = self.session.as_ref().unwrap().channel_session().await?;
+            let mut fold_er = Folder::from(perf.fold_options.clone().unwrap_or_default());
+
+            let fold_data = ProgressTracker::leaf("perf script & folding".to_owned(), async move {
+                let mut stderr_lines = FuturesBufReader::new(script_channel.stderr()).lines();
+                let stdout = script_channel.stream(0);
+
+                // Pattern on `()` to make sure no `Result`s are ignored.
+                let ((), fold_data, ()) = tokio::try_join!(
+                    async move {
+                        // Log stderr.
+                        while let Some(Ok(s)) = stderr_lines.next().await {
+                            ProgressTracker::println(format!("[perf stderr] {s}"));
+                        }
+                        Result::<_>::Ok(())
+                    },
+                    async move {
+                        // Download perf output and fold.
+                        tokio::task::spawn_blocking(move || {
+                            let mut fold_data = Vec::new();
+                            fold_er.collapse(
+                                SyncIoBridge::new(TokioBufReader::new(stdout)),
+                                &mut fold_data,
+                            )?;
+                            Ok(fold_data)
+                        })
+                        .await?
+                    },
+                    async move {
+                        // Run command (last!).
+                        script_channel
+                            .exec(&format!("perf script --symfs=/ -i {PERF_OUTFILE}"))
+                            .await?;
+                        Ok(())
+                    },
+                )?;
+                Result::<_>::Ok(fold_data)
+            })
+            .await?;
+            // Wrap in Arc to allow sharing data across multiple outputs.
+            let fold_data = Arc::new(fold_data);
+            let output_tasks =
+                FuturesUnordered::<Pin<Box<dyn Future<Output = Result<()>> + Send + Sync>>>::new();
+
+            // fold_outfile
+            if let Some(fold_outfile) = perf.fold_outfile.clone() {
+                let fold_data = Arc::clone(&fold_data);
+                output_tasks.push(Box::pin(async move {
+                    let mut reader = &**fold_data;
+                    let mut writer = tokio::fs::File::create(fold_outfile).await?;
+                    tokio::io::copy_buf(&mut reader, &mut writer).await?;
+                    Ok(())
+                }));
+            };
+
+            // flamegraph_outfile
+            if let Some(flamegraph_outfile) = perf.flamegraph_outfile.clone() {
+                let mut options = perf.flamegraph_options.map(|f| (f)()).unwrap_or_default();
+                let fold_data = Arc::clone(&fold_data);
+                output_tasks.push(Box::pin(async move {
+                    let writer = tokio::fs::File::create(flamegraph_outfile)
+                        .await?
+                        .into_std()
+                        .await;
+                    tokio::task::spawn_blocking(move || {
+                        let reader = &**fold_data;
+                        inferno::flamegraph::from_lines(
+                            &mut options,
+                            reader
+                                .split(|&b| b == b'\n')
+                                .map(std::str::from_utf8)
+                                .map(Result::unwrap),
+                            writer,
+                        )
+                    })
+                    .await??;
+                    Ok(())
+                }));
+            };
+
+            let errors = output_tasks
+                .filter_map(Result::err)
+                .collect::<Vec<_>>()
+                .await;
+            if !errors.is_empty() {
+                Err(MultipleErrors { errors })?;
+            };
+
+            // TODO(mingwei): re-use this code to download `dtrace` data.
+            // let sftp = self.session.as_ref().unwrap().sftp().await?;
+            // // Check if perf.data exists
+            // match sftp.open(&PathBuf::from(output_file)).await {
+            //     Ok(perf_data) => {
+            //         // download perf.data
+            //         let mut perf_data_local = tokio::fs::File::create(output_file).await?;
+            //         tokio::io::copy(&mut perf_data, &mut perf_data_local).await?;
+            //     }
+            //     Err(Error::Ssh2(ssh2_err)) if ErrorCode::SFTP(2) == ssh2_err.code() => {
+            //         // File not found, probably due to some other previous error.
+            //         ProgressTracker::println(&format!(
+            //             "perf output file {:?} not found on remote machine (SFTP error 2).",
+            //             output_file
+            //         ));
+            //     }
+            //     Err(unexpected_err) => Err(unexpected_err)?,
+            // }
+        };
+
+        Ok(())
     }
 }
 
 impl Drop for LaunchedSshBinary {
     fn drop(&mut self) {
-        let session = self.session.take().unwrap();
-        std::thread::scope(|s| {
-            s.spawn(|| {
-                let runtime = tokio::runtime::Builder::new_multi_thread().build().unwrap();
-                runtime
-                    .block_on(session.disconnect(None, "", None))
-                    .unwrap();
+        if let Some(session) = self.session.take() {
+            tokio::task::block_in_place(|| {
+                Handle::current().block_on(session.disconnect(None, "", None))
             })
-            .join()
             .unwrap();
-        });
+        }
     }
 }
 
@@ -252,7 +387,9 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
 
                         match sftp.rename(&temp_path, binary_path, None).await {
                             Ok(_) => {}
-                            Err(Error::Ssh2(e)) if e.code() == ErrorCode::SFTP(4) => {
+                            Err(async_ssh2_lite::Error::Ssh2(e))
+                                if e.code() == ErrorCode::SFTP(4) =>
+                            {
                                 // file already exists
                                 sftp.unlink(&temp_path).await?;
                             }
@@ -275,7 +412,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
         id: String,
         binary: &BuildOutput,
         args: &[String],
-        perf: Option<PathBuf>,
+        perf: Option<PerfOptions>,
     ) -> Result<Box<dyn LaunchedBinary>> {
         let session = self.open_ssh_session().await?;
 
@@ -300,18 +437,20 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
                         Duration::from_secs(1),
                     )
                     .await?;
-                let binary_path_string = binary_path.to_str().unwrap();
-                let args_string = args
-                    .iter()
-                    .map(|s| shell_escape::unix::escape(Cow::from(s)))
-                    .fold("".to_string(), |acc, v| format!("{acc} {v}"));
-                channel
-                    .exec(&format!("{binary_path_string}{args_string}"))
-                    .await?;
-                if perf.is_some() {
-                    todo!("Profiling on remote machines is not (yet) supported");
-                }
 
+                let mut command = binary_path.to_str().unwrap().to_owned();
+                for arg in args{
+                    command.push(' ');
+                    command.push_str(&shell_escape::unix::escape(Cow::Borrowed(arg)))
+                }
+                // Launch with perf if specified, also copy local binary to expected place for perf report to work
+                if let Some(PerfOptions { frequency, .. }) = perf.clone() {
+                    // Attach perf to the command
+                    command = format!(
+                        "perf record -F {frequency} --call-graph dwarf,64000 -o {PERF_OUTFILE} {command}",
+                    );
+                }
+                channel.exec(&command).await?;
                 anyhow::Ok(channel)
             },
         )
@@ -331,12 +470,12 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
 
         let id_clone = id.clone();
         let (stdout_cli_receivers, stdout_receivers) =
-            prioritized_broadcast(BufReader::new(channel.stream(0)).lines(), move |s| {
-                println!("[{id_clone}] {s}")
+            prioritized_broadcast(FuturesBufReader::new(channel.stream(0)).lines(), move |s| {
+                ProgressTracker::println(format!("[{id_clone}] {s}"));
             });
         let (_, stderr_receivers) =
-            prioritized_broadcast(BufReader::new(channel.stderr()).lines(), move |s| {
-                eprintln!("[{id}] {s}")
+            prioritized_broadcast(FuturesBufReader::new(channel.stderr()).lines(), move |s| {
+                ProgressTracker::println(format!("[{id} stderr] {s}"));
             });
 
         Ok(Box::new(LaunchedSshBinary {
@@ -347,6 +486,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
             stdout_cli_receivers,
             stdout_receivers,
             stderr_receivers,
+            perf,
         }))
     }
 
@@ -378,3 +518,25 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
         Ok(local_addr)
     }
 }
+
+#[derive(Debug)]
+struct MultipleErrors {
+    errors: Vec<Error>,
+}
+impl std::fmt::Display for MultipleErrors {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if 1 == self.errors.len() {
+            self.errors.first().unwrap().fmt(f)
+        } else {
+            writeln!(f, "({}) errors occured:", self.errors.len())?;
+            writeln!(f)?;
+            for (i, error) in self.errors.iter().enumerate() {
+                write!(f, "({}/{}):", i + 1, self.errors.len())?;
+                error.fmt(f)?;
+                writeln!(f)?;
+            }
+            Ok(())
+        }
+    }
+}
+impl std::error::Error for MultipleErrors {}

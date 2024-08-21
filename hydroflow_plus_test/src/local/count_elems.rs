@@ -1,3 +1,4 @@
+use hydroflow_plus::deploy::SingleProcessGraph;
 use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::*;
@@ -5,11 +6,11 @@ use stageleft::{q, Quoted, RuntimeData};
 
 #[stageleft::entry(String)]
 pub fn count_elems<'a, T: 'a>(
-    flow: FlowBuilder<'a, SingleProcessGraph>,
+    flow: FlowBuilder<'a>,
     input_stream: RuntimeData<UnboundedReceiverStream<T>>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let process = flow.process(&());
+    let process = flow.process::<()>();
 
     let source = flow.source_stream(&process, input_stream);
     let count = source
@@ -21,7 +22,8 @@ pub fn count_elems<'a, T: 'a>(
         output.send(v).unwrap();
     }));
 
-    flow.extract().optimize_default()
+    flow.with_default_optimize()
+        .compile_no_network::<SingleProcessGraph>()
 }
 
 #[stageleft::runtime]

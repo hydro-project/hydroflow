@@ -19,14 +19,14 @@ async fn main() {
 
         (
             Box::new(move |deployment| -> Arc<dyn Host> {
-                deployment.GcpComputeEngineHost(
-                    &project,
-                    "e2-micro",
-                    "debian-cloud/debian-11",
-                    "us-west1-a",
-                    network.clone(),
-                    None,
-                )
+                deployment
+                    .GcpComputeEngineHost()
+                    .project(&project)
+                    .machine_type("e2-micro")
+                    .image("debian-cloud/debian-11")
+                    .region("us-west1-a")
+                    .network(network.clone())
+                    .add()
             }),
             "release",
         )
@@ -39,21 +39,28 @@ async fn main() {
     };
 
     let builder = hydroflow_plus::FlowBuilder::new();
-    hydroflow_plus_test::distributed::first_ten::first_ten_distributed(
-        &builder,
-        &DeployProcessSpec::new(|| {
-            let host = create_host(&mut deployment);
-            deployment.add_service(
+    let (p1, p2) = hydroflow_plus_test::distributed::first_ten::first_ten_distributed(&builder);
+    let _nodes = builder
+        .with_default_optimize()
+        .with_process(
+            &p1,
+            DeployProcessSpec::new({
+                let host = create_host(&mut deployment);
                 HydroflowCrate::new(".", host.clone())
                     .bin("first_ten_distributed")
-                    .profile(profile),
-            )
-        }),
-    );
+                    .profile(profile)
+            }),
+        )
+        .with_process(
+            &p2,
+            DeployProcessSpec::new({
+                let host = create_host(&mut deployment);
+                HydroflowCrate::new(".", host.clone())
+                    .bin("first_ten_distributed")
+                    .profile(profile)
+            }),
+        )
+        .deploy(&mut deployment);
 
-    deployment.deploy().await.unwrap();
-
-    deployment.start().await.unwrap();
-
-    tokio::signal::ctrl_c().await.unwrap()
+    deployment.run_ctrl_c().await.unwrap();
 }

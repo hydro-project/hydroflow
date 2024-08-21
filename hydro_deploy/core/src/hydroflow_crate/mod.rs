@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use perf_options::PerfOptions;
+
 use super::Host;
 use crate::ServiceBuilder;
 
@@ -10,7 +12,9 @@ pub mod ports;
 pub mod service;
 pub use service::*;
 
-#[derive(PartialEq)]
+pub mod perf_options;
+
+#[derive(PartialEq, Clone)]
 pub enum CrateTarget {
     Default,
     Bin(String),
@@ -19,12 +23,13 @@ pub enum CrateTarget {
 
 /// Specifies a crate that uses `hydroflow_cli_integration` to be
 /// deployed as a service.
+#[derive(Clone)]
 pub struct HydroflowCrate {
     src: PathBuf,
     target: CrateTarget,
     on: Arc<dyn Host>,
     profile: Option<String>,
-    perf: Option<PathBuf>, /* If a path is provided, run perf to get CPU time and output to that path.perf.data */
+    perf: Option<PerfOptions>,
     args: Vec<String>,
     display_name: Option<String>,
 }
@@ -78,7 +83,7 @@ impl HydroflowCrate {
         self
     }
 
-    pub fn perf(mut self, perf: impl Into<PathBuf>) -> Self {
+    pub fn perf(mut self, perf: impl Into<PerfOptions>) -> Self {
         if self.perf.is_some() {
             panic!("perf path already set");
         }

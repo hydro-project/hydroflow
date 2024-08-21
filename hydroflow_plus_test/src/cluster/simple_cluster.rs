@@ -1,18 +1,16 @@
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn simple_cluster<'a, D: Deploy<'a, ClusterId = u32>>(
-    flow: &FlowBuilder<'a, D>,
-    process_spec: &impl ProcessSpec<'a, D>,
-    cluster_spec: &impl ClusterSpec<'a, D>,
-) -> (D::Process, D::Cluster) {
-    let process = flow.process(process_spec);
-    let cluster = flow.cluster(cluster_spec);
+pub fn simple_cluster(flow: &FlowBuilder) -> (Process<()>, Cluster<()>) {
+    let process = flow.process();
+    let cluster = flow.cluster();
 
     let numbers = flow.source_iter(&process, q!(0..5));
-    let ids = flow.source_iter(&process, cluster.ids()).map(q!(|&id| id));
+    let ids = flow
+        .source_iter(&process, flow.cluster_members(&cluster))
+        .map(q!(|&id| id));
 
-    let cluster_self_id = cluster.self_id();
+    let cluster_self_id = flow.cluster_self_id(&cluster);
 
     ids.cross_product(numbers)
         .map(q!(|(id, n)| (id, (id, n))))
@@ -32,20 +30,18 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn simple_cluster_runtime<'a>(
-    flow: FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = simple_cluster(&flow, &cli, &cli);
-    flow.extract()
-        .optimize_default()
+    let _ = simple_cluster(&flow);
+    flow.with_default_optimize()
+        .compile::<CLIRuntime>(&cli)
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use std::cell::RefCell;
-
     use hydro_deploy::{Deployment, HydroflowCrate};
     use hydroflow_plus_cli_integration::{
         DeployClusterSpec, DeployCrateWrapper, DeployProcessSpec,
@@ -53,41 +49,49 @@ mod tests {
 
     #[tokio::test]
     async fn simple_cluster() {
-        let deployment = RefCell::new(Deployment::new());
-        let localhost = deployment.borrow_mut().Localhost();
+        let mut deployment = Deployment::new();
+        let localhost = deployment.Localhost();
 
         let builder = hydroflow_plus::FlowBuilder::new();
-        let (node, cluster) = super::simple_cluster(
-            &builder,
-            &DeployProcessSpec::new(|| {
-                deployment.borrow_mut().add_service(
+        let (node, cluster) = super::simple_cluster(&builder);
+        let built = builder.with_default_optimize();
+
+        insta::assert_debug_snapshot!(built.ir());
+
+        let nodes = built
+            .with_process(
+                &node,
+                DeployProcessSpec::new({
                     HydroflowCrate::new(".", localhost.clone())
                         .bin("simple_cluster")
-                        .profile("dev"),
-                )
-            }),
-            &DeployClusterSpec::new(|| {
-                (0..2)
-                    .map(|_| {
-                        deployment.borrow_mut().add_service(
+                        .profile("dev")
+                }),
+            )
+            .with_cluster(
+                &cluster,
+                DeployClusterSpec::new({
+                    (0..2)
+                        .map(|_| {
                             HydroflowCrate::new(".", localhost.clone())
                                 .bin("simple_cluster")
-                                .profile("dev"),
-                        )
-                    })
-                    .collect()
-            }),
-        );
-
-        insta::assert_debug_snapshot!(builder.extract().ir());
-
-        let mut deployment = deployment.into_inner();
+                                .profile("dev")
+                        })
+                        .collect()
+                }),
+            )
+            .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
 
-        let mut node_stdout = node.stdout().await;
-        let cluster_stdouts =
-            futures::future::join_all(cluster.members.iter().map(|node| node.stdout())).await;
+        let mut node_stdout = nodes.get_process(&node).stdout().await;
+        let cluster_stdouts = futures::future::join_all(
+            nodes
+                .get_cluster(&cluster)
+                .members()
+                .iter()
+                .map(|node| node.stdout()),
+        )
+        .await;
 
         deployment.start().await.unwrap();
 

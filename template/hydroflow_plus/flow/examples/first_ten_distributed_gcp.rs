@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use hydro_deploy::{gcp::GcpNetwork, Deployment, HydroflowCrate};
+use hydro_deploy::gcp::GcpNetwork;
+use hydro_deploy::{Deployment, HydroflowCrate};
 use hydroflow_plus_cli_integration::DeployProcessSpec;
 use tokio::sync::RwLock;
 
@@ -14,25 +15,41 @@ async fn main() {
     let vpc = Arc::new(RwLock::new(GcpNetwork::new(&gcp_project, None)));
 
     let flow = hydroflow_plus::FlowBuilder::new();
-    flow::first_ten_distributed::first_ten_distributed(
-        &flow,
-        &DeployProcessSpec::new(|| {
-            let host = deployment.GcpComputeEngineHost(
-                gcp_project.clone(),
-                "e2-micro",
-                "debian-cloud/debian-11",
-                "us-west1-a",
-                vpc.clone(),
-                None,
-            );
+    let (p1, p2) = flow::first_ten_distributed::first_ten_distributed(&flow);
 
-            deployment.add_service(HydroflowCrate::new(".", host).bin("first_ten_distributed"))
-        }),
-    );
+    let _nodes = flow
+        .with_default_optimize()
+        .with_process(
+            &p1,
+            DeployProcessSpec::new({
+                let host = deployment
+                    .GcpComputeEngineHost()
+                    .project(gcp_project.clone())
+                    .machine_type("e2-micro")
+                    .image("debian-cloud/debian-11")
+                    .region("us-west1-a")
+                    .network(vpc.clone())
+                    .add();
 
-    deployment.deploy().await.unwrap();
+                HydroflowCrate::new(".", host).bin("first_ten_distributed")
+            }),
+        )
+        .with_process(
+            &p2,
+            DeployProcessSpec::new({
+                let host = deployment
+                    .GcpComputeEngineHost()
+                    .project(gcp_project.clone())
+                    .machine_type("e2-micro")
+                    .image("debian-cloud/debian-11")
+                    .region("us-west1-a")
+                    .network(vpc.clone())
+                    .add();
 
-    deployment.start().await.unwrap();
+                HydroflowCrate::new(".", host).bin("first_ten_distributed")
+            }),
+        )
+        .deploy(&mut deployment);
 
-    tokio::signal::ctrl_c().await.unwrap()
+    deployment.run_ctrl_c().await.unwrap();
 }

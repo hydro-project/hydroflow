@@ -7,12 +7,12 @@ struct SendOverNetwork {
     pub n: u32,
 }
 
-pub fn first_ten_distributed<'a, D: Deploy<'a>>(
-    flow: &FlowBuilder<'a, D>,
-    process_spec: &impl ProcessSpec<'a, D>,
-) -> D::Process {
-    let process = flow.process(process_spec);
-    let second_process = flow.process(process_spec);
+pub struct P1 {}
+pub struct P2 {}
+
+pub fn first_ten_distributed(flow: &FlowBuilder) -> (Process<P1>, Process<P2>) {
+    let process = flow.process::<P1>();
+    let second_process = flow.process::<P2>();
 
     let numbers = flow.source_iter(&process, q!(0..10));
     numbers
@@ -20,7 +20,7 @@ pub fn first_ten_distributed<'a, D: Deploy<'a>>(
         .send_bincode(&second_process)
         .for_each(q!(|n: SendOverNetwork| println!("{}", n.n))); // TODO(shadaj): why is the explicit type required here?
 
-    second_process
+    (process, second_process)
 }
 
 use hydroflow_plus::util::cli::HydroCLI;
@@ -28,12 +28,12 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn first_ten_distributed_runtime<'a>(
-    flow: FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = first_ten_distributed(&flow, &cli);
-    flow.extract()
-        .optimize_default()
+    let _ = first_ten_distributed(&flow);
+    flow.with_default_optimize()
+        .compile::<CLIRuntime>(&cli)
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
@@ -49,25 +49,35 @@ mod tests {
         let localhost = deployment.Localhost();
 
         let builder = hydroflow_plus::FlowBuilder::new();
-        let second_node = super::first_ten_distributed(
-            &builder,
-            &DeployProcessSpec::new(|| {
-                deployment.add_service(
-                    HydroflowCrate::new(".", localhost.clone())
-                        .bin("first_ten_distributed")
-                        .profile("dev"),
-                )
-            }),
-        );
+        let (first_node, second_node) = super::first_ten_distributed(&builder);
 
-        // if we drop this, we drop the references to the deployment nodes
-        let built = builder.extract();
+        let built = builder.with_default_optimize();
 
         insta::assert_debug_snapshot!(built.ir());
 
+        // if we drop this, we drop the references to the deployment nodes
+        let nodes = built
+            .with_process(
+                &first_node,
+                DeployProcessSpec::new({
+                    HydroflowCrate::new(".", localhost.clone())
+                        .bin("first_ten_distributed")
+                        .profile("dev")
+                }),
+            )
+            .with_process(
+                &second_node,
+                DeployProcessSpec::new({
+                    HydroflowCrate::new(".", localhost.clone())
+                        .bin("first_ten_distributed")
+                        .profile("dev")
+                }),
+            )
+            .deploy(&mut deployment);
+
         deployment.deploy().await.unwrap();
 
-        let mut second_node_stdout = second_node.stdout().await;
+        let mut second_node_stdout = nodes.get_process(&second_node).stdout().await;
 
         deployment.start().await.unwrap();
 

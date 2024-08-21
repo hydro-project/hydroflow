@@ -1,17 +1,14 @@
 use std::time::Duration;
 
+use hydroflow_plus::deploy::SingleProcessGraph;
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn compute_pi<'a, D: LocalDeploy<'a>>(
-    flow: &FlowBuilder<'a, D>,
-    process_spec: &impl ProcessSpec<'a, D>,
-    batch_size: RuntimeData<&'a usize>,
-) -> D::Process {
-    let process = flow.process(process_spec);
+pub fn compute_pi(flow: &FlowBuilder, batch_size: RuntimeData<usize>) -> Process<()> {
+    let process = flow.process();
 
     let trials = flow
-        .spin_batch(&process, q!(*batch_size))
+        .spin_batch(&process, q!(batch_size))
         .map(q!(|_| rand::random::<(f64, f64)>()))
         .map(q!(|(x, y)| x * x + y * y < 1.0))
         .fold(
@@ -45,9 +42,10 @@ pub fn compute_pi<'a, D: LocalDeploy<'a>>(
 
 #[stageleft::entry]
 pub fn compute_pi_runtime<'a>(
-    flow: FlowBuilder<'a, SingleProcessGraph>,
-    batch_size: RuntimeData<&'a usize>,
+    flow: FlowBuilder<'a>,
+    batch_size: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = compute_pi(&flow, &(), batch_size);
-    flow.extract().optimize_default()
+    let _ = compute_pi(&flow, batch_size);
+    flow.with_default_optimize()
+        .compile_no_network::<SingleProcessGraph>()
 }

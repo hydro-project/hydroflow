@@ -79,6 +79,7 @@ impl Drop for TerraformPool {
 #[derive(Serialize, Deserialize)]
 pub struct TerraformBatch {
     pub terraform: TerraformConfig,
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
     pub provider: HashMap<String, serde_json::Value>,
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     pub data: HashMap<String, HashMap<String, serde_json::Value>>,
@@ -189,7 +190,9 @@ async fn display_apply_outputs(stdout: &mut ChildStdout) {
                             (
                                 channel_send,
                                 tokio::task::spawn(ProgressTracker::leaf(id, async move {
-                                    channel_recv.await.unwrap();
+                                    // `Err(RecvError)` means send side was dropped due to another error.
+                                    // Ignore here to prevent spurious panic stack traces.
+                                    let _result = channel_recv.await;
                                 })),
                             ),
                         );
@@ -243,7 +246,7 @@ impl TerraformApply {
         let stderr_loop = tokio::task::spawn_blocking(move || {
             let mut lines = BufReader::new(stderr).lines();
             while let Some(Ok(line)) = lines.next() {
-                ProgressTracker::println(&format!("[terraform] {}", line));
+                ProgressTracker::println(format!("[terraform] {}", line));
             }
         });
 
@@ -254,7 +257,7 @@ impl TerraformApply {
         self.child = None;
 
         if !status.unwrap().success() {
-            bail!("Terraform deployment failed");
+            bail!("Terraform deployment failed, see `[terraform]` logs above.");
         }
 
         let mut output_command = Command::new("terraform");

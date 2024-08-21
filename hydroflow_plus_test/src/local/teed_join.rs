@@ -1,19 +1,23 @@
+use hydroflow_plus::deploy::MultiGraph;
 use hydroflow_plus::futures::stream::Stream;
 use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::*;
 use stageleft::{q, Quoted, RuntimeData};
 
+struct N0 {}
+struct N1 {}
+
 #[stageleft::entry(UnboundedReceiverStream<u32>)]
 pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
-    flow: FlowBuilder<'a, MultiGraph>,
+    flow: FlowBuilder<'a>,
     input_stream: RuntimeData<S>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
     send_twice: bool,
     subgraph_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let node_zero = flow.process(&());
-    let node_one = flow.process(&());
+    let node_zero = flow.process::<N0>();
+    let node_one = flow.process::<N1>();
 
     let source = flow.source_stream(&node_zero, input_stream);
     let map1 = source.clone().map(q!(|v| (v + 1, ())));
@@ -36,8 +40,8 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
         output.send(v).unwrap();
     }));
 
-    flow.extract()
-        .optimize_default()
+    flow.with_default_optimize()
+        .compile_no_network::<MultiGraph>()
         .with_dynamic_id(subgraph_id)
 }
 

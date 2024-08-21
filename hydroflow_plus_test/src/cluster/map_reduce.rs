@@ -1,19 +1,18 @@
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn map_reduce<'a, D: Deploy<'a, ClusterId = u32>>(
-    flow: &FlowBuilder<'a, D>,
-    process_spec: &impl ProcessSpec<'a, D>,
-    cluster_spec: &impl ClusterSpec<'a, D>,
-) -> (D::Process, D::Cluster) {
-    let process = flow.process(process_spec);
-    let cluster = flow.cluster(cluster_spec);
+pub struct Leader {}
+pub struct Worker {}
+
+pub fn map_reduce(flow: &FlowBuilder) -> (Process<Leader>, Cluster<Worker>) {
+    let process = flow.process();
+    let cluster = flow.cluster();
 
     let words = flow
         .source_iter(&process, q!(vec!["abc", "abc", "xyz", "abc"]))
         .map(q!(|s| s.to_string()));
 
-    let all_ids_vec = cluster.ids();
+    let all_ids_vec = flow.cluster_members(&cluster);
     let words_partitioned = words
         .enumerate()
         .map(q!(|(i, w)| ((i % all_ids_vec.len()) as u32, w)));
@@ -40,33 +39,33 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn map_reduce_runtime<'a>(
-    flow: FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = map_reduce(&flow, &cli, &cli);
-    flow.extract()
-        .optimize_default()
+    let _ = map_reduce(&flow);
+    flow.with_default_optimize()
+        .compile::<CLIRuntime>(&cli)
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
+    use hydroflow_plus_cli_integration::CLIRuntime;
     use stageleft::RuntimeData;
 
     #[test]
     fn map_reduce_ir() {
         let builder = hydroflow_plus::FlowBuilder::new();
-        let _ = super::map_reduce(
-            &builder,
-            &RuntimeData::new("FAKE"),
-            &RuntimeData::new("FAKE"),
-        );
-        let built = builder.extract();
+        let _ = super::map_reduce(&builder);
+        let built = builder.with_default_optimize();
 
         insta::assert_debug_snapshot!(built.ir());
 
-        for (id, ir) in built.optimize_default().hydroflow_ir() {
+        for (id, ir) in built
+            .compile::<CLIRuntime>(&RuntimeData::new("FAKE"))
+            .hydroflow_ir()
+        {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(ir.surface_syntax_string());
             });
