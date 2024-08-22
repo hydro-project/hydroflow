@@ -44,10 +44,9 @@ pub fn compute_pi(flow: &FlowBuilder, batch_size: usize) -> (Cluster<Worker>, Pr
     (cluster, process)
 }
 
-#[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use hydroflow_plus_cli_integration::CLIRuntime;
+    use hydroflow_plus_deploy::CLIRuntime;
     use stageleft::RuntimeData;
 
     #[test]

@@ -1417,7 +1417,7 @@ dependencies = [
  "clap",
  "futures",
  "hydro_deploy",
- "hydroflow_cli_integration",
+ "hydroflow_deploy_integration",
  "pyo3",
  "pyo3-asyncio",
  "pythonize",
@@ -1456,7 +1456,7 @@ dependencies = [
  "dyn-clone",
  "futures",
  "futures-core",
- "hydroflow_cli_integration",
+ "hydroflow_deploy_integration",
  "indicatif",
  "inferno",
  "memo-map",
@@ -1487,8 +1487,8 @@ dependencies = [
  "futures",
  "getrandom 0.2.11",
  "hdrhistogram",
- "hydroflow_cli_integration",
  "hydroflow_datalog",
+ "hydroflow_deploy_integration",
  "hydroflow_lang",
  "hydroflow_macro",
  "insta",
@@ -1523,22 +1523,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hydroflow_cli_integration"
-version = "0.5.2"
-dependencies = [
- "async-recursion",
- "async-trait",
- "bytes",
- "futures",
- "pin-project",
- "serde",
- "tempfile",
- "tokio",
- "tokio-stream",
- "tokio-util",
-]
-
-[[package]]
 name = "hydroflow_datalog"
 version = "0.8.0"
 dependencies = [
@@ -1564,6 +1548,22 @@ dependencies = [
  "slotmap",
  "syn 2.0.60",
  "tempfile",
+]
+
+[[package]]
+name = "hydroflow_deploy_integration"
+version = "0.5.2"
+dependencies = [
+ "async-recursion",
+ "async-trait",
+ "bytes",
+ "futures",
+ "pin-project",
+ "serde",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
 ]
 
 [[package]]
@@ -1602,7 +1602,6 @@ name = "hydroflow_plus"
 version = "0.8.0"
 dependencies = [
  "bincode",
- "dyn-clone",
  "hydroflow",
  "hydroflow_lang",
  "insta",
@@ -1616,7 +1615,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hydroflow_plus_cli_integration"
+name = "hydroflow_plus_deploy"
 version = "0.8.0"
 dependencies = [
  "hydro_deploy",
@@ -1638,9 +1637,8 @@ version = "0.0.0"
 dependencies = [
  "futures",
  "hydro_deploy",
- "hydroflow",
  "hydroflow_plus",
- "hydroflow_plus_cli_integration",
+ "hydroflow_plus_deploy",
  "insta",
  "rand 0.8.5",
  "serde",
@@ -1654,17 +1652,13 @@ name = "hydroflow_plus_test_local"
 version = "0.0.0"
 dependencies = [
  "futures",
- "hydro_deploy",
  "hydroflow",
  "hydroflow_plus",
- "hydroflow_plus_cli_integration",
  "hydroflow_plus_test_local_macro",
  "insta",
  "rand 0.8.5",
- "serde",
  "stageleft",
  "stageleft_tool",
- "tokio",
 ]
 
 [[package]]
@@ -1672,12 +1666,9 @@ name = "hydroflow_plus_test_local_macro"
 version = "0.0.0"
 dependencies = [
  "hydroflow_plus",
- "hydroflow_plus_cli_integration",
  "rand 0.8.5",
- "serde",
  "stageleft",
  "stageleft_tool",
- "tokio",
 ]
 
 [[package]]

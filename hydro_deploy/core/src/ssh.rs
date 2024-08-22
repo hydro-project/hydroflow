@@ -14,7 +14,7 @@ use async_trait::async_trait;
 use futures::io::BufReader as FuturesBufReader;
 use futures::stream::FuturesUnordered;
 use futures::{AsyncBufReadExt, AsyncWriteExt};
-use hydroflow_cli_integration::ServerBindConfig;
+use hydroflow_deploy_integration::ServerBindConfig;
 use inferno::collapse::perf::Folder;
 use inferno::collapse::Collapse;
 use nanoid::nanoid;
@@ -40,7 +40,7 @@ struct LaunchedSshBinary {
     channel: AsyncChannel<TcpStream>,
     stdin_sender: mpsc::UnboundedSender<String>,
     stdout_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
-    stdout_cli_receivers: Arc<Mutex<Option<oneshot::Sender<String>>>>,
+    stdout_deploy_receivers: Arc<Mutex<Option<oneshot::Sender<String>>>>,
     stderr_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
     perf: Option<PerfOptions>,
 }
@@ -51,11 +51,11 @@ impl LaunchedBinary for LaunchedSshBinary {
         self.stdin_sender.clone()
     }
 
-    fn cli_stdout(&self) -> oneshot::Receiver<String> {
-        let mut receivers = self.stdout_cli_receivers.lock().unwrap();
+    fn deploy_stdout(&self) -> oneshot::Receiver<String> {
+        let mut receivers = self.stdout_deploy_receivers.lock().unwrap();
 
         if receivers.is_some() {
-            panic!("Only one CLI stdout receiver is allowed at a time");
+            panic!("Only one deploy stdout receiver is allowed at a time");
         }
 
         let (sender, receiver) = oneshot::channel::<String>();
@@ -469,7 +469,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
         });
 
         let id_clone = id.clone();
-        let (stdout_cli_receivers, stdout_receivers) =
+        let (stdout_deploy_receivers, stdout_receivers) =
             prioritized_broadcast(FuturesBufReader::new(channel.stream(0)).lines(), move |s| {
                 ProgressTracker::println(format!("[{id_clone}] {s}"));
             });
@@ -483,7 +483,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
             session: Some(session),
             channel,
             stdin_sender,
-            stdout_cli_receivers,
+            stdout_deploy_receivers,
             stdout_receivers,
             stderr_receivers,
             perf,

@@ -20,7 +20,7 @@ dunce = "1.0.4"
 dyn-clone = "1"
 futures = "0.3.26"
 futures-core = "0.3.26"
-hydroflow_cli_integration = { path = "../hydroflow_cli_integration", version = "^0.5.2" }
+hydroflow_deploy_integration = { path = "../hydroflow_deploy_integration", version = "^0.5.2" }
 indicatif = "0.17.8"
 inferno = "0.11.20"
 memo-map = "0.3.2"

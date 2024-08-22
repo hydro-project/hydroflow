@@ -16,7 +16,7 @@ use crate::LaunchedBinary;
 pub struct LaunchedLocalhostBinary {
     child: Mutex<async_process::Child>,
     stdin_sender: mpsc::UnboundedSender<String>,
-    stdout_cli_receivers: Arc<Mutex<Option<oneshot::Sender<String>>>>,
+    stdout_deploy_receivers: Arc<Mutex<Option<oneshot::Sender<String>>>>,
     stdout_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
     stderr_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
 }
@@ -55,7 +55,7 @@ impl LaunchedLocalhostBinary {
         });
 
         let id_clone = id.clone();
-        let (stdout_cli_receivers, stdout_receivers) = prioritized_broadcast(
+        let (stdout_deploy_receivers, stdout_receivers) = prioritized_broadcast(
             BufReader::new(child.stdout.take().unwrap()).lines(),
             move |s| ProgressTracker::println(format!("[{id_clone}] {s}")),
         );
@@ -67,7 +67,7 @@ impl LaunchedLocalhostBinary {
         Self {
             child: Mutex::new(child),
             stdin_sender,
-            stdout_cli_receivers,
+            stdout_deploy_receivers,
             stdout_receivers,
             stderr_receivers,
         }
@@ -80,11 +80,11 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
         self.stdin_sender.clone()
     }
 
-    fn cli_stdout(&self) -> oneshot::Receiver<String> {
-        let mut receivers = self.stdout_cli_receivers.lock().unwrap();
+    fn deploy_stdout(&self) -> oneshot::Receiver<String> {
+        let mut receivers = self.stdout_deploy_receivers.lock().unwrap();
 
         if receivers.is_some() {
-            panic!("Only one CLI stdout receiver is allowed at a time");
+            panic!("Only one deploy stdout receiver is allowed at a time");
         }
 
         let (sender, receiver) = oneshot::channel::<String>();
