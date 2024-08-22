@@ -312,7 +312,7 @@
         .get_or_init(MemoMap::new)
         .get_or_insert(<span class="kw-2">&amp;</span>params, Default::default)
         .get_or_try_init(<span class="kw">move </span>|| {
-            ProgressTracker::rich_leaf(<span class="string">"build"</span>.to_string(), <span class="kw">move </span>|<span class="kw">_</span>, set_msg| <span class="kw">async move </span>{
+            ProgressTracker::rich_leaf(<span class="string">"build"</span>, <span class="kw">move </span>|set_msg| <span class="kw">async move </span>{
                 tokio::task::spawn_blocking(<span class="kw">move </span>|| {
                     <span class="kw">let </span><span class="kw-2">mut </span>command = Command::new(<span class="string">"cargo"</span>);
                     command.args([<span class="string">"build"</span>]);

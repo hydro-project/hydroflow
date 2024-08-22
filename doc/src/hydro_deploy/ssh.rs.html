@@ -638,7 +638,7 @@
 
     <span class="kw">async fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if </span>!<span class="self">self</span>.channel.eof() {
-            ProgressTracker::leaf(<span class="string">"force stopping"</span>.to_owned(), <span class="kw">async </span>{
+            ProgressTracker::leaf(<span class="string">"force stopping"</span>, <span class="kw">async </span>{
                 <span class="self">self</span>.channel.write_all(<span class="string">b"\x03"</span>).<span class="kw">await</span><span class="question-mark">?</span>; <span class="comment">// `^C`
                 </span><span class="self">self</span>.channel.send_eof().<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="self">self</span>.channel.wait_eof().<span class="kw">await</span><span class="question-mark">?</span>;
@@ -654,7 +654,7 @@
             <span class="kw">let </span><span class="kw-2">mut </span>script_channel = <span class="self">self</span>.session.as_ref().unwrap().channel_session().<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="kw">let </span><span class="kw-2">mut </span>fold_er = Folder::from(perf.fold_options.clone().unwrap_or_default());
 
-            <span class="kw">let </span>fold_data = ProgressTracker::leaf(<span class="string">"perf script &amp; folding"</span>.to_owned(), <span class="kw">async move </span>{
+            <span class="kw">let </span>fold_data = ProgressTracker::leaf(<span class="string">"perf script &amp; folding"</span>, <span class="kw">async move </span>{
                 <span class="kw">let </span><span class="kw-2">mut </span>stderr_lines = FuturesBufReader::new(script_channel.stderr()).lines();
                 <span class="kw">let </span>stdout = script_channel.stream(<span class="number">0</span>);
 
@@ -900,7 +900,7 @@
             <span class="kw">let </span>temp_path = PathBuf::from(<span class="macro">format!</span>(<span class="string">"/home/{user}/hydro-{random}"</span>));
             <span class="kw">let </span>sftp = <span class="kw-2">&amp;</span>sftp;
 
-            ProgressTracker::rich_leaf(
+            ProgressTracker::progress_leaf(
                 <span class="macro">format!</span>(<span class="string">"uploading binary to {}"</span>, binary_path.display()),
                 |set_progress, <span class="kw">_</span>| {
                     <span class="kw">let </span>binary = <span class="kw-2">&amp;</span>binary;

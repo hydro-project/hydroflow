@@ -219,6 +219,11 @@
 <a href="#219" id="219">219</a>
 <a href="#220" id="220">220</a>
 <a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::sync::{Arc, Weak};
@@ -281,7 +286,7 @@
     <span class="kw">pub async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.services.retain(|weak| weak.strong_count() &gt; <span class="number">0</span>);
 
-        progress::ProgressTracker::with_group(<span class="string">"deploy"</span>, <span class="prelude-val">None</span>, || <span class="kw">async </span>{
+        progress::ProgressTracker::with_group(<span class="string">"deploy"</span>, <span class="prelude-val">Some</span>(<span class="number">3</span>), || <span class="kw">async </span>{
             <span class="kw">let </span><span class="kw-2">mut </span>resource_batch = <span class="kw">super</span>::ResourceBatch::new();
 
             <span class="kw">for </span>service <span class="kw">in </span><span class="self">self</span>.services.iter().filter_map(Weak::upgrade) {
@@ -293,7 +298,7 @@
             }
 
             <span class="kw">let </span>resource_result = Arc::new(
-                progress::ProgressTracker::with_group(<span class="string">"provision"</span>, <span class="prelude-val">None</span>, || <span class="kw">async </span>{
+                progress::ProgressTracker::with_group(<span class="string">"provision"</span>, <span class="prelude-val">Some</span>(<span class="number">1</span>), || <span class="kw">async </span>{
                     resource_batch
                         .provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>.resource_pool, <span class="self">self</span>.last_resource_result.clone())
                         .<span class="kw">await
@@ -306,12 +311,16 @@
                 host.provision(<span class="kw-2">&amp;</span>resource_result);
             }
 
-            progress::ProgressTracker::with_group(<span class="string">"deploy"</span>, <span class="prelude-val">None</span>, || {
-                <span class="kw">let </span>services_future = <span class="self">self
-                    </span>.services
+            <span class="kw">let </span>upgraded_services = <span class="self">self
+                </span>.services
+                .iter()
+                .filter_map(Weak::upgrade)
+                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+
+            progress::ProgressTracker::with_group(<span class="string">"prepare"</span>, <span class="prelude-val">Some</span>(upgraded_services.len()), || {
+                <span class="kw">let </span>services_future = upgraded_services
                     .iter()
-                    .filter_map(Weak::upgrade)
-                    .map(|service: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;| {
+                    .map(|service: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;| {
                         <span class="kw">let </span>resource_result = <span class="kw-2">&amp;</span>resource_result;
                         <span class="kw">async move </span>{ service.write().<span class="kw">await</span>.deploy(resource_result).<span class="kw">await </span>}
                     })
@@ -323,13 +332,14 @@
             })
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
-            progress::ProgressTracker::with_group(<span class="string">"ready"</span>, <span class="prelude-val">None</span>, || {
-                <span class="kw">let </span>all_services_ready = <span class="self">self</span>.services.iter().filter_map(Weak::upgrade).map(
-                    |service: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;| <span class="kw">async move </span>{
-                        service.write().<span class="kw">await</span>.ready().<span class="kw">await</span><span class="question-mark">?</span>;
-                        <span class="prelude-val">Ok</span>(()) <span class="kw">as </span><span class="prelude-ty">Result</span>&lt;()&gt;
-                    },
-                );
+            progress::ProgressTracker::with_group(<span class="string">"ready"</span>, <span class="prelude-val">Some</span>(upgraded_services.len()), || {
+                <span class="kw">let </span>all_services_ready =
+                    upgraded_services
+                        .iter()
+                        .map(|service: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;| <span class="kw">async move </span>{
+                            service.write().<span class="kw">await</span>.ready().<span class="kw">await</span><span class="question-mark">?</span>;
+                            <span class="prelude-val">Ok</span>(()) <span class="kw">as </span><span class="prelude-ty">Result</span>&lt;()&gt;
+                        });
 
                 futures::future::try_join_all(all_services_ready)
             })

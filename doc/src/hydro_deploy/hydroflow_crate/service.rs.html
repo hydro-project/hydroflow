@@ -341,9 +341,6 @@
 <a href="#341" id="341">341</a>
 <a href="#342" id="342">342</a>
 <a href="#343" id="343">343</a>
-<a href="#344" id="344">344</a>
-<a href="#345" id="345">345</a>
-<a href="#346" id="346">346</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
@@ -543,13 +540,12 @@
         }
 
         ProgressTracker::with_group(
-            <span class="kw-2">&amp;</span><span class="self">self
-                </span>.display_id
+            <span class="self">self</span>.display_id
                 .clone()
                 .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id)),
             <span class="prelude-val">None</span>,
             || <span class="kw">async </span>{
-                <span class="kw">let </span>built = <span class="self">self</span>.build().<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>built = ProgressTracker::leaf(<span class="string">"build"</span>, <span class="self">self</span>.build()).<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="kw">let </span>host = <span class="kw-2">&amp;</span><span class="self">self</span>.on;
                 <span class="kw">let </span>launched = host.provision(resource_result);
@@ -569,8 +565,7 @@
         }
 
         ProgressTracker::with_group(
-            <span class="kw-2">&amp;</span><span class="self">self
-                </span>.display_id
+            <span class="self">self</span>.display_id
                 .clone()
                 .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id)),
             <span class="prelude-val">None</span>,
@@ -605,7 +600,7 @@
                 binary.stdin().send(<span class="macro">format!</span>(<span class="string">"{formatted_bind_config}\n"</span>))<span class="question-mark">?</span>;
 
                 <span class="kw">let </span>ready_line = ProgressTracker::leaf(
-                    <span class="string">"waiting for ready"</span>.to_string(),
+                    <span class="string">"waiting for ready"</span>,
                     tokio::time::timeout(Duration::from_secs(<span class="number">60</span>), stdout_receiver),
                 )
                 .<span class="kw">await</span><span class="question-mark">??</span>;
@@ -663,8 +658,7 @@
 
     <span class="kw">async fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         ProgressTracker::with_group(
-            <span class="kw-2">&amp;</span><span class="self">self
-                </span>.display_id
+            <span class="self">self</span>.display_id
                 .clone()
                 .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id)),
             <span class="prelude-val">None</span>,
@@ -673,7 +667,7 @@
                 launched_binary.stdin().send(<span class="string">"stop\n"</span>.to_string())<span class="question-mark">?</span>;
 
                 <span class="kw">let </span>timeout_result = ProgressTracker::leaf(
-                    <span class="string">"waiting for exit"</span>.to_owned(),
+                    <span class="string">"waiting for exit"</span>,
                     tokio::time::timeout(Duration::from_secs(<span class="number">60</span>), launched_binary.wait()),
                 )
                 .<span class="kw">await</span>;
