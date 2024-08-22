@@ -54,7 +54,7 @@ mod tests {
         insta::assert_debug_snapshot!(optimized.ir());
         for (id, graph) in optimized.compile_no_network::<MultiGraph>().hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
-                insta::assert_display_snapshot!(graph.surface_syntax_string());
+                insta::assert_snapshot!(graph.surface_syntax_string());
             });
         }
     }
@@ -83,7 +83,7 @@ mod tests {
 
         for (id, graph) in optimized.compile_no_network::<MultiGraph>().hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
-                insta::assert_display_snapshot!(graph.surface_syntax_string());
+                insta::assert_snapshot!(graph.surface_syntax_string());
             });
         }
     }

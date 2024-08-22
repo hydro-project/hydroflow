@@ -11,11 +11,11 @@ description = "Procedural macros for the `lattices` crate."
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "1.0.63"
-proc-macro-crate = "1.1.0"
-quote = "1.0.0"
-syn = { version = "2.0.0", features = [ "full", "parsing", "visit-mut" ] }
+proc-macro2 = "1"
+proc-macro-crate = "1.1"
+quote = "1"
+syn = { version = "2", features = [ "full", "parsing", "visit-mut" ] }
 
 [dev-dependencies]
-insta = "1.7.1"
+insta = "1.39"
 prettyplease = "0.2.20"
