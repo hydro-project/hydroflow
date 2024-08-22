@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use futures::{Future, StreamExt};
-use futures_core::Stream;
+use futures::Stream;
 use tokio::sync::{mpsc, oneshot};
 
 pub async fn async_retry<T, F: Future<Output = Result<T>>>(

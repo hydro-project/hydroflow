@@ -42,12 +42,14 @@ pub fn main() {
         }) -> for_each(|e| println!("three_clique found: {:?}", e));
     };
 
+    #[cfg(feature = "debugging")]
     if let Some(graph) = opts.graph {
         let serde_graph = df
             .meta_graph()
             .expect("No graph found, maybe failed to parse.");
         serde_graph.open_graph(graph, opts.write_config).unwrap();
     }
+    let _ = opts;
 
     df.run_available();
 
