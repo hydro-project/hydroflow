@@ -267,8 +267,16 @@ impl<'a> FlowBuilder<'a> {
         on: &L,
         delay: impl Quoted<'a, Duration> + Copy + 'a,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
-    ) -> Stream<'a, hydroflow::tokio::time::Instant, Async, L>  {
-        self.source_stream(on, q!(hydroflow::tokio_stream::wrappers::IntervalStream::new(hydroflow::tokio::time::interval_at(hydroflow::tokio::time::Instant::now() + delay, interval))))
+    ) -> Stream<'a, hydroflow::tokio::time::Instant, Async, L> {
+        self.source_stream(
+            on,
+            q!(hydroflow::tokio_stream::wrappers::IntervalStream::new(
+                hydroflow::tokio::time::interval_at(
+                    hydroflow::tokio::time::Instant::now() + delay,
+                    interval
+                )
+            )),
+        )
     }
 
     pub fn cycle<T, W, L: Location>(&self, on: &L) -> (HfCycle<'a, T, W, L>, Stream<'a, T, W, L>) {
