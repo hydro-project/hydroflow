@@ -60,7 +60,7 @@ impl Deployment {
     pub async fn deploy(&mut self) -> Result<()> {
         self.services.retain(|weak| weak.strong_count() > 0);
 
-        progress::ProgressTracker::with_group("deploy", None, || async {
+        progress::ProgressTracker::with_group("deploy", Some(3), || async {
             let mut resource_batch = super::ResourceBatch::new();
 
             for service in self.services.iter().filter_map(Weak::upgrade) {
@@ -72,7 +72,7 @@ impl Deployment {
             }
 
             let resource_result = Arc::new(
-                progress::ProgressTracker::with_group("provision", None, || async {
+                progress::ProgressTracker::with_group("provision", Some(1), || async {
                     resource_batch
                         .provision(&mut self.resource_pool, self.last_resource_result.clone())
                         .await
@@ -85,12 +85,16 @@ impl Deployment {
                 host.provision(&resource_result);
             }
 
-            progress::ProgressTracker::with_group("deploy", None, || {
-                let services_future = self
-                    .services
+            let upgraded_services = self
+                .services
+                .iter()
+                .filter_map(Weak::upgrade)
+                .collect::<Vec<_>>();
+
+            progress::ProgressTracker::with_group("prepare", Some(upgraded_services.len()), || {
+                let services_future = upgraded_services
                     .iter()
-                    .filter_map(Weak::upgrade)
-                    .map(|service: Arc<RwLock<dyn Service>>| {
+                    .map(|service: &Arc<RwLock<dyn Service>>| {
                         let resource_result = &resource_result;
                         async move { service.write().await.deploy(resource_result).await }
                     })
@@ -102,13 +106,14 @@ impl Deployment {
             })
             .await?;
 
-            progress::ProgressTracker::with_group("ready", None, || {
-                let all_services_ready = self.services.iter().filter_map(Weak::upgrade).map(
-                    |service: Arc<RwLock<dyn Service>>| async move {
-                        service.write().await.ready().await?;
-                        Ok(()) as Result<()>
-                    },
-                );
+            progress::ProgressTracker::with_group("ready", Some(upgraded_services.len()), || {
+                let all_services_ready =
+                    upgraded_services
+                        .iter()
+                        .map(|service: &Arc<RwLock<dyn Service>>| async move {
+                            service.write().await.ready().await?;
+                            Ok(()) as Result<()>
+                        });
 
                 futures::future::try_join_all(all_services_ready)
             })

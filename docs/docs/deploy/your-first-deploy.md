@@ -26,12 +26,12 @@ rustup update
 cargo test
 ```
 
-We'll need to add an additional dependency for `hydroflow_cli_integration` to our `Cargo.toml`:
+We'll need to add an additional dependency for `hydroflow_deploy_integration` to our `Cargo.toml`:
 
 ```toml
 [dependencies]
 # ...
-hydroflow_cli_integration = "0.1.1"
+hydroflow_deploy_integration = "0.1.1"
 ```
 
 Let's open up `src/main.rs` in the generated project and write a new `main` function that initializes Hydro Deploy:
@@ -39,7 +39,7 @@ Let's open up `src/main.rs` in the generated project and write a new `main` func
 ```rust
 #[hydroflow::main]
 async fn main() {
-    let ports = hydroflow::util::cli::init().await;
+    let ports = hydroflow::util::deploy::init().await;
 }
 ```
 
@@ -77,12 +77,12 @@ Now, we need to wire up the ports. Hydro Deploy uses _named ports_, which can th
 Returning briefly to our Hydroflow code, we can then load these ports and use them to send and receive packets:
 
 ```rust
-use hydroflow_cli_integration::ConnectedDirect;
+use hydroflow_deploy_integration::ConnectedDirect;
 use hydroflow::hydroflow_syntax;
 
 #[hydroflow::main]
 async fn main() {
-    let ports = hydroflow::util::cli::init().await;
+    let ports = hydroflow::util::deploy::init().await;
 
     let input_recv = ports
         .port("input")
@@ -97,7 +97,7 @@ async fn main() {
         .await
         .into_sink();
 
-    hydroflow::util::cli::launch_flow(hydroflow_syntax! {
+    hydroflow::util::deploy::launch_flow(hydroflow_syntax! {
         source_iter(["hello".to_string()]) -> dest_sink(output_send);
         input = source_stream(input_recv) -> tee();
         input -> dest_sink(output_send);

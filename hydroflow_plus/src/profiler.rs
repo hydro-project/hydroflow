@@ -17,23 +17,24 @@ fn quoted_any_fn<'a, F: Fn(&usize) + 'a, Q: IntoQuotedMut<'a, F>>(q: Q) -> Q {
 
 /// Add a profiling node before each node to count the cardinality of its input
 fn add_profiling_node<'a>(
-    node: HfPlusNode<'a>,
+    node: &mut HfPlusNode<'a>,
     _context: RuntimeContext<'a>,
     counters: RuntimeData<&'a RefCell<Vec<u64>>>,
     counter_queue: RuntimeData<&'a RefCell<UnboundedSender<(usize, u64)>>>,
     id: &mut u32,
     seen_tees: &mut SeenTees<'a>,
-) -> HfPlusNode<'a> {
+) {
     let my_id = *id;
     *id += 1;
 
-    let child = node.transform_children(
+    node.transform_children(
         |node, seen_tees| {
             add_profiling_node(node, _context, counters, counter_queue, id, seen_tees)
         },
         seen_tees,
     );
-    HfPlusNode::Inspect {
+    let orig_node = std::mem::replace(node, HfPlusNode::Placeholder);
+    *node = HfPlusNode::Inspect {
         f: quoted_any_fn(q!({
             // Put counters on queue
             counter_queue
@@ -49,7 +50,7 @@ fn add_profiling_node<'a>(
         }))
         .splice()
         .into(),
-        input: Box::new(child),
+        input: Box::new(orig_node),
     }
 }
 
@@ -74,7 +75,6 @@ pub fn profiling<'a>(
         .collect()
 }
 
-#[stageleft::runtime]
 #[cfg(test)]
 mod tests {
     use stageleft::*;

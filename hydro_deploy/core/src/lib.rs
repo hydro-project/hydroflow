@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use hydroflow_cli_integration::ServerBindConfig;
 use hydroflow_crate::perf_options::PerfOptions;
+use hydroflow_deploy_integration::ServerBindConfig;
 
 pub mod deployment;
 pub use deployment::Deployment;
@@ -74,11 +74,11 @@ pub struct ResourceResult {
 pub trait LaunchedBinary: Send + Sync {
     fn stdin(&self) -> mpsc::UnboundedSender<String>;
 
-    /// Provides a oneshot channel for the CLI to handshake with the binary,
-    /// with the guarantee that as long as the CLI is holding on
+    /// Provides a oneshot channel to handshake with the binary,
+    /// with the guarantee that as long as deploy is holding on
     /// to a handle, none of the messages will also be broadcast
     /// to the user-facing [`LaunchedBinary::stdout`] channel.
-    fn cli_stdout(&self) -> oneshot::Receiver<String>;
+    fn deploy_stdout(&self) -> oneshot::Receiver<String>;
 
     fn stdout(&self) -> mpsc::UnboundedReceiver<String>;
     fn stderr(&self) -> mpsc::UnboundedReceiver<String>;

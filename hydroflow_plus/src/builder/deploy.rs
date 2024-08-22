@@ -29,12 +29,16 @@ impl<'a, D: LocalDeploy<'a>> Drop for DeployFlow<'a, D> {
 
 impl<'a, D: LocalDeploy<'a>> DeployFlow<'a, D> {
     pub fn with_process<P>(mut self, process: &Process<P>, spec: impl ProcessSpec<'a, D>) -> Self {
-        self.nodes.insert(process.id, spec.build(process.id));
+        let tag_name = std::any::type_name::<P>().to_string();
+        self.nodes
+            .insert(process.id, spec.build(process.id, &tag_name));
         self
     }
 
     pub fn with_cluster<C>(mut self, cluster: &Cluster<C>, spec: impl ClusterSpec<'a, D>) -> Self {
-        self.clusters.insert(cluster.id, spec.build(cluster.id));
+        let tag_name = std::any::type_name::<C>().to_string();
+        self.clusters
+            .insert(cluster.id, spec.build(cluster.id, &tag_name));
         self
     }
 }
@@ -44,11 +48,21 @@ impl<'a, D: Deploy<'a>> DeployFlow<'a, D> {
         self.used = true;
 
         let mut seen_tees: HashMap<_, _> = HashMap::new();
-        let ir_leaves_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
+        let mut ir_leaves_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
             .into_iter()
             .map(|leaf| leaf.compile_network::<D>(env, &mut seen_tees, &self.nodes, &self.clusters))
             .collect();
 
+        let extra_stmts = self.extra_stmts(env);
+
+        HfCompiled {
+            hydroflow_ir: build_inner(&mut ir_leaves_networked),
+            extra_stmts,
+            _phantom: PhantomData,
+        }
+    }
+
+    fn extra_stmts(&self, env: &<D as Deploy<'a>>::CompileEnv) -> BTreeMap<usize, Vec<syn::Stmt>> {
         let all_locations_count = self.nodes.len() + self.clusters.len();
 
         let mut extra_stmts: BTreeMap<usize, Vec<syn::Stmt>> = BTreeMap::new();
@@ -79,12 +93,7 @@ impl<'a, D: Deploy<'a>> DeployFlow<'a, D> {
                     });
             }
         }
-
-        HfCompiled {
-            hydroflow_ir: build_inner(ir_leaves_networked),
-            extra_stmts,
-            _phantom: PhantomData,
-        }
+        extra_stmts
     }
 }
 
@@ -94,7 +103,7 @@ impl<'a, D: Deploy<'a, CompileEnv = ()>> DeployFlow<'a, D> {
         self.used = true;
 
         let mut seen_tees_instantiate: HashMap<_, _> = HashMap::new();
-        let ir_leaves_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
+        let mut ir_leaves_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
             .into_iter()
             .map(|leaf| {
                 leaf.compile_network::<D>(
@@ -106,21 +115,32 @@ impl<'a, D: Deploy<'a, CompileEnv = ()>> DeployFlow<'a, D> {
             })
             .collect();
 
-        let mut compiled = build_inner(ir_leaves_networked.clone());
+        let mut compiled = build_inner(&mut ir_leaves_networked);
+        let mut extra_stmts = self.extra_stmts(&());
         let mut meta = D::Meta::default();
 
         let (mut processes, mut clusters) = (
             std::mem::take(&mut self.nodes)
                 .into_iter()
                 .map(|(node_id, node)| {
-                    node.instantiate(env, &mut meta, compiled.remove(&node_id).unwrap());
+                    node.instantiate(
+                        env,
+                        &mut meta,
+                        compiled.remove(&node_id).unwrap(),
+                        extra_stmts.remove(&node_id).unwrap_or_default(),
+                    );
                     (node_id, node)
                 })
                 .collect::<HashMap<_, _>>(),
             std::mem::take(&mut self.clusters)
                 .into_iter()
                 .map(|(cluster_id, cluster)| {
-                    cluster.instantiate(env, &mut meta, compiled.remove(&cluster_id).unwrap());
+                    cluster.instantiate(
+                        env,
+                        &mut meta,
+                        compiled.remove(&cluster_id).unwrap(),
+                        extra_stmts.remove(&cluster_id).unwrap_or_default(),
+                    );
                     (cluster_id, cluster)
                 })
                 .collect::<HashMap<_, _>>(),

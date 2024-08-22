@@ -4,7 +4,7 @@ use std::sync::{Arc, OnceLock, Weak};
 
 use anyhow::{bail, Result};
 use async_trait::async_trait;
-use hydroflow_cli_integration::{ConnectedDirect, ServerPort};
+use hydroflow_deploy_integration::{ConnectedDirect, ServerPort};
 use tokio::sync::RwLock;
 
 use super::hydroflow_crate::ports::{

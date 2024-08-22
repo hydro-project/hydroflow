@@ -10,7 +10,7 @@ use std::sync::{Arc, OnceLock};
 
 use bytes::Bytes;
 use futures::{Future, SinkExt, StreamExt};
-use hydroflow_cli_integration::{
+use hydroflow_deploy_integration::{
     ConnectedDirect, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
 };
 use pyo3::exceptions::{PyException, PyStopAsyncIteration};
@@ -279,7 +279,10 @@ impl Deployment {
                 bin,
                 example,
                 profile,
-                None, // Python API doesn't support perf
+                None,  // Python API doesn't support rustflags
+                None,  // Python API doesn't support target_dir
+                false, // Python API doesn't support no_default_features
+                None,  // Python API doesn't support perf
                 features,
                 args,
                 display_id,
@@ -707,7 +710,7 @@ fn null(py: Python<'_>) -> PyResult<Py<PyAny>> {
 
 #[pyclass]
 struct ServerPort {
-    underlying: hydroflow_cli_integration::ServerPort,
+    underlying: hydroflow_deploy_integration::ServerPort,
 }
 
 fn with_tokio_runtime<T>(f: impl Fn() -> T) -> T {
