@@ -275,10 +275,10 @@
                         Iter: <span class="lifetime">'a </span>+ ::std::iter::Iterator&lt;Item = Item&gt;,
                         Lat: <span class="lifetime">'static </span>+ #root::lattices::Merge&lt;Item&gt;,
                     {
-                        iter.inspect(<span class="kw">move </span>|item| {
+                        iter.filter(<span class="kw">move </span>|item| {
                             <span class="kw">let </span>state = context.state_ref(state_handle);
                             <span class="kw">let </span><span class="kw-2">mut </span>state = state.borrow_mut();
-                            #root::lattices::Merge::merge(<span class="kw-2">&amp;mut *</span>state, ::std::clone::Clone::clone(item));
+                            #root::lattices::Merge::merge(<span class="kw-2">&amp;mut *</span>state, ::std::clone::Clone::clone(item))
                         })
                     }
                     check_input::&lt;<span class="kw">_</span>, <span class="kw">_</span>, #lattice_type&gt;(#input, #state_ident, #context)
@@ -297,10 +297,10 @@
                         Push: #root::pusherator::Pusherator&lt;Item = Item&gt;,
                         Lat: <span class="lifetime">'static </span>+ #root::lattices::Merge&lt;Item&gt;,
                     {
-                        #root::pusherator::inspect::Inspect::new(<span class="kw">move </span>|item| {
+                        #root::pusherator::filter::Filter::new(<span class="kw">move </span>|item| {
                             <span class="kw">let </span>state = context.state_ref(state_handle);
                             <span class="kw">let </span><span class="kw-2">mut </span>state = state.borrow_mut();
-                            #root::lattices::Merge::merge(<span class="kw-2">&amp;mut *</span>state, ::std::clone::Clone::clone(item));
+                            #root::lattices::Merge::merge(<span class="kw-2">&amp;mut *</span>state, ::std::clone::Clone::clone(item))
                         }, push)
                     }
                     check_output::&lt;<span class="kw">_</span>, <span class="kw">_</span>, #lattice_type&gt;(#output, #state_ident, #context)
