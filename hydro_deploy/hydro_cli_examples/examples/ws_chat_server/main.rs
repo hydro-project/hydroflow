@@ -1,6 +1,6 @@
 use hydroflow::compiled::pull::HalfMultisetJoinState;
 use hydroflow::hydroflow_syntax;
-use hydroflow::util::cli::{ConnectedSink, ConnectedSource};
+use hydroflow::util::deploy::{ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
@@ -29,17 +29,17 @@ struct ChatMessage {
 
 #[hydroflow::main]
 async fn main() {
-    let ports = hydroflow::util::cli::init::<()>().await;
+    let ports = hydroflow::util::deploy::init::<()>().await;
 
     let from_peer = ports
         .port("from_peer")
-        .connect::<hydroflow::util::cli::ConnectedDirect>()
+        .connect::<hydroflow::util::deploy::ConnectedDirect>()
         .await
         .into_source();
 
     let to_peer = ports
         .port("to_peer")
-        .connect::<hydroflow::util::cli::ConnectedDemux<hydroflow::util::cli::ConnectedDirect>>()
+        .connect::<hydroflow::util::deploy::ConnectedDemux<hydroflow::util::deploy::ConnectedDirect>>()
         .await
         .into_sink();
 
@@ -116,5 +116,5 @@ async fn main() {
         all_messages -> [1]broadcast_clients;
     };
 
-    hydroflow::util::cli::launch_flow(df).await;
+    hydroflow::util::deploy::launch_flow(df).await;
 }

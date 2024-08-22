@@ -28,7 +28,7 @@ pub fn simple_cluster(flow: &FlowBuilder) -> (Process<()>, Cluster<()>) {
 #[cfg(test)]
 mod tests {
     use hydro_deploy::Deployment;
-    use hydroflow_plus_cli_integration::{DeployCrateWrapper, TrybuildHost};
+    use hydroflow_plus_deploy::{DeployCrateWrapper, TrybuildHost};
 
     #[tokio::test]
     async fn simple_cluster() {

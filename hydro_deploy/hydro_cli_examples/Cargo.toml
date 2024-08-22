@@ -35,7 +35,7 @@ name = "dedalus_2pc_participant"
 name = "ws_chat_server"
 
 [dev-dependencies]
-hydroflow = { path = "../../hydroflow", features = [ "cli_integration" ] }
+hydroflow = { path = "../../hydroflow", features = [ "deploy_integration" ] }
 hydroflow_datalog = { path = "../../hydroflow_datalog" }
 
 tokio = { version = "1.16", features = [ "full" ] }

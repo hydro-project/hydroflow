@@ -1,18 +1,18 @@
-use hydroflow_plus::util::cli::{
-    ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, HydroCLI,
+use hydroflow_plus::util::deploy::{
+    ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, DeployPorts,
 };
 use stageleft::{q, Quoted, RuntimeData};
 
 use crate::HydroflowPlusMeta;
 
 pub fn cluster_members<'a>(of_cluster: usize) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
-    let cli: RuntimeData<&HydroCLI<HydroflowPlusMeta>> =
+    let cli: RuntimeData<&DeployPorts<HydroflowPlusMeta>> =
         RuntimeData::new("__hydroflow_plus_trybuild_cli");
     q!(cli.meta.clusters.get(&of_cluster).unwrap())
 }
 
 pub fn cluster_self_id<'a>() -> impl Quoted<'a, u32> + Copy + 'a {
-    let cli: RuntimeData<&HydroCLI<HydroflowPlusMeta>> =
+    let cli: RuntimeData<&DeployPorts<HydroflowPlusMeta>> =
         RuntimeData::new("__hydroflow_plus_trybuild_cli");
     q!(cli
         .meta
@@ -21,7 +21,7 @@ pub fn cluster_self_id<'a>() -> impl Quoted<'a, u32> + Copy + 'a {
 }
 
 pub fn deploy_o2o(p1_port: &str, p2_port: &str) -> (syn::Expr, syn::Expr) {
-    let env: RuntimeData<&HydroCLI<HydroflowPlusMeta>> =
+    let env: RuntimeData<&DeployPorts<HydroflowPlusMeta>> =
         RuntimeData::new("__hydroflow_plus_trybuild_cli");
     (
         {
@@ -44,7 +44,7 @@ pub fn deploy_o2o(p1_port: &str, p2_port: &str) -> (syn::Expr, syn::Expr) {
 }
 
 pub fn deploy_o2m(p1_port: &str, c2_port: &str) -> (syn::Expr, syn::Expr) {
-    let env: RuntimeData<&HydroCLI<HydroflowPlusMeta>> =
+    let env: RuntimeData<&DeployPorts<HydroflowPlusMeta>> =
         RuntimeData::new("__hydroflow_plus_trybuild_cli");
     (
         {
@@ -67,7 +67,7 @@ pub fn deploy_o2m(p1_port: &str, c2_port: &str) -> (syn::Expr, syn::Expr) {
 }
 
 pub fn deploy_m2o(c1_port: &str, p2_port: &str) -> (syn::Expr, syn::Expr) {
-    let env: RuntimeData<&HydroCLI<HydroflowPlusMeta>> =
+    let env: RuntimeData<&DeployPorts<HydroflowPlusMeta>> =
         RuntimeData::new("__hydroflow_plus_trybuild_cli");
     (
         {
@@ -90,7 +90,7 @@ pub fn deploy_m2o(c1_port: &str, p2_port: &str) -> (syn::Expr, syn::Expr) {
 }
 
 pub fn deploy_m2m(c1_port: &str, c2_port: &str) -> (syn::Expr, syn::Expr) {
-    let env: RuntimeData<&HydroCLI<HydroflowPlusMeta>> =
+    let env: RuntimeData<&DeployPorts<HydroflowPlusMeta>> =
         RuntimeData::new("__hydroflow_plus_trybuild_cli");
     (
         {

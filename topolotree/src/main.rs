@@ -12,7 +12,7 @@ use futures::{SinkExt, Stream};
 use hydroflow::bytes::{Bytes, BytesMut};
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow::util::cli::{
+use hydroflow::util::deploy::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged,
 };
 
@@ -217,7 +217,7 @@ async fn main() {
     let _self_id: u32 = args.next().unwrap().parse().unwrap();
     let neighbors: Vec<u32> = args.map(|x| x.parse().unwrap()).collect();
 
-    let ports = hydroflow::util::cli::init::<()>().await;
+    let ports = hydroflow::util::deploy::init::<()>().await;
 
     let input_recv = ports
         .port("from_peer")
@@ -289,6 +289,6 @@ async fn main() {
     }
 
     let f1_handle = tokio::spawn(f1);
-    hydroflow::util::cli::launch_flow(flow).await;
+    hydroflow::util::deploy::launch_flow(flow).await;
     f1_handle.abort();
 }
