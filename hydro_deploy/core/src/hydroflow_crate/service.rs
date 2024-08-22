@@ -203,7 +203,7 @@ impl Service for HydroflowCrateService {
                 .unwrap_or_else(|| format!("service/{}", self.id)),
             None,
             || async {
-                let built = self.build().await?;
+                let built = ProgressTracker::leaf("build", self.build()).await?;
 
                 let host = &self.on;
                 let launched = host.provision(resource_result);
@@ -259,7 +259,7 @@ impl Service for HydroflowCrateService {
                 binary.stdin().send(format!("{formatted_bind_config}\n"))?;
 
                 let ready_line = ProgressTracker::leaf(
-                    "waiting for ready".to_string(),
+                    "waiting for ready",
                     tokio::time::timeout(Duration::from_secs(60), stdout_receiver),
                 )
                 .await??;
@@ -327,7 +327,7 @@ impl Service for HydroflowCrateService {
                 launched_binary.stdin().send("stop\n".to_string())?;
 
                 let timeout_result = ProgressTracker::leaf(
-                    "waiting for exit".to_owned(),
+                    "waiting for exit",
                     tokio::time::timeout(Duration::from_secs(60), launched_binary.wait()),
                 )
                 .await;

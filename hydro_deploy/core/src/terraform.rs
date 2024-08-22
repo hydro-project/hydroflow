@@ -119,7 +119,7 @@ impl TerraformBatch {
             });
         }
 
-        ProgressTracker::with_group("terraform", None, || async {
+        ProgressTracker::with_group("terraform", Some(1), || async {
             let dothydro_folder = std::env::current_dir().unwrap().join(".hydro");
             std::fs::create_dir_all(&dothydro_folder).unwrap();
             let deployment_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
