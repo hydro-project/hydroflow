@@ -31,7 +31,6 @@ mod tests {
     #[tokio::test]
     async fn first_ten_distributed() {
         let mut deployment = Deployment::new();
-        let localhost = deployment.Localhost();
 
         let builder = hydroflow_plus::FlowBuilder::new();
         let (first_node, second_node) = super::first_ten_distributed(&builder);
@@ -42,8 +41,8 @@ mod tests {
 
         // if we drop this, we drop the references to the deployment nodes
         let nodes = built
-            .with_process(&first_node, TrybuildHost::new(localhost.clone()))
-            .with_process(&second_node, TrybuildHost::new(localhost.clone()))
+            .with_process(&first_node, TrybuildHost::new(deployment.Localhost()))
+            .with_process(&second_node, TrybuildHost::new(deployment.Localhost()))
             .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();

@@ -18,7 +18,6 @@ mod tests {
     #[tokio::test]
     async fn many_to_many() {
         let mut deployment = Deployment::new();
-        let localhost = deployment.Localhost();
 
         let builder = hydroflow_plus::FlowBuilder::new();
         let cluster = super::many_to_many(&builder);
@@ -30,7 +29,7 @@ mod tests {
             .with_cluster(
                 &cluster,
                 (0..2)
-                    .map(|_| TrybuildHost::new(localhost.clone()))
+                    .map(|_| TrybuildHost::new(deployment.Localhost()))
                     .collect::<Vec<_>>(),
             )
             .deploy(&mut deployment);
