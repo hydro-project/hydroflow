@@ -150,7 +150,7 @@
 <span class="kw">pub struct </span>LaunchedLocalhostBinary {
     child: Mutex&lt;async_process::Child&gt;,
     stdin_sender: mpsc::UnboundedSender&lt;String&gt;,
-    stdout_cli_receivers: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;oneshot::Sender&lt;String&gt;&gt;&gt;&gt;,
+    stdout_deploy_receivers: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;oneshot::Sender&lt;String&gt;&gt;&gt;&gt;,
     stdout_receivers: Arc&lt;Mutex&lt;Vec&lt;mpsc::UnboundedSender&lt;String&gt;&gt;&gt;&gt;,
     stderr_receivers: Arc&lt;Mutex&lt;Vec&lt;mpsc::UnboundedSender&lt;String&gt;&gt;&gt;&gt;,
 }
@@ -189,7 +189,7 @@
         });
 
         <span class="kw">let </span>id_clone = id.clone();
-        <span class="kw">let </span>(stdout_cli_receivers, stdout_receivers) = prioritized_broadcast(
+        <span class="kw">let </span>(stdout_deploy_receivers, stdout_receivers) = prioritized_broadcast(
             BufReader::new(child.stdout.take().unwrap()).lines(),
             <span class="kw">move </span>|s| ProgressTracker::println(<span class="macro">format!</span>(<span class="string">"[{id_clone}] {s}"</span>)),
         );
@@ -201,7 +201,7 @@
         <span class="self">Self </span>{
             child: Mutex::new(child),
             stdin_sender,
-            stdout_cli_receivers,
+            stdout_deploy_receivers,
             stdout_receivers,
             stderr_receivers,
         }
@@ -214,11 +214,11 @@
         <span class="self">self</span>.stdin_sender.clone()
     }
 
-    <span class="kw">fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; oneshot::Receiver&lt;String&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_cli_receivers.lock().unwrap();
+    <span class="kw">fn </span>deploy_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; oneshot::Receiver&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_deploy_receivers.lock().unwrap();
 
         <span class="kw">if </span>receivers.is_some() {
-            <span class="macro">panic!</span>(<span class="string">"Only one CLI stdout receiver is allowed at a time"</span>);
+            <span class="macro">panic!</span>(<span class="string">"Only one deploy stdout receiver is allowed at a time"</span>);
         }
 
         <span class="kw">let </span>(sender, receiver) = oneshot::channel::&lt;String&gt;();

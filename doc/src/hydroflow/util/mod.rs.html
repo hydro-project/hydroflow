@@ -385,8 +385,8 @@
 <span class="attr">#[cfg(unix)]
 </span><span class="kw">pub use </span>socket::<span class="kw-2">*</span>;
 
-<span class="attr">#[cfg(feature = <span class="string">"cli_integration"</span>)]
-</span><span class="kw">pub mod </span>cli;
+<span class="attr">#[cfg(feature = <span class="string">"deploy_integration"</span>)]
+</span><span class="kw">pub mod </span>deploy;
 
 <span class="kw">use </span>std::io::Read;
 <span class="kw">use </span>std::net::SocketAddr;

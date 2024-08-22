@@ -869,7 +869,7 @@
 
 <span class="kw">use </span>bytes::Bytes;
 <span class="kw">use </span>futures::{Future, SinkExt, StreamExt};
-<span class="kw">use </span>hydroflow_cli_integration::{
+<span class="kw">use </span>hydroflow_deploy_integration::{
     ConnectedDirect, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
 };
 <span class="kw">use </span>pyo3::exceptions::{PyException, PyStopAsyncIteration};
@@ -1569,7 +1569,7 @@
 
 <span class="attr">#[pyclass]
 </span><span class="kw">struct </span>ServerPort {
-    underlying: hydroflow_cli_integration::ServerPort,
+    underlying: hydroflow_deploy_integration::ServerPort,
 }
 
 <span class="kw">fn </span>with_tokio_runtime&lt;T&gt;(f: <span class="kw">impl </span>Fn() -&gt; T) -&gt; T {

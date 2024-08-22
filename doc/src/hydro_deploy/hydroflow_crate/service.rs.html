@@ -352,7 +352,7 @@
 <span class="kw">use </span>anyhow::{bail, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures_core::Future;
-<span class="kw">use </span>hydroflow_cli_integration::{InitConfig, ServerPort};
+<span class="kw">use </span>hydroflow_deploy_integration::{InitConfig, ServerPort};
 <span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>tokio::sync::{mpsc, RwLock};
 
@@ -600,7 +600,7 @@
                     serde_json::to_string::&lt;InitConfig&gt;(<span class="kw-2">&amp;</span>(bind_config, <span class="self">self</span>.meta.clone())).unwrap();
 
                 <span class="comment">// request stdout before sending config so we don't miss the "ready" response
-                </span><span class="kw">let </span>stdout_receiver = binary.cli_stdout();
+                </span><span class="kw">let </span>stdout_receiver = binary.deploy_stdout();
 
                 binary.stdin().send(<span class="macro">format!</span>(<span class="string">"{formatted_bind_config}\n"</span>))<span class="question-mark">?</span>;
 
@@ -636,7 +636,7 @@
 
         <span class="kw">let </span>formatted_defns = serde_json::to_string(<span class="kw-2">&amp;</span>sink_ports).unwrap();
 
-        <span class="kw">let </span>stdout_receiver = <span class="self">self</span>.launched_binary.as_ref().unwrap().cli_stdout();
+        <span class="kw">let </span>stdout_receiver = <span class="self">self</span>.launched_binary.as_ref().unwrap().deploy_stdout();
 
         <span class="self">self</span>.launched_binary
             .as_ref()

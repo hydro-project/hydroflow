@@ -556,7 +556,7 @@
 <span class="kw">use </span>futures::io::BufReader <span class="kw">as </span>FuturesBufReader;
 <span class="kw">use </span>futures::stream::FuturesUnordered;
 <span class="kw">use </span>futures::{AsyncBufReadExt, AsyncWriteExt};
-<span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
+<span class="kw">use </span>hydroflow_deploy_integration::ServerBindConfig;
 <span class="kw">use </span>inferno::collapse::perf::Folder;
 <span class="kw">use </span>inferno::collapse::Collapse;
 <span class="kw">use </span>nanoid::nanoid;
@@ -582,7 +582,7 @@
     channel: AsyncChannel&lt;TcpStream&gt;,
     stdin_sender: mpsc::UnboundedSender&lt;String&gt;,
     stdout_receivers: Arc&lt;Mutex&lt;Vec&lt;mpsc::UnboundedSender&lt;String&gt;&gt;&gt;&gt;,
-    stdout_cli_receivers: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;oneshot::Sender&lt;String&gt;&gt;&gt;&gt;,
+    stdout_deploy_receivers: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;oneshot::Sender&lt;String&gt;&gt;&gt;&gt;,
     stderr_receivers: Arc&lt;Mutex&lt;Vec&lt;mpsc::UnboundedSender&lt;String&gt;&gt;&gt;&gt;,
     perf: <span class="prelude-ty">Option</span>&lt;PerfOptions&gt;,
 }
@@ -593,11 +593,11 @@
         <span class="self">self</span>.stdin_sender.clone()
     }
 
-    <span class="kw">fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; oneshot::Receiver&lt;String&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_cli_receivers.lock().unwrap();
+    <span class="kw">fn </span>deploy_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; oneshot::Receiver&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_deploy_receivers.lock().unwrap();
 
         <span class="kw">if </span>receivers.is_some() {
-            <span class="macro">panic!</span>(<span class="string">"Only one CLI stdout receiver is allowed at a time"</span>);
+            <span class="macro">panic!</span>(<span class="string">"Only one deploy stdout receiver is allowed at a time"</span>);
         }
 
         <span class="kw">let </span>(sender, receiver) = oneshot::channel::&lt;String&gt;();
@@ -1011,7 +1011,7 @@
         });
 
         <span class="kw">let </span>id_clone = id.clone();
-        <span class="kw">let </span>(stdout_cli_receivers, stdout_receivers) =
+        <span class="kw">let </span>(stdout_deploy_receivers, stdout_receivers) =
             prioritized_broadcast(FuturesBufReader::new(channel.stream(<span class="number">0</span>)).lines(), <span class="kw">move </span>|s| {
                 ProgressTracker::println(<span class="macro">format!</span>(<span class="string">"[{id_clone}] {s}"</span>));
             });
@@ -1025,7 +1025,7 @@
             session: <span class="prelude-val">Some</span>(session),
             channel,
             stdin_sender,
-            stdout_cli_receivers,
+            stdout_deploy_receivers,
             stdout_receivers,
             stderr_receivers,
             perf,

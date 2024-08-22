@@ -154,15 +154,15 @@
 
     tokio::spawn(<span class="kw">async move </span>{
         <span class="kw">while let </span><span class="prelude-val">Some</span>(Result::Ok(line)) = lines.next().<span class="kw">await </span>{
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(cli_receivers) = weak_priority_receivers.upgrade() {
-                <span class="kw">let </span><span class="kw-2">mut </span>cli_receivers = cli_receivers.lock().unwrap();
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(deploy_receivers) = weak_priority_receivers.upgrade() {
+                <span class="kw">let </span><span class="kw-2">mut </span>deploy_receivers = deploy_receivers.lock().unwrap();
 
-                <span class="kw">let </span>successful_send = <span class="kw">if let </span><span class="prelude-val">Some</span>(r) = cli_receivers.take() {
+                <span class="kw">let </span>successful_send = <span class="kw">if let </span><span class="prelude-val">Some</span>(r) = deploy_receivers.take() {
                     r.send(line.clone()).is_ok()
                 } <span class="kw">else </span>{
                     <span class="bool-val">false
                 </span>};
-                drop(cli_receivers);
+                drop(deploy_receivers);
 
                 <span class="kw">if </span>successful_send {
                     <span class="kw">continue</span>;
@@ -185,9 +185,9 @@
             }
         }
 
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(cli_receivers) = weak_priority_receivers.upgrade() {
-            <span class="kw">let </span><span class="kw-2">mut </span>cli_receivers = cli_receivers.lock().unwrap();
-            drop(cli_receivers.take());
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(deploy_receivers) = weak_priority_receivers.upgrade() {
+            <span class="kw">let </span><span class="kw-2">mut </span>deploy_receivers = deploy_receivers.lock().unwrap();
+            drop(deploy_receivers.take());
         }
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(receivers) = weak_receivers.upgrade() {
