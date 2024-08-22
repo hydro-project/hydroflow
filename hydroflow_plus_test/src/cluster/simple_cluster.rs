@@ -33,7 +33,6 @@ mod tests {
     #[tokio::test]
     async fn simple_cluster() {
         let mut deployment = Deployment::new();
-        let localhost = deployment.Localhost();
 
         let builder = hydroflow_plus::FlowBuilder::new();
         let (node, cluster) = super::simple_cluster(&builder);
@@ -42,11 +41,11 @@ mod tests {
         insta::assert_debug_snapshot!(built.ir());
 
         let nodes = built
-            .with_process(&node, TrybuildHost::new(localhost.clone()))
+            .with_process(&node, TrybuildHost::new(deployment.Localhost()))
             .with_cluster(
                 &cluster,
                 (0..2)
-                    .map(|_| TrybuildHost::new(localhost.clone()))
+                    .map(|_| TrybuildHost::new(deployment.Localhost()))
                     .collect::<Vec<_>>(),
             )
             .deploy(&mut deployment);
