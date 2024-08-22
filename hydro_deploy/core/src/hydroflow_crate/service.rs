@@ -6,7 +6,7 @@ use std::time::Duration;
 use anyhow::{bail, Result};
 use async_trait::async_trait;
 use futures_core::Future;
-use hydroflow_cli_integration::{InitConfig, ServerPort};
+use hydroflow_deploy_integration::{InitConfig, ServerPort};
 use serde::Serialize;
 use tokio::sync::{mpsc, RwLock};
 
@@ -254,7 +254,7 @@ impl Service for HydroflowCrateService {
                     serde_json::to_string::<InitConfig>(&(bind_config, self.meta.clone())).unwrap();
 
                 // request stdout before sending config so we don't miss the "ready" response
-                let stdout_receiver = binary.cli_stdout();
+                let stdout_receiver = binary.deploy_stdout();
 
                 binary.stdin().send(format!("{formatted_bind_config}\n"))?;
 
@@ -290,7 +290,7 @@ impl Service for HydroflowCrateService {
 
         let formatted_defns = serde_json::to_string(&sink_ports).unwrap();
 
-        let stdout_receiver = self.launched_binary.as_ref().unwrap().cli_stdout();
+        let stdout_receiver = self.launched_binary.as_ref().unwrap().deploy_stdout();
 
         self.launched_binary
             .as_ref()

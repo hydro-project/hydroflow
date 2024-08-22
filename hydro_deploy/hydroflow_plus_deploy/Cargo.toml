@@ -1,10 +1,10 @@
 [package]
-name = "hydroflow_plus_cli_integration"
+name = "hydroflow_plus_deploy"
 publish = true
 version = "0.8.0"
 edition = "2021"
 license = "Apache-2.0"
-documentation = "https://docs.rs/hydroflow_plus_cli_integration/"
+documentation = "https://docs.rs/hydroflow_plus_deploy/"
 description = "Library for working with hydro_deploy and hydroflow_plus"
 
 [features]
@@ -13,7 +13,7 @@ stageleft_devel = []
 
 [dependencies]
 stageleft = { path = "../../stageleft", version = "^0.3.0" }
-hydroflow_plus = { path = "../../hydroflow_plus", version = "^0.8.0", features = [ "cli_integration" ] }
+hydroflow_plus = { path = "../../hydroflow_plus", version = "^0.8.0", features = [ "deploy_integration" ] }
 syn = { version = "2.0.0", features = [ "parsing", "extra-traits" ] }
 tokio = { version = "1.16", features = [ "full" ] }
 serde = { version = "1", features = [ "derive" ] }
