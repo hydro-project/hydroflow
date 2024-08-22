@@ -9,6 +9,8 @@ pub mod multiset;
 pub mod sparse_vec;
 pub mod unsync;
 
+pub mod simulation;
+
 mod monotonic;
 pub use monotonic::*;
 
