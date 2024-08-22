@@ -21,7 +21,7 @@ pub enum CrateTarget {
     Example(String),
 }
 
-/// Specifies a crate that uses `hydroflow_cli_integration` to be
+/// Specifies a crate that uses `hydroflow_deploy_integration` to be
 /// deployed as a service.
 #[derive(Clone)]
 pub struct HydroflowCrate {

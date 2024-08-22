@@ -14,7 +14,7 @@ nightly = [ "hydroflow_macro", "hydroflow_macro/diagnostics" ]
 macros = [ "hydroflow_macro", "hydroflow_datalog" ]
 hydroflow_macro = [ "dep:hydroflow_macro" ]
 hydroflow_datalog = [ "dep:hydroflow_datalog" ]
-cli_integration = [ "dep:hydroflow_cli_integration" ]
+deploy_integration = [ "dep:hydroflow_deploy_integration" ]
 python = [ "dep:pyo3" ]
 debugging = [ "hydroflow_lang/debugging" ]
 
@@ -31,7 +31,7 @@ bincode = "1.3"
 byteorder = "1.4.3"
 bytes = "1.1.0"
 futures = "0.3"
-hydroflow_cli_integration = { optional = true, path = "../hydro_deploy/hydroflow_cli_integration", version = "^0.5.2" }
+hydroflow_deploy_integration = { optional = true, path = "../hydro_deploy/hydroflow_deploy_integration", version = "^0.5.2" }
 hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "^0.8.0" }
 hydroflow_lang = { path = "../hydroflow_lang", version = "^0.8.0" }
 hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "^0.8.0" }

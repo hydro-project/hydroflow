@@ -10,11 +10,8 @@ path = "../hydroflow_plus_test_local/src/lib.rs"
 
 [dependencies]
 hydroflow_plus = { path = "../hydroflow_plus", version = "^0.8.0" }
-tokio = { version = "1.16", features = [ "full" ] }
 stageleft = { path = "../stageleft", version = "^0.3.0" }
-hydroflow_plus_cli_integration = { path = "../hydro_deploy/hydroflow_plus_cli_integration", version = "^0.8.0" }
 rand = "0.8.5"
-serde = { version = "1", features = [ "derive" ] }
 
 [build-dependencies]
 stageleft_tool = { path = "../stageleft_tool", version = "^0.2.0" }

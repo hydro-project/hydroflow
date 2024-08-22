@@ -41,8 +41,8 @@ showing that all the changelogs can be modified. Make sure the version bumps loo
 
 ```log
 [INFO ] Updating crates-io index
-[WARN ] Refused to publish 'hydroflow_cli_integration' as as it didn't change.
-[INFO ] Will not publish or alter 3 dependent crates: unchanged = 'hydroflow_cli_integration', 'variadics', 'pusherator'
+[WARN ] Refused to publish 'hydroflow_deploy_integration' as as it didn't change.
+[INFO ] Will not publish or alter 3 dependent crates: unchanged = 'hydroflow_deploy_integration', 'variadics', 'pusherator'
 [INFO ] WOULD auto-bump dependent package 'hydroflow_lang' from 0.4.0 to 0.5.0 for publishing
 [INFO ] WOULD auto-bump dependent package 'hydroflow_datalog_core' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'hydroflow_lang'
 [INFO ] WOULD auto-bump dependent package 'hydroflow_datalog' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'hydroflow_datalog_core'
