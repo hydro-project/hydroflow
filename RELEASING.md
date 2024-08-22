@@ -118,6 +118,8 @@ On the commit immediately _before_ you move the package(s) and run the following
 ```
 cargo changelog --write <crate_to_be_moved> <other_crate_to_be_moved> ...
 ```
+(This command is provided by `cargo install cargo-smart-release`; don't use any other `cargo changelog` command)
+
 Then, before committing the changes, go through the modified `CHANGELOG.md` files and add a prefix
 to the `Commit Statistics` and `Commit Details` headers, for example: `Pre-Move Commit Statistics`/`Pre-Move Commit Details`.
 This is necessary because otherwise `cargo-smart-release` will treat those sections as auto-generated
