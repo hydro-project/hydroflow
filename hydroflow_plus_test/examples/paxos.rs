@@ -1,5 +1,5 @@
 use hydro_deploy::Deployment;
-use hydroflow_plus_cli_integration::TrybuildHost;
+use hydroflow_plus_deploy::TrybuildHost;
 
 #[tokio::main]
 async fn main() {
