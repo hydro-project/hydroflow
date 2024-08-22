@@ -75,7 +75,6 @@ pub fn profiling<'a>(
         .collect()
 }
 
-#[stageleft::runtime]
 #[cfg(test)]
 mod tests {
     use stageleft::*;

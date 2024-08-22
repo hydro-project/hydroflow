@@ -27,17 +27,17 @@ pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>
         #![allow(unused_crate_dependencies, missing_docs)]
 
         #[allow(unused)]
-        fn __hfplus_runtime<'a>(__hydroflow_plus_trybuild_cli: &'a hydroflow_plus::util::cli::HydroCLI<hydroflow_plus_cli_integration::HydroflowPlusMeta>) -> hydroflow_plus::Hydroflow<'a> {
+        fn __hfplus_runtime<'a>(__hydroflow_plus_trybuild_cli: &'a hydroflow_plus::util::deploy::DeployPorts<hydroflow_plus_deploy::HydroflowPlusMeta>) -> hydroflow_plus::Hydroflow<'a> {
             #(#extra_stmts)*
             #tokens
         }
 
         #[tokio::main]
         async fn main() {
-            let ports = hydroflow_plus::util::cli::init_no_ack_start().await;
+            let ports = hydroflow_plus::util::deploy::init_no_ack_start().await;
             let flow = __hfplus_runtime(&ports);
             println!("ack start");
-            hydroflow_plus::util::cli::launch_flow(flow).await;
+            hydroflow_plus::util::deploy::launch_flow(flow).await;
         }
     };
     source_ast
