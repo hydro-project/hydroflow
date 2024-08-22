@@ -13,20 +13,20 @@ diagnostics = []
 debugging = [ "dep:data-encoding", "dep:webbrowser", "dep:clap" ]
 
 [dependencies]
-auto_impl = "1.0.1"
-clap = { version = "4.1.8", features = [ "derive" ], optional = true }
+auto_impl = "1"
+clap = { version = "4", features = [ "derive" ], optional = true }
 data-encoding = { version = "2.4.0", optional = true }
 itertools = "0.10" # TODO(mingwei): remove when `iter_intersperse` is stabilized.
 prettyplease = { version = "0.2.0", features = [ "verbatim" ] }
 proc-macro2 = { version = "1.0.63", features = ["span-locations"] }
-quote = "1.0.0"
-serde = "1.0.1"
-serde_json = "1.0.8"
+quote = "1"
+serde = "1"
+serde_json = "1"
 slotmap = { version = "1.0.6", features = ["serde"] }
-syn = { version = "2.0.0", features = [ "extra-traits", "full", "parsing" ] }
-webbrowser = { version = "0.8.11", optional = true }
+syn = { version = "2", features = [ "extra-traits", "full", "parsing" ] }
+webbrowser = { version = "1", optional = true }
 
 [dev-dependencies]
 
 [build-dependencies]
-syn = { version = "2.0.0", features = [ "extra-traits", "full", "parsing" ] }
+syn = { version = "2", features = [ "extra-traits", "full", "parsing" ] }
