@@ -87,7 +87,6 @@
 <a href="#87" id="87">87</a>
 <a href="#88" id="88">88</a>
 <a href="#89" id="89">89</a>
-<a href="#90" id="90">90</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
@@ -123,7 +122,6 @@
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>simple_cluster() {
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
-        <span class="kw">let </span>localhost = deployment.Localhost();
 
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let </span>(node, cluster) = <span class="kw">super</span>::simple_cluster(<span class="kw-2">&amp;</span>builder);
@@ -132,11 +130,11 @@
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
         <span class="kw">let </span>nodes = built
-            .with_process(<span class="kw-2">&amp;</span>node, TrybuildHost::new(localhost.clone()))
+            .with_process(<span class="kw-2">&amp;</span>node, TrybuildHost::new(deployment.Localhost()))
             .with_cluster(
                 <span class="kw-2">&amp;</span>cluster,
                 (<span class="number">0</span>..<span class="number">2</span>)
-                    .map(|<span class="kw">_</span>| TrybuildHost::new(localhost.clone()))
+                    .map(|<span class="kw">_</span>| TrybuildHost::new(deployment.Localhost()))
                     .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
             )
             .deploy(<span class="kw-2">&amp;mut </span>deployment);

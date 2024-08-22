@@ -9,7 +9,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["hydroflow_macro",["",[],["lib.rs"]]],\
 ["hydroflow_plus",["",[["builder",[],["built.rs","deploy.rs","mod.rs"]],["deploy",[],["graphs.rs","mod.rs"]]],["cycle.rs","ir.rs","lib.rs","location.rs","persist_pullup.rs","profiler.rs","properties.rs","stream.rs"]]],\
 ["hydroflow_plus_deploy",["",[],["deploy_runtime.rs","lib.rs","runtime.rs"]]],\
-["hydroflow_plus_test",["",[["cluster",[],["compute_pi.rs","many_to_many.rs","map_reduce.rs","mod.rs","simple_cluster.rs"]],["distributed",[],["first_ten.rs","mod.rs"]]],["lib.rs"]]],\
+["hydroflow_plus_test",["",[["cluster",[],["compute_pi.rs","many_to_many.rs","map_reduce.rs","mod.rs","paxos.rs","simple_cluster.rs"]],["distributed",[],["first_ten.rs","mod.rs"]]],["lib.rs"]]],\
 ["hydroflow_plus_test_local",["",[["local",[],["chat_app.rs","compute_pi.rs","count_elems.rs","first_ten.rs","graph_reachability.rs","mod.rs","negation.rs","teed_join.rs"]]],["lib.rs"]]],\
 ["hydroflow_plus_test_local_macro",["",[["local",[],["chat_app.rs","compute_pi.rs","count_elems.rs","first_ten.rs","graph_reachability.rs","mod.rs","negation.rs","teed_join.rs"]]],["lib.rs"]]],\
 ["latency_measure",["",[],["latency_measure.rs","protocol.rs"]]],\

@@ -203,8 +203,6 @@
 <a href="#203" id="203">203</a>
 <a href="#204" id="204">204</a>
 <a href="#205" id="205">205</a>
-<a href="#206" id="206">206</a>
-<a href="#207" id="207">207</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -393,10 +391,8 @@
     </span><span class="kw">async fn </span>test_crate_panic() {
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = deployment::Deployment::new();
 
-        <span class="kw">let </span>localhost = deployment.Localhost();
-
         <span class="kw">let </span>service = deployment.add_service(
-            HydroflowCrate::new(<span class="string">"../hydro_cli_examples"</span>, localhost.clone())
+            HydroflowCrate::new(<span class="string">"../hydro_cli_examples"</span>, deployment.Localhost())
                 .example(<span class="string">"panic_program"</span>)
                 .profile(<span class="string">"dev"</span>),
         );

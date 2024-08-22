@@ -56,7 +56,6 @@
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
 <a href="#58" id="58">58</a>
-<a href="#59" id="59">59</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
@@ -90,7 +89,6 @@
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>first_ten_distributed() {
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
-        <span class="kw">let </span>localhost = deployment.Localhost();
 
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let </span>(first_node, second_node) = <span class="kw">super</span>::first_ten_distributed(<span class="kw-2">&amp;</span>builder);
@@ -101,8 +99,8 @@
 
         <span class="comment">// if we drop this, we drop the references to the deployment nodes
         </span><span class="kw">let </span>nodes = built
-            .with_process(<span class="kw-2">&amp;</span>first_node, TrybuildHost::new(localhost.clone()))
-            .with_process(<span class="kw-2">&amp;</span>second_node, TrybuildHost::new(localhost.clone()))
+            .with_process(<span class="kw-2">&amp;</span>first_node, TrybuildHost::new(deployment.Localhost()))
+            .with_process(<span class="kw-2">&amp;</span>second_node, TrybuildHost::new(deployment.Localhost()))
             .deploy(<span class="kw-2">&amp;mut </span>deployment);
 
         deployment.deploy().<span class="kw">await</span>.unwrap();

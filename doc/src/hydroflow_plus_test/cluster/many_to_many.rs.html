@@ -67,7 +67,6 @@
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
-<a href="#70" id="70">70</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
@@ -88,7 +87,6 @@
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>many_to_many() {
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
-        <span class="kw">let </span>localhost = deployment.Localhost();
 
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let </span>cluster = <span class="kw">super</span>::many_to_many(<span class="kw-2">&amp;</span>builder);
@@ -100,7 +98,7 @@
             .with_cluster(
                 <span class="kw-2">&amp;</span>cluster,
                 (<span class="number">0</span>..<span class="number">2</span>)
-                    .map(|<span class="kw">_</span>| TrybuildHost::new(localhost.clone()))
+                    .map(|<span class="kw">_</span>| TrybuildHost::new(deployment.Localhost()))
                     .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
             )
             .deploy(<span class="kw-2">&amp;mut </span>deployment);

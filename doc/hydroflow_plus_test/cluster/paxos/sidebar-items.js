@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["paxos"],"struct":["Acceptor","Ballot","Client","Proposer","Replica"],"trait":["Address"]};

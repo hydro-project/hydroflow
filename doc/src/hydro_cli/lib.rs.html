@@ -1014,13 +1014,13 @@
     <span class="attr">#[new]
     </span><span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
         Deployment {
-            underlying: Arc::new(RwLock::new(core::Deployment::default())),
+            underlying: Arc::new(RwLock::new(core::Deployment::new())),
         }
     }
 
     <span class="attr">#[allow(non_snake_case)]
     </span><span class="kw">fn </span>Localhost(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
-        <span class="kw">let </span>arc = <span class="self">self</span>.underlying.blocking_write().Localhost();
+        <span class="kw">let </span>arc = <span class="self">self</span>.underlying.blocking_read().Localhost();
 
         <span class="prelude-val">Ok</span>(Py::new(
             py,
