@@ -87,7 +87,7 @@ pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildO
         .get_or_init(MemoMap::new)
         .get_or_insert(&params, Default::default)
         .get_or_try_init(move || {
-            ProgressTracker::rich_leaf("build".to_string(), move |_, set_msg| async move {
+            ProgressTracker::rich_leaf("build", move |set_msg| async move {
                 tokio::task::spawn_blocking(move || {
                     let mut command = Command::new("cargo");
                     command.args(["build"]);

@@ -96,7 +96,7 @@ impl LaunchedBinary for LaunchedSshBinary {
 
     async fn stop(&mut self) -> Result<()> {
         if !self.channel.eof() {
-            ProgressTracker::leaf("force stopping".to_owned(), async {
+            ProgressTracker::leaf("force stopping", async {
                 self.channel.write_all(b"\x03").await?; // `^C`
                 self.channel.send_eof().await?;
                 self.channel.wait_eof().await?;
@@ -112,7 +112,7 @@ impl LaunchedBinary for LaunchedSshBinary {
             let mut script_channel = self.session.as_ref().unwrap().channel_session().await?;
             let mut fold_er = Folder::from(perf.fold_options.clone().unwrap_or_default());
 
-            let fold_data = ProgressTracker::leaf("perf script & folding".to_owned(), async move {
+            let fold_data = ProgressTracker::leaf("perf script & folding", async move {
                 let mut stderr_lines = FuturesBufReader::new(script_channel.stderr()).lines();
                 let stdout = script_channel.stream(0);
 
@@ -358,7 +358,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
             let temp_path = PathBuf::from(format!("/home/{user}/hydro-{random}"));
             let sftp = &sftp;
 
-            ProgressTracker::rich_leaf(
+            ProgressTracker::progress_leaf(
                 format!("uploading binary to {}", binary_path.display()),
                 |set_progress, _| {
                     let binary = &binary;
