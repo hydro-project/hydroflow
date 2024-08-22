@@ -10,13 +10,13 @@ use stageleft::{q, Quoted, RuntimeData};
 
 use super::HydroflowPlusMeta;
 
-pub struct CLIRuntime {}
+pub struct CliRuntime {}
 
-impl<'a> Deploy<'a> for CLIRuntime {
+impl<'a> Deploy<'a> for CliRuntime {
     type InstantiateEnv = ();
     type CompileEnv = RuntimeData<&'a DeployPorts<HydroflowPlusMeta>>;
-    type Process = CLIRuntimeNode;
-    type Cluster = CLIRuntimeCluster;
+    type Process = CliRuntimeNode;
+    type Cluster = CliRuntimeCluster;
     type Meta = ();
     type GraphId = usize;
     type ProcessPort = String;
@@ -27,13 +27,13 @@ impl<'a> Deploy<'a> for CLIRuntime {
     }
 
     fn trivial_process(_id: usize) -> Self::Process {
-        CLIRuntimeNode {
+        CliRuntimeNode {
             next_port: Rc::new(RefCell::new(0)),
         }
     }
 
     fn trivail_cluster(_id: usize) -> Self::Cluster {
-        CLIRuntimeCluster {
+        CliRuntimeCluster {
             next_port: Rc::new(RefCell::new(0)),
         }
     }
@@ -228,11 +228,11 @@ impl<'a> Deploy<'a> for CLIRuntime {
 }
 
 #[derive(Clone)]
-pub struct CLIRuntimeNode {
+pub struct CliRuntimeNode {
     next_port: Rc<RefCell<usize>>,
 }
 
-impl Node for CLIRuntimeNode {
+impl Node for CliRuntimeNode {
     type Port = String;
     type Meta = ();
     type InstantiateEnv = ();
@@ -257,11 +257,11 @@ impl Node for CLIRuntimeNode {
 }
 
 #[derive(Clone)]
-pub struct CLIRuntimeCluster {
+pub struct CliRuntimeCluster {
     next_port: Rc<RefCell<usize>>,
 }
 
-impl Node for CLIRuntimeCluster {
+impl Node for CliRuntimeCluster {
     type Port = String;
     type Meta = ();
     type InstantiateEnv = ();
@@ -285,17 +285,17 @@ impl Node for CLIRuntimeCluster {
     }
 }
 
-impl<'a> ProcessSpec<'a, CLIRuntime> for () {
-    fn build(self, _id: usize, _name_hint: &str) -> CLIRuntimeNode {
-        CLIRuntimeNode {
+impl<'a> ProcessSpec<'a, CliRuntime> for () {
+    fn build(self, _id: usize, _name_hint: &str) -> CliRuntimeNode {
+        CliRuntimeNode {
             next_port: Rc::new(RefCell::new(0)),
         }
     }
 }
 
-impl<'cli> ClusterSpec<'cli, CLIRuntime> for () {
-    fn build(self, _id: usize, _name_hint: &str) -> CLIRuntimeCluster {
-        CLIRuntimeCluster {
+impl<'cli> ClusterSpec<'cli, CliRuntime> for () {
+    fn build(self, _id: usize, _name_hint: &str) -> CliRuntimeCluster {
+        CliRuntimeCluster {
             next_port: Rc::new(RefCell::new(0)),
         }
     }
