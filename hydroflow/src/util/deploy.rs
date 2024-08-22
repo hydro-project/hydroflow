@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-pub use hydroflow_cli_integration::*;
+pub use hydroflow_deploy_integration::*;
 use serde::de::DeserializeOwned;
 
 use crate::scheduled::graph::Hydroflow;
@@ -12,12 +12,12 @@ use crate::scheduled::graph::Hydroflow;
 macro_rules! launch {
     ($f:expr) => {
         async {
-            let ports = $crate::util::cli::init_no_ack_start().await;
+            let ports = $crate::util::deploy::init_no_ack_start().await;
             let flow = $f(&ports);
 
             println!("ack start");
 
-            $crate::util::cli::launch_flow(flow).await
+            $crate::util::deploy::launch_flow(flow).await
         }
     };
 }
@@ -45,12 +45,14 @@ pub async fn launch_flow(mut flow: Hydroflow<'_>) {
     }
 }
 
-pub struct HydroCLI<T = Option<()>> {
+/// Contains runtime information passed by Hydro Deploy to a program,
+/// describing how to connect to other services and metadata about them.
+pub struct DeployPorts<T = Option<()>> {
     ports: RefCell<HashMap<String, ServerOrBound>>,
     pub meta: T,
 }
 
-impl<T> HydroCLI<T> {
+impl<T> DeployPorts<T> {
     pub fn port(&self, name: &str) -> ServerOrBound {
         self.ports
             .try_borrow_mut()
@@ -60,7 +62,7 @@ impl<T> HydroCLI<T> {
     }
 }
 
-pub async fn init_no_ack_start<T: DeserializeOwned + Default>() -> HydroCLI<T> {
+pub async fn init_no_ack_start<T: DeserializeOwned + Default>() -> DeployPorts<T> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
     let trimmed = input.trim();
@@ -99,7 +101,7 @@ pub async fn init_no_ack_start<T: DeserializeOwned + Default>() -> HydroCLI<T> {
         all_connected.insert(name, ServerOrBound::Bound(defn));
     }
 
-    HydroCLI {
+    DeployPorts {
         ports: RefCell::new(all_connected),
         meta: bind_config
             .1
@@ -108,7 +110,7 @@ pub async fn init_no_ack_start<T: DeserializeOwned + Default>() -> HydroCLI<T> {
     }
 }
 
-pub async fn init<T: DeserializeOwned + Default>() -> HydroCLI<T> {
+pub async fn init<T: DeserializeOwned + Default>() -> DeployPorts<T> {
     let ret = init_no_ack_start::<T>().await;
 
     println!("ack start");

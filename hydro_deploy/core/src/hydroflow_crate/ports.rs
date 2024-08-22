@@ -7,7 +7,7 @@ use anyhow::Result;
 use async_recursion::async_recursion;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
-use hydroflow_cli_integration::ServerPort;
+use hydroflow_deploy_integration::ServerPort;
 use tokio::sync::RwLock;
 
 use super::HydroflowCrateService;

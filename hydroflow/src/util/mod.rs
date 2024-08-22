@@ -25,8 +25,8 @@ mod socket;
 #[cfg(unix)]
 pub use socket::*;
 
-#[cfg(feature = "cli_integration")]
-pub mod cli;
+#[cfg(feature = "deploy_integration")]
+pub mod deploy;
 
 use std::io::Read;
 use std::net::SocketAddr;

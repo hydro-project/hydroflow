@@ -3,8 +3,8 @@ use std::rc::Rc;
 
 use hydroflow_plus::deploy::{ClusterSpec, Deploy, Node, ProcessSpec};
 use hydroflow_plus::lang::graph::HydroflowGraph;
-use hydroflow_plus::util::cli::{
-    ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, HydroCLI,
+use hydroflow_plus::util::deploy::{
+    ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, DeployPorts,
 };
 use stageleft::{q, Quoted, RuntimeData};
 
@@ -14,7 +14,7 @@ pub struct CLIRuntime {}
 
 impl<'a> Deploy<'a> for CLIRuntime {
     type InstantiateEnv = ();
-    type CompileEnv = RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>;
+    type CompileEnv = RuntimeData<&'a DeployPorts<HydroflowPlusMeta>>;
     type Process = CLIRuntimeNode;
     type Cluster = CLIRuntimeCluster;
     type Meta = ();

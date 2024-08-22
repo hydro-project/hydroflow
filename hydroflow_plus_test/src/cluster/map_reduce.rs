@@ -34,10 +34,9 @@ pub fn map_reduce(flow: &FlowBuilder) -> (Process<Leader>, Cluster<Worker>) {
     (process, cluster)
 }
 
-#[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use hydroflow_plus_cli_integration::CLIRuntime;
+    use hydroflow_plus_deploy::CLIRuntime;
     use stageleft::RuntimeData;
 
     #[test]

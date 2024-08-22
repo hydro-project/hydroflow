@@ -3,7 +3,7 @@ use std::sync::Arc;
 use hydro_deploy::gcp::GcpNetwork;
 use hydro_deploy::hydroflow_crate::perf_options::PerfOptions;
 use hydro_deploy::{Deployment, Host};
-use hydroflow_plus_cli_integration::TrybuildHost;
+use hydroflow_plus_deploy::TrybuildHost;
 use tokio::sync::RwLock;
 
 type HostCreator = Box<dyn Fn(&mut Deployment) -> Arc<dyn Host>>;
