@@ -11,8 +11,8 @@ description = "Helper macros for the stageleft crate"
 path = "src/lib.rs"
 
 [dependencies]
-syn-inline-mod = "0.6.0"
-quote = "1.0.0"
-syn = { version = "2.0.0", features = [ "parsing", "extra-traits", "visit" ] }
-proc-macro2 = "1.0.57"
+syn-inline-mod = "0.6"
+quote = "1"
+syn = { version = "2", features = [ "parsing", "extra-traits", "visit" ] }
+proc-macro2 = "1"
 sha256 = "1.4.0"

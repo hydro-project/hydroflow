@@ -12,7 +12,7 @@ stageleft_devel = []
 hydroflow_plus = { git = "{{ hydroflow_git | default: 'https://github.com/hydro-project/hydroflow.git' }}", branch = "{{ hydroflow_branch | default: 'main' }}" }
 hydroflow_plus_deploy = { git = "{{ hydroflow_git | default: 'https://github.com/hydro-project/hydroflow.git' }}", branch = "{{ hydroflow_branch | default: 'main' }}" }
 stageleft = { git = "{{ hydroflow_git | default: 'https://github.com/hydro-project/hydroflow.git' }}", branch = "{{ hydroflow_branch | default: 'main' }}" }
-tokio = { version = "1.16", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
 
 [build-dependencies]
 stageleft_tool = { git = "{{ hydroflow_git | default: 'https://github.com/hydro-project/hydroflow.git' }}", branch = "{{ hydroflow_branch | default: 'main' }}" }
@@ -23,4 +23,4 @@ hydro_deploy = { git = "{{ hydroflow_git | default: 'https://github.com/hydro-pr
 hydroflow_plus_deploy = { git = "{{ hydroflow_git | default: 'https://github.com/hydro-project/hydroflow.git' }}", branch = "{{ hydroflow_branch | default: 'main' }}", features = [
     "deploy",
 ] }
-tokio-stream = "0.1.15"
+tokio-stream = "0.1"
