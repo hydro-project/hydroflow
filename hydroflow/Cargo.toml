@@ -73,10 +73,7 @@ getrandom = { version = "0.2.6", features = [ "js" ] }
 chrono = { version = "0.4.20", features = [ "serde", "clock" ], default-features = false }
 clap = { version = "4.1.8", features = [ "derive" ] }
 colored = "2.0"
-core_affinity = "0.5.10"
-ctor = "0.2"
 futures = { version = "0.3" }
-hdrhistogram = "7"
 insta = "1.7.1"
 multiplatform_test = { path = "../multiplatform_test", version = "^0.1.0" }
 wasm-bindgen-test = "0.3.34"
@@ -84,7 +81,6 @@ rand = {version = "0.8.4", features = ["small_rng"]}
 rand_distr = "0.4.3"
 regex = "1"
 static_assertions = "1.1.0"
-textnonce = "1.0.0"
 time = "0.3"
 tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
 trybuild = "1.0.80"
