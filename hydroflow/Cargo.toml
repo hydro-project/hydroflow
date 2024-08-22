@@ -47,7 +47,7 @@ serde = { version = "1", features = [ "derive" ] }
 serde_json = "1"
 slotmap = "1.0"
 smallvec = "1.10.0"
-tokio-stream = { version = "0.1.10", features = [ "io-util", "sync" ] }
+tokio-stream = { version = "0.1", features = [ "io-util", "sync" ] }
 tracing = "0.1"
 variadics = { path = "../variadics", version = "^0.0.5" }
 web-time = "1.1.0"
@@ -56,12 +56,12 @@ web-time = "1.1.0"
 multiplatform_test = { path = "../multiplatform_test", version = "^0.1.0", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tokio = { version = "1.16", features = [ "full" ] }
-tokio-util = { version = "0.7.4", features = [ "net", "codec" ] }
+tokio = { version = "1", features = [ "full" ] }
+tokio-util = { version = "0.7", features = [ "net", "codec" ] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-tokio = { version = "1.16", features = [ "rt" , "sync", "macros", "io-util", "time" ] }
-tokio-util = { version = "0.7.4", features = [ "codec" ] }
+tokio = { version = "1", features = [ "rt" , "sync", "macros", "io-util", "time" ] }
+tokio-util = { version = "0.7", features = [ "codec" ] }
 # We depend on getrandom transitively through rand. To compile getrandom to
 # WASM, we need to enable its "js" feature. However, rand does not expose a
 # passthrough to enable "js" on getrandom. As a workaround, we enable the
@@ -71,20 +71,20 @@ getrandom = { version = "0.2.6", features = [ "js" ] }
 
 [dev-dependencies]
 chrono = { version = "0.4.20", features = [ "serde", "clock" ], default-features = false }
-clap = { version = "4.1.8", features = [ "derive" ] }
+clap = { version = "4", features = [ "derive" ] }
 colored = "2.0"
 futures = { version = "0.3" }
-insta = "1.7.1"
+insta = "1.39"
 multiplatform_test = { path = "../multiplatform_test", version = "^0.1.0" }
 wasm-bindgen-test = "0.3.34"
 rand = {version = "0.8.4", features = ["small_rng"]}
 rand_distr = "0.4.3"
 regex = "1"
-static_assertions = "1.1.0"
+static_assertions = "1"
 time = "0.3"
 tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
-trybuild = "1.0.80"
-zipf = "7.0.0"
+trybuild = "1"
+zipf = "7"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 # Rayon (rust data-parallelism library) does not compile on WASM.

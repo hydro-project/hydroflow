@@ -14,13 +14,13 @@ bytes = "1.1.0"
 futures = "0.3.26"
 pin-project = "1"
 serde = { version = "1", features = [ "derive" ] }
-tempfile = "3.3.0"
+tempfile = "3"
 
 # [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tokio = { version = "1.16", features = [ "full" ] }
-tokio-util = { version = "0.7.4", features = [ "net", "codec" ] }
-tokio-stream = { version = "0.1.15", default-features = false, features = [ "net" ] }
+tokio = { version = "1", features = [ "full" ] }
+tokio-util = { version = "0.7", features = [ "net", "codec" ] }
+tokio-stream = { version = "0.1", default-features = false, features = [ "net" ] }
 
 # [target.'cfg(target_arch = "wasm32")'.dependencies]
-# tokio = { version = "1.16", features = [ "rt" , "sync", "macros", "io-util", "time" ] }
-# tokio-util = { version = "0.7.4", features = [ "codec" ] }
+# tokio = { version = "1", features = [ "rt" , "sync", "macros", "io-util", "time" ] }
+# tokio-util = { version = "0.7", features = [ "codec" ] }

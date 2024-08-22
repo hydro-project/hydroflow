@@ -14,9 +14,9 @@ crate-type = ["cdylib"]
 
 [dependencies]
 hydro_deploy = { path = "../core", version = "^0.8.0" }
-tokio = { version = "1.16", features = [ "full" ] }
-anyhow = { version = "1.0.69", features = [ "backtrace" ] }
-clap = { version = "4.1.8", features = ["derive"] }
+tokio = { version = "1", features = [ "full" ] }
+anyhow = { version = "1", features = [ "backtrace" ] }
+clap = { version = "4", features = ["derive"] }
 pyo3 = { version = "0.20", features = ["abi3-py37"] }
 pyo3-asyncio = { version = "0.20", features = ["attributes", "tokio-runtime"] }
 pythonize = "0.20"
