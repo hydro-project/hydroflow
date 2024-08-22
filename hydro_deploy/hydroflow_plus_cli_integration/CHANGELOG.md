@@ -1,6 +1,63 @@
 
 
+## Unreleased
+
+### New Features
+
+ - <csr-id-46a8a2cb08732bb21096e824bc4542d208c68fb2/> use trybuild to compile subgraph binaries
+
+### Refactor (BREAKING)
+
+ - <csr-id-5f2789a13d1602f170e678fe9bbc59caf69db4b5/> disentangle instantiated nodes from locations
+ - <csr-id-128aaecd40edce57dc254afdcd61ecd5b9948d71/> simplify process/cluster specs
+   ---
+   [//]: # (BEGIN SAPLING FOOTER)
+   Stack created with [Sapling](https://sapling-scm.com). Best reviewed
+   with
+   [ReviewStack](https://reviewstack.dev/hydro-project/hydroflow/pull/1394).
+   * #1395
+   * __->__ #1394
+ - <csr-id-0eba702f62e7a6816cf931b01a2ea5643bd7321d/> defer network instantiation until after finalizing IR
+   ---
+   [//]: # (BEGIN SAPLING FOOTER)
+   Stack created with [Sapling](https://sapling-scm.com). Best reviewed
+   with
+   [ReviewStack](https://reviewstack.dev/hydro-project/hydroflow/pull/1377).
+   * #1395
+   * #1394
+   * __->__ #1377
+
+### Pre-Move Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release over the course of 7 calendar days.
+ - 30 days passed between releases.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 4 unique issues were worked on: [#1377](https://github.com/hydro-project/hydroflow/issues/1377), [#1394](https://github.com/hydro-project/hydroflow/issues/1394), [#1395](https://github.com/hydro-project/hydroflow/issues/1395), [#1398](https://github.com/hydro-project/hydroflow/issues/1398)
+
+### Pre-Move Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1377](https://github.com/hydro-project/hydroflow/issues/1377)**
+    - Defer network instantiation until after finalizing IR ([`0eba702`](https://github.com/hydro-project/hydroflow/commit/0eba702f62e7a6816cf931b01a2ea5643bd7321d))
+ * **[#1394](https://github.com/hydro-project/hydroflow/issues/1394)**
+    - Simplify process/cluster specs ([`128aaec`](https://github.com/hydro-project/hydroflow/commit/128aaecd40edce57dc254afdcd61ecd5b9948d71))
+ * **[#1395](https://github.com/hydro-project/hydroflow/issues/1395)**
+    - Disentangle instantiated nodes from locations ([`5f2789a`](https://github.com/hydro-project/hydroflow/commit/5f2789a13d1602f170e678fe9bbc59caf69db4b5))
+ * **[#1398](https://github.com/hydro-project/hydroflow/issues/1398)**
+    - Use trybuild to compile subgraph binaries ([`46a8a2c`](https://github.com/hydro-project/hydroflow/commit/46a8a2cb08732bb21096e824bc4542d208c68fb2))
+</details>
+
 ## v0.8.0 (2024-07-23)
+
+<csr-id-c5a8de28e7844b3c29d58116d8340967f2e6bcc4/>
+<csr-id-057a0a510568cf81932368c8c65e056f91af7202/>
+<csr-id-60390782dd7dcec18d193c800af716843a944dba/>
+<csr-id-141eae1c3a1869fa42756250618a21ea2a2c7e34/>
 
 ### Refactor (BREAKING)
 
@@ -18,7 +75,7 @@
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release over the course of 5 calendar days.
+ - 5 commits contributed to the release over the course of 4 calendar days.
  - 59 days passed between releases.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1339](https://github.com/hydro-project/hydroflow/issues/1339), [#1346](https://github.com/hydro-project/hydroflow/issues/1346), [#1347](https://github.com/hydro-project/hydroflow/issues/1347), [#1356](https://github.com/hydro-project/hydroflow/issues/1356)
@@ -37,6 +94,8 @@
     - Make `Host` trait use `&self` interior mutability to remove `RwLock` wrappings #430 ([`c5a8de2`](https://github.com/hydro-project/hydroflow/commit/c5a8de28e7844b3c29d58116d8340967f2e6bcc4))
  * **[#1356](https://github.com/hydro-project/hydroflow/issues/1356)**
     - Replace `async-channel` with `tokio::sync::mpsc::unbounded_channel` ([`6039078`](https://github.com/hydro-project/hydroflow/commit/60390782dd7dcec18d193c800af716843a944dba))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.8.0, hydroflow_datalog_core v0.8.0, hydroflow_datalog v0.8.0, hydroflow_macro v0.8.0, lattices_macro v0.5.5, lattices v0.5.6, variadics v0.0.5, pusherator v0.0.7, hydroflow v0.8.0, hydroflow_plus v0.8.0, hydro_deploy v0.8.0, hydro_cli v0.8.0, hydroflow_plus_cli_integration v0.8.0, safety bump 7 crates ([`ca6c16b`](https://github.com/hydro-project/hydroflow/commit/ca6c16b4a7ce35e155fe7fc6c7d1676c37c9e4de))
 </details>
 
 ## v0.7.0 (2024-05-24)
