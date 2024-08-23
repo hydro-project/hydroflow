@@ -14,6 +14,6 @@ serde = ["dep:serde"]
 [dependencies]
 cc-traits = "2.0.0"
 sealed = "0.5"
-serde = { version = "1.0.160", features = ["derive"], optional = true }
-trybuild = "1.0.80"
+serde = { version = "1", features = ["derive"], optional = true }
+trybuild = "1"
 lattices_macro = { path = "../lattices_macro", version = "^0.5.5" }

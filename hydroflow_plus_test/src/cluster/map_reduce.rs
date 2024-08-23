@@ -52,7 +52,7 @@ mod tests {
             .hydroflow_ir()
         {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
-                insta::assert_display_snapshot!(ir.surface_syntax_string());
+                insta::assert_snapshot!(ir.surface_syntax_string());
             });
         }
     }
