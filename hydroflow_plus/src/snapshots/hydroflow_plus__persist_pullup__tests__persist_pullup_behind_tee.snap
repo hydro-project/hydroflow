@@ -5,42 +5,58 @@ expression: built.ir()
 [
     ForEach {
         f: { use crate :: __staged :: persist_pullup :: tests :: * ; | n | println ! ("{}" , n) },
-        input: Tee {
-            inner: RefCell {
-                value: Map {
+        input: Delta(
+            Persist(
+                Map {
                     f: { use crate :: __staged :: persist_pullup :: tests :: * ; | v | v + 1 },
-                    input: Persist(
-                        Source {
-                            source: Iter(
-                                { use crate :: __staged :: persist_pullup :: tests :: * ; 0 .. 10 },
-                            ),
-                            location_kind: Process(
-                                0,
+                    input: Tee {
+                        inner: RefCell {
+                            value: Persist(
+                                Delta(
+                                    Persist(
+                                        Source {
+                                            source: Iter(
+                                                { use crate :: __staged :: persist_pullup :: tests :: * ; 0 .. 10 },
+                                            ),
+                                            location_kind: Process(
+                                                0,
+                                            ),
+                                        },
+                                    ),
+                                ),
                             ),
                         },
-                    ),
+                    },
                 },
-            },
-        },
+            ),
+        ),
     },
     ForEach {
         f: { use crate :: __staged :: persist_pullup :: tests :: * ; | n | println ! ("{}" , n) },
-        input: Tee {
-            inner: RefCell {
-                value: Map {
+        input: Delta(
+            Persist(
+                Map {
                     f: { use crate :: __staged :: persist_pullup :: tests :: * ; | v | v + 1 },
-                    input: Persist(
-                        Source {
-                            source: Iter(
-                                { use crate :: __staged :: persist_pullup :: tests :: * ; 0 .. 10 },
-                            ),
-                            location_kind: Process(
-                                0,
+                    input: Tee {
+                        inner: RefCell {
+                            value: Persist(
+                                Delta(
+                                    Persist(
+                                        Source {
+                                            source: Iter(
+                                                { use crate :: __staged :: persist_pullup :: tests :: * ; 0 .. 10 },
+                                            ),
+                                            location_kind: Process(
+                                                0,
+                                            ),
+                                        },
+                                    ),
+                                ),
                             ),
                         },
-                    ),
+                    },
                 },
-            },
-        },
+            ),
+        ),
     },
 ]

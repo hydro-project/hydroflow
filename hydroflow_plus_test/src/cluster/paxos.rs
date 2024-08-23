@@ -6,6 +6,7 @@ use std::time::{Duration, SystemTime};
 use hydroflow_plus::*;
 use serde::{Deserialize, Serialize};
 use stageleft::*;
+use stream::{NoTick, Tick};
 use tokio::time::Instant;
 
 pub struct Proposer {}
@@ -118,7 +119,7 @@ pub fn paxos(
     flow.source_iter(&proposers, q!(["Proposers say hello"]))
         .for_each(q!(|s| println!("{}", s)));
     let p_id = flow.cluster_self_id(&proposers);
-    let (p_is_leader_complete_cycle, p_is_leader) = flow.cycle(&proposers);
+    let (p_is_leader_complete_cycle, p_is_leader) = flow.tick_cycle(&proposers);
 
     let (p_to_proposers_i_am_leader_complete_cycle, p_to_proposers_i_am_leader) =
         flow.cycle(&proposers);
@@ -181,6 +182,7 @@ pub fn paxos(
         .continue_unless(p_next_slot)
         .cross_singleton(p_ballot_num)
         .map(q!(move |(_is_leader, ballot_num): (bool, u32)| Ballot { num: ballot_num, id: p_id})) // Only tell the clients once when leader election concludes
+        .all_ticks()
         .broadcast_bincode_interleaved(&clients);
     p_to_clients_leader_elected_cycle.complete(p_to_clients_new_leader_elected);
     // End tell clients that leader election has completed
@@ -217,24 +219,24 @@ pub fn paxos(
 
 #[allow(clippy::type_complexity)]
 fn acceptor<'a>(
-    p_to_acceptors_p1a: Stream<'a, P1a, stream::Async, Cluster<Acceptor>>,
-    p_to_acceptors_p2a: Stream<'a, P2a, stream::Async, Cluster<Acceptor>>,
-    r_to_acceptors_checkpoint: Stream<'a, (u32, i32), stream::Async, Cluster<Acceptor>>,
+    p_to_acceptors_p1a: Stream<'a, P1a, stream::Unbounded, NoTick, Cluster<Acceptor>>,
+    p_to_acceptors_p2a: Stream<'a, P2a, stream::Unbounded, NoTick, Cluster<Acceptor>>,
+    r_to_acceptors_checkpoint: Stream<'a, (u32, i32), stream::Unbounded, NoTick, Cluster<Acceptor>>,
     proposers: &Cluster<Proposer>,
     f: usize,
 ) -> (
-    Stream<'a, (u32, P1b), stream::Async, Cluster<Proposer>>,
-    Stream<'a, (u32, P2b), stream::Async, Cluster<Proposer>>,
+    Stream<'a, (u32, P1b), stream::Unbounded, NoTick, Cluster<Proposer>>,
+    Stream<'a, (u32, P2b), stream::Unbounded, NoTick, Cluster<Proposer>>,
 ) {
     // Get the latest checkpoint sequence per replica
-    let a_checkpoint_largest_seqs =
-        r_to_acceptors_checkpoint
-            .all_ticks()
-            .reduce_keyed(q!(|curr_seq: &mut i32, seq: i32| {
-                if seq > *curr_seq {
-                    *curr_seq = seq;
-                }
-            }));
+    let a_checkpoint_largest_seqs = r_to_acceptors_checkpoint
+        .tick_batch()
+        .persist()
+        .reduce_keyed(q!(|curr_seq: &mut i32, seq: i32| {
+            if seq > *curr_seq {
+                *curr_seq = seq;
+            }
+        }));
     let a_checkpoints_quorum_reached =
         a_checkpoint_largest_seqs
             .clone()
@@ -270,7 +272,7 @@ fn acceptor<'a>(
         )));
     // .inspect(q!(|(min_seq, p2a): &(i32, P2a)| println!("Acceptor new checkpoint: {:?}", min_seq)));
 
-    let a_max_ballot = p_to_acceptors_p1a.clone().all_ticks().fold(
+    let a_max_ballot = p_to_acceptors_p1a.clone().tick_batch().persist().fold(
         q!(|| Ballot { num: 0, id: 0 }),
         q!(|max_ballot: &mut Ballot, p1a: P1a| {
             if p1a.ballot > *max_ballot {
@@ -291,7 +293,7 @@ fn acceptor<'a>(
         ));
     let a_log = a_p2as_to_place_in_log
         .union(a_new_checkpoint)
-        .all_ticks()
+        .persist()
         .fold(
             q!(|| (-1, HashMap::<i32, LogValue>::new())),
             q!(
@@ -349,6 +351,7 @@ fn acceptor<'a>(
                 accepted: log
             }
         )))
+        .all_ticks()
         .send_bincode(proposers);
     let a_to_proposers_p2b_new = p_to_acceptors_p2a
         .tick_batch()
@@ -362,6 +365,7 @@ fn acceptor<'a>(
                 value: p2a.value
             }
         )))
+        .all_ticks()
         .send_bincode(proposers);
     (a_to_proposers_p1b_new, a_to_proposers_p2b_new)
 }
@@ -369,12 +373,13 @@ fn acceptor<'a>(
 fn p_p2b<'a>(
     flow: &FlowBuilder<'a>,
     proposers: &Cluster<Proposer>,
-    a_to_proposers_p2b: Stream<'a, (u32, P2b), stream::Async, Cluster<Proposer>>,
+    a_to_proposers_p2b: Stream<'a, (u32, P2b), stream::Unbounded, NoTick, Cluster<Proposer>>,
     replicas: &Cluster<Replica>,
     f: usize,
-) -> Stream<'a, ReplicaPayload, stream::Async, Cluster<Replica>> {
-    let (p_broadcasted_p2b_slots_complete_cycle, p_broadcasted_p2b_slots) = flow.cycle(proposers);
-    let (p_persisted_p2bs_complete_cycle, p_persisted_p2bs) = flow.cycle(proposers);
+) -> Stream<'a, ReplicaPayload, stream::Unbounded, NoTick, Cluster<Replica>> {
+    let (p_broadcasted_p2b_slots_complete_cycle, p_broadcasted_p2b_slots) =
+        flow.tick_cycle(proposers);
+    let (p_persisted_p2bs_complete_cycle, p_persisted_p2bs) = flow.tick_cycle(proposers);
     let p_p2b = a_to_proposers_p2b
         .clone()
         .tick_batch()
@@ -417,6 +422,7 @@ fn p_p2b<'a>(
         .clone()
         .anti_join(p_broadcasted_p2b_slots) // Only tell the replicas about committed values once
         .map(q!(|(_slot, (_count, p2b)): (i32, (usize, P2b))| ReplicaPayload { seq: p2b.slot, key: p2b.value.key, value: p2b.value.value }))
+        .all_ticks()
         .broadcast_bincode_interleaved(replicas);
 
     let p_p2b_all_commit_slots =
@@ -455,19 +461,19 @@ fn p_p2b<'a>(
 fn p_p2a<'a>(
     flow: &FlowBuilder<'a>,
     proposers: &Cluster<Proposer>,
-    p_max_slot: Stream<'a, i32, stream::Windowed, Cluster<Proposer>>,
-    c_to_proposers: Stream<'a, ClientPayload, stream::Async, Cluster<Proposer>>,
-    p_ballot_num: Stream<'a, u32, stream::Windowed, Cluster<Proposer>>,
-    p_log_to_try_commit: Stream<'a, P2a, stream::Windowed, Cluster<Proposer>>,
-    p_log_holes: Stream<'a, P2a, stream::Windowed, Cluster<Proposer>>,
-    p_is_leader: Stream<'a, bool, stream::Windowed, Cluster<Proposer>>,
+    p_max_slot: Stream<'a, i32, stream::Bounded, Tick, Cluster<Proposer>>,
+    c_to_proposers: Stream<'a, ClientPayload, stream::Unbounded, NoTick, Cluster<Proposer>>,
+    p_ballot_num: Stream<'a, u32, stream::Bounded, Tick, Cluster<Proposer>>,
+    p_log_to_try_commit: Stream<'a, P2a, stream::Bounded, Tick, Cluster<Proposer>>,
+    p_log_holes: Stream<'a, P2a, stream::Bounded, Tick, Cluster<Proposer>>,
+    p_is_leader: Stream<'a, bool, stream::Bounded, Tick, Cluster<Proposer>>,
     acceptors: &Cluster<Acceptor>,
 ) -> (
-    Stream<'a, i32, stream::Windowed, Cluster<Proposer>>,
-    Stream<'a, P2a, stream::Async, Cluster<Acceptor>>,
+    Stream<'a, i32, stream::Bounded, Tick, Cluster<Proposer>>,
+    Stream<'a, P2a, stream::Unbounded, NoTick, Cluster<Acceptor>>,
 ) {
     let p_id = flow.cluster_self_id(proposers);
-    let (p_next_slot_complete_cycle, p_next_slot) = flow.cycle(proposers);
+    let (p_next_slot_complete_cycle, p_next_slot) = flow.tick_cycle(proposers);
     let p_next_slot_after_reconciling_p1bs = p_max_slot
         // .inspect(q!(|max_slot| println!("{} p_max_slot: {:?}", context.current_tick(), max_slot)))
         .continue_unless(p_next_slot.clone())
@@ -489,6 +495,7 @@ fn p_p2a<'a>(
         .continue_unless(p_next_slot.clone()) // Only resend p1b stuff once. Once it's resent, next_slot will exist.
         .union(p_indexed_payloads)
         .continue_if(p_is_leader.clone())
+        .all_ticks()
         .broadcast_bincode_interleaved(acceptors);
 
     let p_num_payloads = c_to_proposers.clone().tick_batch().count();
@@ -527,20 +534,21 @@ fn p_p2a<'a>(
 fn p_p1b<'a>(
     flow: &FlowBuilder<'a>,
     proposers: &Cluster<Proposer>,
-    a_to_proposers_p1b: Stream<'a, (u32, P1b), stream::Async, Cluster<Proposer>>,
-    p_ballot_num: Stream<'a, u32, stream::Windowed, Cluster<Proposer>>,
-    p_has_largest_ballot: Stream<'a, (Ballot, u32), stream::Windowed, Cluster<Proposer>>,
+    a_to_proposers_p1b: Stream<'a, (u32, P1b), stream::Unbounded, NoTick, Cluster<Proposer>>,
+    p_ballot_num: Stream<'a, u32, stream::Bounded, Tick, Cluster<Proposer>>,
+    p_has_largest_ballot: Stream<'a, (Ballot, u32), stream::Bounded, Tick, Cluster<Proposer>>,
     f: usize,
 ) -> (
-    Stream<'a, bool, stream::Windowed, Cluster<Proposer>>,
-    Stream<'a, P2a, stream::Windowed, Cluster<Proposer>>,
-    Stream<'a, i32, stream::Windowed, Cluster<Proposer>>,
-    Stream<'a, P2a, stream::Windowed, Cluster<Proposer>>,
+    Stream<'a, bool, stream::Bounded, Tick, Cluster<Proposer>>,
+    Stream<'a, P2a, stream::Bounded, Tick, Cluster<Proposer>>,
+    Stream<'a, i32, stream::Bounded, Tick, Cluster<Proposer>>,
+    Stream<'a, P2a, stream::Bounded, Tick, Cluster<Proposer>>,
 ) {
     let p_id = flow.cluster_self_id(proposers);
     let p_relevant_p1bs = a_to_proposers_p1b
         .clone()
-        .all_ticks()
+        .tick_batch()
+        .persist()
         .cross_singleton(p_ballot_num.clone())
         .filter(q!(move |((_sender, p1b), ballot_num): &(
             (u32, P1b),
@@ -644,13 +652,13 @@ fn p_p1b<'a>(
 fn replica<'a>(
     flow: &FlowBuilder<'a>,
     replicas: &Cluster<Replica>,
-    p_to_replicas: Stream<'a, ReplicaPayload, stream::Async, Cluster<Replica>>,
+    p_to_replicas: Stream<'a, ReplicaPayload, stream::Unbounded, NoTick, Cluster<Replica>>,
     checkpoint_frequency: usize,
 ) -> (
-    Stream<'a, i32, stream::Windowed, Cluster<Replica>>,
-    Stream<'a, (u32, ReplicaPayload), stream::Windowed, Cluster<Replica>>,
+    Stream<'a, i32, stream::Unbounded, NoTick, Cluster<Replica>>,
+    Stream<'a, (u32, ReplicaPayload), stream::Unbounded, NoTick, Cluster<Replica>>,
 ) {
-    let (r_buffered_payloads_complete_cycle, r_buffered_payloads) = flow.cycle(replicas);
+    let (r_buffered_payloads_complete_cycle, r_buffered_payloads) = flow.tick_cycle(replicas);
     // p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
     let r_sorted_payloads = p_to_replicas
         .clone()
@@ -658,8 +666,8 @@ fn replica<'a>(
         .union(r_buffered_payloads) // Combine with all payloads that we've received and not processed yet
         .sort();
     // Create a cycle since we'll use this seq before we define it
-    let (r_highest_seq_complete_cycle, r_highest_seq) = flow.cycle(replicas);
-    let empty_slot = flow.source_iter(replicas, q!([-1]));
+    let (r_highest_seq_complete_cycle, r_highest_seq) = flow.tick_cycle(replicas);
+    let empty_slot = flow.source_iter(replicas, q!([-1])).tick_batch();
     // Either the max sequence number executed so far or -1. Need to union otherwise r_highest_seq is empty and joins with it will fail
     let r_highest_seq_with_default = r_highest_seq.union(empty_slot);
     // Find highest the sequence number of any payload that can be processed in this tick. This is the payload right before a hole.
@@ -708,7 +716,7 @@ fn replica<'a>(
 
     let r_kv_store = r_processable_payloads
         .clone()
-        .all_ticks() // Optimization: all_ticks() + fold() = fold<static>, where the state of the previous fold is saved and persisted values are deleted.
+        .persist() // Optimization: all_ticks() + fold() = fold<static>, where the state of the previous fold is saved and persisted values are deleted.
         .fold(q!(|| (HashMap::<u32, String>::new(), -1)), q!(|state: &mut (HashMap::<u32, String>, i32), payload: ReplicaPayload| {
             let kv_store = &mut state.0;
             let last_seq = &mut state.1;
@@ -727,8 +735,8 @@ fn replica<'a>(
     r_highest_seq_complete_cycle.complete(r_new_highest_seq.clone());
 
     // Send checkpoints to the acceptors when we've processed enough payloads
-    let (r_checkpointed_seqs_complete_cycle, r_checkpointed_seqs) = flow.cycle(replicas);
-    let r_max_checkpointed_seq = r_checkpointed_seqs.all_ticks().fold(
+    let (r_checkpointed_seqs_complete_cycle, r_checkpointed_seqs) = flow.tick_cycle(replicas);
+    let r_max_checkpointed_seq = r_checkpointed_seqs.persist().fold(
         q!(|| -1),
         q!(|max_seq: &mut i32, seq: i32| {
             if seq > *max_seq {
@@ -752,25 +760,29 @@ fn replica<'a>(
     r_checkpointed_seqs_complete_cycle.complete(r_checkpoint_seq_new.clone());
 
     // Tell clients that the payload has been committed. All ReplicaPayloads contain the client's machine ID (to string) as value.
-    let r_to_clients = p_to_replicas
-        .tick_batch()
-        .map(q!(|payload: ReplicaPayload| (
-            payload.value.parse::<u32>().unwrap(),
-            payload
-        )));
-    (r_checkpoint_seq_new, r_to_clients)
+    let r_to_clients = p_to_replicas.map(q!(|payload: ReplicaPayload| (
+        payload.value.parse::<u32>().unwrap(),
+        payload
+    )));
+    (r_checkpoint_seq_new.all_ticks(), r_to_clients)
 }
 
 // Clients. All relations for clients will be prefixed with c. All ClientPayloads will contain the virtual client number as key and the client's machine ID (to string) as value. Expects p_to_clients_leader_elected containing Ballots whenever the leader is elected, and r_to_clients_payload_applied containing ReplicaPayloads whenever a payload is committed. Outputs (leader address, ClientPayload) when a new leader is elected or when the previous payload is committed.
 fn client<'a>(
     clients: &Cluster<Client>,
-    p_to_clients_leader_elected: Stream<'a, Ballot, stream::Async, Cluster<Client>>,
-    r_to_clients_payload_applied: Stream<'a, (u32, ReplicaPayload), stream::Async, Cluster<Client>>,
+    p_to_clients_leader_elected: Stream<'a, Ballot, stream::Unbounded, NoTick, Cluster<Client>>,
+    r_to_clients_payload_applied: Stream<
+        'a,
+        (u32, ReplicaPayload),
+        stream::Unbounded,
+        NoTick,
+        Cluster<Client>,
+    >,
     flow: &FlowBuilder<'a>,
     num_clients_per_node: usize,
     median_latency_window_size: usize,
     f: usize,
-) -> Stream<'a, (u32, ClientPayload), stream::Windowed, Cluster<Client>> {
+) -> Stream<'a, (u32, ClientPayload), stream::Unbounded, NoTick, Cluster<Client>> {
     let c_id = flow.cluster_self_id(clients);
     p_to_clients_leader_elected
         .clone()
@@ -780,13 +792,14 @@ fn client<'a>(
         )));
     // r_to_clients_payload_applied.clone().inspect(q!(|payload: &(u32, ReplicaPayload)| println!("Client received payload: {:?}", payload)));
     // Only keep the latest leader
-    let c_max_leader_ballot = p_to_clients_leader_elected.all_ticks().reduce(q!(
-        |curr_max_ballot: &mut Ballot, new_ballot: Ballot| {
+    let c_max_leader_ballot = p_to_clients_leader_elected
+        .tick_batch()
+        .persist()
+        .reduce(q!(|curr_max_ballot: &mut Ballot, new_ballot: Ballot| {
             if new_ballot > *curr_max_ballot {
                 *curr_max_ballot = new_ballot;
             }
-        }
-    ));
+        }));
     let c_new_leader_ballot = c_max_leader_ballot.clone().delta();
     // Whenever the leader changes, make all clients send a message
     let c_new_payloads_when_leader_elected =
@@ -801,7 +814,8 @@ fn client<'a>(
                     }
                 ))));
     // Whenever replicas confirm that a payload was committed, collected it and wait for a quorum
-    let (c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) = flow.cycle(clients);
+    let (c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) =
+        flow.tick_cycle(clients);
     let c_received_payloads = r_to_clients_payload_applied
         .tick_batch()
         .map(q!(|(sender, replica_payload): (u32, ReplicaPayload)| (
@@ -839,10 +853,12 @@ fn client<'a>(
                 value: c_id.to_string()
             }
         )));
-    let c_to_proposers = c_new_payloads_when_leader_elected.union(c_new_payloads_when_committed);
+    let c_to_proposers = c_new_payloads_when_leader_elected
+        .union(c_new_payloads_when_committed)
+        .all_ticks();
 
     // Track statistics
-    let (c_timers_complete_cycle, c_timers) = flow.cycle(clients);
+    let (c_timers_complete_cycle, c_timers) = flow.tick_cycle(clients);
     let c_new_timers_when_leader_elected = c_new_leader_ballot
         .map(q!(|_: Ballot| SystemTime::now()))
         .flat_map(q!(move |now: SystemTime| (0..num_clients_per_node)
@@ -880,7 +896,7 @@ fn client<'a>(
             curr_time.duration_since(prev_time).unwrap().as_micros()
         )))
         .union(c_latency_reset)
-        .all_ticks()
+        .persist()
         .fold(
             // Create window with ring buffer using vec + wraparound index
             // TODO: Would be nice if I could use vec![] instead, but that doesn't work in HF+ with RuntimeData *median_latency_window_size
@@ -932,7 +948,7 @@ fn client<'a>(
 
     let c_throughput = c_throughput_new_batch
         .union(c_throughput_reset)
-        .all_ticks()
+        .persist()
         .fold(
             q!(|| (0, 0)),
             q!(
@@ -951,6 +967,7 @@ fn client<'a>(
     c_stats_output_timer
         .cross_singleton(c_latencies)
         .cross_singleton(c_throughput)
+        .all_ticks()
         .for_each(q!(move |(
             (_, (latencies, _write_index, has_any_value)),
             (throughput, num_ticks),
@@ -977,10 +994,10 @@ fn client<'a>(
 
 // Proposer logic to calculate the largest ballot received so far.
 fn p_max_ballot<'a>(
-    a_to_proposers_p1b: Stream<'a, (u32, P1b), stream::Async, Cluster<Proposer>>,
-    a_to_proposers_p2b: Stream<'a, (u32, P2b), stream::Async, Cluster<Proposer>>,
-    p_to_proposers_i_am_leader: Stream<'a, Ballot, stream::Async, Cluster<Proposer>>,
-) -> Stream<'a, Ballot, stream::Windowed, Cluster<Proposer>> {
+    a_to_proposers_p1b: Stream<'a, (u32, P1b), stream::Unbounded, NoTick, Cluster<Proposer>>,
+    a_to_proposers_p2b: Stream<'a, (u32, P2b), stream::Unbounded, NoTick, Cluster<Proposer>>,
+    p_to_proposers_i_am_leader: Stream<'a, Ballot, stream::Unbounded, NoTick, Cluster<Proposer>>,
+) -> Stream<'a, Ballot, stream::Bounded, Tick, Cluster<Proposer>> {
     let p_received_p1b_ballots = a_to_proposers_p1b
         .clone()
         .map(q!(|(_, p1b): (_, P1b)| p1b.max_ballot));
@@ -990,7 +1007,8 @@ fn p_max_ballot<'a>(
     let p_received_max_ballot = p_received_p1b_ballots
         .union(p_received_p2b_ballots)
         .union(p_to_proposers_i_am_leader)
-        .all_ticks()
+        .tick_batch()
+        .persist()
         .fold(
             q!(|| Ballot { num: 0, id: 0 }),
             q!(|curr_max_ballot: &mut Ballot, new_ballot: Ballot| {
@@ -1007,13 +1025,13 @@ fn p_max_ballot<'a>(
 fn p_ballot_calc<'a>(
     flow: &FlowBuilder<'a>,
     proposers: &Cluster<Proposer>,
-    p_received_max_ballot: Stream<'a, Ballot, stream::Windowed, Cluster<Proposer>>,
+    p_received_max_ballot: Stream<'a, Ballot, stream::Bounded, Tick, Cluster<Proposer>>,
 ) -> (
-    Stream<'a, u32, stream::Windowed, Cluster<Proposer>>,
-    Stream<'a, (Ballot, u32), stream::Windowed, Cluster<Proposer>>,
+    Stream<'a, u32, stream::Bounded, Tick, Cluster<Proposer>>,
+    Stream<'a, (Ballot, u32), stream::Bounded, Tick, Cluster<Proposer>>,
 ) {
     let p_id = flow.cluster_self_id(proposers);
-    let (p_ballot_num_complete_cycle, p_ballot_num) = flow.cycle(proposers);
+    let (p_ballot_num_complete_cycle, p_ballot_num) = flow.tick_cycle(proposers);
     let p_has_largest_ballot = p_received_max_ballot
         .clone()
         .cross_singleton(p_ballot_num.clone())
@@ -1044,7 +1062,7 @@ fn p_ballot_calc<'a>(
             }
         }))
         .defer_tick();
-    let p_start_ballot_num = flow.source_iter(proposers, q!([0]));
+    let p_start_ballot_num = flow.source_iter(proposers, q!([0])).tick_batch();
     p_ballot_num_complete_cycle.complete(p_start_ballot_num.union(p_new_ballot_num));
     // End stable leader election
     (p_ballot_num, p_has_largest_ballot)
@@ -1053,37 +1071,44 @@ fn p_ballot_calc<'a>(
 // Proposer logic to send "I am leader" messages periodically to other proposers, or send p1a to acceptors if other leaders expired.
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
 fn p_p1a<'a>(
-    p_ballot_num: Stream<'a, u32, stream::Windowed, Cluster<Proposer>>,
-    p_is_leader: Stream<'a, bool, stream::Windowed, Cluster<Proposer>>,
+    p_ballot_num: Stream<'a, u32, stream::Bounded, Tick, Cluster<Proposer>>,
+    p_is_leader: Stream<'a, bool, stream::Bounded, Tick, Cluster<Proposer>>,
     proposers: &Cluster<Proposer>,
-    p_to_proposers_i_am_leader: Stream<'a, Ballot, stream::Async, Cluster<Proposer>>,
+    p_to_proposers_i_am_leader: Stream<'a, Ballot, stream::Unbounded, NoTick, Cluster<Proposer>>,
     flow: &FlowBuilder<'a>,
     acceptors: &Cluster<Acceptor>,
     i_am_leader_send_timeout: u64,  // How often to heartbeat
     i_am_leader_check_timeout: u64, // How often to check if heartbeat expired
     i_am_leader_check_timeout_delay_multiplier: usize, /* Initial delay, multiplied by proposer pid, to stagger proposers checking for timeouts */
 ) -> (
-    Stream<'a, Ballot, stream::Async, Cluster<Proposer>>,
-    Stream<'a, P1a, stream::Async, Cluster<Acceptor>>,
+    Stream<'a, Ballot, stream::Unbounded, NoTick, Cluster<Proposer>>,
+    Stream<'a, P1a, stream::Unbounded, NoTick, Cluster<Acceptor>>,
 ) {
     let p_id = flow.cluster_self_id(proposers);
     let p_to_proposers_i_am_leader_new = p_ballot_num
         .clone()
+        .all_ticks()
         .sample_every(q!(Duration::from_secs(i_am_leader_send_timeout)))
+        .tick_batch()
         .continue_if(p_is_leader.clone())
         .map(q!(move |ballot_num: u32| Ballot {
             num: ballot_num,
             id: p_id
         }))
+        .all_ticks()
         .broadcast_bincode_interleaved(proposers);
 
-    let p_latest_received_i_am_leader = p_to_proposers_i_am_leader.clone().all_ticks().fold(
-        q!(|| None),
-        q!(|latest: &mut Option<Instant>, _: Ballot| {
-            // Note: May want to check received ballot against our own?
-            *latest = Some(Instant::now());
-        }),
-    );
+    let p_latest_received_i_am_leader = p_to_proposers_i_am_leader
+        .clone()
+        .tick_batch()
+        .persist()
+        .fold(
+            q!(|| None),
+            q!(|latest: &mut Option<Instant>, _: Ballot| {
+                // Note: May want to check received ballot against our own?
+                *latest = Some(Instant::now());
+            }),
+        );
     // Add random delay depending on node ID so not everyone sends p1a at the same time
     let p_leader_expired = flow.source_interval_delayed(proposers, q!(Duration::from_secs((p_id * i_am_leader_check_timeout_delay_multiplier as u32).into())), q!(Duration::from_secs(i_am_leader_check_timeout)))
         .tick_batch()
@@ -1100,6 +1125,7 @@ fn p_p1a<'a>(
         }));
     p_leader_expired
         .clone()
+        .all_ticks()
         .for_each(q!(|_| println!("Proposer leader expired")));
 
     let p_to_acceptors_p1a = p_ballot_num
@@ -1111,6 +1137,24 @@ fn p_p1a<'a>(
                 id: p_id
             }
         }))
+        .all_ticks()
         .broadcast_bincode_interleaved(acceptors);
     (p_to_proposers_i_am_leader_new, p_to_acceptors_p1a)
+}
+
+#[cfg(test)]
+mod tests {
+    use hydroflow_plus_deploy::DeployRuntime;
+    use stageleft::RuntimeData;
+
+    #[test]
+    fn paxos_ir() {
+        let builder = hydroflow_plus::FlowBuilder::new();
+        let _ = super::paxos(&builder, 1, 1, 1, 1, 1, 1, 1);
+        let built = builder.with_default_optimize();
+
+        insta::assert_debug_snapshot!(built.ir());
+
+        let _ = built.compile::<DeployRuntime>(&RuntimeData::new("FAKE"));
+    }
 }
