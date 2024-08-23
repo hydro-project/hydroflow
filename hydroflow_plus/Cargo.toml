@@ -16,13 +16,13 @@ deploy_integration = [ "hydroflow/deploy_integration" ]
 stageleft_devel = []
 
 [dependencies]
-quote = "1"
-syn = { version = "2", features = [ "parsing", "extra-traits", "visit-mut" ] }
-proc-macro2 = "1"
+quote = "1.0.35"
+syn = { version = "2.0.46", features = [ "parsing", "extra-traits", "visit-mut" ] }
+proc-macro2 = "1.0.74"
 proc-macro-crate = "1.1"
 hydroflow = { path = "../hydroflow", version = "^0.8.0", default-features = false }
 hydroflow_lang = { path = "../hydroflow_lang", version = "^0.8.0" }
-serde = "1"
+serde = "1.0.197"
 bincode = "1.3"
 stageleft = { path = "../stageleft", version = "^0.3.0" }
 

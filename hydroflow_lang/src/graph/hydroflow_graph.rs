@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::spanned::Spanned;
 
-use super::graph_write::{Dot, GraphWrite, Mermaid};
+use super::graph_write::GraphWrite;
 use super::ops::{
     find_op_op_constraints, null_write_iterator_fn, DelayType, OperatorWriteOutput,
     WriteContextArgs, OPERATORS,
@@ -1243,6 +1243,7 @@ impl HydroflowGraph {
     }
 
     /// Writes this graph as mermaid into a string.
+    #[cfg(feature = "graph-write")]
     pub fn to_mermaid(&self, write_config: &WriteConfig) -> String {
         let mut output = String::new();
         self.write_mermaid(&mut output, write_config).unwrap();
@@ -1250,6 +1251,7 @@ impl HydroflowGraph {
     }
 
     /// Writes this graph as mermaid into the given `Write`.
+    #[cfg(feature = "graph-write")]
     pub fn write_mermaid(
         &self,
         output: impl std::fmt::Write,
@@ -1260,6 +1262,7 @@ impl HydroflowGraph {
     }
 
     /// Writes this graph as DOT (graphviz) into a string.
+    #[cfg(feature = "graph-write")]
     pub fn to_dot(&self, write_config: &WriteConfig) -> String {
         let mut output = String::new();
         let mut graph_write = Dot::new(&mut output);
@@ -1268,6 +1271,7 @@ impl HydroflowGraph {
     }
 
     /// Writes this graph as DOT (graphviz) into the given `Write`.
+    #[cfg(feature = "graph-write")]
     pub fn write_dot(
         &self,
         output: impl std::fmt::Write,
@@ -1544,42 +1548,4 @@ impl HydroflowGraph {
         }
         Ok(())
     }
-}
-
-/// Configuration for writing graphs.
-#[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "debugging", derive(clap::Args))]
-pub struct WriteConfig {
-    /// Subgraphs will not be rendered if set.
-    #[cfg_attr(feature = "debugging", arg(long))]
-    pub no_subgraphs: bool,
-    /// Variable names will not be rendered if set.
-    #[cfg_attr(feature = "debugging", arg(long))]
-    pub no_varnames: bool,
-    /// Will not render pull/push shapes if set.
-    #[cfg_attr(feature = "debugging", arg(long))]
-    pub no_pull_push: bool,
-    /// Will not render handoffs if set.
-    #[cfg_attr(feature = "debugging", arg(long))]
-    pub no_handoffs: bool,
-    /// Will not render singleton references if set.
-    #[cfg_attr(feature = "debugging", arg(long))]
-    pub no_references: bool,
-
-    /// Op text will only be their name instead of the whole source.
-    #[cfg_attr(feature = "debugging", arg(long))]
-    pub op_short_text: bool,
-    /// Op text will exclude any line that starts with "use".
-    #[cfg_attr(feature = "debugging", arg(long))]
-    pub op_text_no_imports: bool,
-}
-
-/// Enum for choosing between mermaid and dot graph writing.
-#[derive(Copy, Clone, Debug)]
-#[cfg_attr(feature = "debugging", derive(clap::Parser, clap::ValueEnum))]
-pub enum WriteGraphType {
-    /// Mermaid graphs.
-    Mermaid,
-    /// Dot (Graphviz) graphs.
-    Dot,
 }

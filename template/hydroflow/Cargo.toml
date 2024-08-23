@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 chrono = { version = "0.4.20", features = [ "serde" ], default-features = true }
-clap = { version = "4", features = [ "derive" ] }
+clap = { version = "4.5.4", features = [ "derive" ] }
 hydroflow = { git = "{{ hydroflow_git | default: 'https://github.com/hydro-project/hydroflow.git' }}", branch = "{{ hydroflow_branch | default: 'main' }}" }
-serde = { version = "1", features = [ "derive" ] }
+serde = { version = "1.0.197", features = [ "derive" ] }
