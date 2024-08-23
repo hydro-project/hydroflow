@@ -87,7 +87,6 @@ mod tests {
         let process = flow.process::<()>();
 
         flow.source_iter(&process, q!(0..10))
-            .all_ticks()
             .map(q!(|v| v + 1))
             .for_each(q!(|n| println!("{}", n)));
 
