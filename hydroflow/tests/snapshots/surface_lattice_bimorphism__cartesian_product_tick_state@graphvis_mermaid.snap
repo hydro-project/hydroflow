@@ -1,6 +1,6 @@
 ---
 source: hydroflow/tests/surface_lattice_bimorphism.rs
-expression: "df.meta_graph().unwrap().to_mermaid(&Default::default())"
+expression: "df.meta_graph().unwrap().to_mermaid(& Default :: default())"
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
@@ -25,14 +25,14 @@ linkStyle default stroke:#aaa
 1v1-->2v1
 5v1-->6v1
 4v1-->5v1
-3v1==>|items|11v1; linkStyle 4 stroke:#060
-6v1==>|items|12v1; linkStyle 5 stroke:#060
-9v1==>10v1; linkStyle 6 stroke:#060
-8v1==>9v1; linkStyle 7 stroke:#060
-7v1==>13v1; linkStyle 8 stroke:#060
-11v1==>|0|7v1; linkStyle 9 stroke:#060
-12v1==>|1|7v1; linkStyle 10 stroke:#060
-13v1==>8v1; linkStyle 11 stroke:#060
+3v1-->|items|11v1
+6v1-->|items|12v1
+9v1-->10v1
+8v1-->9v1
+7v1-->13v1
+11v1-->|0|7v1
+12v1-->|1|7v1
+13v1-->8v1; linkStyle 11 stroke:#060
 3v1--x7v1; linkStyle 12 stroke:red
 6v1--x7v1; linkStyle 13 stroke:red
 subgraph sg_1v1 ["sg_1v1 stratum 0"]

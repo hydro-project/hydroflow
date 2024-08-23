@@ -17,7 +17,7 @@ use crate::diagnostic::{Diagnostic, Level};
 ///
 /// use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
 ///
-/// my_state = source_iter_delta(0..3)
+/// my_state = source_iter(0..3)
 ///     -> map(SetUnionSingletonSet::new_from)
 ///     -> state::<SetUnionHashSet<usize>>();
 /// ```
