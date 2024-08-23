@@ -1,4 +1,4 @@
-#![cfg(feature = "graph-write")]
+#![cfg(feature = "debugging")]
 
 use std::fmt::Write;
 use std::io::Result;
