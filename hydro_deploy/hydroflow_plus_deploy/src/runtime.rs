@@ -10,13 +10,13 @@ use stageleft::{q, Quoted, RuntimeData};
 
 use super::HydroflowPlusMeta;
 
-pub struct CliRuntime {}
+pub struct DeployRuntime {}
 
-impl<'a> Deploy<'a> for CliRuntime {
+impl<'a> Deploy<'a> for DeployRuntime {
     type InstantiateEnv = ();
     type CompileEnv = RuntimeData<&'a DeployPorts<HydroflowPlusMeta>>;
-    type Process = CliRuntimeNode;
-    type Cluster = CliRuntimeCluster;
+    type Process = DeployRuntimeNode;
+    type Cluster = DeployRuntimeCluster;
     type Meta = ();
     type GraphId = usize;
     type ProcessPort = String;
@@ -27,13 +27,13 @@ impl<'a> Deploy<'a> for CliRuntime {
     }
 
     fn trivial_process(_id: usize) -> Self::Process {
-        CliRuntimeNode {
+        DeployRuntimeNode {
             next_port: Rc::new(RefCell::new(0)),
         }
     }
 
     fn trivail_cluster(_id: usize) -> Self::Cluster {
-        CliRuntimeCluster {
+        DeployRuntimeCluster {
             next_port: Rc::new(RefCell::new(0)),
         }
     }
@@ -228,11 +228,11 @@ impl<'a> Deploy<'a> for CliRuntime {
 }
 
 #[derive(Clone)]
-pub struct CliRuntimeNode {
+pub struct DeployRuntimeNode {
     next_port: Rc<RefCell<usize>>,
 }
 
-impl Node for CliRuntimeNode {
+impl Node for DeployRuntimeNode {
     type Port = String;
     type Meta = ();
     type InstantiateEnv = ();
@@ -252,16 +252,16 @@ impl Node for CliRuntimeNode {
         _graph: HydroflowGraph,
         _extra_stmts: Vec<syn::Stmt>,
     ) {
-        panic!(".deploy() cannot be called on a CLIRuntimeNode");
+        panic!(".deploy() cannot be called on a DeployRuntimeNode");
     }
 }
 
 #[derive(Clone)]
-pub struct CliRuntimeCluster {
+pub struct DeployRuntimeCluster {
     next_port: Rc<RefCell<usize>>,
 }
 
-impl Node for CliRuntimeCluster {
+impl Node for DeployRuntimeCluster {
     type Port = String;
     type Meta = ();
     type InstantiateEnv = ();
@@ -281,21 +281,21 @@ impl Node for CliRuntimeCluster {
         _graph: HydroflowGraph,
         _extra_stmts: Vec<syn::Stmt>,
     ) {
-        panic!(".deploy() cannot be called on a CLIRuntimeCluster");
+        panic!(".deploy() cannot be called on a DeployRuntimeCluster");
     }
 }
 
-impl<'a> ProcessSpec<'a, CliRuntime> for () {
-    fn build(self, _id: usize, _name_hint: &str) -> CliRuntimeNode {
-        CliRuntimeNode {
+impl<'a> ProcessSpec<'a, DeployRuntime> for () {
+    fn build(self, _id: usize, _name_hint: &str) -> DeployRuntimeNode {
+        DeployRuntimeNode {
             next_port: Rc::new(RefCell::new(0)),
         }
     }
 }
 
-impl<'cli> ClusterSpec<'cli, CliRuntime> for () {
-    fn build(self, _id: usize, _name_hint: &str) -> CliRuntimeCluster {
-        CliRuntimeCluster {
+impl<'cli> ClusterSpec<'cli, DeployRuntime> for () {
+    fn build(self, _id: usize, _name_hint: &str) -> DeployRuntimeCluster {
+        DeployRuntimeCluster {
             next_port: Rc::new(RefCell::new(0)),
         }
     }
