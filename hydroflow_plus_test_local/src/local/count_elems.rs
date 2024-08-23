@@ -16,7 +16,8 @@ pub fn count_elems<'a, T: 'a>(
     let count = source
         .map(q!(|_| 1))
         .tick_batch()
-        .fold(q!(|| 0), q!(|a, b| *a += b));
+        .fold(q!(|| 0), q!(|a, b| *a += b))
+        .all_ticks();
 
     count.for_each(q!(|v| {
         output.send(v).unwrap();
