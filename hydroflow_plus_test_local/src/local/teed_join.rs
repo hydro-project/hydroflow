@@ -19,18 +19,18 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
     let node_zero = flow.process::<N0>();
     let node_one = flow.process::<N1>();
 
-    let source = flow.source_stream(&node_zero, input_stream);
+    let source = flow.source_stream(&node_zero, input_stream).tick_batch();
     let map1 = source.clone().map(q!(|v| (v + 1, ())));
     let map2 = source.map(q!(|v| (v - 1, ())));
 
     let joined = map1.join(map2).map(q!(|t| t.0));
 
-    joined.clone().for_each(q!(|v| {
+    joined.clone().all_ticks().for_each(q!(|v| {
         output.send(v).unwrap();
     }));
 
     if send_twice {
-        joined.for_each(q!(|v| {
+        joined.all_ticks().for_each(q!(|v| {
             output.send(v).unwrap();
         }));
     }
