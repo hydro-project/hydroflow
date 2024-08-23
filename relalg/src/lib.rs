@@ -24,7 +24,7 @@ impl Datum {
         }
     }
 
-    pub fn is_true(self) -> bool {
+    pub fn is_true(&self) -> bool {
         matches!(self, Datum::Bool(true))
     }
 }
