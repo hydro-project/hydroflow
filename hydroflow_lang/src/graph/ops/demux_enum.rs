@@ -129,44 +129,40 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
             };
         };
 
-        let write_iterator = match outputs.len() {
-            // 0 => super::null_write_iterator_fn(wc),
-            1 => {
-                // Use `enum_type`'s span.
-                let map_fn = quote_spanned! {enum_type.span()=>
-                    <#enum_type as #root::util::demux_enum::SingleVariant>::single_variant
-                };
-                if is_pull {
-                    let input = &inputs[0];
-                    quote_spanned! {op_span=>
-                        let #ident = #input.map(#map_fn);
-                    }
-                } else {
-                    let output = &outputs[0];
-                    quote_spanned! {op_span=>
-                        let #ident = #root::pusherator::map::Map::new(#map_fn, #output);
-                    }
+        let write_iterator = if 1 == outputs.len() {
+            // Use `enum_type`'s span.
+            let map_fn = quote_spanned! {enum_type.span()=>
+                <#enum_type as #root::util::demux_enum::SingleVariant>::single_variant
+            };
+            if is_pull {
+                let input = &inputs[0];
+                quote_spanned! {op_span=>
+                    let #ident = #input.map(#map_fn);
+                }
+            } else {
+                let output = &outputs[0];
+                quote_spanned! {op_span=>
+                    let #ident = #root::pusherator::map::Map::new(#map_fn, #output);
                 }
             }
-            _multiple => {
-                assert!(!is_pull);
+        } else {
+            assert!(!is_pull);
 
-                let mut sort_permute: Vec<_> = (0..port_idents.len()).collect();
-                sort_permute.sort_by_key(|&i| &port_idents[i]);
+            let mut sort_permute: Vec<_> = (0..port_idents.len()).collect();
+            sort_permute.sort_by_key(|&i| &port_idents[i]);
 
-                let sorted_outputs = sort_permute.iter().map(|&i| &outputs[i]);
+            let sorted_outputs = sort_permute.iter().map(|&i| &outputs[i]);
 
-                quote_spanned! {op_span=>
-                    let #ident = {
-                        let mut __outputs = ( #( #sorted_outputs, )* );
-                        #root::pusherator::for_each::ForEach::new(move |__item: #enum_type| {
-                            #root::util::demux_enum::DemuxEnum::demux_enum(
-                                __item,
-                                &mut __outputs,
-                            );
-                        })
-                    };
-                }
+            quote_spanned! {op_span=>
+                let #ident = {
+                    let mut __outputs = ( #( #sorted_outputs, )* );
+                    #root::pusherator::for_each::ForEach::new(move |__item: #enum_type| {
+                        #root::util::demux_enum::DemuxEnum::demux_enum(
+                            __item,
+                            &mut __outputs,
+                        );
+                    })
+                };
             }
         };
 
