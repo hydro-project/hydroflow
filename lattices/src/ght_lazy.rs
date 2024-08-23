@@ -1,10 +1,8 @@
 use std::hash::Hash;
+use std::marker::PhantomData;
 
-use ref_cast::RefCast;
 use sealed::sealed;
-use variadics::{
-    var_expr, var_type, PartialEqVariadic, RefVariadic, Split, SplitBySuffix, VariadicExt,
-};
+use variadics::{var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt};
 
 use crate::ght::{GeneralizedHashTrieNode, GhtHasChildren, GhtInner, GhtLeaf, GhtTakeLeaf};
 
@@ -103,13 +101,13 @@ where
 /// one for each height from 1 to length of the schema
 macro_rules! GhtForestType {
     ($a:tt, $( $b:tt ),* => ()) => {
-        ()
+        GhtType!($a, $( $b ),* => ())
     };
     ($a:tt => $c:tt, $( $d:tt ),* ) => {
         (GhtType!($a => $c, $( $d ),*), GhtForestType!($a, $c => $( $d ),*))
     };
     ($a:tt, $( $b:tt ),* => $c:tt) => {
-        (GhtType!($a, $( $b ),* => $c), ())
+        (GhtType!($a, $( $b ),* => $c), GhtForestType!($a, $( $b ),*, $c => ()))
     };
 
     ($a:tt, $( $b:tt ),* => $c:tt, $( $d:tt ),* ) => {
@@ -119,10 +117,6 @@ macro_rules! GhtForestType {
     ($a:tt, $( $b:tt ),* ) => {
         GhtForestType!($a => $( $b ),*)
     };
-
-    // ($head:tt, ($rest:tt)) => {
-    //     GhtForestType!($head => $rest )
-    // };
 }
 
 /// Make a GhtForest trait with a force method that does the forcing+merging logic
@@ -139,50 +133,28 @@ where
     fn force(&mut self, search_key: SearchKey) -> bool;
 }
 
-/// GhtForestStruct is a metadata node pointing to a variadic list of GHTs
-#[derive(RefCast)]
-#[repr(transparent)]
-pub struct GhtForestStruct<T>
-where
-    T: VariadicExt,
-{
-    pub(crate) forest: T,
-}
-
-// prefix_iter():
-// given: Forest F, first tree T of height h(T), search key k of length |k|
-// if |k| > h(T):
-//    if the prefix of k is found in a leaf L of T:
-//        force L and merge result into next tree
-//    else:
-//        recurse to next tree
-// else: // |k| <= h(T)
-//    if |k| == |schema|:
-//        find_containing_leaf(k).iter()
-//    else:
-//        T.prefix_iter(k).chain(...) // iterator that recurses down the forest
-
-// force():
-// given: Forest F, first tree T of height h(T), search key k of length |k|
-// if |k| > h(T):
-//    if the prefix of k is found in a leaf L of T:
-//        force L and merge result into next tree
-//    recurse to next tree
-// else: // |k| <= h(T)
-//    return
+// /// GhtForestStruct is a metadata node pointing to a variadic list of GHTs
+// #[derive(RefCast)]
+// #[repr(transparent)]
+// pub struct GhtForestStruct<T>
+// where
+//     T: VariadicExt,
+// {
+//     pub(crate) forest: T,
+// }
 
 #[sealed]
-impl<TrieFirst, TrieSecond, TrieRest, SearchKey /* , Head, Rest */> GhtForest<SearchKey>
-    for GhtForestStruct<var_type!(TrieFirst, TrieSecond, ...TrieRest)>
+impl<TrieFirst, TrieSecond, TrieRest, SearchKey /* , Head, Rest */> GhtForest<SearchKey> for var_type!(TrieFirst, TrieSecond, ...TrieRest)
 where
     TrieFirst: GeneralizedHashTrieNode + GhtTakeLeaf,
-    TrieSecond: GeneralizedHashTrieNode<Schema = TrieFirst::Schema, ValType = TrieFirst::ValType>
-        + GhtTakeLeaf,
+    TrieSecond: GeneralizedHashTrieNode<Schema = TrieFirst::Schema> + GhtTakeLeaf,
     SearchKey: Split<TrieFirst::Schema>,
     var_type!(TrieSecond, ...TrieRest): VariadicExt + GhtForest<SearchKey>,
     SearchKey: VariadicExt + Clone,
-    GhtForestStruct<var_type!(TrieSecond, ...TrieRest)>: GhtForest<SearchKey>,
+    // GhtForestStruct<var_type!(TrieSecond, ...TrieRest)>: GhtForest<SearchKey>,
+    var_type!(TrieSecond, ...TrieRest): GhtForest<SearchKey>,
     TrieFirst::Schema: PartialEqVariadic + SplitBySuffix<TrieFirst::ValType> + Eq + Hash + Clone,
+    TrieSecond::Schema: PartialEqVariadic + SplitBySuffix<TrieSecond::ValType> + Eq + Hash + Clone,
     Self: ForestFindLeaf<TrieFirst::Schema>,
     <<TrieFirst::Schema as VariadicExt>::Reverse as VariadicExt>::Reverse: Eq + Hash + Clone,
     GhtLeaf<
@@ -191,8 +163,8 @@ where
     >: ColumnLazyTrieNode,
 {
     fn force<'a>(&mut self, search_key: SearchKey) -> bool {
-        let var_expr!(first, ...rest) = &mut self.forest;
-        if first.height().unwrap() < SearchKey::LEN {
+        let var_expr!(first, ...rest) = self; //.forest;
+        if let Some(_h) = first.height().filter(|&h| h < SearchKey::LEN) {
             let (row, _): (
                 TrieFirst::Schema,
                 <SearchKey as Split<<TrieFirst as GeneralizedHashTrieNode>::Schema>>::Suffix,
@@ -200,6 +172,13 @@ where
             // try to force first
             if let Some(leaf) = first.take_containing_leaf(row.as_ref_var()) {
                 let var_expr!(rest_first, ..._rr) = rest;
+                // TrieFirst::ValType IS NOT the same as TrieSecond::ValType,
+                // but the elements in the leaf are the same.
+                // So we just need a new GhtLeaf with the right ValType.
+                let leaf = GhtLeaf::<TrieSecond::Schema, TrieSecond::ValType> {
+                    elements: leaf.elements,
+                    _suffix_schema: PhantomData,
+                };
                 rest_first.merge_leaf(row.as_ref_var(), leaf);
                 // drop through and recurse: we may have to force again in the neighbor
             }
@@ -211,10 +190,22 @@ where
     }
 }
 
+/// If we're on the last trie in the forest, there's nowhere to force right to
 #[sealed]
-impl<SearchKey> GhtForest<SearchKey> for GhtForestStruct<var_type!()>
+impl<SearchKey, TrieFirst> GhtForest<SearchKey> for var_type!(TrieFirst)
 where
-    SearchKey: VariadicExt + RefVariadic,
+    SearchKey: VariadicExt,
+    TrieFirst: GeneralizedHashTrieNode,
+{
+    fn force<'a>(&mut self, _search_key: SearchKey) -> bool {
+        false
+    }
+}
+
+#[sealed]
+impl<SearchKey> GhtForest<SearchKey> for var_type!()
+where
+    SearchKey: VariadicExt,
 {
     fn force<'a>(&mut self, _search_key: SearchKey) -> bool {
         false
@@ -277,32 +268,32 @@ where
     }
 }
 
-impl<TrieFirst, TrieRest> Default for GhtForestStruct<var_type!(TrieFirst, ...TrieRest)>
-where
-    // T: VariadicExt,
-    TrieFirst: Default + GeneralizedHashTrieNode,
-    TrieRest: VariadicExt,
-    GhtForestStruct<TrieRest>: Default,
-    // for<'a> <TrieRest as VariadicExt>::AsRefVar<'a>: PartialEq,
-    // <TrieFirst as GhtHasChildren>::Node: Eq + Hash,
-    // GhtLeaf<TrieFirst::Node>: GeneralizedHashTrieNode,
-    // need something like TrieFirst::Schema = TrieRest.0::Schema?
-{
-    fn default() -> Self {
-        let first_trie = TrieFirst::default();
-        let rest = GhtForestStruct::<TrieRest>::default();
-        let rest_forest: TrieRest = rest.forest;
+// impl<TrieFirst, TrieRest> Default for GhtForestStruct<var_type!(TrieFirst, ...TrieRest)>
+// where
+//     // T: VariadicExt,
+//     TrieFirst: Default + GeneralizedHashTrieNode,
+//     TrieRest: VariadicExt,
+//     GhtForestStruct<TrieRest>: Default,
+//     // for<'a> <TrieRest as VariadicExt>::AsRefVar<'a>: PartialEq,
+//     // <TrieFirst as GhtHasChildren>::Node: Eq + Hash,
+//     // GhtLeaf<TrieFirst::Node>: GeneralizedHashTrieNode,
+//     // need something like TrieFirst::Schema = TrieRest.0::Schema?
+// {
+//     fn default() -> Self {
+//         let first_trie = TrieFirst::default();
+//         let rest = GhtForestStruct::<TrieRest>::default();
+//         let rest_forest: TrieRest = rest.forest;
 
-        Self {
-            forest: var_expr!(first_trie, ...rest_forest),
-        }
-    }
-}
+//         Self {
+//             forest: var_expr!(first_trie, ...rest_forest),
+//         }
+//     }
+// }
 
-impl Default for GhtForestStruct<var_type!()> {
-    fn default() -> Self {
-        Self {
-            forest: var_expr!(),
-        }
-    }
-}
+// impl Default for GhtForestStruct<var_type!()> {
+//     fn default() -> Self {
+//         Self {
+//             forest: var_expr!(),
+//         }
+//     }
+// }

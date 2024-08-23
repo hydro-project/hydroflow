@@ -7,10 +7,11 @@ mod test {
 
     use crate::ght::{GeneralizedHashTrieNode, GhtInner, GhtLeaf, GhtPrefixIter};
     use crate::ght_lattice::{
-        DeepJoinLatticeBimorphism, GhtBimorphism, GhtCartesianProductBimorphism,
-        GhtNodeKeyedBimorphism, GhtValTypeProductBimorphism,
+        //     DeepJoinLatticeBimorphism, GhtBimorphism,
+        GhtCartesianProductBimorphism,
+        //     GhtNodeKeyedBimorphism, GhtValTypeProductBimorphism,
     };
-    use crate::ght_lazy::{ColumnLazyTrieNode, ForestFindLeaf, GhtForest, GhtForestStruct};
+    use crate::ght_lazy::{ColumnLazyTrieNode, ForestFindLeaf, GhtForest}; // GhtForestStruct};
     use crate::{GhtForestType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
 
     #[test]
@@ -940,18 +941,54 @@ mod test {
 
     #[test]
     fn test_build_forest() {
-        type MyForest = GhtForestStruct<GhtForestType!(u8, u16, u32, u64)>;
+        // type MyForest = GhtForestStruct<GhtForestType!(u8, u16, u32, u64)>;
+        // let mut forest = MyForest::default();
+        // forest.forest.0.insert(var_expr!(1, 1, 1, 1));
+        // forest.forest.1 .0.insert(var_expr!(2, 2, 2, 2));
+        // forest.forest.1 .1 .0.insert(var_expr!(3, 3, 3, 3));
+
+        type MyForest = (
+            GhtInner<u8, GhtLeaf<(u8, (u16, (u32, (u64, ())))), (u16, (u32, (u64, ())))>>,
+            (
+                GhtInner<
+                    u8,
+                    GhtInner<u16, GhtLeaf<(u8, (u16, (u32, (u64, ())))), (u32, (u64, ()))>>,
+                >,
+                (
+                    GhtInner<
+                        u8,
+                        GhtInner<
+                            u16,
+                            GhtInner<u32, GhtLeaf<(u8, (u16, (u32, (u64, ())))), (u64, ())>>,
+                        >,
+                    >,
+                    (
+                        GhtInner<
+                            u8,
+                            GhtInner<
+                                u16,
+                                GhtInner<
+                                    u32,
+                                    GhtInner<u64, GhtLeaf<(u8, (u16, (u32, (u64, ())))), ()>>,
+                                >,
+                            >,
+                        >,
+                        (),
+                    ),
+                ),
+            ),
+        );
         let mut forest = MyForest::default();
-        forest.forest.0.insert(var_expr!(1, 1, 1, 1));
-        forest.forest.1 .0.insert(var_expr!(2, 2, 2, 2));
-        forest.forest.1 .1 .0.insert(var_expr!(3, 3, 3, 3));
+        forest.0.insert(var_expr!(1, 1, 1, 1));
+        forest.1 .0.insert(var_expr!(2, 2, 2, 2));
+        forest.1 .1 .0.insert(var_expr!(3, 3, 3, 3));
 
         // let i = <MyForest as GhtForest<<var_type!(u8, u16, u32, u64) as VariadicExt>::AsRefVar<'_>>>::find_matching_trie(&forest, var_expr!(1, 1, 1, 1).as_ref_var(), 0);
         assert_eq!(
             // println!(
             //     "found in trie {}",
             ForestFindLeaf::<var_type!(u8, u16, u32, u64)>::find_containing_leaf(
-                &forest.forest,
+                &forest,
                 var_expr!(1_u8, 1_u16, 1_u32, 1_u64).as_ref_var()
             )
             .unwrap()
@@ -964,7 +1001,7 @@ mod test {
             // println!(
             //     "found in trie {}",
             ForestFindLeaf::<var_type!(u8, u16, u32, u64)>::find_containing_leaf(
-                &forest.forest,
+                &forest,
                 var_expr!(2, 2, 2, 2).as_ref_var()
             )
             .unwrap()
@@ -977,7 +1014,7 @@ mod test {
             // println!(
             //     "found in trie {}",
             ForestFindLeaf::<var_type!(u8, u16, u32, u64)>::find_containing_leaf(
-                &forest.forest,
+                &forest,
                 var_expr!(3, 3, 3, 3).as_ref_var()
             )
             .unwrap()
@@ -990,11 +1027,64 @@ mod test {
             // println!(
             //     "found in trie {}",
             ForestFindLeaf::<var_type!(u8, u16, u32, u64)>::find_containing_leaf(
-                &forest.forest,
+                &forest,
                 var_expr!(4, 4, 4, 4).as_ref_var()
             )
             .is_none()
         );
         // println!("{:?}", forest.forest);
+    }
+
+    #[test]
+    fn test_force_forest() {
+        // type MyForest = GhtForestStruct<GhtForestType!(u8, u16, u32, u64)>;
+        // let mut forest = MyForest::default();
+        // forest.forest.0.insert(var_expr!(1, 1, 1, 1));
+        // forest.forest.0.insert(var_expr!(2, 2, 2, 2));
+        // forest.forest.0.insert(var_expr!(3, 3, 3, 3));
+        type MyForest = (
+            GhtInner<u8, GhtLeaf<(u8, (u16, (u32, (u64, ())))), (u16, (u32, (u64, ())))>>,
+            (
+                GhtInner<
+                    u8,
+                    GhtInner<u16, GhtLeaf<(u8, (u16, (u32, (u64, ())))), (u32, (u64, ()))>>,
+                >,
+                (
+                    GhtInner<
+                        u8,
+                        GhtInner<
+                            u16,
+                            GhtInner<u32, GhtLeaf<(u8, (u16, (u32, (u64, ())))), (u64, ())>>,
+                        >,
+                    >,
+                    (
+                        GhtInner<
+                            u8,
+                            GhtInner<
+                                u16,
+                                GhtInner<
+                                    u32,
+                                    GhtInner<u64, GhtLeaf<(u8, (u16, (u32, (u64, ())))), ()>>,
+                                >,
+                            >,
+                        >,
+                        (),
+                    ),
+                ),
+            ),
+        ); // GhtForestType!(u8, u16, u32, u64);
+        let mut forest = MyForest::default();
+        forest.0.insert(var_expr!(1, 1, 1, 1));
+        forest.0.insert(var_expr!(2, 2, 2, 2));
+        forest.0.insert(var_expr!(3, 3, 3, 3));
+
+        GhtForest::<var_type!(u8, u16, u32, u64)>::force(&mut forest, var_expr!(1, 1, 1, 1));
+        GhtForest::<var_type!(u8, u16, u32, u64)>::force(&mut forest, var_expr!(2, 1, 1, 1));
+        GhtForest::<var_type!(u8, u16, u32, u64)>::force(&mut forest, var_expr!(3, 3, 3, 3));
+        println!("{:?}", forest);
+        println!(
+            "leaf: {:?}",
+            forest.find_containing_leaf(var_expr!(1, 1, 1, 1).as_ref_var())
+        );
     }
 }

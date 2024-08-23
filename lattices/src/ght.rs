@@ -145,7 +145,7 @@ where
 
     fn height(&self) -> Option<usize> {
         if let Some((_k, v)) = self.children.iter().next() {
-            Some(v.height().unwrap() + 1)
+            v.height().map(|h| h + 1)
         } else {
             None
         }
@@ -731,13 +731,21 @@ macro_rules! GhtNodeTypeWithSchema {
     (() => $y:ty, $( $z:ty ),* => $( $schema:ty ),+ ) => (
         $crate::ght::GhtLeaf::<$( $schema ),*, ( $y, $crate::variadics::var_type!($( $z ),* )) >
     );
+    // Singleton key, empty val base case.
+    ($a:ty => ()  => ( $schema:ty ),+ ) => (
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$( $schema ),*, $crate::variadics::var_type!( $z ) >>
+    );
     // Singleton key, singleton val base case.
     ($a:ty => $z:ty  => $( $schema:ty ),+ ) => (
         $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$( $schema ),*, $crate::variadics::var_type!( $z ) >>
     );
     // Singleton key, compound val base case.
     ($a:ty => $y:ty, $( $z:ty ),* => $( $schema:ty ),+ ) => (
-            $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$( $schema ),*, $crate::variadics::var_type!($y, $( $z ),*) >>
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$( $schema ),*, $crate::variadics::var_type!($y, $( $z ),*) >>
+    );
+    // Compound key, singleton val base case.
+    ($a:ty, $( $b:ty ),* => $z:ty => $( $schema:ty ),+ ) => (
+        $crate::ght::GhtInner::<$a, $crate::GhtNodeTypeWithSchema!($( $b ),* => $z => $( $schema ),*)>
     );
     // Recursive case.
     ($a:ty, $( $b:ty ),* => $( $z:ty ),* => $( $schema:ty ),+ ) => (
