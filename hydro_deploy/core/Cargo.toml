@@ -1,7 +1,7 @@
 [package]
 name = "hydro_deploy"
 publish = true
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 license = "Apache-2.0"
 documentation = "https://docs.rs/hydro_deploy/"
@@ -9,26 +9,27 @@ description = "Hydro Deploy"
 
 [dependencies]
 anyhow = { version = "1.0.69", features = [ "backtrace" ] }
-async-channel = "1.8.0"
-async-once-cell = "0.5.3"
 async-process = "1.6.0"
 async-recursion = "1.0"
-async-ssh2-lite = { version = "0.4.2", features = [ "tokio" ] }
+async-ssh2-lite = { version = "0.5.0", features = [ "tokio" ] }
 async-trait = "0.1.64"
+buildstructor = "0.5.4"
 bytes = "1.1.0"
 cargo_metadata = "0.15.4"
 dunce = "1.0.4"
 dyn-clone = "1"
 futures = "0.3.26"
 futures-core = "0.3.26"
-hydroflow_cli_integration = { path = "../hydroflow_cli_integration", version = "^0.5.2" }
-indicatif = "0.17.6"
+hydroflow_deploy_integration = { path = "../hydroflow_deploy_integration", version = "^0.5.2" }
+indicatif = "0.17.8"
+inferno = "0.11.20"
+memo-map = "0.3.2"
 nanoid = "0.4.0"
 nix = "0.26.2"
-once_cell = "1.17"
 serde = { version = "1", features = [ "derive" ] }
 serde_json = "1"
 shell-escape = "0.1.5"
 tempfile = "3.3.0"
 tokio = { version = "1.16", features = [ "full" ] }
-tokio-util = { version = "0.7.7", features=[ "compat" ] }
+tokio-stream = { version = "0.1.15", default-features = false }
+tokio-util = { version = "0.7.7", features = [ "io-util" ] }

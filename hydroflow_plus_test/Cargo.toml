@@ -4,21 +4,23 @@ publish = false
 version = "0.0.0"
 edition = "2021"
 
+[features]
+default = ["stageleft_devel"]
+stageleft_devel = []
+
 [dependencies]
-hydroflow_plus = { path = "../hydroflow_plus", version = "^0.7.0" }
+hydroflow_plus = { path = "../hydroflow_plus", version = "^0.8.0" }
 tokio = { version = "1.16", features = [ "full" ] }
 stageleft = { path = "../stageleft", version = "^0.3.0" }
-hydroflow_plus_cli_integration = { path = "../hydro_deploy/hydroflow_plus_cli_integration", version = "^0.7.0" }
+hydroflow_plus_deploy = { path = "../hydro_deploy/hydroflow_plus_deploy", version = "^0.8.0" }
 rand = "0.8.5"
 serde = { version = "1", features = [ "derive" ] }
-
-hydroflow_plus_test_macro = { path = "../hydroflow_plus_test_macro" }
 
 [build-dependencies]
 stageleft_tool = { path = "../stageleft_tool", version = "^0.2.0" }
 
 [dev-dependencies]
 insta = "1.7.1"
-hydro_deploy = { path = "../hydro_deploy/core", version = "^0.7.0" }
-hydroflow_plus_cli_integration = { path = "../hydro_deploy/hydroflow_plus_cli_integration", version = "^0.7.0", features = [ "deploy" ] }
+hydro_deploy = { path = "../hydro_deploy/core", version = "^0.8.0" }
+hydroflow_plus_deploy = { path = "../hydro_deploy/hydroflow_plus_deploy", version = "^0.8.0", features = [ "deploy" ] }
 futures = "0.3"

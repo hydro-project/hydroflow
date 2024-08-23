@@ -24,8 +24,8 @@ linkStyle default stroke:#aaa
 1v1-.->2v1; linkStyle 1 stroke:#060
 5v1-.->6v1; linkStyle 2 stroke:#060
 4v1-.->5v1; linkStyle 3 stroke:#060
-3v1==>|items|10v1; linkStyle 4 stroke:#060
-6v1==>|items|11v1; linkStyle 5 stroke:#060
+3v1==>10v1; linkStyle 4 stroke:#060
+6v1==>11v1; linkStyle 5 stroke:#060
 8v1==>9v1; linkStyle 6 stroke:#060
 7v1==>12v1; linkStyle 7 stroke:#060
 10v1==>|0|7v1; linkStyle 8 stroke:#060

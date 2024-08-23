@@ -193,7 +193,7 @@ pub fn gen_hydroflow_graph(
 
         let output_pipeline: Pipeline = parse_pipeline(&hf_code.code, &get_span)?;
         let output_pipeline = if persists.contains(&target.name) {
-            parse_quote_spanned! {get_span(target.span)=> persist() -> #output_pipeline}
+            parse_quote_spanned! {get_span(target.span)=> persist::<'static>() -> #output_pipeline}
         } else {
             output_pipeline
         };
@@ -244,7 +244,7 @@ pub fn gen_hydroflow_graph(
         let static_expression: syn::Expr = parse_static(&hf_code.code, &get_span)?;
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
-            source_iter(#static_expression) -> persist() -> [#my_union_index_lit] #name;
+            source_iter(#static_expression) -> persist::<'static>() -> [#my_union_index_lit] #name;
         });
     }
 
@@ -712,7 +712,7 @@ fn apply_aggregations(
 
     if agg_exprs.is_empty() {
         if out_expanded.persisted && !consumer_is_persist {
-            parse_quote!(#pre_fold_keyed_map -> #after_group_pipeline -> persist())
+            parse_quote!(#pre_fold_keyed_map -> #after_group_pipeline -> persist::<'static>())
         } else {
             parse_quote!(#pre_fold_keyed_map -> #after_group_pipeline)
         }
@@ -1123,7 +1123,7 @@ mod tests {
             .persist ints2
 
             .input ints3 `source_stream(ints3)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
             .output result2 `for_each(|v| result2.send(v).unwrap())`
             .output result3 `for_each(|v| result3.send(v).unwrap())`
@@ -1149,9 +1149,9 @@ mod tests {
             .persist ints1
 
             .input ints2 `source_stream(ints2)`
-            
+
             ints1(a) :- ints2(a)
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(count(a)) :- ints1(a)
@@ -1163,9 +1163,9 @@ mod tests {
     fn test_wildcard_join_count() {
         test_snapshots!(
             r#"
-            .input ints1 `source_stream(ints1)` 
+            .input ints1 `source_stream(ints1)`
             .input ints2 `source_stream(ints2)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
             .output result2 `for_each(|v| result2.send(v).unwrap())`
 
@@ -1179,8 +1179,8 @@ mod tests {
     fn test_index() {
         test_snapshots!(
             r#"
-            .input ints `source_stream(ints)` 
-            
+            .input ints `source_stream(ints)`
+
             .output result `for_each(|v| result.send(v).unwrap())`
             .output result2 `for_each(|v| result2.send(v).unwrap())`
             .output result3 `for_each(|v| result3.send(v).unwrap())`
@@ -1206,9 +1206,9 @@ mod tests {
     fn test_collect_vec() {
         test_snapshots!(
             r#"
-            .input ints1 `source_stream(ints1)` 
+            .input ints1 `source_stream(ints1)`
             .input ints2 `source_stream(ints2)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(collect_vec(a, b)) :- ints1(a), ints2(b)
@@ -1221,7 +1221,7 @@ mod tests {
         test_snapshots!(
             r#"
             .input ints1 `source_stream(ints1)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a, b) :- ints1(a, *b)
@@ -1234,7 +1234,7 @@ mod tests {
         test_snapshots!(
             r#"
             .input ints1 `source_stream(ints1)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a, b) :- ints1((a, b))
@@ -1247,7 +1247,7 @@ mod tests {
         test_snapshots!(
             r#"
             .input ints1 `source_stream(ints1)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a, b, c, d) :- ints1((a, b), (c, d))
@@ -1260,7 +1260,7 @@ mod tests {
         test_snapshots!(
             r#"
             .input ints1 `source_stream(ints1)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a, b) :- ints1(*(a, b))
@@ -1273,7 +1273,7 @@ mod tests {
         test_snapshots!(
             r#"
             .input ints1 `source_stream(ints1)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a, b) :- ints1((*a, *b))

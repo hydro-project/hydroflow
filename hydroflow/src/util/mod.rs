@@ -9,6 +9,8 @@ pub mod multiset;
 pub mod sparse_vec;
 pub mod unsync;
 
+pub mod simulation;
+
 mod monotonic;
 pub use monotonic::*;
 
@@ -25,8 +27,8 @@ mod socket;
 #[cfg(unix)]
 pub use socket::*;
 
-#[cfg(feature = "cli_integration")]
-pub mod cli;
+#[cfg(feature = "deploy_integration")]
+pub mod deploy;
 
 use std::io::Read;
 use std::net::SocketAddr;

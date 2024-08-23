@@ -41,8 +41,8 @@ showing that all the changelogs can be modified. Make sure the version bumps loo
 
 ```log
 [INFO ] Updating crates-io index
-[WARN ] Refused to publish 'hydroflow_cli_integration' as as it didn't change.
-[INFO ] Will not publish or alter 3 dependent crates: unchanged = 'hydroflow_cli_integration', 'variadics', 'pusherator'
+[WARN ] Refused to publish 'hydroflow_deploy_integration' as as it didn't change.
+[INFO ] Will not publish or alter 3 dependent crates: unchanged = 'hydroflow_deploy_integration', 'variadics', 'pusherator'
 [INFO ] WOULD auto-bump dependent package 'hydroflow_lang' from 0.4.0 to 0.5.0 for publishing
 [INFO ] WOULD auto-bump dependent package 'hydroflow_datalog_core' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'hydroflow_lang'
 [INFO ] WOULD auto-bump dependent package 'hydroflow_datalog' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'hydroflow_datalog_core'
@@ -118,6 +118,8 @@ On the commit immediately _before_ you move the package(s) and run the following
 ```
 cargo changelog --write <crate_to_be_moved> <other_crate_to_be_moved> ...
 ```
+(This command is provided by `cargo install cargo-smart-release`; don't use any other `cargo changelog` command)
+
 Then, before committing the changes, go through the modified `CHANGELOG.md` files and add a prefix
 to the `Commit Statistics` and `Commit Details` headers, for example: `Pre-Move Commit Statistics`/`Pre-Move Commit Details`.
 This is necessary because otherwise `cargo-smart-release` will treat those sections as auto-generated

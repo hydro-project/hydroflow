@@ -1,15 +1,24 @@
 use crate::ir::*;
 
-fn persist_pullup_node(node: HfPlusNode, seen_tees: &mut SeenTees) -> HfPlusNode {
-    match node.transform_children(persist_pullup_node, seen_tees) {
-        HfPlusNode::Map {
+fn persist_pullup_node<'a>(node: &mut HfPlusNode<'a>, seen_tees: &mut SeenTees<'a>) {
+    node.transform_children(persist_pullup_node, seen_tees);
+    if let HfPlusNode::Map {
+        f: _,
+        input: box HfPlusNode::Persist(_),
+    } = node
+    {
+        if let HfPlusNode::Map {
             f,
             input: box HfPlusNode::Persist(behind_persist),
-        } => HfPlusNode::Persist(Box::new(HfPlusNode::Map {
-            f,
-            input: behind_persist,
-        })),
-        o => o,
+        } = std::mem::replace(node, HfPlusNode::Placeholder)
+        {
+            *node = HfPlusNode::Persist(Box::new(HfPlusNode::Map {
+                f,
+                input: behind_persist,
+            }));
+        } else {
+            unreachable!()
+        }
     }
 }
 
@@ -24,26 +33,26 @@ pub fn persist_pullup(ir: Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf> {
 mod tests {
     use stageleft::*;
 
-    use crate::MultiGraph;
+    use crate::deploy::MultiGraph;
 
     #[test]
     fn persist_pullup_through_map() {
-        let flow = crate::builder::FlowBuilder::<MultiGraph>::new();
-        let process = flow.process(&());
+        let flow = crate::builder::FlowBuilder::new();
+        let process = flow.process::<()>();
 
         flow.source_iter(&process, q!(0..10))
             .all_ticks()
             .map(q!(|v| v + 1))
             .for_each(q!(|n| println!("{}", n)));
 
-        let built = flow.extract();
+        let built = flow.finalize();
 
         insta::assert_debug_snapshot!(built.ir());
 
         let optimized = built.optimize_with(super::persist_pullup);
 
         insta::assert_debug_snapshot!(optimized.ir());
-        for (id, graph) in optimized.no_optimize().hydroflow_ir() {
+        for (id, graph) in optimized.compile_no_network::<MultiGraph>().hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(graph.surface_syntax_string());
             });
@@ -52,8 +61,8 @@ mod tests {
 
     #[test]
     fn persist_pullup_behind_tee() {
-        let flow = crate::builder::FlowBuilder::<MultiGraph>::new();
-        let process = flow.process(&());
+        let flow = crate::builder::FlowBuilder::new();
+        let process = flow.process::<()>();
 
         let before_tee = flow
             .source_iter(&process, q!(0..10))
@@ -64,7 +73,7 @@ mod tests {
 
         before_tee.for_each(q!(|n| println!("{}", n)));
 
-        let built = flow.extract();
+        let built = flow.finalize();
 
         insta::assert_debug_snapshot!(built.ir());
 
@@ -72,7 +81,7 @@ mod tests {
 
         insta::assert_debug_snapshot!(optimized.ir());
 
-        for (id, graph) in optimized.no_optimize().hydroflow_ir() {
+        for (id, graph) in optimized.compile_no_network::<MultiGraph>().hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(graph.surface_syntax_string());
             });

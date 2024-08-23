@@ -1,0 +1,31 @@
+[package]
+name = "hydroflow_plus_deploy"
+publish = true
+version = "0.8.0"
+edition = "2021"
+license = "Apache-2.0"
+documentation = "https://docs.rs/hydroflow_plus_deploy/"
+description = "Library for working with hydro_deploy and hydroflow_plus"
+
+[features]
+deploy = [ "hydro_deploy", "trybuild-internals-api", "toml", "prettyplease" ]
+stageleft_devel = []
+
+[dependencies]
+stageleft = { path = "../../stageleft", version = "^0.3.0" }
+hydroflow_plus = { path = "../../hydroflow_plus", version = "^0.8.0", features = [ "deploy_integration" ] }
+syn = { version = "2.0.0", features = [ "parsing", "extra-traits" ] }
+tokio = { version = "1.16", features = [ "full" ] }
+serde = { version = "1", features = [ "derive" ] }
+
+hydro_deploy = { path = "../core", version = "^0.8.0", optional = true }
+trybuild-internals-api = { version = "1.0.99", optional = true }
+toml = { version = "0.8", optional = true }
+prettyplease = { version = "0.2.0", optional = true }
+
+# added to workaround `cargo smart-release` https://github.com/Byron/cargo-smart-release/issues/16
+stageleft_tool = { path = "../../stageleft_tool", version = "^0.2.0", optional = true }
+sha2 = "0.10.8"
+
+[build-dependencies]
+stageleft_tool = { path = "../../stageleft_tool", version = "^0.2.0" }

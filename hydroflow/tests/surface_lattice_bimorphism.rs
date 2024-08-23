@@ -13,13 +13,13 @@ pub fn test_cartesian_product() {
     let mut df = hydroflow_syntax! {
         lhs = source_iter_delta(0..3)
             -> map(SetUnionSingletonSet::new_from)
-            -> state::<'static, SetUnionHashSet<usize>>();
+            -> state::<'static, SetUnionHashSet<u32>>();
         rhs = source_iter_delta(3..5)
             -> map(SetUnionSingletonSet::new_from)
-            -> state::<'static, SetUnionHashSet<usize>>();
+            -> state::<'static, SetUnionHashSet<u32>>();
 
-        lhs[items] -> [0]my_join;
-        rhs[items] -> [1]my_join;
+        lhs -> [0]my_join;
+        rhs -> [1]my_join;
 
         my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default(), #lhs, #rhs)
             -> lattice_reduce()
@@ -54,8 +54,8 @@ pub fn test_join() {
             -> map(|(k, v)| MapUnionSingletonMap::new_from((k, SetUnionSingletonSet::new_from(v))))
             -> state::<'static, MapUnionHashMap<usize, SetUnionHashSet<usize>>>();
 
-        lhs[items] -> [0]my_join;
-        rhs[items] -> [1]my_join;
+        lhs -> [0]my_join;
+        rhs -> [1]my_join;
 
         my_join = lattice_bimorphism(KeyedBimorphism::<HashMap<_, _>, _>::new(CartesianProductBimorphism::<HashSet<_>>::default()), #lhs, #rhs)
             -> lattice_reduce()
@@ -78,5 +78,59 @@ pub fn test_join() {
             ]))
         )]))],
         &*collect_ready::<Vec<_>, _>(out_recv)
+    );
+}
+
+/// Test for https://github.com/hydro-project/hydroflow/issues/1298
+#[multiplatform_test]
+pub fn test_cartesian_product_tick_state() {
+    let (lhs_send, lhs_recv) = hydroflow::util::unbounded_channel::<u32>();
+    let (rhs_send, rhs_recv) = hydroflow::util::unbounded_channel::<u32>();
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<_>();
+
+    let mut df = hydroflow_syntax! {
+        lhs = source_stream(lhs_recv)
+            -> map(SetUnionSingletonSet::new_from)
+            -> state::<'tick, SetUnionHashSet<u32>>();
+        rhs = source_stream(rhs_recv)
+            -> map(SetUnionSingletonSet::new_from)
+            -> state::<'tick, SetUnionHashSet<u32>>();
+
+        lhs[items] -> [0]my_join;
+        rhs[items] -> [1]my_join;
+
+        my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default(), #lhs, #rhs)
+            -> lattice_reduce()
+            -> inspect(|x| println!("{:?}: {:?}", context.current_tick(), x))
+            -> for_each(|x| out_send.send(x).unwrap());
+    };
+    assert_graphvis_snapshots!(df);
+
+    for x in 0..3 {
+        lhs_send.send(x).unwrap();
+    }
+    for x in 3..5 {
+        rhs_send.send(x).unwrap();
+    }
+    df.run_available();
+    assert_eq!(
+        &[SetUnionHashSet::new(HashSet::from_iter([
+            (0, 3),
+            (0, 4),
+            (1, 3),
+            (1, 4),
+            (2, 3),
+            (2, 4),
+        ]))],
+        &*collect_ready::<Vec<_>, _>(&mut out_recv)
+    );
+
+    for x in 3..5 {
+        lhs_send.send(x).unwrap();
+    }
+    df.run_available();
+    assert_eq!(
+        &[SetUnionHashSet::default()],
+        &*collect_ready::<Vec<_>, _>(&mut out_recv)
     );
 }

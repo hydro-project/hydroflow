@@ -81,31 +81,22 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
         };
 
         let state_ident = singleton_output_ident;
-
-        let write_prologue = quote_spanned! {op_span=>
+        let mut write_prologue = quote_spanned! {op_span=>
             let #state_ident = #hydroflow.add_state(::std::cell::RefCell::new(
                 <#lattice_type as ::std::default::Default>::default()
             ));
         };
-
-        let tick_reset_code = if Persistence::Tick == persistence {
-            quote_spanned! {op_span=>
-                // Reset the value to the initializer fn if it is a new tick.
-                if #context.is_first_run_this_tick() {
-                    #context.state_ref(#state_ident).take();
-                }
-            }
-        } else {
-            Default::default() // No code
-        };
+        if Persistence::Tick == persistence {
+            write_prologue.extend(quote_spanned! {op_span=>
+                #hydroflow.set_state_tick_hook(#state_ident, |rcell| { rcell.take(); }); // Resets state to `Default::default()`.
+            });
+        }
 
         // TODO(mingwei): deduplicate codegen
         let write_iterator = if is_pull {
             let input = &inputs[0];
             quote_spanned! {op_span=>
                 let #ident = {
-                    #tick_reset_code
-
                     fn check_input<'a, Item, Iter, Lat>(
                         iter: Iter,
                         state_handle: #root::scheduled::state::StateHandle<::std::cell::RefCell<Lat>>,
@@ -116,10 +107,10 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
                         Iter: 'a + ::std::iter::Iterator<Item = Item>,
                         Lat: 'static + #root::lattices::Merge<Item>,
                     {
-                        iter.inspect(move |item| {
+                        iter.filter(move |item| {
                             let state = context.state_ref(state_handle);
                             let mut state = state.borrow_mut();
-                            #root::lattices::Merge::merge(&mut *state, ::std::clone::Clone::clone(item));
+                            #root::lattices::Merge::merge(&mut *state, ::std::clone::Clone::clone(item))
                         })
                     }
                     check_input::<_, _, #lattice_type>(#input, #state_ident, #context)
@@ -138,10 +129,10 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
                         Push: #root::pusherator::Pusherator<Item = Item>,
                         Lat: 'static + #root::lattices::Merge<Item>,
                     {
-                        #root::pusherator::inspect::Inspect::new(move |item| {
+                        #root::pusherator::filter::Filter::new(move |item| {
                             let state = context.state_ref(state_handle);
                             let mut state = state.borrow_mut();
-                            #root::lattices::Merge::merge(&mut *state, ::std::clone::Clone::clone(item));
+                            #root::lattices::Merge::merge(&mut *state, ::std::clone::Clone::clone(item))
                         }, push)
                     }
                     check_output::<_, _, #lattice_type>(#output, #state_ident, #context)
@@ -150,8 +141,6 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
         } else {
             quote_spanned! {op_span=>
                 let #ident = {
-                    #tick_reset_code
-
                     fn check_output<'a, Item, Lat>(
                         state_handle: #root::scheduled::state::StateHandle<::std::cell::RefCell<Lat>>,
                         context: &'a #root::scheduled::context::Context,

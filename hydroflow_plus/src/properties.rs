@@ -41,24 +41,27 @@ impl PropertyDatabase {
 // Dataflow graph optimization rewrite rules based on algebraic property tags
 // TODO add a test that verifies the space of possible graphs after rewrites is correct for each property
 
-fn properties_optimize_node(
-    node: HfPlusNode,
+fn properties_optimize_node<'a>(
+    node: &mut HfPlusNode<'a>,
     db: &PropertyDatabase,
-    seen_tees: &mut SeenTees,
-) -> HfPlusNode {
-    match node.transform_children(
+    seen_tees: &mut SeenTees<'a>,
+) {
+    node.transform_children(
         |node, seen_tees| properties_optimize_node(node, db, seen_tees),
         seen_tees,
-    ) {
-        HfPlusNode::ReduceKeyed { f, input } if db.is_tagged_commutative(&f.0) => {
+    );
+    match node {
+        HfPlusNode::ReduceKeyed { f, .. } if db.is_tagged_commutative(&f.0) => {
             dbg!("IDENTIFIED COMMUTATIVE OPTIMIZATION for {:?}", &f);
-            HfPlusNode::ReduceKeyed { f, input }
         }
-        o => o,
+        _ => {}
     }
 }
 
-pub fn properties_optimize(ir: Vec<HfPlusLeaf>, db: &PropertyDatabase) -> Vec<HfPlusLeaf> {
+pub fn properties_optimize<'a>(
+    ir: Vec<HfPlusLeaf<'a>>,
+    db: &PropertyDatabase,
+) -> Vec<HfPlusLeaf<'a>> {
     let mut seen_tees = Default::default();
     ir.into_iter()
         .map(|l| {
@@ -73,7 +76,8 @@ pub fn properties_optimize(ir: Vec<HfPlusLeaf>, db: &PropertyDatabase) -> Vec<Hf
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{FlowBuilder, SingleProcessGraph};
+    use crate::deploy::SingleProcessGraph;
+    use crate::FlowBuilder;
 
     #[test]
     fn test_property_database() {
@@ -88,10 +92,10 @@ mod tests {
 
     #[test]
     fn test_property_optimized() {
-        let flow = FlowBuilder::<SingleProcessGraph>::new();
+        let flow = FlowBuilder::new();
         let mut database = PropertyDatabase::default();
 
-        let process = flow.process(&());
+        let process = flow.process::<()>();
 
         let counter_func = q!(|count: &mut i32, _| *count += 1);
         let _ = database.add_commutative_tag(counter_func);
@@ -102,10 +106,12 @@ mod tests {
             .for_each(q!(|(string, count)| println!("{}: {}", string, count)));
 
         let built = flow
-            .extract()
+            .finalize()
             .optimize_with(|ir| properties_optimize(ir, &database))
             .with_default_optimize();
 
         insta::assert_debug_snapshot!(built.ir());
+
+        let _ = built.compile_no_network::<SingleProcessGraph>();
     }
 }

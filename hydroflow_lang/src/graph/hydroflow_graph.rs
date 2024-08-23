@@ -274,12 +274,19 @@ impl HydroflowGraph {
             let generics = get_operator_generics(diagnostics, operator);
             // Generic argument errors.
             {
+                // Span of `generic_args` (if it exists), otherwise span of the operator name.
+                let generics_span = generics
+                    .generic_args
+                    .as_ref()
+                    .map(Spanned::span)
+                    .unwrap_or_else(|| operator.path.span());
+
                 if !op_constraints
                     .persistence_args
                     .contains(&generics.persistence_args.len())
                 {
                     diagnostics.push(Diagnostic::spanned(
-                        generics.generic_args.span(),
+                        generics_span,
                         Level::Error,
                         format!(
                             "`{}` should have {} persistence lifetime arguments, actually has {}.",
@@ -291,7 +298,7 @@ impl HydroflowGraph {
                 }
                 if !op_constraints.type_args.contains(&generics.type_args.len()) {
                     diagnostics.push(Diagnostic::spanned(
-                        generics.generic_args.span(),
+                        generics_span,
                         Level::Error,
                         format!(
                             "`{}` should have {} generic type arguments, actually has {}.",
@@ -949,11 +956,23 @@ impl HydroflowGraph {
                                 Ident::new(&format!("{}_has_no_singleton_output", op_name), op_span)
                             };
 
+                            // There's a bit of dark magic hidden in `Span`s... you'd think it's just a `file:line:column`,
+                            // but it has one extra bit of info for _name resolution_, used for `Ident`s. `Span::call_site()`
+                            // has the (unhygienic) resolution we want, an ident is just solely determined by its string name,
+                            // which is what you'd expect out of unhygienic proc macros like this. Meanwhile, declarative macros
+                            // use `Span::mixed_site()` which is weird and I don't understand it. It turns out that if you call
+                            // the hydroflow syntax proc macro from _within_ a declarative macro then `op_span` will have the
+                            // bad `Span::mixed_site()` name resolution and cause "Cannot find value `df/context`" errors. So
+                            // we call `.resolved_at()` to fix resolution back to `Span::call_site()`. -Mingwei
+                            let hydroflow = &Ident::new(HYDROFLOW, op_span.resolved_at(hf.span()));
+                            let context = &Ident::new(CONTEXT, op_span.resolved_at(context.span()));
+
                             let singletons_resolved =
                                 self.helper_resolve_singletons(node_id, op_span);
                             let arguments = &process_singletons::postprocess_singletons(
                                 op_inst.arguments_raw.clone(),
                                 singletons_resolved.clone(),
+                                context,
                             );
                             let arguments_handles =
                                 &process_singletons::postprocess_singletons_handles(
@@ -963,16 +982,8 @@ impl HydroflowGraph {
 
                             let context_args = WriteContextArgs {
                                 root: &root,
-                                // There's a bit of dark magic hidden in `Span`s... you'd think it's just a `file:line:column`,
-                                // but it has one extra bit of info for _name resolution_, used for `Ident`s. `Span::call_site()`
-                                // has the (unhygienic) resolution we want, an ident is just solely determined by its string name,
-                                // which is what you'd expect out of unhygienic proc macros like this. Meanwhile, declarative macros
-                                // use `Span::mixed_site()` which is weird and I don't understand it. It turns out that if you call
-                                // the hydroflow syntax proc macro from _within_ a declarative macro then `op_span` will have the
-                                // bad `Span::mixed_site()` name resolution and cause "Cannot find value `df/context`" errors. So
-                                // we call `.resolved_at()` to fix resolution back to `Span::call_site()`. -Mingwei
-                                hydroflow: &Ident::new(HYDROFLOW, op_span.resolved_at(hf.span())),
-                                context: &Ident::new(CONTEXT, op_span.resolved_at(context.span())),
+                                hydroflow,
+                                context,
                                 subgraph_id,
                                 node_id,
                                 op_span,

@@ -9,7 +9,7 @@ use super::{
 /// > 0 input streams, 1 output stream
 ///
 /// > Arguments: (1) An [`AsRef`](https://doc.rust-lang.org/std/convert/trait.AsRef.html)`<`[`Path`](https://doc.rust-lang.org/nightly/std/path/struct.Path.html)`>`
-/// for a file to write to, and (2) a bool `append`.
+/// > for a file to write to, and (2) a bool `append`.
 ///
 /// Consumes `String`s by writing them as lines to a file. The file will be created if it doesn't
 /// exist. Lines will be appended to the file if `append` is true, otherwise the file will be

@@ -1,32 +1,39 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use tokio::sync::RwLock;
+use perf_options::PerfOptions;
 
 use super::Host;
 use crate::ServiceBuilder;
 
-mod build;
+pub(crate) mod build;
 pub mod ports;
 
 pub mod service;
 pub use service::*;
 
-#[derive(PartialEq)]
+pub mod perf_options;
+
+#[derive(PartialEq, Clone)]
 pub enum CrateTarget {
     Default,
     Bin(String),
     Example(String),
 }
 
-/// Specifies a crate that uses `hydroflow_cli_integration` to be
+/// Specifies a crate that uses `hydroflow_deploy_integration` to be
 /// deployed as a service.
+#[derive(Clone)]
 pub struct HydroflowCrate {
     src: PathBuf,
     target: CrateTarget,
-    on: Arc<RwLock<dyn Host>>,
+    on: Arc<dyn Host>,
     profile: Option<String>,
-    perf: Option<PathBuf>, /* If a path is provided, run perf to get CPU time and output to that path.perf.data */
+    rustflags: Option<String>,
+    target_dir: Option<PathBuf>,
+    no_default_features: bool,
+    features: Option<Vec<String>>,
+    perf: Option<PerfOptions>,
     args: Vec<String>,
     display_name: Option<String>,
 }
@@ -35,12 +42,16 @@ impl HydroflowCrate {
     /// Creates a new `HydroflowCrate` that will be deployed on the given host.
     /// The `src` argument is the path to the crate's directory, and the `on`
     /// argument is the host that the crate will be deployed on.
-    pub fn new(src: impl Into<PathBuf>, on: Arc<RwLock<dyn Host>>) -> Self {
+    pub fn new(src: impl Into<PathBuf>, on: Arc<dyn Host>) -> Self {
         Self {
             src: src.into(),
             target: CrateTarget::Default,
             on,
             profile: None,
+            rustflags: None,
+            target_dir: None,
+            no_default_features: false,
+            features: None,
             perf: None,
             args: vec![],
             display_name: None,
@@ -80,7 +91,39 @@ impl HydroflowCrate {
         self
     }
 
-    pub fn perf(mut self, perf: impl Into<PathBuf>) -> Self {
+    pub fn rustflags(mut self, rustflags: impl Into<String>) -> Self {
+        if self.rustflags.is_some() {
+            panic!("rustflags already set");
+        }
+
+        self.rustflags = Some(rustflags.into());
+        self
+    }
+
+    pub fn target_dir(mut self, target_dir: impl Into<PathBuf>) -> Self {
+        if self.target_dir.is_some() {
+            panic!("target_dir already set");
+        }
+
+        self.target_dir = Some(target_dir.into());
+        self
+    }
+
+    pub fn no_default_features(mut self) -> Self {
+        self.no_default_features = true;
+        self
+    }
+
+    pub fn features(mut self, features: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        if self.features.is_some() {
+            panic!("features already set");
+        }
+
+        self.features = Some(features.into_iter().map(|s| s.into()).collect());
+        self
+    }
+
+    pub fn perf(mut self, perf: impl Into<PerfOptions>) -> Self {
         if self.perf.is_some() {
             panic!("perf path already set");
         }
@@ -122,8 +165,11 @@ impl ServiceBuilder for HydroflowCrate {
             bin,
             example,
             self.profile,
+            self.rustflags,
+            self.target_dir,
+            self.no_default_features,
             self.perf,
-            None,
+            self.features,
             Some(self.args),
             self.display_name,
             vec![],
@@ -140,22 +186,20 @@ mod tests {
     async fn test_crate_panic() {
         let mut deployment = deployment::Deployment::new();
 
-        let localhost = deployment.Localhost();
-
         let service = deployment.add_service(
-            HydroflowCrate::new("../hydro_cli_examples", localhost.clone())
+            HydroflowCrate::new("../hydro_cli_examples", deployment.Localhost())
                 .example("panic_program")
                 .profile("dev"),
         );
 
         deployment.deploy().await.unwrap();
 
-        let stdout = service.try_read().unwrap().stdout().await;
+        let mut stdout = service.try_read().unwrap().stdout();
 
         deployment.start().await.unwrap();
 
         assert_eq!(stdout.recv().await.unwrap(), "hello!");
 
-        assert!(stdout.recv().await.is_err());
+        assert!(stdout.recv().await.is_none());
     }
 }

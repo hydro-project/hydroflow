@@ -426,7 +426,7 @@ fn change_spans(tokens: TokenStream, span: Span) -> TokenStream {
                 ))
             }
             TokenTree::Ident(mut ident) => {
-                ident.set_span(span);
+                ident.set_span(span.resolved_at(ident.span()));
                 TokenTree::Ident(ident)
             }
             TokenTree::Punct(mut punct) => {

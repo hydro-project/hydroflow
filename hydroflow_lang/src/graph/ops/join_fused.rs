@@ -66,14 +66,14 @@ use crate::diagnostic::{Diagnostic, Level};
 /// by specifying `'static` in the type arguments of the operator.
 ///
 /// for `join_fused::<'static>`, the operator will replay all _keys_ that the join has ever seen each tick, and not only the new matches from that specific tick.
-/// This means that it behaves identically to if `persist()` were placed before the inputs and the persistence of
+/// This means that it behaves identically to if `persist::<'static>()` were placed before the inputs and the persistence of
 /// for example, the two following examples have identical behavior:
 ///
 /// ```hydroflow
-/// source_iter(vec![("key", 0), ("key", 1), ("key", 2)]) -> persist() -> [0]my_join;
+/// source_iter(vec![("key", 0), ("key", 1), ("key", 2)]) -> persist::<'static>() -> [0]my_join;
 /// source_iter(vec![("key", 2)]) -> my_union;
 /// source_iter(vec![("key", 3)]) -> defer_tick() -> my_union;
-/// my_union = union() -> persist() -> [1]my_join;
+/// my_union = union() -> persist::<'static>() -> [1]my_join;
 ///
 /// my_join = join_fused(Reduce(|x, y| *x += y), Fold(|| 1, |x, y| *x *= y))
 ///     -> assert_eq([("key", (3, 2)), ("key", (3, 6))]);
