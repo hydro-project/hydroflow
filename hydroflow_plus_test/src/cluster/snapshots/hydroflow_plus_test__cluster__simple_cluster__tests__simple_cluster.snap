@@ -65,26 +65,32 @@ expression: built.ir()
                     ),
                     input: Map {
                         f: { use crate :: __staged :: cluster :: simple_cluster :: * ; | (id , n) | (id , (id , n)) },
-                        input: CrossProduct(
-                            Map {
-                                f: { use crate :: __staged :: cluster :: simple_cluster :: * ; | & id | id },
-                                input: Source {
-                                    source: Iter(
-                                        __hydroflow_plus_cluster_ids_1,
-                                    ),
-                                    location_kind: Process(
-                                        0,
-                                    ),
-                                },
-                            },
-                            Source {
-                                source: Iter(
-                                    { use crate :: __staged :: cluster :: simple_cluster :: * ; 0 .. 5 },
+                        input: Delta(
+                            CrossProduct(
+                                Persist(
+                                    Map {
+                                        f: { use crate :: __staged :: cluster :: simple_cluster :: * ; | & id | id },
+                                        input: Source {
+                                            source: Iter(
+                                                __hydroflow_plus_cluster_ids_1,
+                                            ),
+                                            location_kind: Process(
+                                                0,
+                                            ),
+                                        },
+                                    },
                                 ),
-                                location_kind: Process(
-                                    0,
+                                Persist(
+                                    Source {
+                                        source: Iter(
+                                            { use crate :: __staged :: cluster :: simple_cluster :: * ; 0 .. 5 },
+                                        ),
+                                        location_kind: Process(
+                                            0,
+                                        ),
+                                    },
                                 ),
-                            },
+                            ),
                         ),
                     },
                 },
