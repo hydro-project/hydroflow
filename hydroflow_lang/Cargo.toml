@@ -10,8 +10,8 @@ description = "Hydroflow's Surface Syntax implementation"
 [features]
 default = []
 diagnostics = []
-debugging = [ "dep:data-encoding", "dep:webbrowser" ]
-graph-write = [ "dep:clap" ]
+debugging = [ "dep:data-encoding", "dep:webbrowser", "clap-derive" ]
+clap-derive = [ "dep:clap" ]
 
 [dependencies]
 auto_impl = "1"

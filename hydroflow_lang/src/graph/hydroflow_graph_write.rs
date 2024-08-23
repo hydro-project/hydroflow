@@ -51,39 +51,3 @@ impl HydroflowGraph {
         }
     }
 }
-
-/// Configuration for writing graphs.
-#[derive(Clone, Debug, Default, clap::Args)]
-pub struct WriteConfig {
-    /// Subgraphs will not be rendered if set.
-    #[arg(long)]
-    pub no_subgraphs: bool,
-    /// Variable names will not be rendered if set.
-    #[arg(long)]
-    pub no_varnames: bool,
-    /// Will not render pull/push shapes if set.
-    #[arg(long)]
-    pub no_pull_push: bool,
-    /// Will not render handoffs if set.
-    #[arg(long)]
-    pub no_handoffs: bool,
-    /// Will not render singleton references if set.
-    #[arg(long)]
-    pub no_references: bool,
-
-    /// Op text will only be their name instead of the whole source.
-    #[arg(long)]
-    pub op_short_text: bool,
-    /// Op text will exclude any line that starts with "use".
-    #[arg(long)]
-    pub op_text_no_imports: bool,
-}
-
-/// Enum for choosing between mermaid and dot graph writing.
-#[derive(Copy, Clone, Debug, clap::Parser, clap::ValueEnum)]
-pub enum WriteGraphType {
-    /// Mermaid graphs.
-    Mermaid,
-    /// Dot (Graphviz) graphs.
-    Dot,
-}
