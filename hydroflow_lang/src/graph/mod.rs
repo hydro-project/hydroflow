@@ -20,7 +20,6 @@ mod di_mul_graph;
 mod eliminate_extra_unions_tees;
 mod flat_graph_builder;
 mod flat_to_partitioned;
-mod flow_props;
 mod graph_write;
 mod hydroflow_graph;
 mod hydroflow_graph_debugging;
@@ -32,12 +31,10 @@ pub use di_mul_graph::DiMulGraph;
 pub use eliminate_extra_unions_tees::eliminate_extra_unions_tees;
 pub use flat_graph_builder::FlatGraphBuilder;
 pub use flat_to_partitioned::partition_graph;
-pub use flow_props::*;
 pub use hydroflow_graph::{HydroflowGraph, WriteConfig, WriteGraphType};
 
 pub mod graph_algorithms;
 pub mod ops;
-pub mod propagate_flow_props;
 
 new_key_type! {
     /// ID to identify a node (operator or handoff) in [`HydroflowGraph`].
@@ -387,23 +384,16 @@ pub fn build_hfcode(
 
         eliminate_extra_unions_tees(&mut flat_graph);
         match partition_graph(flat_graph) {
-            Ok(mut partitioned_graph) => {
-                // Propagate flow properties throughout the graph.
-                // TODO(mingwei): Should this be done at a flat graph stage instead?
-                if let Ok(()) = propagate_flow_props::propagate_flow_props(
-                    &mut partitioned_graph,
+            Ok(partitioned_graph) => {
+                let code = partitioned_graph.as_code(
+                    root,
+                    true,
+                    quote::quote! { #( #uses )* },
                     &mut diagnostics,
-                ) {
-                    let code = partitioned_graph.as_code(
-                        root,
-                        true,
-                        quote::quote! { #( #uses )* },
-                        &mut diagnostics,
-                    );
-                    if !diagnostics.iter().any(Diagnostic::is_error) {
-                        // Success.
-                        return (Some((partitioned_graph, code)), diagnostics);
-                    }
+                );
+                if !diagnostics.iter().any(Diagnostic::is_error) {
+                    // Success.
+                    return (Some((partitioned_graph, code)), diagnostics);
                 }
             }
             Err(diagnostic) => diagnostics.push(diagnostic),

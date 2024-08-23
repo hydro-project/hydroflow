@@ -12,7 +12,7 @@ pub fn test_state() {
 
     let mut df = hydroflow::hydroflow_syntax! {
         stream1 = source_iter(1..=10);
-        stream2 = source_iter_delta(3..=5) -> map(Max::new);
+        stream2 = source_iter(3..=5) -> map(Max::new);
         max_of_stream2 = stream2 -> state::<'static, Max<_>>();
 
         filtered_stream1 = stream1
@@ -72,7 +72,7 @@ pub fn test_state() {
 #[multiplatform_test]
 pub fn test_state_unused() {
     let mut df = hydroflow::hydroflow_syntax! {
-        stream2 = source_iter_delta(15..=25) -> map(Max::new);
+        stream2 = source_iter(15..=25) -> map(Max::new);
         max_of_stream2 = stream2 -> state::<'static, Max<_>>();
     };
 
@@ -123,7 +123,7 @@ pub fn test_fold_cross() {
 
     let mut df = hydroflow::hydroflow_syntax! {
         stream1 = source_iter(1..=10);
-        stream2 = source_iter_delta(3..=5) -> map(Max::new);
+        stream2 = source_iter(3..=5) -> map(Max::new);
         max_of_stream2 = stream2 -> lattice_reduce() -> tee();
 
         filtered_stream1 = stream1
@@ -378,7 +378,7 @@ pub fn test_multi_tick() {
 
     let mut df = hydroflow::hydroflow_syntax! {
         stream1 = source_iter(1..=10);
-        stream2 = source_iter_delta(3..=5) -> map(Max::new);
+        stream2 = source_iter(3..=5) -> map(Max::new);
         max_of_stream2 = stream2 -> state::<'static, Max<_>>();
 
         filtered_stream1 = stream1

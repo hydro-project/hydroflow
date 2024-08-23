@@ -12,7 +12,6 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         // Setup network channels.
         network_send = dest_sink_serde(outbound);
         network_recv = source_stream_serde(inbound)
-            -> _upcast(Some(Delta))
             -> map(Result::unwrap)
             -> inspect(|(msg, addr)| println!("Message received {:?} from {:?}", msg, addr))
             -> map(|(msg, addr)| KvsMessageWithAddr::from_message(msg, addr))

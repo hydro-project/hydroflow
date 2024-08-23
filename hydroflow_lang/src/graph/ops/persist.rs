@@ -1,7 +1,7 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowPropArgs, FlowProps, LatticeFlowType, OpInstGenerics, OperatorCategory,
+    OpInstGenerics, OperatorCategory,
     OperatorConstraints, OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
@@ -51,31 +51,6 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    flow_prop_fn: Some(
-        |fp @ FlowPropArgs {
-             op_span, op_name, ..
-         },
-         diagnostics| {
-            let input_flow_type = fp.flow_props_in[0].and_then(|fp| fp.lattice_flow_type);
-            let lattice_flow_type = match input_flow_type {
-                Some(LatticeFlowType::Delta) => Some(LatticeFlowType::Cumul),
-                Some(LatticeFlowType::Cumul) => {
-                    diagnostics.push(Diagnostic::spanned(
-                    op_span,
-                    Level::Warning,
-                    format!("`{}` input is already cumulative lattice flow, this operator is redundant.", op_name),
-                ));
-                    Some(LatticeFlowType::Cumul)
-                }
-                // Non-lattice peresist.
-                None => None,
-            };
-            Ok(vec![Some(FlowProps {
-                star_ord: fp.new_star_ord(),
-                lattice_flow_type,
-            })])
-        },
-    ),
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,

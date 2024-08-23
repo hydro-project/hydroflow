@@ -9,17 +9,9 @@ use trybuild_internals_api::run::{PathDependency, Project};
 use trybuild_internals_api::{dependencies, features, path, Runner};
 
 pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>) -> syn::File {
-    let mut partitioned_graph =
-        partition_graph(graph).expect("Failed to partition (cycle detected).");
+    let partitioned_graph = partition_graph(graph).expect("Failed to partition (cycle detected).");
 
     let mut diagnostics = Vec::new();
-    // Propagate flow properties throughout the graph.
-    // TODO(mingwei): Should this be done at a flat graph stage instead?
-    let _ = hydroflow_plus::lang::graph::propagate_flow_props::propagate_flow_props(
-        &mut partitioned_graph,
-        &mut diagnostics,
-    );
-
     let tokens =
         partitioned_graph.as_code(&quote! { hydroflow_plus }, true, quote!(), &mut diagnostics);
 

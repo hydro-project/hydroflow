@@ -2,7 +2,7 @@ use quote::{quote_spanned, ToTokens};
 
 use super::{
     OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
-    Persistence, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_1,
+    Persistence, WriteContextArgs, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
 
@@ -36,7 +36,6 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    flow_prop_fn: Some(LATTICE_FOLD_REDUCE_FLOW_PROP_FN),
     write_fn: |&WriteContextArgs {
                    root,
                    context,

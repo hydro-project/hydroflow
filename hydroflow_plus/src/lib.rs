@@ -8,7 +8,7 @@ use std::marker::PhantomData;
 use hydroflow::scheduled::context::Context;
 pub use hydroflow::scheduled::graph::Hydroflow;
 pub use hydroflow::*;
-use lang::graph::{partition_graph, propagate_flow_props, HydroflowGraph};
+use lang::graph::{partition_graph, HydroflowGraph};
 use proc_macro2::TokenStream;
 use quote::quote;
 use stageleft::runtime_support::FreeVariable;
@@ -79,17 +79,10 @@ impl<'a> HfCompiled<'a, usize> {
 
         let mut conditioned_tokens = None;
         for (subgraph_id, flat_graph) in self.hydroflow_ir {
-            let mut partitioned_graph =
+            let partitioned_graph =
                 partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
 
             let mut diagnostics = Vec::new();
-            // Propagate flow properties throughout the graph.
-            // TODO(mingwei): Should this be done at a flat graph stage instead?
-            let _ = propagate_flow_props::propagate_flow_props(
-                &mut partitioned_graph,
-                &mut diagnostics,
-            );
-
             let tokens = partitioned_graph.as_code(&root, true, quote::quote!(), &mut diagnostics);
             let my_extra_stmts = self
                 .extra_stmts
@@ -147,15 +140,10 @@ impl<'a> FreeVariable<Hydroflow<'a>> for HfCompiled<'a, ()> {
         }
 
         let flat_graph = self.hydroflow_ir.remove(&0).unwrap();
-        let mut partitioned_graph =
+        let partitioned_graph =
             partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
 
         let mut diagnostics = Vec::new();
-        // Propagate flow properties throughout the graph.
-        // TODO(mingwei): Should this be done at a flat graph stage instead?
-        let _ =
-            propagate_flow_props::propagate_flow_props(&mut partitioned_graph, &mut diagnostics);
-
         let tokens = partitioned_graph.as_code(&root, true, quote::quote!(), &mut diagnostics);
 
         (None, Some(tokens))
