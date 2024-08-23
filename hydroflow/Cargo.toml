@@ -8,7 +8,7 @@ documentation = "https://docs.rs/hydroflow/"
 description = "Hydro's low-level dataflow runtime and IR"
 
 [features]
-default = [ "macros" ] # "nightly", "debugging" ]
+default = [ "macros", "nightly", "debugging" ]
 
 nightly = [ "hydroflow_macro", "hydroflow_macro/diagnostics" ]
 macros = [ "hydroflow_macro", "hydroflow_datalog" ]
@@ -23,12 +23,16 @@ name = "kvs_bench"
 required-features = [ "nightly" ]
 
 [[example]]
-name = "kvs_mut"
+name = "python_udf"
+required-features = [ "python" ]
+
+[[example]]
+name = "modules_outer_join"
 required-features = [ "debugging" ]
 
 [[example]]
-name = "python_udf"
-required-features = [ "python" ]
+name = "modules_triple_cross_join"
+required-features = [ "debugging" ]
 
 [dependencies]
 bincode = "1.3"
@@ -37,7 +41,7 @@ bytes = "1.1.0"
 futures = "0.3.0"
 hydroflow_deploy_integration = { optional = true, path = "../hydro_deploy/hydroflow_deploy_integration", version = "^0.5.2" }
 hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "^0.8.0" }
-hydroflow_lang = { path = "../hydroflow_lang", version = "^0.8.0" }
+hydroflow_lang = { path = "../hydroflow_lang", version = "^0.8.0", features = [ "clap-derive" ] }
 hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "^0.8.0" }
 itertools = "0.10"
 lattices = { path = "../lattices", version = "^0.5.6", features = [ "serde" ] }
@@ -61,11 +65,11 @@ multiplatform_test = { path = "../multiplatform_test", version = "^0.1.0", optio
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1.29.0", features = [ "full" ] }
-tokio-util = { version = "0.7", features = [ "net", "codec" ] }
+tokio-util = { version = "0.7.5", features = [ "net", "codec" ] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 tokio = { version = "1.29.0", features = [ "rt" , "sync", "macros", "io-util", "time" ] }
-tokio-util = { version = "0.7", features = [ "codec" ] }
+tokio-util = { version = "0.7.5", features = [ "codec" ] }
 # We depend on getrandom transitively through rand. To compile getrandom to
 # WASM, we need to enable its "js" feature. However, rand does not expose a
 # passthrough to enable "js" on getrandom. As a workaround, we enable the
@@ -79,7 +83,7 @@ clap = { version = "4.5.4", features = [ "derive" ] }
 colored = "2.0"
 insta = "1.39"
 multiplatform_test = { path = "../multiplatform_test", version = "^0.1.0" }
-wasm-bindgen-test = "0.3.0"
+wasm-bindgen-test = "0.3.33"
 rand = { version = "0.8.0", features = [ "small_rng" ] }
 rand_distr = "0.4.3"
 regex = "1.10.4"

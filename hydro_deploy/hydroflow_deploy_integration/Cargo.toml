@@ -9,7 +9,7 @@ description = "`hydro_deploy` integration for Hydroflow"
 
 [dependencies]
 async-recursion = "1"
-async-trait = "0.1.4"
+async-trait = "0.1.54"
 bytes = "1.1.0"
 futures = "0.3.0"
 pin-project = "1"
@@ -18,9 +18,9 @@ tempfile = "3"
 
 # [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1.29.0", features = [ "full" ] }
-tokio-util = { version = "0.7", features = [ "net", "codec" ] }
+tokio-util = { version = "0.7.5", features = [ "net", "codec" ] }
 tokio-stream = { version = "0.1.3", default-features = false, features = [ "net" ] }
 
 # [target.'cfg(target_arch = "wasm32")'.dependencies]
 # tokio = { version = "1.29.0", features = [ "rt" , "sync", "macros", "io-util", "time" ] }
-# tokio-util = { version = "0.7", features = [ "codec" ] }
+# tokio-util = { version = "0.7.5", features = [ "codec" ] }
