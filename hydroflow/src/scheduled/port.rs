@@ -20,10 +20,12 @@ pub trait Polarity: 'static {}
 /// An uninstantiable type used to tag port [`Polarity`] as **send**.
 ///
 /// See also: [`RECV`].
+#[allow(clippy::upper_case_acronyms)]
 pub enum SEND {}
 /// An uninstantiable type used to tag port [`Polarity`] as **receive**.
 ///
 /// See also: [`SEND`].
+#[allow(clippy::upper_case_acronyms)]
 pub enum RECV {}
 #[sealed]
 impl Polarity for SEND {}

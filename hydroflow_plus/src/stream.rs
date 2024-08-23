@@ -568,7 +568,7 @@ impl<'a, T, W, N: Location> Stream<'a, T, W, N> {
         self.send_bincode::<N2, CoreType>(other).map(q!(|(_, b)| b))
     }
 
-    pub fn send_bytes_interleaved<N2: Location, Tag, V>(
+    pub fn send_bytes_interleaved<N2: Location, Tag>(
         self,
         other: &N2,
     ) -> Stream<'a, Bytes, Async, N2>
