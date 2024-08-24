@@ -16,7 +16,7 @@ pub fn graph_reachability<'a>(
     let roots = flow.source_stream(&process, roots).tick_batch();
     let edges = flow.source_stream(&process, edges);
 
-    let (set_reached_cycle, reached_cycle) = flow.tick_cycle(&process);
+    let (set_reached_cycle, reached_cycle) = flow.cycle(&process);
 
     let reached = roots.union(reached_cycle);
     let reachable = reached
