@@ -1,0 +1,460 @@
+use std::cell::RefCell;
+use std::marker::PhantomData;
+use std::ops::Deref;
+use std::rc::Rc;
+
+use stageleft::{q, IntoQuotedMut, Quoted};
+
+use crate::builder::FlowLeaves;
+use crate::cycle::CycleCollection;
+use crate::ir::{HfPlusLeaf, HfPlusNode};
+use crate::location::{Location, LocationId};
+use crate::stream::{Bounded, NoTick, Tick, Unbounded};
+use crate::Stream;
+
+pub struct Singleton<'a, T, W, C, N: Location> {
+    pub(crate) location_kind: LocationId,
+
+    ir_leaves: FlowLeaves<'a>,
+    pub(crate) ir_node: RefCell<HfPlusNode<'a>>,
+
+    _phantom: PhantomData<(&'a mut &'a (), T, N, W, C)>,
+}
+
+impl<'a, T, W, C, N: Location> Singleton<'a, T, W, C, N> {
+    pub(crate) fn new(
+        location_kind: LocationId,
+        ir_leaves: FlowLeaves<'a>,
+        ir_node: HfPlusNode<'a>,
+    ) -> Self {
+        Singleton {
+            location_kind,
+            ir_leaves,
+            ir_node: RefCell::new(ir_node),
+            _phantom: PhantomData,
+        }
+    }
+}
+
+// this is not safe on the first tick
+// impl <'a, T, W, N: Location> CycleCollection<'a, N, Tick> for Singleton<'a, T, W, Tick, N> {
+//     fn create_source(
+//         ident: syn::Ident,
+//         ir_leaves: FlowLeaves<'a>,
+//         l: &N
+//     ) -> Self {
+//         Singleton::new(
+//             l.id(),
+//             ir_leaves,
+//             HfPlusNode::CycleSource {
+//                 ident,
+//                 location_kind: l.id()
+//             }
+//         )
+//     }
+
+//     fn complete(
+//         self,
+//         ident: syn::Ident,
+//     ) {
+//         self.ir_leaves.borrow_mut().as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
+//             ident,
+//             location_kind: self.location_kind,
+//             input: Box::new(self.ir_node.into_inner()),
+//         });
+//     }
+// }
+
+impl<'a, T: Clone, W, C, N: Location> Clone for Singleton<'a, T, W, C, N> {
+    fn clone(&self) -> Self {
+        if !matches!(self.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
+            let orig_ir_node = self.ir_node.replace(HfPlusNode::Placeholder);
+            *self.ir_node.borrow_mut() = HfPlusNode::Tee {
+                inner: Rc::new(RefCell::new(orig_ir_node)),
+            };
+        }
+
+        if let HfPlusNode::Tee { inner } = self.ir_node.borrow().deref() {
+            Singleton {
+                location_kind: self.location_kind,
+                ir_leaves: self.ir_leaves.clone(),
+                ir_node: HfPlusNode::Tee {
+                    inner: inner.clone(),
+                }
+                .into(),
+                _phantom: PhantomData,
+            }
+        } else {
+            unreachable!()
+        }
+    }
+}
+
+impl<'a, T, N: Location> Singleton<'a, T, Bounded, Tick, N> {
+    pub fn map<U, F: Fn(T) -> U + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F>,
+    ) -> Singleton<'a, U, Bounded, Tick, N> {
+        Singleton::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Map {
+                f: f.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
+    }
+
+    pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F>,
+    ) -> Stream<'a, U, Bounded, Tick, N> {
+        Stream::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::FlatMap {
+                f: f.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
+    }
+
+    pub fn filter<F: Fn(&T) -> bool + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F>,
+    ) -> Optional<'a, T, Bounded, Tick, N> {
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Filter {
+                f: f.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
+    }
+
+    pub fn filter_map<U, F: Fn(T) -> Option<U> + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F>,
+    ) -> Optional<'a, U, Bounded, Tick, N> {
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::FilterMap {
+                f: f.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
+    }
+
+    pub fn cross_singleton<O>(
+        self,
+        other: impl Into<Optional<'a, O, Bounded, Tick, N>>,
+    ) -> Optional<'a, (T, O), Bounded, Tick, N>
+    where
+        O: Clone,
+    {
+        let other: Optional<'a, O, Bounded, Tick, N> = other.into();
+        if self.location_kind != other.location_kind {
+            panic!("cross_singleton must be called on streams on the same node");
+        }
+
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::CrossSingleton(
+                Box::new(self.ir_node.into_inner()),
+                Box::new(other.ir_node.into_inner()),
+            ),
+        )
+    }
+
+    pub fn continue_if<U>(
+        self,
+        signal: Optional<'a, U, Bounded, Tick, N>,
+    ) -> Optional<'a, T, Bounded, Tick, N> {
+        self.cross_singleton(signal.map(q!(|_u| ())))
+            .map(q!(|(d, _signal)| d))
+    }
+
+    pub fn continue_unless<U>(
+        self,
+        other: Optional<'a, U, Bounded, Tick, N>,
+    ) -> Optional<'a, T, Bounded, Tick, N> {
+        self.continue_if(other.into_stream().count().filter(q!(|c| *c == 0)))
+    }
+}
+
+impl<'a, T, N: Location> Singleton<'a, T, Bounded, Tick, N> {
+    pub fn all_ticks(self) -> Stream<'a, T, Unbounded, NoTick, N> {
+        Stream::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
+        )
+    }
+
+    pub fn defer_tick(self) -> Singleton<'a, T, Bounded, Tick, N> {
+        Singleton::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::DeferTick(Box::new(self.ir_node.into_inner())),
+        )
+    }
+
+    pub fn persist(self) -> Stream<'a, T, Bounded, Tick, N> {
+        Stream::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
+        )
+    }
+
+    pub fn delta(self) -> Optional<'a, T, Bounded, Tick, N> {
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Delta(Box::new(self.ir_node.into_inner())),
+        )
+    }
+}
+
+pub struct Optional<'a, T, W, C, N: Location> {
+    pub(crate) location_kind: LocationId,
+
+    ir_leaves: FlowLeaves<'a>,
+    pub(crate) ir_node: RefCell<HfPlusNode<'a>>,
+
+    _phantom: PhantomData<(&'a mut &'a (), T, N, W, C)>,
+}
+
+impl<'a, T, W, C, N: Location> Optional<'a, T, W, C, N> {
+    pub(crate) fn new(
+        location_kind: LocationId,
+        ir_leaves: FlowLeaves<'a>,
+        ir_node: HfPlusNode<'a>,
+    ) -> Self {
+        Optional {
+            location_kind,
+            ir_leaves,
+            ir_node: RefCell::new(ir_node),
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn some(singleton: Singleton<'a, T, W, C, N>) -> Self {
+        Optional::new(
+            singleton.location_kind,
+            singleton.ir_leaves,
+            singleton.ir_node.into_inner(),
+        )
+    }
+}
+
+impl<'a, T, W, N: Location> CycleCollection<'a, N, Tick> for Optional<'a, T, W, Tick, N> {
+    fn create_source(ident: syn::Ident, ir_leaves: FlowLeaves<'a>, l: &N) -> Self {
+        Optional::new(
+            l.id(),
+            ir_leaves,
+            HfPlusNode::CycleSource {
+                ident,
+                location_kind: l.id(),
+            },
+        )
+    }
+
+    fn complete(self, ident: syn::Ident) {
+        self.ir_leaves.borrow_mut().as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
+            ident,
+            location_kind: self.location_kind,
+            input: Box::new(self.ir_node.into_inner()),
+        });
+    }
+}
+
+impl<'a, T, W, C, N: Location> From<Singleton<'a, T, W, C, N>> for Optional<'a, T, W, C, N> {
+    fn from(singleton: Singleton<'a, T, W, C, N>) -> Self {
+        Optional::some(singleton)
+    }
+}
+
+impl<'a, T: Clone, W, C, N: Location> Clone for Optional<'a, T, W, C, N> {
+    fn clone(&self) -> Self {
+        if !matches!(self.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
+            let orig_ir_node = self.ir_node.replace(HfPlusNode::Placeholder);
+            *self.ir_node.borrow_mut() = HfPlusNode::Tee {
+                inner: Rc::new(RefCell::new(orig_ir_node)),
+            };
+        }
+
+        if let HfPlusNode::Tee { inner } = self.ir_node.borrow().deref() {
+            Optional {
+                location_kind: self.location_kind,
+                ir_leaves: self.ir_leaves.clone(),
+                ir_node: HfPlusNode::Tee {
+                    inner: inner.clone(),
+                }
+                .into(),
+                _phantom: PhantomData,
+            }
+        } else {
+            unreachable!()
+        }
+    }
+}
+
+impl<'a, T, N: Location> Optional<'a, T, Bounded, Tick, N> {
+    pub fn into_stream(self) -> Stream<'a, T, Bounded, Tick, N> {
+        Stream::new(
+            self.location_kind,
+            self.ir_leaves,
+            self.ir_node.into_inner(),
+        )
+    }
+
+    pub fn map<U, F: Fn(T) -> U + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F>,
+    ) -> Optional<'a, U, Bounded, Tick, N> {
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Map {
+                f: f.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
+    }
+
+    pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F>,
+    ) -> Stream<'a, U, Bounded, Tick, N> {
+        Stream::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::FlatMap {
+                f: f.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
+    }
+
+    pub fn filter<F: Fn(&T) -> bool + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F>,
+    ) -> Optional<'a, T, Bounded, Tick, N> {
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Filter {
+                f: f.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
+    }
+
+    pub fn filter_map<U, F: Fn(T) -> Option<U> + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F>,
+    ) -> Optional<'a, U, Bounded, Tick, N> {
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::FilterMap {
+                f: f.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
+    }
+
+    pub fn cross_singleton<O>(
+        self,
+        other: impl Into<Optional<'a, O, Bounded, Tick, N>>,
+    ) -> Optional<'a, (T, O), Bounded, Tick, N>
+    where
+        O: Clone,
+    {
+        let other: Optional<'a, O, Bounded, Tick, N> = other.into();
+        if self.location_kind != other.location_kind {
+            panic!("cross_singleton must be called on streams on the same node");
+        }
+
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::CrossSingleton(
+                Box::new(self.ir_node.into_inner()),
+                Box::new(other.ir_node.into_inner()),
+            ),
+        )
+    }
+
+    pub fn continue_if<U>(
+        self,
+        signal: Optional<'a, U, Bounded, Tick, N>,
+    ) -> Optional<'a, T, Bounded, Tick, N> {
+        self.cross_singleton(signal.map(q!(|_u| ())))
+            .map(q!(|(d, _signal)| d))
+    }
+
+    pub fn continue_unless<U>(
+        self,
+        other: Optional<'a, U, Bounded, Tick, N>,
+    ) -> Optional<'a, T, Bounded, Tick, N> {
+        self.continue_if(other.into_stream().count().filter(q!(|c| *c == 0)))
+    }
+
+    pub fn union(
+        self,
+        other: Optional<'a, T, Bounded, Tick, N>,
+    ) -> Optional<'a, T, Bounded, Tick, N> {
+        if self.location_kind != other.location_kind {
+            panic!("union must be called on streams on the same node");
+        }
+
+        // TODO(shadaj): this is technically unsafe; if both of these are Some and we call as_stream we'll get two elements
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Union(
+                Box::new(self.ir_node.into_inner()),
+                Box::new(other.ir_node.into_inner()),
+            ),
+        )
+    }
+}
+
+impl<'a, T, N: Location> Optional<'a, T, Bounded, Tick, N> {
+    pub fn all_ticks(self) -> Stream<'a, T, Unbounded, NoTick, N> {
+        Stream::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
+        )
+    }
+
+    pub fn defer_tick(self) -> Optional<'a, T, Bounded, Tick, N> {
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::DeferTick(Box::new(self.ir_node.into_inner())),
+        )
+    }
+
+    pub fn persist(self) -> Stream<'a, T, Bounded, Tick, N> {
+        Stream::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
+        )
+    }
+
+    pub fn delta(self) -> Optional<'a, T, Bounded, Tick, N> {
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Delta(Box::new(self.ir_node.into_inner())),
+        )
+    }
+}
