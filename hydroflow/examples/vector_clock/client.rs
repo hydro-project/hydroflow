@@ -7,7 +7,7 @@ use lattices::map_union::MapUnionSingletonMap;
 use lattices::{Max, Merge};
 
 use crate::protocol::{EchoMsg, VecClock};
-use crate::{Opts};
+use crate::Opts;
 
 pub(crate) async fn run_client(
     outbound: UdpSink,

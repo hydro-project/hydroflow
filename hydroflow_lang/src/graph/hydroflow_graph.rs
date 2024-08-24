@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::spanned::Spanned;
 
-use super::graph_write::{GraphWrite, Dot, Mermaid};
+use super::graph_write::{Dot, GraphWrite, Mermaid};
 use super::ops::{
     find_op_op_constraints, null_write_iterator_fn, DelayType, OperatorWriteOutput,
     WriteContextArgs, OPERATORS,

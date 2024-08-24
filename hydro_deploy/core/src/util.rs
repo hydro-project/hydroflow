@@ -3,8 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use anyhow::Result;
-use futures::{Future, StreamExt};
-use futures::Stream;
+use futures::{Future, Stream, StreamExt};
 use tokio::sync::{mpsc, oneshot};
 
 pub async fn async_retry<T, F: Future<Output = Result<T>>>(
