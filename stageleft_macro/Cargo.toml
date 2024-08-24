@@ -21,4 +21,4 @@ sha256 = "1.0.0"
 
 [dev-dependencies]
 insta = "1.39"
-prettyplease = "0.2.0"
+prettyplease = { version = "0.2.0", features = [ "verbatim" ] }

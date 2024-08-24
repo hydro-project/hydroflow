@@ -27,5 +27,5 @@ rust-sitter-tool = "0.4.2"
 
 [dev-dependencies]
 insta = "1.39"
-prettyplease = "0.2.0"
+prettyplease = { version = "0.2.0", features = [ "verbatim" ] }
 tempfile = "3"

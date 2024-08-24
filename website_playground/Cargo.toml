@@ -15,7 +15,7 @@ futures = "0.3.0"
 hydroflow_datalog_core = { path = "../hydroflow_datalog_core" }
 hydroflow_lang = { path = "../hydroflow_lang" }
 hydroflow = { path = "../hydroflow" }
-prettyplease = "0.2.0"
+prettyplease = { version = "0.2.0", features = [ "verbatim" ] }
 proc-macro2 = "1.0.74"
 quote = "1.0.35"
 serde = { version = "1.0.197", features = ["derive"] }
