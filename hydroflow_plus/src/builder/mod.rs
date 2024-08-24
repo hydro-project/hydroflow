@@ -14,7 +14,7 @@ use stageleft::*;
 
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{Cluster, Location, LocationId, Process};
-use crate::stream::{Bounded, NoTick, Tick, Unbounded};
+use crate::stream::{Bounded, CycleCollection, NoTick, Tick, Unbounded};
 use crate::{HfCycle, RuntimeContext, Stream};
 
 pub mod built;
@@ -278,10 +278,10 @@ impl<'a> FlowBuilder<'a> {
     }
 
     #[allow(clippy::type_complexity)]
-    pub fn cycle<T, W, L: Location>(
+    pub fn cycle<L: Location, C, S: CycleCollection<'a, L, C>>(
         &self,
         on: &L,
-    ) -> (HfCycle<'a, T, W, NoTick, L>, Stream<'a, T, W, NoTick, L>) {
+    ) -> (HfCycle<'a, L, C, S>, S) {
         let next_id = {
             let on_id = match on.id() {
                 LocationId::Process(id) => id,
@@ -301,57 +301,9 @@ impl<'a> FlowBuilder<'a> {
         (
             HfCycle {
                 ident: ident.clone(),
-                location_kind: on.id(),
-                ir_leaves: self.ir_leaves().clone(),
                 _phantom: PhantomData,
             },
-            Stream::new(
-                on.id(),
-                self.ir_leaves().clone(),
-                HfPlusNode::Persist(Box::new(HfPlusNode::CycleSource {
-                    ident,
-                    location_kind: on.id(),
-                })),
-            ),
-        )
-    }
-
-    #[allow(clippy::type_complexity)]
-    pub fn tick_cycle<T, W, L: Location>(
-        &self,
-        on: &L,
-    ) -> (HfCycle<'a, T, W, Tick, L>, Stream<'a, T, W, Tick, L>) {
-        let next_id = {
-            let on_id = match on.id() {
-                LocationId::Process(id) => id,
-                LocationId::Cluster(id) => id,
-            };
-
-            let mut cycle_ids = self.cycle_ids.borrow_mut();
-            let next_id_entry = cycle_ids.entry(on_id).or_default();
-
-            let id = *next_id_entry;
-            *next_id_entry += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
-
-        (
-            HfCycle {
-                ident: ident.clone(),
-                location_kind: on.id(),
-                ir_leaves: self.ir_leaves().clone(),
-                _phantom: PhantomData,
-            },
-            Stream::new(
-                on.id(),
-                self.ir_leaves().clone(),
-                HfPlusNode::CycleSource {
-                    ident,
-                    location_kind: on.id(),
-                },
-            ),
+            S::create_source(ident, self.ir_leaves.clone(), on),
         )
     }
 }
