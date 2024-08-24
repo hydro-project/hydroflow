@@ -1,6 +1,6 @@
 [build]
 rustflags = [
-    # "-Zproc-macro-backtrace",
+    "-Zproc-macro-backtrace",
     "-Wunused_qualifications",
     "-Wclippy::upper_case_acronyms",
     # Flag to make build.rs scripts generate docs. Should only be used in this repository
