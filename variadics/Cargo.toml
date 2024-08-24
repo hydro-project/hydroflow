@@ -8,7 +8,7 @@ documentation = "https://docs.rs/variadics/"
 description = "Variadic generics on stable Rust using tuple lists"
 
 [dependencies]
-sealed = "0.5"
+sealed = "0.5.0"
 
 [dev-dependencies]
 trybuild = "1.0"

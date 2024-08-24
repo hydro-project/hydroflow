@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use anyhow::{bail, Result};
 use async_trait::async_trait;
-use futures_core::Future;
+use futures::Future;
 use hydroflow_deploy_integration::{InitConfig, ServerPort};
 use serde::Serialize;
 use tokio::sync::{mpsc, RwLock};
