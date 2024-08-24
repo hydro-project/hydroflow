@@ -7,7 +7,7 @@ use stageleft::{q, IntoQuotedMut, Quoted};
 
 use crate::builder::FlowLeaves;
 use crate::cycle::CycleCollection;
-use crate::ir::{HfPlusLeaf, HfPlusNode};
+use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{Location, LocationId};
 use crate::stream::{Bounded, NoTick, Tick, Unbounded};
 use crate::Stream;
@@ -194,6 +194,14 @@ impl<'a, T, N: Location> Singleton<'a, T, Bounded, Tick, N> {
         )
     }
 
+    pub fn latest(self) -> Optional<'a, T, Unbounded, NoTick, N> {
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
+        )
+    }
+
     pub fn defer_tick(self) -> Singleton<'a, T, Bounded, Tick, N> {
         Singleton::new(
             self.location_kind,
@@ -216,6 +224,33 @@ impl<'a, T, N: Location> Singleton<'a, T, Bounded, Tick, N> {
             self.ir_leaves,
             HfPlusNode::Delta(Box::new(self.ir_node.into_inner())),
         )
+    }
+}
+
+impl<'a, T, N: Location> Singleton<'a, T, Unbounded, NoTick, N> {
+    pub fn latest_tick(self) -> Singleton<'a, T, Bounded, Tick, N> {
+        Singleton::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
+        )
+    }
+
+    pub fn cross_singleton<O>(
+        self,
+        other: impl Into<Optional<'a, O, Unbounded, NoTick, N>>,
+    ) -> Optional<'a, (T, O), Unbounded, NoTick, N>
+    where
+        O: Clone,
+    {
+        let other: Optional<'a, O, Unbounded, NoTick, N> = other.into();
+        if self.location_kind != other.location_kind {
+            panic!("cross_singleton must be called on streams on the same node");
+        }
+
+        self.latest_tick()
+            .cross_singleton(other.latest_tick())
+            .latest()
     }
 }
 
@@ -270,6 +305,29 @@ impl<'a, T, W, N: Location> CycleCollection<'a> for Optional<'a, T, W, Tick, N> 
             ident,
             location_kind: self.location_kind,
             input: Box::new(self.ir_node.into_inner()),
+        });
+    }
+}
+
+impl<'a, T, W, N: Location> CycleCollection<'a> for Optional<'a, T, W, NoTick, N> {
+    type Location = N;
+
+    fn create_source(ident: syn::Ident, ir_leaves: FlowLeaves<'a>, l: LocationId) -> Self {
+        Optional::new(
+            l,
+            ir_leaves,
+            HfPlusNode::Persist(Box::new(HfPlusNode::CycleSource {
+                ident,
+                location_kind: l,
+            })),
+        )
+    }
+
+    fn complete(self, ident: syn::Ident) {
+        self.ir_leaves.borrow_mut().as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
+            ident,
+            location_kind: self.location_kind,
+            input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
         });
     }
 }
@@ -436,6 +494,14 @@ impl<'a, T, N: Location> Optional<'a, T, Bounded, Tick, N> {
         )
     }
 
+    pub fn latest(self) -> Optional<'a, T, Unbounded, NoTick, N> {
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
+        )
+    }
+
     pub fn defer_tick(self) -> Optional<'a, T, Bounded, Tick, N> {
         Optional::new(
             self.location_kind,
@@ -458,5 +524,57 @@ impl<'a, T, N: Location> Optional<'a, T, Bounded, Tick, N> {
             self.ir_leaves,
             HfPlusNode::Delta(Box::new(self.ir_node.into_inner())),
         )
+    }
+}
+
+impl<'a, T, N: Location> Optional<'a, T, Unbounded, NoTick, N> {
+    pub fn latest_tick(self) -> Optional<'a, T, Bounded, Tick, N> {
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
+        )
+    }
+
+    pub fn tick_samples(self) -> Stream<'a, T, Unbounded, NoTick, N> {
+        self.latest_tick().all_ticks()
+    }
+
+    pub fn cross_singleton<O>(
+        self,
+        other: impl Into<Optional<'a, O, Unbounded, NoTick, N>>,
+    ) -> Optional<'a, (T, O), Unbounded, NoTick, N>
+    where
+        O: Clone,
+    {
+        let other: Optional<'a, O, Unbounded, NoTick, N> = other.into();
+        if self.location_kind != other.location_kind {
+            panic!("cross_singleton must be called on streams on the same node");
+        }
+
+        self.latest_tick()
+            .cross_singleton(other.latest_tick())
+            .latest()
+    }
+
+    pub fn sample_every(
+        self,
+        duration: impl Quoted<'a, std::time::Duration> + Copy + 'a,
+    ) -> Stream<'a, T, Unbounded, NoTick, N> {
+        let interval = duration.splice();
+
+        let samples = Stream::<'a, hydroflow::tokio::time::Instant, Bounded, Tick, N>::new(
+            self.location_kind,
+            self.ir_leaves.clone(),
+            HfPlusNode::Source {
+                source: HfPlusSource::Interval(interval.into()),
+                location_kind: self.location_kind,
+            },
+        );
+
+        self.latest_tick()
+            .continue_if(samples.first())
+            .latest()
+            .tick_samples()
     }
 }
