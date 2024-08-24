@@ -14,5 +14,5 @@ path = "src/lib.rs"
 quote = "1.0.35"
 syn = { version = "2.0.46", features = [ "parsing", "extra-traits", "visit-mut" ] }
 proc-macro2 = "1.0.74"
-proc-macro-crate = "1.1"
+proc-macro-crate = "1.0.0"
 stageleft_macro = { path = "../stageleft_macro", version = "^0.2.0" }

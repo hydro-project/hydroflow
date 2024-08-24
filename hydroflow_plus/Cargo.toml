@@ -19,11 +19,11 @@ stageleft_devel = []
 quote = "1.0.35"
 syn = { version = "2.0.46", features = [ "parsing", "extra-traits", "visit-mut" ] }
 proc-macro2 = "1.0.74"
-proc-macro-crate = "1.1"
+proc-macro-crate = "1.0.0"
 hydroflow = { path = "../hydroflow", version = "^0.8.0", default-features = false }
 hydroflow_lang = { path = "../hydroflow_lang", version = "^0.8.0" }
 serde = "1.0.197"
-bincode = "1.3"
+bincode = "1.3.1"
 stageleft = { path = "../stageleft", version = "^0.3.0" }
 
 # added to workaround `cargo smart-release` https://github.com/Byron/cargo-smart-release/issues/16
