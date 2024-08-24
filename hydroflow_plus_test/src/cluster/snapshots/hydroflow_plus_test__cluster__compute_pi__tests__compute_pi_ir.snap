@@ -6,7 +6,7 @@ expression: built.ir()
     ForEach {
         f: { use crate :: __staged :: cluster :: compute_pi :: * ; | (inside , total) | { println ! ("pi: {} ({} trials)" , 4.0 * inside as f64 / total as f64 , total) ; } },
         input: Map {
-            f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+            f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
             input: CrossSingleton(
                 Reduce {
                     f: { use crate :: __staged :: cluster :: compute_pi :: * ; | (inside , total) , (inside_batch , total_batch) | { * inside += inside_batch ; * total += total_batch ; } },
@@ -68,7 +68,7 @@ expression: built.ir()
                     ),
                 },
                 Map {
-                    f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                     input: Source {
                         source: Interval(
                             { use crate :: __staged :: cluster :: compute_pi :: * ; Duration :: from_secs (1) },

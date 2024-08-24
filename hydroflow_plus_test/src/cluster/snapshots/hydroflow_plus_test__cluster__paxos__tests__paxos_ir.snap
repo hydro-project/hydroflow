@@ -628,22 +628,26 @@ expression: built.ir()
                             f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
                             input: CrossSingleton(
                                 Map {
-                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                     input: CrossSingleton(
                                         Tee {
                                             inner: RefCell {
-                                                value: CycleSource {
-                                                    ident: Ident {
-                                                        sym: cycle_4,
+                                                value: Tee {
+                                                    inner: RefCell {
+                                                        value: CycleSource {
+                                                            ident: Ident {
+                                                                sym: cycle_4,
+                                                            },
+                                                            location_kind: Cluster(
+                                                                0,
+                                                            ),
+                                                        },
                                                     },
-                                                    location_kind: Cluster(
-                                                        0,
-                                                    ),
                                                 },
                                             },
                                         },
                                         Map {
-                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                             input: Source {
                                                 source: Interval(
                                                     { use crate :: __staged :: cluster :: paxos :: * ; let i_am_leader_send_timeout = 1u64 ; Duration :: from_secs (i_am_leader_send_timeout) },
@@ -716,13 +720,17 @@ expression: built.ir()
                                                 ),
                                                 Tee {
                                                     inner: RefCell {
-                                                        value: CycleSource {
-                                                            ident: Ident {
-                                                                sym: cycle_4,
+                                                        value: Tee {
+                                                            inner: RefCell {
+                                                                value: CycleSource {
+                                                                    ident: Ident {
+                                                                        sym: cycle_4,
+                                                                    },
+                                                                    location_kind: Cluster(
+                                                                        0,
+                                                                    ),
+                                                                },
                                                             },
-                                                            location_kind: Cluster(
-                                                                0,
-                                                            ),
                                                         },
                                                     },
                                                 },
@@ -799,13 +807,17 @@ expression: built.ir()
                                     },
                                     Tee {
                                         inner: RefCell {
-                                            value: CycleSource {
-                                                ident: Ident {
-                                                    sym: cycle_4,
+                                            value: Tee {
+                                                inner: RefCell {
+                                                    value: CycleSource {
+                                                        ident: Ident {
+                                                            sym: cycle_4,
+                                                        },
+                                                        location_kind: Cluster(
+                                                            0,
+                                                        ),
+                                                    },
                                                 },
-                                                location_kind: Cluster(
-                                                    0,
-                                                ),
                                             },
                                         },
                                     },
@@ -871,13 +883,17 @@ expression: built.ir()
                                                                                                 ),
                                                                                                 Tee {
                                                                                                     inner: RefCell {
-                                                                                                        value: CycleSource {
-                                                                                                            ident: Ident {
-                                                                                                                sym: cycle_4,
+                                                                                                        value: Tee {
+                                                                                                            inner: RefCell {
+                                                                                                                value: CycleSource {
+                                                                                                                    ident: Ident {
+                                                                                                                        sym: cycle_4,
+                                                                                                                    },
+                                                                                                                    location_kind: Cluster(
+                                                                                                                        0,
+                                                                                                                    ),
+                                                                                                                },
                                                                                                             },
-                                                                                                            location_kind: Cluster(
-                                                                                                                0,
-                                                                                                            ),
                                                                                                         },
                                                                                                     },
                                                                                                 },
@@ -1491,13 +1507,17 @@ expression: built.ir()
                                                                                                                         ),
                                                                                                                         Tee {
                                                                                                                             inner: RefCell {
-                                                                                                                                value: CycleSource {
-                                                                                                                                    ident: Ident {
-                                                                                                                                        sym: cycle_4,
+                                                                                                                                value: Tee {
+                                                                                                                                    inner: RefCell {
+                                                                                                                                        value: CycleSource {
+                                                                                                                                            ident: Ident {
+                                                                                                                                                sym: cycle_4,
+                                                                                                                                            },
+                                                                                                                                            location_kind: Cluster(
+                                                                                                                                                0,
+                                                                                                                                            ),
+                                                                                                                                        },
                                                                                                                                     },
-                                                                                                                                    location_kind: Cluster(
-                                                                                                                                        0,
-                                                                                                                                    ),
                                                                                                                                 },
                                                                                                                             },
                                                                                                                         },
@@ -2134,13 +2154,17 @@ expression: built.ir()
                             },
                             Tee {
                                 inner: RefCell {
-                                    value: CycleSource {
-                                        ident: Ident {
-                                            sym: cycle_4,
+                                    value: Tee {
+                                        inner: RefCell {
+                                            value: CycleSource {
+                                                ident: Ident {
+                                                    sym: cycle_4,
+                                                },
+                                                location_kind: Cluster(
+                                                    0,
+                                                ),
+                                            },
                                         },
-                                        location_kind: Cluster(
-                                            0,
-                                        ),
                                     },
                                 },
                             },
@@ -2395,13 +2419,17 @@ expression: built.ir()
                                     input: CrossSingleton(
                                         Tee {
                                             inner: RefCell {
-                                                value: CycleSource {
-                                                    ident: Ident {
-                                                        sym: cycle_4,
+                                                value: Tee {
+                                                    inner: RefCell {
+                                                        value: CycleSource {
+                                                            ident: Ident {
+                                                                sym: cycle_4,
+                                                            },
+                                                            location_kind: Cluster(
+                                                                0,
+                                                            ),
+                                                        },
                                                     },
-                                                    location_kind: Cluster(
-                                                        0,
-                                                    ),
                                                 },
                                             },
                                         },
@@ -2563,13 +2591,17 @@ expression: built.ir()
                                                     input: CrossSingleton(
                                                         Tee {
                                                             inner: RefCell {
-                                                                value: CycleSource {
-                                                                    ident: Ident {
-                                                                        sym: cycle_4,
+                                                                value: Tee {
+                                                                    inner: RefCell {
+                                                                        value: CycleSource {
+                                                                            ident: Ident {
+                                                                                sym: cycle_4,
+                                                                            },
+                                                                            location_kind: Cluster(
+                                                                                0,
+                                                                            ),
+                                                                        },
                                                                     },
-                                                                    location_kind: Cluster(
-                                                                        0,
-                                                                    ),
                                                                 },
                                                             },
                                                         },
@@ -2697,13 +2729,17 @@ expression: built.ir()
                                                                     input: CrossSingleton(
                                                                         Tee {
                                                                             inner: RefCell {
-                                                                                value: CycleSource {
-                                                                                    ident: Ident {
-                                                                                        sym: cycle_4,
+                                                                                value: Tee {
+                                                                                    inner: RefCell {
+                                                                                        value: CycleSource {
+                                                                                            ident: Ident {
+                                                                                                sym: cycle_4,
+                                                                                            },
+                                                                                            location_kind: Cluster(
+                                                                                                0,
+                                                                                            ),
+                                                                                        },
                                                                                     },
-                                                                                    location_kind: Cluster(
-                                                                                        0,
-                                                                                    ),
                                                                                 },
                                                                             },
                                                                         },
@@ -2870,13 +2906,17 @@ expression: built.ir()
                                                                                                                             ),
                                                                                                                             Tee {
                                                                                                                                 inner: RefCell {
-                                                                                                                                    value: CycleSource {
-                                                                                                                                        ident: Ident {
-                                                                                                                                            sym: cycle_4,
+                                                                                                                                    value: Tee {
+                                                                                                                                        inner: RefCell {
+                                                                                                                                            value: CycleSource {
+                                                                                                                                                ident: Ident {
+                                                                                                                                                    sym: cycle_4,
+                                                                                                                                                },
+                                                                                                                                                location_kind: Cluster(
+                                                                                                                                                    0,
+                                                                                                                                                ),
+                                                                                                                                            },
                                                                                                                                         },
-                                                                                                                                        location_kind: Cluster(
-                                                                                                                                            0,
-                                                                                                                                        ),
                                                                                                                                     },
                                                                                                                                 },
                                                                                                                             },
@@ -2890,13 +2930,17 @@ expression: built.ir()
                                                                                             },
                                                                                             Tee {
                                                                                                 inner: RefCell {
-                                                                                                    value: CycleSource {
-                                                                                                        ident: Ident {
-                                                                                                            sym: cycle_4,
+                                                                                                    value: Tee {
+                                                                                                        inner: RefCell {
+                                                                                                            value: CycleSource {
+                                                                                                                ident: Ident {
+                                                                                                                    sym: cycle_4,
+                                                                                                                },
+                                                                                                                location_kind: Cluster(
+                                                                                                                    0,
+                                                                                                                ),
+                                                                                                            },
                                                                                                         },
-                                                                                                        location_kind: Cluster(
-                                                                                                            0,
-                                                                                                        ),
                                                                                                     },
                                                                                                 },
                                                                                             },
@@ -2941,13 +2985,17 @@ expression: built.ir()
                                                                                                                                                 ),
                                                                                                                                                 Tee {
                                                                                                                                                     inner: RefCell {
-                                                                                                                                                        value: CycleSource {
-                                                                                                                                                            ident: Ident {
-                                                                                                                                                                sym: cycle_4,
+                                                                                                                                                        value: Tee {
+                                                                                                                                                            inner: RefCell {
+                                                                                                                                                                value: CycleSource {
+                                                                                                                                                                    ident: Ident {
+                                                                                                                                                                        sym: cycle_4,
+                                                                                                                                                                    },
+                                                                                                                                                                    location_kind: Cluster(
+                                                                                                                                                                        0,
+                                                                                                                                                                    ),
+                                                                                                                                                                },
                                                                                                                                                             },
-                                                                                                                                                            location_kind: Cluster(
-                                                                                                                                                                0,
-                                                                                                                                                            ),
                                                                                                                                                         },
                                                                                                                                                     },
                                                                                                                                                 },
@@ -2993,13 +3041,17 @@ expression: built.ir()
                                                                                                                                     ),
                                                                                                                                     Tee {
                                                                                                                                         inner: RefCell {
-                                                                                                                                            value: CycleSource {
-                                                                                                                                                ident: Ident {
-                                                                                                                                                    sym: cycle_4,
+                                                                                                                                            value: Tee {
+                                                                                                                                                inner: RefCell {
+                                                                                                                                                    value: CycleSource {
+                                                                                                                                                        ident: Ident {
+                                                                                                                                                            sym: cycle_4,
+                                                                                                                                                        },
+                                                                                                                                                        location_kind: Cluster(
+                                                                                                                                                            0,
+                                                                                                                                                        ),
+                                                                                                                                                    },
                                                                                                                                                 },
-                                                                                                                                                location_kind: Cluster(
-                                                                                                                                                    0,
-                                                                                                                                                ),
                                                                                                                                             },
                                                                                                                                         },
                                                                                                                                     },
@@ -3015,13 +3067,17 @@ expression: built.ir()
                                                                                             ),
                                                                                             Tee {
                                                                                                 inner: RefCell {
-                                                                                                    value: CycleSource {
-                                                                                                        ident: Ident {
-                                                                                                            sym: cycle_4,
+                                                                                                    value: Tee {
+                                                                                                        inner: RefCell {
+                                                                                                            value: CycleSource {
+                                                                                                                ident: Ident {
+                                                                                                                    sym: cycle_4,
+                                                                                                                },
+                                                                                                                location_kind: Cluster(
+                                                                                                                    0,
+                                                                                                                ),
+                                                                                                            },
                                                                                                         },
-                                                                                                        location_kind: Cluster(
-                                                                                                            0,
-                                                                                                        ),
                                                                                                     },
                                                                                                 },
                                                                                             },
@@ -3203,13 +3259,17 @@ expression: built.ir()
                                                                                 ),
                                                                                 Tee {
                                                                                     inner: RefCell {
-                                                                                        value: CycleSource {
-                                                                                            ident: Ident {
-                                                                                                sym: cycle_4,
+                                                                                        value: Tee {
+                                                                                            inner: RefCell {
+                                                                                                value: CycleSource {
+                                                                                                    ident: Ident {
+                                                                                                        sym: cycle_4,
+                                                                                                    },
+                                                                                                    location_kind: Cluster(
+                                                                                                        0,
+                                                                                                    ),
+                                                                                                },
                                                                                             },
-                                                                                            location_kind: Cluster(
-                                                                                                0,
-                                                                                            ),
                                                                                         },
                                                                                     },
                                                                                 },
@@ -3285,13 +3345,17 @@ expression: built.ir()
                                                                                     input: CrossSingleton(
                                                                                         Tee {
                                                                                             inner: RefCell {
-                                                                                                value: CycleSource {
-                                                                                                    ident: Ident {
-                                                                                                        sym: cycle_4,
+                                                                                                value: Tee {
+                                                                                                    inner: RefCell {
+                                                                                                        value: CycleSource {
+                                                                                                            ident: Ident {
+                                                                                                                sym: cycle_4,
+                                                                                                            },
+                                                                                                            location_kind: Cluster(
+                                                                                                                0,
+                                                                                                            ),
+                                                                                                        },
                                                                                                     },
-                                                                                                    location_kind: Cluster(
-                                                                                                        0,
-                                                                                                    ),
                                                                                                 },
                                                                                             },
                                                                                         },
@@ -3554,13 +3618,17 @@ expression: built.ir()
                                                                                                         ),
                                                                                                         Tee {
                                                                                                             inner: RefCell {
-                                                                                                                value: CycleSource {
-                                                                                                                    ident: Ident {
-                                                                                                                        sym: cycle_4,
+                                                                                                                value: Tee {
+                                                                                                                    inner: RefCell {
+                                                                                                                        value: CycleSource {
+                                                                                                                            ident: Ident {
+                                                                                                                                sym: cycle_4,
+                                                                                                                            },
+                                                                                                                            location_kind: Cluster(
+                                                                                                                                0,
+                                                                                                                            ),
+                                                                                                                        },
                                                                                                                     },
-                                                                                                                    location_kind: Cluster(
-                                                                                                                        0,
-                                                                                                                    ),
                                                                                                                 },
                                                                                                             },
                                                                                                         },
@@ -3574,13 +3642,17 @@ expression: built.ir()
                                                                         },
                                                                         Tee {
                                                                             inner: RefCell {
-                                                                                value: CycleSource {
-                                                                                    ident: Ident {
-                                                                                        sym: cycle_4,
+                                                                                value: Tee {
+                                                                                    inner: RefCell {
+                                                                                        value: CycleSource {
+                                                                                            ident: Ident {
+                                                                                                sym: cycle_4,
+                                                                                            },
+                                                                                            location_kind: Cluster(
+                                                                                                0,
+                                                                                            ),
+                                                                                        },
                                                                                     },
-                                                                                    location_kind: Cluster(
-                                                                                        0,
-                                                                                    ),
                                                                                 },
                                                                             },
                                                                         },
@@ -3625,13 +3697,17 @@ expression: built.ir()
                                                                                                                             ),
                                                                                                                             Tee {
                                                                                                                                 inner: RefCell {
-                                                                                                                                    value: CycleSource {
-                                                                                                                                        ident: Ident {
-                                                                                                                                            sym: cycle_4,
+                                                                                                                                    value: Tee {
+                                                                                                                                        inner: RefCell {
+                                                                                                                                            value: CycleSource {
+                                                                                                                                                ident: Ident {
+                                                                                                                                                    sym: cycle_4,
+                                                                                                                                                },
+                                                                                                                                                location_kind: Cluster(
+                                                                                                                                                    0,
+                                                                                                                                                ),
+                                                                                                                                            },
                                                                                                                                         },
-                                                                                                                                        location_kind: Cluster(
-                                                                                                                                            0,
-                                                                                                                                        ),
                                                                                                                                     },
                                                                                                                                 },
                                                                                                                             },
@@ -3677,13 +3753,17 @@ expression: built.ir()
                                                                                                                 ),
                                                                                                                 Tee {
                                                                                                                     inner: RefCell {
-                                                                                                                        value: CycleSource {
-                                                                                                                            ident: Ident {
-                                                                                                                                sym: cycle_4,
+                                                                                                                        value: Tee {
+                                                                                                                            inner: RefCell {
+                                                                                                                                value: CycleSource {
+                                                                                                                                    ident: Ident {
+                                                                                                                                        sym: cycle_4,
+                                                                                                                                    },
+                                                                                                                                    location_kind: Cluster(
+                                                                                                                                        0,
+                                                                                                                                    ),
+                                                                                                                                },
                                                                                                                             },
-                                                                                                                            location_kind: Cluster(
-                                                                                                                                0,
-                                                                                                                            ),
                                                                                                                         },
                                                                                                                     },
                                                                                                                 },
@@ -3699,13 +3779,17 @@ expression: built.ir()
                                                                         ),
                                                                         Tee {
                                                                             inner: RefCell {
-                                                                                value: CycleSource {
-                                                                                    ident: Ident {
-                                                                                        sym: cycle_4,
+                                                                                value: Tee {
+                                                                                    inner: RefCell {
+                                                                                        value: CycleSource {
+                                                                                            ident: Ident {
+                                                                                                sym: cycle_4,
+                                                                                            },
+                                                                                            location_kind: Cluster(
+                                                                                                0,
+                                                                                            ),
+                                                                                        },
                                                                                     },
-                                                                                    location_kind: Cluster(
-                                                                                        0,
-                                                                                    ),
                                                                                 },
                                                                             },
                                                                         },
@@ -3887,13 +3971,17 @@ expression: built.ir()
                                                             ),
                                                             Tee {
                                                                 inner: RefCell {
-                                                                    value: CycleSource {
-                                                                        ident: Ident {
-                                                                            sym: cycle_4,
+                                                                    value: Tee {
+                                                                        inner: RefCell {
+                                                                            value: CycleSource {
+                                                                                ident: Ident {
+                                                                                    sym: cycle_4,
+                                                                                },
+                                                                                location_kind: Cluster(
+                                                                                    0,
+                                                                                ),
+                                                                            },
                                                                         },
-                                                                        location_kind: Cluster(
-                                                                            0,
-                                                                        ),
                                                                     },
                                                                 },
                                                             },
@@ -3969,13 +4057,17 @@ expression: built.ir()
                                                                 input: CrossSingleton(
                                                                     Tee {
                                                                         inner: RefCell {
-                                                                            value: CycleSource {
-                                                                                ident: Ident {
-                                                                                    sym: cycle_4,
+                                                                            value: Tee {
+                                                                                inner: RefCell {
+                                                                                    value: CycleSource {
+                                                                                        ident: Ident {
+                                                                                            sym: cycle_4,
+                                                                                        },
+                                                                                        location_kind: Cluster(
+                                                                                            0,
+                                                                                        ),
+                                                                                    },
                                                                                 },
-                                                                                location_kind: Cluster(
-                                                                                    0,
-                                                                                ),
                                                                             },
                                                                         },
                                                                     },
