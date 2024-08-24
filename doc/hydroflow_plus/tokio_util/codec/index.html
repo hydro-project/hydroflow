@@ -1,9 +1,67 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Adaptors from AsyncRead/AsyncWrite to Stream/Sink"><title>hydroflow_plus::tokio_util::codec - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_plus" data-themes="" data-resource-suffix="" data-rustdoc-version="1.81.0-nightly (d7f6ebace 2024-06-16)" data-channel="nightly" data-search-js="search-0fe7219eb170c82e.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../hydroflow_plus/index.html">hydroflow_plus</a><span class="version">0.8.0</span></h2></div><h2 class="location"><a href="#">Module codec</a></h2><div class="sidebar-elems"><section><ul class="block"><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#traits">Traits</a></li></ul></section><h2><a href="../index.html">In hydroflow_plus::tokio_util</a></h2></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Module <a href="../../index.html">hydroflow_plus</a>::<wbr><a href="../index.html">tokio_util</a>::<wbr><a class="mod" href="#">codec</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Adaptors from AsyncRead/AsyncWrite to Stream/Sink</p>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Adaptors from `AsyncRead`/`AsyncWrite` to Stream/Sink"><title>hydroflow_plus::tokio_util::codec - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_plus" data-themes="" data-resource-suffix="" data-rustdoc-version="1.81.0-nightly (d7f6ebace 2024-06-16)" data-channel="nightly" data-search-js="search-0fe7219eb170c82e.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../hydroflow_plus/index.html">hydroflow_plus</a><span class="version">0.8.0</span></h2></div><h2 class="location"><a href="#">Module codec</a></h2><div class="sidebar-elems"><section><ul class="block"><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#traits">Traits</a></li></ul></section><h2><a href="../index.html">In hydroflow_plus::tokio_util</a></h2></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Module <a href="../../index.html">hydroflow_plus</a>::<wbr><a href="../index.html">tokio_util</a>::<wbr><a class="mod" href="#">codec</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Adaptors from <code>AsyncRead</code>/<code>AsyncWrite</code> to Stream/Sink</p>
 <p>Raw I/O objects work with byte sequences, but higher-level code usually
 wants to batch these into meaningful chunks, called “frames”.</p>
 <p>This module contains adapters to go from streams of bytes, <a href="../../tokio/io/trait.AsyncRead.html" title="trait hydroflow_plus::tokio::io::AsyncRead"><code>AsyncRead</code></a> and
 <a href="../../tokio/io/trait.AsyncWrite.html" title="trait hydroflow_plus::tokio::io::AsyncWrite"><code>AsyncWrite</code></a>, to framed streams implementing <a href="../../futures/trait.Sink.html" title="trait hydroflow_plus::futures::Sink"><code>Sink</code></a> and <a href="../../tokio_stream/trait.Stream.html" title="trait hydroflow_plus::tokio_stream::Stream"><code>Stream</code></a>.
 Framed streams are also known as transports.</p>
+<h2 id="example-encoding-using-linescodec"><a class="doc-anchor" href="#example-encoding-using-linescodec">§</a>Example encoding using <code>LinesCodec</code></h2>
+<p>The following example demonstrates how to use a codec such as <a href="struct.LinesCodec.html" title="struct hydroflow_plus::tokio_util::codec::LinesCodec"><code>LinesCodec</code></a> to
+write framed data. <a href="struct.FramedWrite.html" title="struct hydroflow_plus::tokio_util::codec::FramedWrite"><code>FramedWrite</code></a> can be used to achieve this. Data sent to
+<a href="struct.FramedWrite.html" title="struct hydroflow_plus::tokio_util::codec::FramedWrite"><code>FramedWrite</code></a> are first framed according to a specific codec, and then sent to
+an implementor of <a href="../../tokio/io/trait.AsyncWrite.html" title="trait hydroflow_plus::tokio::io::AsyncWrite"><code>AsyncWrite</code></a>.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>futures::sink::SinkExt;
+<span class="kw">use </span>tokio_util::codec::LinesCodec;
+<span class="kw">use </span>tokio_util::codec::FramedWrite;
+
+<span class="attr">#[tokio::main]
+</span><span class="kw">async fn </span>main() {
+    <span class="kw">let </span>buffer = Vec::new();
+    <span class="kw">let </span>messages = <span class="macro">vec!</span>[<span class="string">"Hello"</span>, <span class="string">"World"</span>];
+    <span class="kw">let </span>encoder = LinesCodec::new();
+
+    <span class="comment">// FramedWrite is a sink which means you can send values into it
+    // asynchronously.
+    </span><span class="kw">let </span><span class="kw-2">mut </span>writer = FramedWrite::new(buffer, encoder);
+
+    <span class="comment">// To be able to send values into a FramedWrite, you need to bring the
+    // `SinkExt` trait into scope.
+    </span>writer.send(messages[<span class="number">0</span>]).<span class="kw">await</span>.unwrap();
+    writer.send(messages[<span class="number">1</span>]).<span class="kw">await</span>.unwrap();
+
+    <span class="kw">let </span>buffer = writer.get_ref();
+
+    <span class="macro">assert_eq!</span>(buffer.as_slice(), <span class="string">"Hello\nWorld\n"</span>.as_bytes());
+}</code></pre></div>
+<h2 id="example-decoding-using-linescodec"><a class="doc-anchor" href="#example-decoding-using-linescodec">§</a>Example decoding using <code>LinesCodec</code></h2>
+<p>The following example demonstrates how to use a codec such as <a href="struct.LinesCodec.html" title="struct hydroflow_plus::tokio_util::codec::LinesCodec"><code>LinesCodec</code></a> to
+read a stream of framed data. <a href="struct.FramedRead.html" title="struct hydroflow_plus::tokio_util::codec::FramedRead"><code>FramedRead</code></a> can be used to achieve this. <a href="struct.FramedRead.html" title="struct hydroflow_plus::tokio_util::codec::FramedRead"><code>FramedRead</code></a>
+will keep reading from an <a href="../../tokio/io/trait.AsyncRead.html" title="trait hydroflow_plus::tokio::io::AsyncRead"><code>AsyncRead</code></a> implementor until a whole frame, according to a codec,
+can be parsed.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code> <span class="kw">use </span>tokio_stream::StreamExt;
+ <span class="kw">use </span>tokio_util::codec::LinesCodec;
+ <span class="kw">use </span>tokio_util::codec::FramedRead;
+
+ <span class="attr">#[tokio::main]
+ </span><span class="kw">async fn </span>main() {
+     <span class="kw">let </span>message = <span class="string">"Hello\nWorld"</span>.as_bytes();
+     <span class="kw">let </span>decoder = LinesCodec::new();
+
+     <span class="comment">// FramedRead can be used to read a stream of values that are framed according to
+     // a codec. FramedRead will read from its input (here `buffer`) until a whole frame
+     // can be parsed.
+     </span><span class="kw">let </span><span class="kw-2">mut </span>reader = FramedRead::new(message, decoder);
+
+     <span class="comment">// To read values from a FramedRead, you need to bring the
+     // `StreamExt` trait into scope.
+     </span><span class="kw">let </span>frame1 = reader.next().<span class="kw">await</span>.unwrap().unwrap();
+     <span class="kw">let </span>frame2 = reader.next().<span class="kw">await</span>.unwrap().unwrap();
+
+     <span class="macro">assert!</span>(reader.next().<span class="kw">await</span>.is_none());
+     <span class="macro">assert_eq!</span>(frame1, <span class="string">"Hello"</span>);
+     <span class="macro">assert_eq!</span>(frame2, <span class="string">"World"</span>);
+ }</code></pre></div>
 <h2 id="the-decoder-trait"><a class="doc-anchor" href="#the-decoder-trait">§</a>The Decoder trait</h2>
 <p>A <a href="trait.Decoder.html" title="trait hydroflow_plus::tokio_util::codec::Decoder"><code>Decoder</code></a> is used together with <a href="struct.FramedRead.html" title="struct hydroflow_plus::tokio_util::codec::FramedRead"><code>FramedRead</code></a> or <a href="struct.Framed.html" title="struct hydroflow_plus::tokio_util::codec::Framed"><code>Framed</code></a> to turn an
 <a href="../../tokio/io/trait.AsyncRead.html" title="trait hydroflow_plus::tokio::io::AsyncRead"><code>AsyncRead</code></a> into a <a href="../../tokio_stream/trait.Stream.html" title="trait hydroflow_plus::tokio_stream::Stream"><code>Stream</code></a>. The job of the decoder trait is to specify

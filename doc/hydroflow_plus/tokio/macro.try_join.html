@@ -24,7 +24,7 @@ expression evaluates to a future and the futures from each expression are
 multiplexed on the current task. The <code>try_join!</code> macro returns when <strong>all</strong>
 branches return with <code>Ok</code> or when the <strong>first</strong> branch returns with <code>Err</code>.</p>
 <h2 id="notes"><a class="doc-anchor" href="#notes">§</a>Notes</h2>
-<p>The supplied futures are stored inline and does not require allocating a
+<p>The supplied futures are stored inline and do not require allocating a
 <code>Vec</code>.</p>
 <h4 id="runtime-characteristics"><a class="doc-anchor" href="#runtime-characteristics">§</a>Runtime characteristics</h4>
 <p>By running all async expressions on the current task, the expressions are
@@ -34,7 +34,7 @@ all other expressions will be unable to continue. If parallelism is
 required, spawn each async expression using <a href="fn.spawn.html" title="fn hydroflow_plus::tokio::spawn"><code>tokio::spawn</code></a> and pass the
 join handle to <code>try_join!</code>.</p>
 <h2 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h2>
-<p>Basic try_join with two branches.</p>
+<p>Basic <code>try_join</code> with two branches.</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">async fn </span>do_stuff_async() -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="comment">// async work

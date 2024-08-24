@@ -2116,7 +2116,7 @@
 
             <span class="kw">let </span>flat_graph_ref = <span class="kw-2">&amp;</span>flat_graph;
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="string">"surface_graph"</span>}, {
-                <span class="macro">insta::assert_display_snapshot!</span>(flat_graph_ref.surface_syntax_string());
+                <span class="macro">insta::assert_snapshot!</span>(flat_graph_ref.surface_syntax_string());
             });
 
             <span class="kw">let </span>tokens = hydroflow_graph_to_program(flat_graph, <span class="macro">quote::quote!</span> { hydroflow });
@@ -2128,7 +2128,7 @@
             };
 
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="string">"datalog_program"</span>}, {
-                <span class="macro">insta::assert_display_snapshot!</span>(
+                <span class="macro">insta::assert_snapshot!</span>(
                     prettyplease::unparse(<span class="kw-2">&amp;</span>wrapped)
                 );
             });

@@ -19,14 +19,11 @@ CPU-bound executors, such as <a href="https://docs.rs/rayon">rayon</a>, may also
 <p>This function is intended for non-async operations that eventually finish on
 their own. If you want to spawn an ordinary thread, you should use
 <a href="https://doc.rust-lang.org/nightly/std/thread/fn.spawn.html" title="fn std::thread::spawn"><code>thread::spawn</code></a> instead.</p>
-<p>Closures spawned using <code>spawn_blocking</code> cannot be cancelled abruptly; there
-is no standard low level API to cause a thread to stop running.  However,
-a useful pattern is to pass some form of “cancellation token” into
-the thread.  This could be an <a href="https://doc.rust-lang.org/nightly/core/sync/atomic/struct.AtomicBool.html" title="struct core::sync::atomic::AtomicBool"><code>AtomicBool</code></a> that the task checks periodically.
-Another approach is to have the thread primarily read or write from a channel,
-and to exit when the channel closes; assuming the other side of the channel is dropped
-when cancellation occurs, this will cause the blocking task thread to exit
-soon after as well.</p>
+<p>Be aware that tasks spawned using <code>spawn_blocking</code> cannot be aborted
+because they are not async. If you call <a href="struct.JoinHandle.html#method.abort" title="method hydroflow_plus::tokio::task::JoinHandle::abort"><code>abort</code></a> on a <code>spawn_blocking</code>
+task, then this <em>will not have any effect</em>, and the task will continue
+running normally. The exception is if the task has not started running
+yet; in that case, calling <code>abort</code> may prevent the task from starting.</p>
 <p>When you shut down the executor, it will wait indefinitely for all blocking operations to
 finish. You can use <a href="../runtime/struct.Runtime.html#method.shutdown_timeout" title="method hydroflow_plus::tokio::runtime::Runtime::shutdown_timeout"><code>shutdown_timeout</code></a> to stop waiting for them after a
 certain timeout. Be aware that this will still not cancel the tasks — they

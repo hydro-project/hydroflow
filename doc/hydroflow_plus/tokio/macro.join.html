@@ -25,7 +25,7 @@ and the futures from each expression are multiplexed on the current task.</p>
 for <strong>all</strong> branches complete regardless if any complete with <code>Err</code>. Use
 <a href="macro.try_join.html" title="macro hydroflow_plus::tokio::try_join"><code>try_join!</code></a> to return early when <code>Err</code> is encountered.</p>
 <h2 id="notes"><a class="doc-anchor" href="#notes">§</a>Notes</h2>
-<p>The supplied futures are stored inline and does not require allocating a
+<p>The supplied futures are stored inline and do not require allocating a
 <code>Vec</code>.</p>
 <h4 id="runtime-characteristics"><a class="doc-anchor" href="#runtime-characteristics">§</a>Runtime characteristics</h4>
 <p>By running all async expressions on the current task, the expressions are

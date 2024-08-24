@@ -242,7 +242,7 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; HfCompiled&lt;<span class="lifetime">'a</span>, usize&gt; {
-    <span class="kw">pub fn </span>with_dynamic_id(<span class="self">self</span>, id: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, usize&gt;) -&gt; HfBuiltWithID&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">pub fn </span>with_dynamic_id(<span class="self">self</span>, id: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, usize&gt;) -&gt; HfBuiltWithId&lt;<span class="lifetime">'a</span>&gt; {
         <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">"hydroflow_plus"</span>)
             .expect(<span class="string">"hydroflow_plus should be present in `Cargo.toml`"</span>);
         <span class="kw">let </span>root = <span class="kw">match </span>hydroflow_crate {
@@ -292,7 +292,7 @@
 
         <span class="kw">let </span>conditioned_tokens: TokenStream = conditioned_tokens.unwrap();
         <span class="kw">let </span>id = id.splice();
-        HfBuiltWithID {
+        HfBuiltWithId {
             tokens: <span class="macro">syn::parse_quote!</span>({
                 <span class="kw">let </span>__given_id = #id;
                 #conditioned_tokens <span class="kw">else </span>{
@@ -338,14 +338,14 @@
     }
 }
 
-<span class="kw">pub struct </span>HfBuiltWithID&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">pub struct </span>HfBuiltWithId&lt;<span class="lifetime">'a</span>&gt; {
     tokens: TokenStream,
     _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>()&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>HfBuiltWithID&lt;<span class="lifetime">'a</span>&gt; {}
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>HfBuiltWithId&lt;<span class="lifetime">'a</span>&gt; {}
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; FreeVariable&lt;Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>HfBuiltWithID&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; FreeVariable&lt;Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>HfBuiltWithId&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">fn </span>to_tokens(<span class="self">self</span>) -&gt; (<span class="prelude-ty">Option</span>&lt;TokenStream&gt;, <span class="prelude-ty">Option</span>&lt;TokenStream&gt;) {
         (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="self">self</span>.tokens))
     }

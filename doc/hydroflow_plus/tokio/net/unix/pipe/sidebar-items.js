@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["OpenOptions","Receiver","Sender"]};
+window.SIDEBAR_ITEMS = {"fn":["pipe"],"struct":["OpenOptions","Receiver","Sender"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["CLIRuntime","CLIRuntimeCluster","CLIRuntimeNode","HydroflowPlusMeta"]};
+window.SIDEBAR_ITEMS = {"struct":["DeployRuntime","DeployRuntimeCluster","DeployRuntimeNode","HydroflowPlusMeta"]};

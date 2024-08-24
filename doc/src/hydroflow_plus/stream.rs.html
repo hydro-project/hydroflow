@@ -1210,7 +1210,7 @@
         <span class="self">self</span>.send_bincode::&lt;N2, CoreType&gt;(other).map(<span class="macro">q!</span>(|(<span class="kw">_</span>, b)| b))
     }
 
-    <span class="kw">pub fn </span>send_bytes_interleaved&lt;N2: Location, Tag, V&gt;(
+    <span class="kw">pub fn </span>send_bytes_interleaved&lt;N2: Location, Tag&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
     ) -&gt; Stream&lt;<span class="lifetime">'a</span>, Bytes, Async, N2&gt;

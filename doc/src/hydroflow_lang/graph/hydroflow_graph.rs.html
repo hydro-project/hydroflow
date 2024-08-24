@@ -3133,35 +3133,35 @@
 
 <span class="doccomment">/// Configuration for writing graphs.
 </span><span class="attr">#[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = <span class="string">"debugging"</span>, derive(clap::Args))]
+#[cfg_attr(feature = <span class="string">"clap-derive"</span>, derive(clap::Args))]
 </span><span class="kw">pub struct </span>WriteConfig {
     <span class="doccomment">/// Subgraphs will not be rendered if set.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"clap-derive"</span>, arg(long))]
     </span><span class="kw">pub </span>no_subgraphs: bool,
     <span class="doccomment">/// Variable names will not be rendered if set.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"clap-derive"</span>, arg(long))]
     </span><span class="kw">pub </span>no_varnames: bool,
     <span class="doccomment">/// Will not render pull/push shapes if set.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"clap-derive"</span>, arg(long))]
     </span><span class="kw">pub </span>no_pull_push: bool,
     <span class="doccomment">/// Will not render handoffs if set.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"clap-derive"</span>, arg(long))]
     </span><span class="kw">pub </span>no_handoffs: bool,
     <span class="doccomment">/// Will not render singleton references if set.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"clap-derive"</span>, arg(long))]
     </span><span class="kw">pub </span>no_references: bool,
 
     <span class="doccomment">/// Op text will only be their name instead of the whole source.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"clap-derive"</span>, arg(long))]
     </span><span class="kw">pub </span>op_short_text: bool,
     <span class="doccomment">/// Op text will exclude any line that starts with "use".
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"clap-derive"</span>, arg(long))]
     </span><span class="kw">pub </span>op_text_no_imports: bool,
 }
 
 <span class="doccomment">/// Enum for choosing between mermaid and dot graph writing.
 </span><span class="attr">#[derive(Copy, Clone, Debug)]
-#[cfg_attr(feature = <span class="string">"debugging"</span>, derive(clap::Parser, clap::ValueEnum))]
+#[cfg_attr(feature = <span class="string">"clap-derive"</span>, derive(clap::Parser, clap::ValueEnum))]
 </span><span class="kw">pub enum </span>WriteGraphType {
     <span class="doccomment">/// Mermaid graphs.
     </span>Mermaid,

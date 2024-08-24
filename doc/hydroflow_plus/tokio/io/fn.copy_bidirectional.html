@@ -15,6 +15,8 @@ A direction is shut down when the reader reports EOF,
 at which point <a href="trait.AsyncWriteExt.html#method.shutdown" title="method hydroflow_plus::tokio::io::AsyncWriteExt::shutdown"><code>shutdown()</code></a> is called on the corresponding writer. When finished,
 it will return a tuple of the number of bytes copied from a to b
 and the number of bytes copied from b to a, in that order.</p>
+<p>It uses two 8 KB buffers for transferring bytes between <code>a</code> and <code>b</code> by default.
+To set your own buffers sizes use <a href="fn.copy_bidirectional_with_sizes.html" title="fn hydroflow_plus::tokio::io::copy_bidirectional_with_sizes"><code>copy_bidirectional_with_sizes()</code></a>.</p>
 <h2 id="errors"><a class="doc-anchor" href="#errors">§</a>Errors</h2>
 <p>The future will immediately return an error if any IO operation on <code>a</code>
 or <code>b</code> returns an error. Some data read from either stream may be lost (not

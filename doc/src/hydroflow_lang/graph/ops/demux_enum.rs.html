@@ -170,6 +170,28 @@
 <a href="#170" id="170">170</a>
 <a href="#171" id="171">171</a>
 <a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::Ident;
 <span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>syn::spanned::Spanned;
@@ -217,8 +239,8 @@
     categories: <span class="kw-2">&amp;</span>[OperatorCategory::MultiOut],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
-    hard_range_out: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
-    soft_range_out: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),
+    hard_range_out: <span class="kw-2">&amp;</span>(..),
+    soft_range_out: <span class="kw-2">&amp;</span>(..),
     num_args: <span class="number">0</span>,
     persistence_args: RANGE_0,
     type_args: RANGE_1,
@@ -235,6 +257,7 @@
                    root,
                    op_span,
                    ident,
+                   inputs,
                    outputs,
                    is_pull,
                    op_name,
@@ -247,52 +270,47 @@
                    ..
                },
                diagnostics| {
-        <span class="macro">assert!</span>(!is_pull);
-
         <span class="kw">let </span>enum_type = <span class="kw-2">&amp;</span>type_args[<span class="number">0</span>];
 
         <span class="comment">// Port idents supplied via port connections in the surface syntax.
         </span><span class="kw">let </span>port_idents: Vec&lt;<span class="kw">_</span>&gt; = output_ports
-            .iter()
-            .filter_map(|output_port| {
-                <span class="kw">let </span>PortIndexValue::Path(port_expr) = output_port <span class="kw">else </span>{
-                    diagnostics.push(Diagnostic::spanned(
-                        output_port.span(),
-                        Level::Error,
-                        <span class="macro">format!</span>(
-                            <span class="string">"Output port from `{}(..)` must be specified and must be a valid identifier."</span>,
-                            op_name,
-                        ),
-                    ));
-                    <span class="kw">return </span><span class="prelude-val">None</span>;
-                };
-                <span class="kw">let </span>port_ident = syn::parse2::&lt;Ident&gt;(<span class="macro">quote!</span> { #port_expr })
-                    .map_err(|err| diagnostics.push(err.into()))
-                    .ok()<span class="question-mark">?</span>;
+                    .iter()
+                    .filter_map(|output_port| {
+                        <span class="kw">let </span>PortIndexValue::Path(port_expr) = output_port <span class="kw">else </span>{
+                            diagnostics.push(Diagnostic::spanned(
+                                output_port.span(),
+                                Level::Error,
+                                <span class="macro">format!</span>(
+                                    <span class="string">"Output port from `{}(..)` must be specified and must be a valid identifier."</span>,
+                                    op_name,
+                                ),
+                            ));
+                            <span class="kw">return </span><span class="prelude-val">None</span>;
+                        };
+                        <span class="kw">let </span>port_ident = syn::parse2::&lt;Ident&gt;(<span class="macro">quote!</span> { #port_expr })
+                            .map_err(|err| diagnostics.push(err.into()))
+                            .ok()<span class="question-mark">?</span>;
 
-                <span class="prelude-val">Some</span>(port_ident)
-            })
-            .collect();
-
-        <span class="kw">let </span>enum_type_turbofish = ensure_turbofish(enum_type);
-        <span class="kw">let </span>port_variant_check_match_arms = port_idents.iter().map(|port_ident| {
-            <span class="kw">let </span>enum_type_turbofish =
-                change_spans(enum_type_turbofish.to_token_stream(), port_ident.span());
-            <span class="macro">quote_spanned!</span> {port_ident.span()=&gt;
-                #enum_type_turbofish::#port_ident { .. } =&gt; ()
-            }
-        });
-
-        <span class="kw">let </span><span class="kw-2">mut </span>sort_permute: Vec&lt;<span class="kw">_</span>&gt; = (<span class="number">0</span>..port_idents.len()).collect();
-        sort_permute.sort_by_key(|<span class="kw-2">&amp;</span>i| <span class="kw-2">&amp;</span>port_idents[i]);
-
-        <span class="kw">let </span>sorted_outputs = sort_permute.iter().map(|<span class="kw-2">&amp;</span>i| <span class="kw-2">&amp;</span>outputs[i]);
+                        <span class="prelude-val">Some</span>(port_ident)
+                    })
+                    .collect();
 
         <span class="comment">// The entire purpose of this closure and match statement is to generate readable error messages:
         // "missing match arm: `Variant(_)` not covered."
         // Or "no variant named `Variant` found for enum `Shape`"
         // Note this uses the `enum_type`'s span.
-        </span><span class="kw">let </span>root_span = change_spans(root.clone(), enum_type.span());
+        </span><span class="kw">let </span>enum_type_turbofish = ensure_turbofish(enum_type);
+        <span class="kw">let </span>port_variant_check_match_arms = port_idents
+            .iter()
+            .map(|port_ident| {
+                <span class="kw">let </span>enum_type_turbofish =
+                    change_spans(enum_type_turbofish.to_token_stream(), port_ident.span());
+                <span class="macro">quote_spanned!</span> {port_ident.span()=&gt;
+                    #enum_type_turbofish::#port_ident { .. } =&gt; ()
+                }
+            })
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="kw">let </span>root_span = change_spans(root.clone(), enum_type.span());
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned!</span> {enum_type.span()=&gt;
             <span class="kw">let _ </span>= |__val: #enum_type| {
                 <span class="kw">fn </span>check_impl_demux_enum&lt;T: <span class="question-mark">?</span>Sized + #root_span::util::demux_enum::DemuxEnumBase&gt;(<span class="kw">_</span>: <span class="kw-2">&amp;</span>T) {}
@@ -304,16 +322,42 @@
                 };
             };
         };
-        <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned!</span> {op_span=&gt;
-            <span class="kw">let </span>#ident = {
-                <span class="kw">let </span><span class="kw-2">mut </span>__outputs = ( #( #sorted_outputs, )* );
-                #root::pusherator::for_each::ForEach::new(<span class="kw">move </span>|__item: #enum_type| {
-                    #root::util::demux_enum::DemuxEnum::demux_enum(
-                        __item,
-                        <span class="kw-2">&amp;mut </span>__outputs,
-                    );
-                })
+
+        <span class="kw">let </span>write_iterator = <span class="kw">if </span><span class="number">1 </span>== outputs.len() {
+            <span class="comment">// Use `enum_type`'s span.
+            </span><span class="kw">let </span>map_fn = <span class="macro">quote_spanned!</span> {enum_type.span()=&gt;
+                &lt;#enum_type <span class="kw">as </span>#root::util::demux_enum::SingleVariant&gt;::single_variant
             };
+            <span class="kw">if </span>is_pull {
+                <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
+                <span class="macro">quote_spanned!</span> {op_span=&gt;
+                    <span class="kw">let </span>#ident = #input.map(#map_fn);
+                }
+            } <span class="kw">else </span>{
+                <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
+                <span class="macro">quote_spanned!</span> {op_span=&gt;
+                    <span class="kw">let </span>#ident = #root::pusherator::map::Map::new(#map_fn, #output);
+                }
+            }
+        } <span class="kw">else </span>{
+            <span class="macro">assert!</span>(!is_pull);
+
+            <span class="kw">let </span><span class="kw-2">mut </span>sort_permute: Vec&lt;<span class="kw">_</span>&gt; = (<span class="number">0</span>..port_idents.len()).collect();
+            sort_permute.sort_by_key(|<span class="kw-2">&amp;</span>i| <span class="kw-2">&amp;</span>port_idents[i]);
+
+            <span class="kw">let </span>sorted_outputs = sort_permute.iter().map(|<span class="kw-2">&amp;</span>i| <span class="kw-2">&amp;</span>outputs[i]);
+
+            <span class="macro">quote_spanned!</span> {op_span=&gt;
+                <span class="kw">let </span>#ident = {
+                    <span class="kw">let </span><span class="kw-2">mut </span>__outputs = ( #( #sorted_outputs, )* );
+                    #root::pusherator::for_each::ForEach::new(<span class="kw">move </span>|__item: #enum_type| {
+                        #root::util::demux_enum::DemuxEnum::demux_enum(
+                            __item,
+                            <span class="kw-2">&amp;mut </span>__outputs,
+                        );
+                    })
+                };
+            }
         };
 
         <span class="prelude-val">Ok</span>(OperatorWriteOutput {

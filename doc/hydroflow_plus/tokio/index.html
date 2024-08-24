@@ -9,8 +9,8 @@ intervals</a>.</li>
 <li>APIs for <a href="#asynchronous-io">performing asynchronous I/O</a>, including <a href="net/index.html" title="mod hydroflow_plus::tokio::net">TCP and UDP</a> sockets,
 <a href="fs/index.html" title="mod hydroflow_plus::tokio::fs">filesystem</a> operations, and <a href="process/index.html" title="mod hydroflow_plus::tokio::process">process</a> and <a href="signal/index.html" title="mod hydroflow_plus::tokio::signal">signal</a> management.</li>
 <li>A <a href="runtime/index.html" title="mod hydroflow_plus::tokio::runtime">runtime</a> for executing asynchronous code, including a task scheduler,
-an I/O driver backed by the operating system’s event queue (epoll, kqueue,
-IOCP, etc…), and a high performance timer.</li>
+an I/O driver backed by the operating system’s event queue (<code>epoll</code>, <code>kqueue</code>,
+<code>IOCP</code>, etc…), and a high performance timer.</li>
 </ul>
 <p>Guide level documentation is found on the <a href="https://tokio.rs/tokio/tutorial">website</a>.</p>
 <h2 id="a-tour-of-tokio"><a class="doc-anchor" href="#a-tour-of-tokio">§</a>A Tour of Tokio</h2>
@@ -203,11 +203,11 @@ the built in timer.</li>
 <li><code>signal</code>: Enables all <code>tokio::signal</code> types.</li>
 <li><code>fs</code>: Enables <code>tokio::fs</code> types.</li>
 <li><code>test-util</code>: Enables testing based infrastructure for the Tokio runtime.</li>
-<li><code>parking_lot</code>: As a potential optimization, use the <em>parking_lot</em> crate’s
+<li><code>parking_lot</code>: As a potential optimization, use the <code>_parking_lot_</code> crate’s
 synchronization primitives internally. Also, this
 dependency is necessary to construct some of our primitives
-in a const context. MSRV may increase according to the
-<em>parking_lot</em> release in use.</li>
+in a <code>const</code> context. <code>MSRV</code> may increase according to the
+<code>_parking_lot_</code> release in use.</li>
 </ul>
 <p><em>Note: <code>AsyncRead</code> and <code>AsyncWrite</code> traits do not require any features and are
 always available.</em></p>
@@ -220,7 +220,7 @@ always available.</em></p>
 <ul>
 <li>[<code>task::Builder</code>]</li>
 <li>Some methods on <a href="task/struct.JoinSet.html" title="struct hydroflow_plus::tokio::task::JoinSet"><code>task::JoinSet</code></a></li>
-<li>[<code>runtime::RuntimeMetrics</code>]</li>
+<li><a href="runtime/struct.RuntimeMetrics.html" title="struct hydroflow_plus::tokio::runtime::RuntimeMetrics"><code>runtime::RuntimeMetrics</code></a></li>
 <li>[<code>runtime::Builder::unhandled_panic</code>]</li>
 <li>[<code>task::Id</code>]</li>
 </ul>
@@ -259,8 +259,8 @@ documentation</a>. However, these additional platforms may
 become unsupported in the future.</p>
 <p>Note that Wine is considered to be a different platform from Windows. See
 mio’s documentation for more information on Wine support.</p>
-<h4 id="wasm-support"><a class="doc-anchor" href="#wasm-support">§</a>WASM support</h4>
-<p>Tokio has some limited support for the WASM platform. Without the
+<h4 id="wasm-support"><a class="doc-anchor" href="#wasm-support">§</a><code>WASM</code> support</h4>
+<p>Tokio has some limited support for the <code>WASM</code> platform. Without the
 <code>tokio_unstable</code> flag, the following features are supported:</p>
 <ul>
 <li><code>sync</code></li>
@@ -271,21 +271,21 @@ mio’s documentation for more information on Wine support.</p>
 </ul>
 <p>Enabling any other feature (including <code>full</code>) will cause a compilation
 failure.</p>
-<p>The <code>time</code> module will only work on WASM platforms that have support for
-timers (e.g. wasm32-wasi). The timing functions will panic if used on a WASM
+<p>The <code>time</code> module will only work on <code>WASM</code> platforms that have support for
+timers (e.g. wasm32-wasi). The timing functions will panic if used on a <code>WASM</code>
 platform that does not support timers.</p>
 <p>Note also that if the runtime becomes indefinitely idle, it will panic
 immediately instead of blocking forever. On platforms that don’t support
 time, this means that the runtime can never be idle in any way.</p>
-<h4 id="unstable-wasm-support"><a class="doc-anchor" href="#unstable-wasm-support">§</a>Unstable WASM support</h4>
-<p>Tokio also has unstable support for some additional WASM features. This
+<h4 id="unstable-wasm-support"><a class="doc-anchor" href="#unstable-wasm-support">§</a>Unstable <code>WASM</code> support</h4>
+<p>Tokio also has unstable support for some additional <code>WASM</code> features. This
 requires the use of the <code>tokio_unstable</code> flag.</p>
 <p>Using this flag enables the use of <code>tokio::net</code> on the wasm32-wasi target.
-However, not all methods are available on the networking types as WASI
-currently does not support the creation of new sockets from within WASM.
+However, not all methods are available on the networking types as <code>WASI</code>
+currently does not support the creation of new sockets from within <code>WASM</code>.
 Because of this, sockets must currently be created via the <code>FromRawFd</code>
 trait.</p>
-</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="fs/index.html" title="mod hydroflow_plus::tokio::fs">fs</a></div><div class="desc docblock-short">Asynchronous file and standard stream adaptation.</div></li><li><div class="item-name"><a class="mod" href="io/index.html" title="mod hydroflow_plus::tokio::io">io</a></div><div class="desc docblock-short">Traits, helpers, and type definitions for asynchronous I/O functionality.</div></li><li><div class="item-name"><a class="mod" href="net/index.html" title="mod hydroflow_plus::tokio::net">net</a></div><div class="desc docblock-short">TCP/UDP/Unix bindings for <code>tokio</code>.</div></li><li><div class="item-name"><a class="mod" href="process/index.html" title="mod hydroflow_plus::tokio::process">process</a></div><div class="desc docblock-short">An implementation of asynchronous process management for Tokio.</div></li><li><div class="item-name"><a class="mod" href="runtime/index.html" title="mod hydroflow_plus::tokio::runtime">runtime</a></div><div class="desc docblock-short">The Tokio runtime.</div></li><li><div class="item-name"><a class="mod" href="signal/index.html" title="mod hydroflow_plus::tokio::signal">signal</a></div><div class="desc docblock-short">Asynchronous signal handling for Tokio.</div></li><li><div class="item-name"><a class="mod" href="stream/index.html" title="mod hydroflow_plus::tokio::stream">stream</a></div><div class="desc docblock-short">Due to the <code>Stream</code> trait’s inclusion in <code>std</code> landing later than Tokio’s 1.0
+</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="fs/index.html" title="mod hydroflow_plus::tokio::fs">fs</a></div><div class="desc docblock-short">Asynchronous file utilities.</div></li><li><div class="item-name"><a class="mod" href="io/index.html" title="mod hydroflow_plus::tokio::io">io</a></div><div class="desc docblock-short">Traits, helpers, and type definitions for asynchronous I/O functionality.</div></li><li><div class="item-name"><a class="mod" href="net/index.html" title="mod hydroflow_plus::tokio::net">net</a></div><div class="desc docblock-short">TCP/UDP/Unix bindings for <code>tokio</code>.</div></li><li><div class="item-name"><a class="mod" href="process/index.html" title="mod hydroflow_plus::tokio::process">process</a></div><div class="desc docblock-short">An implementation of asynchronous process management for Tokio.</div></li><li><div class="item-name"><a class="mod" href="runtime/index.html" title="mod hydroflow_plus::tokio::runtime">runtime</a></div><div class="desc docblock-short">The Tokio runtime.</div></li><li><div class="item-name"><a class="mod" href="signal/index.html" title="mod hydroflow_plus::tokio::signal">signal</a></div><div class="desc docblock-short">Asynchronous signal handling for Tokio.</div></li><li><div class="item-name"><a class="mod" href="stream/index.html" title="mod hydroflow_plus::tokio::stream">stream</a></div><div class="desc docblock-short">Due to the <code>Stream</code> trait’s inclusion in <code>std</code> landing later than Tokio’s 1.0
 release, most of the Tokio stream utilities have been moved into the <a href="https://docs.rs/tokio-stream"><code>tokio-stream</code></a>
 crate.</div></li><li><div class="item-name"><a class="mod" href="sync/index.html" title="mod hydroflow_plus::tokio::sync">sync</a></div><div class="desc docblock-short">Synchronization primitives for use in asynchronous contexts.</div></li><li><div class="item-name"><a class="mod" href="task/index.html" title="mod hydroflow_plus::tokio::task">task</a></div><div class="desc docblock-short">Asynchronous green-threads.</div></li><li><div class="item-name"><a class="mod" href="time/index.html" title="mod hydroflow_plus::tokio::time">time</a></div><div class="desc docblock-short">Utilities for tracking time.</div></li></ul><h2 id="macros" class="section-header">Macros<a href="#macros" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="macro" href="macro.join.html" title="macro hydroflow_plus::tokio::join">join</a></div><div class="desc docblock-short">Waits on multiple concurrent branches, returning when <strong>all</strong> branches
 complete.</div></li><li><div class="item-name"><a class="macro" href="macro.pin.html" title="macro hydroflow_plus::tokio::pin">pin</a></div><div class="desc docblock-short">Pins a value on the stack.</div></li><li><div class="item-name"><a class="macro" href="macro.select.html" title="macro hydroflow_plus::tokio::select">select</a></div><div class="desc docblock-short">Waits on multiple concurrent branches, returning when the <strong>first</strong> branch

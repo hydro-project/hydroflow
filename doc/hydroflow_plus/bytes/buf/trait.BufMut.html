@@ -97,8 +97,9 @@ function that is documented to change the <code>BufMut</code>’s current positi
 </div></details><details class="toggle method-toggle" open><summary><section id="tymethod.advance_mut" class="method"><h4 class="code-header">unsafe fn <a href="#tymethod.advance_mut" class="fn">advance_mut</a>(&amp;mut self, cnt: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>)</h4></section></summary><div class="docblock"><p>Advance the internal cursor of the BufMut</p>
 <p>The next call to <code>chunk_mut</code> will return a slice starting <code>cnt</code> bytes
 further into the underlying buffer.</p>
-<p>This function is unsafe because there is no guarantee that the bytes
-being advanced past have been initialized.</p>
+<h5 id="safety"><a class="doc-anchor" href="#safety">§</a>Safety</h5>
+<p>The caller must ensure that the next <code>cnt</code> bytes of <code>chunk</code> are
+initialized.</p>
 <h5 id="examples-1"><a class="doc-anchor" href="#examples-1">§</a>Examples</h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>bytes::BufMut;
 
@@ -150,7 +151,7 @@ functions.</p>
 <span class="macro">assert_eq!</span>(<span class="number">5</span>, buf.len());
 <span class="macro">assert_eq!</span>(buf, <span class="string">b"hello"</span>);</code></pre></div>
 <h5 id="implementer-notes-2"><a class="doc-anchor" href="#implementer-notes-2">§</a>Implementer notes</h5>
-<p>This function should never panic. <code>chunk_mut</code> should return an empty
+<p>This function should never panic. <code>chunk_mut()</code> should return an empty
 slice <strong>if and only if</strong> <code>remaining_mut()</code> returns 0. In other words,
 <code>chunk_mut()</code> returning an empty slice implies that <code>remaining_mut()</code> will
 return 0 and <code>remaining_mut()</code> returning 0 implies that <code>chunk_mut()</code> will
@@ -549,7 +550,7 @@ buf.put_uint(<span class="number">0x010203</span>, <span class="number">3</span>
 <span class="macro">assert_eq!</span>(buf, <span class="string">b"\x01\x02\x03"</span>);</code></pre></div>
 <h5 id="panics-29"><a class="doc-anchor" href="#panics-29">§</a>Panics</h5>
 <p>This function panics if there is not enough remaining capacity in
-<code>self</code>.</p>
+<code>self</code> or if <code>nbytes</code> is greater than 8.</p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.put_uint_le" class="method"><h4 class="code-header">fn <a href="#method.put_uint_le" class="fn">put_uint_le</a>(&amp;mut self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u64.html">u64</a>, nbytes: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>)</h4></section></summary><div class="docblock"><p>Writes an unsigned n-byte integer to <code>self</code> in the little-endian byte order.</p>
 <p>The current position is advanced by <code>nbytes</code>.</p>
 <h5 id="examples-32"><a class="doc-anchor" href="#examples-32">§</a>Examples</h5>
@@ -560,7 +561,7 @@ buf.put_uint_le(<span class="number">0x010203</span>, <span class="number">3</sp
 <span class="macro">assert_eq!</span>(buf, <span class="string">b"\x03\x02\x01"</span>);</code></pre></div>
 <h5 id="panics-30"><a class="doc-anchor" href="#panics-30">§</a>Panics</h5>
 <p>This function panics if there is not enough remaining capacity in
-<code>self</code>.</p>
+<code>self</code> or if <code>nbytes</code> is greater than 8.</p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.put_uint_ne" class="method"><h4 class="code-header">fn <a href="#method.put_uint_ne" class="fn">put_uint_ne</a>(&amp;mut self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u64.html">u64</a>, nbytes: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>)</h4></section></summary><div class="docblock"><p>Writes an unsigned n-byte integer to <code>self</code> in the native-endian byte order.</p>
 <p>The current position is advanced by <code>nbytes</code>.</p>
 <h5 id="examples-33"><a class="doc-anchor" href="#examples-33">§</a>Examples</h5>
@@ -575,7 +576,7 @@ buf.put_uint_ne(<span class="number">0x010203</span>, <span class="number">3</sp
 }</code></pre></div>
 <h5 id="panics-31"><a class="doc-anchor" href="#panics-31">§</a>Panics</h5>
 <p>This function panics if there is not enough remaining capacity in
-<code>self</code>.</p>
+<code>self</code> or if <code>nbytes</code> is greater than 8.</p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.put_int" class="method"><h4 class="code-header">fn <a href="#method.put_int" class="fn">put_int</a>(&amp;mut self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a>, nbytes: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>)</h4></section></summary><div class="docblock"><p>Writes low <code>nbytes</code> of a signed integer to <code>self</code> in big-endian byte order.</p>
 <p>The current position is advanced by <code>nbytes</code>.</p>
 <h5 id="examples-34"><a class="doc-anchor" href="#examples-34">§</a>Examples</h5>

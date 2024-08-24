@@ -261,7 +261,7 @@
             };
 
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="string">"macro_tokens"</span>}, {
-                <span class="macro">insta::assert_display_snapshot!</span>(
+                <span class="macro">insta::assert_snapshot!</span>(
                     prettyplease::unparse(<span class="kw-2">&amp;</span>wrapped)
                 );
             });
