@@ -306,7 +306,7 @@ expression: built.ir()
                         Map {
                             f: { use crate :: __staged :: cluster :: paxos :: * ; | batch_size : usize | (batch_size , false) },
                             input: Map {
-                                f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                 input: CrossSingleton(
                                     Fold {
                                         init: { use hydroflow_plus :: __staged :: stream :: * ; | | 0usize },
@@ -349,9 +349,9 @@ expression: built.ir()
                                         },
                                     },
                                     Map {
-                                        f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                        f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                         input: Filter {
-                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | c | * c == 0 },
+                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | c | * c == 0 },
                                             input: Fold {
                                                 init: { use hydroflow_plus :: __staged :: stream :: * ; | | 0usize },
                                                 acc: { use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 },
@@ -521,7 +521,7 @@ expression: built.ir()
                 value: Filter {
                     f: { use crate :: __staged :: cluster :: paxos :: * ; let i_am_leader_check_timeout = 1u64 ; move | (_ , latest_received_i_am_leader) : & (_ , Option < Instant >) | { if let Some (latest_received_i_am_leader) = latest_received_i_am_leader { (Instant :: now () . duration_since (* latest_received_i_am_leader)) > Duration :: from_secs (i_am_leader_check_timeout) } else { true } } },
                     input: Map {
-                        f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                        f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                         input: CrossSingleton(
                             CrossSingleton(
                                 Source {
@@ -556,9 +556,9 @@ expression: built.ir()
                                 },
                             ),
                             Map {
-                                f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                 input: Filter {
-                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | c | * c == 0 },
+                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | c | * c == 0 },
                                     input: Fold {
                                         init: { use hydroflow_plus :: __staged :: stream :: * ; | | 0usize },
                                         acc: { use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 },
@@ -685,7 +685,7 @@ expression: built.ir()
             0,
         ),
         input: Map {
-            f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+            f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
             input: CrossSingleton(
                 FilterMap {
                     f: { use crate :: __staged :: cluster :: paxos :: * ; let f = 1usize ; move | num_received : usize | if num_received > f { Some (true) } else { None } },
@@ -735,7 +735,7 @@ expression: built.ir()
                     },
                 },
                 Map {
-                    f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                     input: Tee {
                         inner: RefCell {
                             value: Filter {
@@ -829,14 +829,14 @@ expression: built.ir()
                 Tee {
                     inner: RefCell {
                         value: Map {
-                            f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                             input: CrossSingleton(
                                 Union(
                                     Union(
                                         Map {
                                             f: { use crate :: __staged :: cluster :: paxos :: * ; | max_slot : i32 | max_slot + 1 },
                                             input: Map {
-                                                f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                 input: CrossSingleton(
                                                     Tee {
                                                         inner: RefCell {
@@ -893,9 +893,9 @@ expression: built.ir()
                                                         },
                                                     },
                                                     Map {
-                                                        f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                        f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                         input: Filter {
-                                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | c | * c == 0 },
+                                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | c | * c == 0 },
                                                             input: Fold {
                                                                 init: { use hydroflow_plus :: __staged :: stream :: * ; | | 0usize },
                                                                 acc: { use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 },
@@ -923,7 +923,7 @@ expression: built.ir()
                                                 Tee {
                                                     inner: RefCell {
                                                         value: Map {
-                                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                             input: CrossSingleton(
                                                                 Tee {
                                                                     inner: RefCell {
@@ -1064,7 +1064,7 @@ expression: built.ir()
                                                                     },
                                                                 },
                                                                 Map {
-                                                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                                     input: Tee {
                                                                         inner: RefCell {
                                                                             value: Filter {
@@ -1231,7 +1231,7 @@ expression: built.ir()
                                         },
                                     ),
                                     Map {
-                                        f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                        f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                         input: CrossSingleton(
                                             Tee {
                                                 inner: RefCell {
@@ -1246,9 +1246,9 @@ expression: built.ir()
                                                 },
                                             },
                                             Map {
-                                                f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                 input: Filter {
-                                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | c | * c == 0 },
+                                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | c | * c == 0 },
                                                     input: Fold {
                                                         init: { use hydroflow_plus :: __staged :: stream :: * ; | | 0usize },
                                                         acc: { use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 },
@@ -1404,7 +1404,7 @@ expression: built.ir()
                                     },
                                 ),
                                 Map {
-                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                     input: Tee {
                                         inner: RefCell {
                                             value: CycleSource {
@@ -1425,7 +1425,7 @@ expression: built.ir()
                 Map {
                     f: { use crate :: __staged :: cluster :: paxos :: * ; | _ : bool | 0 },
                     input: Map {
-                        f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                        f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                         input: CrossSingleton(
                             Tee {
                                 inner: RefCell {
@@ -1440,23 +1440,23 @@ expression: built.ir()
                                 },
                             },
                             Map {
-                                f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                 input: Filter {
-                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | c | * c == 0 },
+                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | c | * c == 0 },
                                     input: Fold {
                                         init: { use hydroflow_plus :: __staged :: stream :: * ; | | 0usize },
                                         acc: { use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 },
                                         input: Tee {
                                             inner: RefCell {
                                                 value: Map {
-                                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                     input: CrossSingleton(
                                                         Union(
                                                             Union(
                                                                 Map {
                                                                     f: { use crate :: __staged :: cluster :: paxos :: * ; | max_slot : i32 | max_slot + 1 },
                                                                     input: Map {
-                                                                        f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                                        f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                                         input: CrossSingleton(
                                                                             Tee {
                                                                                 inner: RefCell {
@@ -1513,9 +1513,9 @@ expression: built.ir()
                                                                                 },
                                                                             },
                                                                             Map {
-                                                                                f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                                                f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                                                 input: Filter {
-                                                                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | c | * c == 0 },
+                                                                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | c | * c == 0 },
                                                                                     input: Fold {
                                                                                         init: { use hydroflow_plus :: __staged :: stream :: * ; | | 0usize },
                                                                                         acc: { use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 },
@@ -1543,7 +1543,7 @@ expression: built.ir()
                                                                         Tee {
                                                                             inner: RefCell {
                                                                                 value: Map {
-                                                                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                                                     input: CrossSingleton(
                                                                                         Tee {
                                                                                             inner: RefCell {
@@ -1684,7 +1684,7 @@ expression: built.ir()
                                                                                             },
                                                                                         },
                                                                                         Map {
-                                                                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                                                             input: Tee {
                                                                                                 inner: RefCell {
                                                                                                     value: Filter {
@@ -1851,7 +1851,7 @@ expression: built.ir()
                                                                 },
                                                             ),
                                                             Map {
-                                                                f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                                f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                                 input: CrossSingleton(
                                                                     Tee {
                                                                         inner: RefCell {
@@ -1866,9 +1866,9 @@ expression: built.ir()
                                                                         },
                                                                     },
                                                                     Map {
-                                                                        f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                                        f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                                         input: Filter {
-                                                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | c | * c == 0 },
+                                                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | c | * c == 0 },
                                                                             input: Fold {
                                                                                 init: { use hydroflow_plus :: __staged :: stream :: * ; | | 0usize },
                                                                                 acc: { use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 },
@@ -2024,7 +2024,7 @@ expression: built.ir()
                                                             },
                                                         ),
                                                         Map {
-                                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                             input: Tee {
                                                                 inner: RefCell {
                                                                     value: CycleSource {
@@ -2094,7 +2094,7 @@ expression: built.ir()
                         f: { use crate :: __staged :: cluster :: paxos :: * ; let p_id = __hydroflow_plus_cluster_self_id_0 ; move | (_is_leader , ballot_num) : (bool , u32) | Ballot { num : ballot_num , id : p_id } },
                         input: CrossSingleton(
                             Map {
-                                f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                 input: CrossSingleton(
                                     Tee {
                                         inner: RefCell {
@@ -2109,9 +2109,9 @@ expression: built.ir()
                                         },
                                     },
                                     Map {
-                                        f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                        f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                         input: Filter {
-                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | c | * c == 0 },
+                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | c | * c == 0 },
                                             input: Fold {
                                                 init: { use hydroflow_plus :: __staged :: stream :: * ; | | 0usize },
                                                 acc: { use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 },
@@ -2391,7 +2391,7 @@ expression: built.ir()
                             input: Map {
                                 f: { use crate :: __staged :: cluster :: paxos :: * ; let p_id = __hydroflow_plus_cluster_self_id_0 ; move | ballot_num : u32 | P1a { ballot : Ballot { num : ballot_num , id : p_id } } },
                                 input: Map {
-                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                     input: CrossSingleton(
                                         Tee {
                                             inner: RefCell {
@@ -2406,13 +2406,13 @@ expression: built.ir()
                                             },
                                         },
                                         Map {
-                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                             input: Tee {
                                                 inner: RefCell {
                                                     value: Filter {
                                                         f: { use crate :: __staged :: cluster :: paxos :: * ; let i_am_leader_check_timeout = 1u64 ; move | (_ , latest_received_i_am_leader) : & (_ , Option < Instant >) | { if let Some (latest_received_i_am_leader) = latest_received_i_am_leader { (Instant :: now () . duration_since (* latest_received_i_am_leader)) > Duration :: from_secs (i_am_leader_check_timeout) } else { true } } },
                                                         input: Map {
-                                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                             input: CrossSingleton(
                                                                 CrossSingleton(
                                                                     Source {
@@ -2447,9 +2447,9 @@ expression: built.ir()
                                                                     },
                                                                 ),
                                                                 Map {
-                                                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                                     input: Filter {
-                                                                        f: { use hydroflow_plus :: __staged :: stream :: * ; | c | * c == 0 },
+                                                                        f: { use hydroflow_plus :: __staged :: singleton :: * ; | c | * c == 0 },
                                                                         input: Fold {
                                                                             init: { use hydroflow_plus :: __staged :: stream :: * ; | | 0usize },
                                                                             acc: { use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 },
@@ -2559,7 +2559,7 @@ expression: built.ir()
                                             input: Map {
                                                 f: { use crate :: __staged :: cluster :: paxos :: * ; let p_id = __hydroflow_plus_cluster_self_id_0 ; move | ballot_num : u32 | P1a { ballot : Ballot { num : ballot_num , id : p_id } } },
                                                 input: Map {
-                                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                     input: CrossSingleton(
                                                         Tee {
                                                             inner: RefCell {
@@ -2574,13 +2574,13 @@ expression: built.ir()
                                                             },
                                                         },
                                                         Map {
-                                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                             input: Tee {
                                                                 inner: RefCell {
                                                                     value: Filter {
                                                                         f: { use crate :: __staged :: cluster :: paxos :: * ; let i_am_leader_check_timeout = 1u64 ; move | (_ , latest_received_i_am_leader) : & (_ , Option < Instant >) | { if let Some (latest_received_i_am_leader) = latest_received_i_am_leader { (Instant :: now () . duration_since (* latest_received_i_am_leader)) > Duration :: from_secs (i_am_leader_check_timeout) } else { true } } },
                                                                         input: Map {
-                                                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                                             input: CrossSingleton(
                                                                                 CrossSingleton(
                                                                                     Source {
@@ -2615,9 +2615,9 @@ expression: built.ir()
                                                                                     },
                                                                                 ),
                                                                                 Map {
-                                                                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                                                     input: Filter {
-                                                                                        f: { use hydroflow_plus :: __staged :: stream :: * ; | c | * c == 0 },
+                                                                                        f: { use hydroflow_plus :: __staged :: singleton :: * ; | c | * c == 0 },
                                                                                         input: Fold {
                                                                                             init: { use hydroflow_plus :: __staged :: stream :: * ; | | 0usize },
                                                                                             acc: { use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 },
@@ -2693,7 +2693,7 @@ expression: built.ir()
                                                             input: Map {
                                                                 f: { use crate :: __staged :: cluster :: paxos :: * ; let p_id = __hydroflow_plus_cluster_self_id_0 ; move | ballot_num : u32 | P1a { ballot : Ballot { num : ballot_num , id : p_id } } },
                                                                 input: Map {
-                                                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                                     input: CrossSingleton(
                                                                         Tee {
                                                                             inner: RefCell {
@@ -2708,13 +2708,13 @@ expression: built.ir()
                                                                             },
                                                                         },
                                                                         Map {
-                                                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                                             input: Tee {
                                                                                 inner: RefCell {
                                                                                     value: Filter {
                                                                                         f: { use crate :: __staged :: cluster :: paxos :: * ; let i_am_leader_check_timeout = 1u64 ; move | (_ , latest_received_i_am_leader) : & (_ , Option < Instant >) | { if let Some (latest_received_i_am_leader) = latest_received_i_am_leader { (Instant :: now () . duration_since (* latest_received_i_am_leader)) > Duration :: from_secs (i_am_leader_check_timeout) } else { true } } },
                                                                                         input: Map {
-                                                                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                                                             input: CrossSingleton(
                                                                                                 CrossSingleton(
                                                                                                     Source {
@@ -2749,9 +2749,9 @@ expression: built.ir()
                                                                                                     },
                                                                                                 ),
                                                                                                 Map {
-                                                                                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                                                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                                                                     input: Filter {
-                                                                                                        f: { use hydroflow_plus :: __staged :: stream :: * ; | c | * c == 0 },
+                                                                                                        f: { use hydroflow_plus :: __staged :: singleton :: * ; | c | * c == 0 },
                                                                                                         input: Fold {
                                                                                                             init: { use hydroflow_plus :: __staged :: stream :: * ; | | 0usize },
                                                                                                             acc: { use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 },
@@ -3281,7 +3281,7 @@ expression: built.ir()
                                                                             input: Map {
                                                                                 f: { use crate :: __staged :: cluster :: paxos :: * ; let p_id = __hydroflow_plus_cluster_self_id_0 ; move | ballot_num : u32 | P1a { ballot : Ballot { num : ballot_num , id : p_id } } },
                                                                                 input: Map {
-                                                                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                                                     input: CrossSingleton(
                                                                                         Tee {
                                                                                             inner: RefCell {
@@ -3296,13 +3296,13 @@ expression: built.ir()
                                                                                             },
                                                                                         },
                                                                                         Map {
-                                                                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                                                             input: Tee {
                                                                                                 inner: RefCell {
                                                                                                     value: Filter {
                                                                                                         f: { use crate :: __staged :: cluster :: paxos :: * ; let i_am_leader_check_timeout = 1u64 ; move | (_ , latest_received_i_am_leader) : & (_ , Option < Instant >) | { if let Some (latest_received_i_am_leader) = latest_received_i_am_leader { (Instant :: now () . duration_since (* latest_received_i_am_leader)) > Duration :: from_secs (i_am_leader_check_timeout) } else { true } } },
                                                                                                         input: Map {
-                                                                                                            f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                                                                            f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                                                                             input: CrossSingleton(
                                                                                                                 CrossSingleton(
                                                                                                                     Source {
@@ -3337,9 +3337,9 @@ expression: built.ir()
                                                                                                                     },
                                                                                                                 ),
                                                                                                                 Map {
-                                                                                                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                                                                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                                                                                     input: Filter {
-                                                                                                                        f: { use hydroflow_plus :: __staged :: stream :: * ; | c | * c == 0 },
+                                                                                                                        f: { use hydroflow_plus :: __staged :: singleton :: * ; | c | * c == 0 },
                                                                                                                         input: Fold {
                                                                                                                             init: { use hydroflow_plus :: __staged :: stream :: * ; | | 0usize },
                                                                                                                             acc: { use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 },
@@ -3965,7 +3965,7 @@ expression: built.ir()
                                                         input: Map {
                                                             f: { use crate :: __staged :: cluster :: paxos :: * ; let p_id = __hydroflow_plus_cluster_self_id_0 ; move | ballot_num : u32 | P1a { ballot : Ballot { num : ballot_num , id : p_id } } },
                                                             input: Map {
-                                                                f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                                f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                                 input: CrossSingleton(
                                                                     Tee {
                                                                         inner: RefCell {
@@ -3980,13 +3980,13 @@ expression: built.ir()
                                                                         },
                                                                     },
                                                                     Map {
-                                                                        f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                                        f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                                         input: Tee {
                                                                             inner: RefCell {
                                                                                 value: Filter {
                                                                                     f: { use crate :: __staged :: cluster :: paxos :: * ; let i_am_leader_check_timeout = 1u64 ; move | (_ , latest_received_i_am_leader) : & (_ , Option < Instant >) | { if let Some (latest_received_i_am_leader) = latest_received_i_am_leader { (Instant :: now () . duration_since (* latest_received_i_am_leader)) > Duration :: from_secs (i_am_leader_check_timeout) } else { true } } },
                                                                                     input: Map {
-                                                                                        f: { use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d },
+                                                                                        f: { use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d },
                                                                                         input: CrossSingleton(
                                                                                             CrossSingleton(
                                                                                                 Source {
@@ -4021,9 +4021,9 @@ expression: built.ir()
                                                                                                 },
                                                                                             ),
                                                                                             Map {
-                                                                                                f: { use hydroflow_plus :: __staged :: stream :: * ; | _u | () },
+                                                                                                f: { use hydroflow_plus :: __staged :: singleton :: * ; | _u | () },
                                                                                                 input: Filter {
-                                                                                                    f: { use hydroflow_plus :: __staged :: stream :: * ; | c | * c == 0 },
+                                                                                                    f: { use hydroflow_plus :: __staged :: singleton :: * ; | c | * c == 0 },
                                                                                                     input: Fold {
                                                                                                         init: { use hydroflow_plus :: __staged :: stream :: * ; | | 0usize },
                                                                                                         acc: { use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 },
