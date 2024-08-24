@@ -23,15 +23,18 @@ pub fn compute_pi(flow: &FlowBuilder, batch_size: usize) -> (Cluster<Worker>, Pr
 
                 *total += 1;
             }),
-        );
+        )
+        .all_ticks();
 
     trials
         .send_bincode_interleaved(&process)
-        .all_ticks()
+        .tick_batch()
+        .persist()
         .reduce(q!(|(inside, total), (inside_batch, total_batch)| {
             *inside += inside_batch;
             *total += total_batch;
         }))
+        .all_ticks()
         .sample_every(q!(Duration::from_secs(1)))
         .for_each(q!(|(inside, total)| {
             println!(

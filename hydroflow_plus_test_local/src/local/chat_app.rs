@@ -14,10 +14,13 @@ pub fn chat_app<'a>(
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process::<()>();
 
-    let users = flow.source_stream(&process, users_stream).all_ticks();
+    let users = flow
+        .source_stream(&process, users_stream)
+        .tick_batch()
+        .persist();
     let messages = flow.source_stream(&process, messages);
     let messages = if replay_messages {
-        messages.all_ticks()
+        messages.tick_batch().persist()
     } else {
         messages.tick_batch()
     };
@@ -30,7 +33,7 @@ pub fn chat_app<'a>(
         joined = joined.delta();
     }
 
-    joined.for_each(q!(|t| {
+    joined.all_ticks().for_each(q!(|t| {
         output.send(t).unwrap();
     }));
 
