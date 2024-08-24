@@ -17,7 +17,7 @@ use syn::parse_quote;
 use crate::builder::{ClusterIds, FlowLeaves};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{CanSend, Location, LocationId};
-use crate::Cluster;
+use crate::{Cluster, Optional, Singleton};
 
 /// Marks the stream as being unbounded, which means that it is not
 /// guaranteed to be complete in finite time.
@@ -31,6 +31,12 @@ pub struct Bounded {}
 pub struct NoTick {}
 /// Marks the stream as being inside the single global clock domain.
 pub struct Tick {}
+
+pub trait CycleCollection<'a, L, C> {
+    fn create_source(ident: syn::Ident, ir_leaves: FlowLeaves<'a>, l: &L) -> Self;
+
+    fn complete(self, ident: syn::Ident);
+}
 
 /// An infinite stream of elements of type `T`.
 ///
@@ -50,6 +56,48 @@ pub struct Stream<'a, T, W, C, N: Location> {
     pub(crate) ir_node: RefCell<HfPlusNode<'a>>,
 
     _phantom: PhantomData<(&'a mut &'a (), T, N, W, C)>,
+}
+
+impl<'a, T, W, N: Location> CycleCollection<'a, N, Tick> for Stream<'a, T, W, Tick, N> {
+    fn create_source(ident: syn::Ident, ir_leaves: FlowLeaves<'a>, l: &N) -> Self {
+        Stream::new(
+            l.id(),
+            ir_leaves,
+            HfPlusNode::CycleSource {
+                ident,
+                location_kind: l.id(),
+            },
+        )
+    }
+
+    fn complete(self, ident: syn::Ident) {
+        self.ir_leaves.borrow_mut().as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
+            ident,
+            location_kind: self.location_kind,
+            input: Box::new(self.ir_node.into_inner()),
+        });
+    }
+}
+
+impl<'a, T, W, N: Location> CycleCollection<'a, N, NoTick> for Stream<'a, T, W, NoTick, N> {
+    fn create_source(ident: syn::Ident, ir_leaves: FlowLeaves<'a>, l: &N) -> Self {
+        Stream::new(
+            l.id(),
+            ir_leaves,
+            HfPlusNode::Persist(Box::new(HfPlusNode::CycleSource {
+                ident,
+                location_kind: l.id(),
+            })),
+        )
+    }
+
+    fn complete(self, ident: syn::Ident) {
+        self.ir_leaves.borrow_mut().as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
+            ident,
+            location_kind: self.location_kind,
+            input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
+        });
+    }
 }
 
 impl<'a, T, W, C, N: Location> Stream<'a, T, W, C, N> {
@@ -151,11 +199,12 @@ impl<'a, T, W, C, N: Location> Stream<'a, T, W, C, N> {
 
     pub fn cross_singleton<O>(
         self,
-        other: Stream<'a, O, Bounded, C, N>,
+        other: impl Into<Optional<'a, O, Bounded, C, N>>,
     ) -> Stream<'a, (T, O), W, C, N>
     where
         O: Clone,
     {
+        let other: Optional<'a, O, Bounded, C, N> = other.into();
         if self.location_kind != other.location_kind {
             panic!("cross_singleton must be called on streams on the same node");
         }
@@ -168,12 +217,6 @@ impl<'a, T, W, C, N: Location> Stream<'a, T, W, C, N> {
                 Box::new(other.ir_node.into_inner()),
             ),
         )
-    }
-
-    /// Allow this stream through if the other stream has elements, otherwise the output is empty.
-    pub fn continue_if<U>(self, signal: Stream<'a, U, Bounded, C, N>) -> Stream<'a, T, W, C, N> {
-        self.cross_singleton(signal.map(q!(|_u| ())))
-            .map(q!(|(d, _signal)| d))
     }
 
     // TODO(shadaj): should allow for differing windows, using strongest one
@@ -258,12 +301,29 @@ impl<'a, T, N: Location> Stream<'a, T, Bounded, Tick, N> {
         )
     }
 
+    pub fn first(self) -> Optional<'a, T, Bounded, Tick, N> {
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            self.ir_node.into_inner(),
+        )
+    }
+
+    /// Allow this stream through if the other stream has elements, otherwise the output is empty.
+    pub fn continue_if<U>(
+        self,
+        signal: Optional<'a, U, Bounded, Tick, N>,
+    ) -> Stream<'a, T, Bounded, Tick, N> {
+        self.cross_singleton(signal.map(q!(|_u| ())))
+            .map(q!(|(d, _signal)| d))
+    }
+
     /// Allow this stream through if the other stream is empty, otherwise the output is empty.
     pub fn continue_unless<U>(
         self,
-        other: Stream<'a, U, Bounded, Tick, N>,
+        other: Optional<'a, U, Bounded, Tick, N>,
     ) -> Stream<'a, T, Bounded, Tick, N> {
-        self.continue_if(other.count().filter(q!(|c| *c == 0)))
+        self.continue_if(other.as_stream().count().filter(q!(|c| *c == 0)))
     }
 
     pub fn enumerate(self) -> Stream<'a, (usize, T), Bounded, Tick, N> {
@@ -278,8 +338,8 @@ impl<'a, T, N: Location> Stream<'a, T, Bounded, Tick, N> {
         self,
         init: impl IntoQuotedMut<'a, I>,
         comb: impl IntoQuotedMut<'a, F>,
-    ) -> Stream<'a, A, Bounded, Tick, N> {
-        Stream::new(
+    ) -> Singleton<'a, A, Bounded, Tick, N> {
+        Singleton::new(
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Fold {
@@ -293,8 +353,8 @@ impl<'a, T, N: Location> Stream<'a, T, Bounded, Tick, N> {
     pub fn reduce<F: Fn(&mut T, T) + 'a>(
         self,
         comb: impl IntoQuotedMut<'a, F>,
-    ) -> Stream<'a, T, Bounded, Tick, N> {
-        Stream::new(
+    ) -> Optional<'a, T, Bounded, Tick, N> {
+        Optional::new(
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Reduce {
@@ -315,7 +375,7 @@ impl<'a, T, N: Location> Stream<'a, T, Bounded, Tick, N> {
         )
     }
 
-    pub fn count(self) -> Stream<'a, usize, Bounded, Tick, N> {
+    pub fn count(self) -> Singleton<'a, usize, Bounded, Tick, N> {
         self.fold(q!(|| 0usize), q!(|count, _| *count += 1))
     }
 
@@ -379,7 +439,7 @@ impl<'a, T, N: Location> Stream<'a, T, Unbounded, NoTick, N> {
     ) -> Stream<'a, T, Unbounded, NoTick, N> {
         let interval = duration.splice();
 
-        let samples = Stream::<'a, hydroflow::tokio::time::Instant, Bounded, Tick, N>::new(
+        let samples = Optional::<'a, hydroflow::tokio::time::Instant, Bounded, Tick, N>::new(
             self.location_kind,
             self.ir_leaves.clone(),
             HfPlusNode::Source {
