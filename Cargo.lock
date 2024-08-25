@@ -322,7 +322,6 @@ dependencies = [
  "criterion",
  "differential-dataflow-master",
  "hydroflow",
- "lazy_static",
  "rand",
  "rand_distr",
  "seq-macro",
@@ -2897,7 +2896,6 @@ name = "stageleft_macro"
 version = "0.2.0"
 dependencies = [
  "insta",
- "lazy_static",
  "prettyplease",
  "proc-macro-crate",
  "proc-macro2",
