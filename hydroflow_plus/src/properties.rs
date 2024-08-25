@@ -102,7 +102,9 @@ mod tests {
 
         flow.source_iter(&process, q!(vec![]))
             .map(q!(|string: String| (string, ())))
+            .tick_batch()
             .fold_keyed(q!(|| 0), counter_func)
+            .all_ticks()
             .for_each(q!(|(string, count)| println!("{}: {}", string, count)));
 
         let built = flow
