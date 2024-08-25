@@ -16,7 +16,6 @@ quote = "1.0.35"
 syn = { version = "2.0.46", features = [ "parsing", "extra-traits", "visit" ] }
 proc-macro2 = "1.0.74"
 proc-macro-crate = "1.0.0"
-lazy_static = "1.4.0"
 sha256 = "1.0.0"
 
 [dev-dependencies]
