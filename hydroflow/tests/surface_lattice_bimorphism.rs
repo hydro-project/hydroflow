@@ -11,10 +11,10 @@ pub fn test_cartesian_product() {
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
     let mut df = hydroflow_syntax! {
-        lhs = source_iter_delta(0..3)
+        lhs = source_iter(0..3)
             -> map(SetUnionSingletonSet::new_from)
             -> state::<'static, SetUnionHashSet<u32>>();
-        rhs = source_iter_delta(3..5)
+        rhs = source_iter(3..5)
             -> map(SetUnionSingletonSet::new_from)
             -> state::<'static, SetUnionHashSet<u32>>();
 
@@ -47,10 +47,10 @@ pub fn test_join() {
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
     let mut df = hydroflow_syntax! {
-        lhs = source_iter_delta([(7, 1), (7, 2)])
+        lhs = source_iter([(7, 1), (7, 2)])
             -> map(|(k, v)| MapUnionSingletonMap::new_from((k, SetUnionSingletonSet::new_from(v))))
             -> state::<'static, MapUnionHashMap<usize, SetUnionHashSet<usize>>>();
-        rhs = source_iter_delta([(7, 0), (7, 1), (7, 2)])
+        rhs = source_iter([(7, 0), (7, 1), (7, 2)])
             -> map(|(k, v)| MapUnionSingletonMap::new_from((k, SetUnionSingletonSet::new_from(v))))
             -> state::<'static, MapUnionHashMap<usize, SetUnionHashSet<usize>>>();
 

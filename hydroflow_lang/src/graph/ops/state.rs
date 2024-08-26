@@ -2,7 +2,7 @@ use quote::{quote_spanned, ToTokens};
 
 use super::{
     OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
-    Persistence, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_1,
+    Persistence, WriteContextArgs, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
 
@@ -17,7 +17,7 @@ use crate::diagnostic::{Diagnostic, Level};
 ///
 /// use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
 ///
-/// my_state = source_iter_delta(0..3)
+/// my_state = source_iter(0..3)
 ///     -> map(SetUnionSingletonSet::new_from)
 ///     -> state::<SetUnionHashSet<usize>>();
 /// ```
@@ -36,7 +36,6 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    flow_prop_fn: Some(LATTICE_FOLD_REDUCE_FLOW_PROP_FN),
     write_fn: |&WriteContextArgs {
                    root,
                    context,

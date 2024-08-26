@@ -81,6 +81,7 @@ pub fn test_cartesian_product_multi_tick_tee() {
             -> map(SetUnionSingletonSet::new_from)
             -> state::<'static, SetUnionHashSet<u32>>();
         rhs_tee = rhs -> tee();
+        rhs_tee -> for_each(|x| println!("tee: {:?}", x));
 
         lhs -> [0]my_join;
         rhs_tee -> [1]my_join;

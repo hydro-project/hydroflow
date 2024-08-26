@@ -17,9 +17,9 @@ use super::ops::{
     WriteContextArgs, OPERATORS,
 };
 use super::{
-    change_spans, get_operator_generics, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphNode,
-    GraphNodeId, GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT,
-    HANDOFF_NODE_STR, HYDROFLOW, MODULE_BOUNDARY_NODE_STR,
+    change_spans, get_operator_generics, Color, DiMulGraph, GraphEdgeId, GraphNode, GraphNodeId,
+    GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
+    HYDROFLOW, MODULE_BOUNDARY_NODE_STR,
 };
 use crate::diagnostic::{Diagnostic, Level};
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
@@ -58,10 +58,6 @@ pub struct HydroflowGraph {
     node_singleton_references: SparseSecondaryMap<GraphNodeId, Vec<Option<GraphNodeId>>>,
     /// What variable name each graph node belongs to (if any). For debugging (graph writing) purposes only.
     node_varnames: SparseSecondaryMap<GraphNodeId, Varname>,
-
-    // TODO(mingwei): #[serde(skip)] this and recompute as needed, to reduce codegen.
-    /// Stream properties.
-    flow_props: SecondaryMap<GraphEdgeId, FlowProps>,
 
     /// If this subgraph is 'lazy' then when it sends data to a lower stratum it does not cause a new tick to start
     /// This is to support lazy defers
@@ -707,25 +703,6 @@ impl HydroflowGraph {
     }
 }
 
-/// Flow properties
-impl HydroflowGraph {
-    /// Gets the flow properties associated with the edge, if set.
-    pub fn edge_flow_props(&self, edge_id: GraphEdgeId) -> Option<FlowProps> {
-        self.flow_props.get(edge_id).copied()
-    }
-
-    /// Sets the flow properties associated with the given edge.
-    ///
-    /// Returns the old flow properties, if set.
-    pub fn set_edge_flow_props(
-        &mut self,
-        edge_id: GraphEdgeId,
-        flow_props: FlowProps,
-    ) -> Option<FlowProps> {
-        self.flow_props.insert(edge_id, flow_props)
-    }
-}
-
 /// Display/output methods.
 impl HydroflowGraph {
     /// Helper to generate a deterministic `Ident` for the given node.
@@ -940,13 +917,6 @@ impl HydroflowGraph {
                                 })
                                 .collect::<Vec<_>>();
 
-                            // Corresponds 1:1 to inputs.
-                            let flow_props_in = self
-                                .graph
-                                .predecessor_edges(node_id)
-                                .map(|edge_id| self.flow_props.get(edge_id).copied())
-                                .collect::<Vec<_>>();
-
                             let is_pull = idx < pull_to_push_idx;
 
                             let singleton_output_ident = &if op_constraints.has_singleton_output {
@@ -996,7 +966,6 @@ impl HydroflowGraph {
                                 op_inst,
                                 arguments,
                                 arguments_handles,
-                                flow_props_in: &*flow_props_in,
                             };
 
                             let write_result =
@@ -1400,19 +1369,11 @@ impl HydroflowGraph {
                 dst_port = self.edge_ports(succ_edge).1;
             }
 
-            let flow_props = self.edge_flow_props(edge_id); // Should be the same both before & after handoffs.
             let label = helper_edge_label(src_port, dst_port);
             let delay_type = self
                 .node_op_inst(dst_id)
                 .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-            graph_write.write_edge(
-                src_id,
-                dst_id,
-                delay_type,
-                flow_props,
-                label.as_deref(),
-                false,
-            )?;
+            graph_write.write_edge(src_id, dst_id, delay_type, label.as_deref(), false)?;
         }
 
         // Write reference edges.
@@ -1425,10 +1386,8 @@ impl HydroflowGraph {
                     .flatten()
                 {
                     let delay_type = Some(DelayType::Stratum);
-                    let flow_props = None;
                     let label = None;
-                    graph_write
-                        .write_edge(src_ref_id, dst_id, delay_type, flow_props, label, true)?;
+                    graph_write.write_edge(src_ref_id, dst_id, delay_type, label, true)?;
                 }
             }
         }

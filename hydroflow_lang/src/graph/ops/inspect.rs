@@ -1,7 +1,7 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     WriteContextArgs, RANGE_0, RANGE_1,
 };
 
@@ -34,10 +34,6 @@ pub const INSPECT: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
-        // Preserve input flow properties.
-        Ok(vec![flow_props_in[0]])
-    }),
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,
