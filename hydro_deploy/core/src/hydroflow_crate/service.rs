@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
 use futures::Future;
 use hydroflow_deploy_integration::{InitConfig, ServerPort};
@@ -11,8 +11,8 @@ use serde::Serialize;
 use tokio::sync::{mpsc, RwLock};
 
 use super::build::{build_crate_memoized, BuildError, BuildOutput, BuildParams};
-use super::perf_options::PerfOptions;
 use super::ports::{self, HydroflowPortConfig, HydroflowSink, SourcePath};
+use super::tracing_options::TracingOptions;
 use crate::progress::ProgressTracker;
 use crate::{
     Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
@@ -22,7 +22,7 @@ pub struct HydroflowCrateService {
     id: usize,
     pub(super) on: Arc<dyn Host>,
     build_params: BuildParams,
-    perf: Option<PerfOptions>,
+    tracing: Option<TracingOptions>,
     args: Option<Vec<String>>,
     display_id: Option<String>,
     external_ports: Vec<u16>,
@@ -58,7 +58,7 @@ impl HydroflowCrateService {
         rustflags: Option<String>,
         target_dir: Option<PathBuf>,
         no_default_features: bool,
-        perf: Option<PerfOptions>,
+        tracing: Option<TracingOptions>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,
@@ -82,7 +82,7 @@ impl HydroflowCrateService {
             id,
             on,
             build_params,
-            perf,
+            tracing,
             args,
             display_id,
             external_ports,
@@ -239,7 +239,7 @@ impl Service for HydroflowCrateService {
                             .unwrap_or_else(|| format!("service/{}", self.id)),
                         built,
                         &args,
-                        self.perf.clone(),
+                        self.tracing.clone(),
                     )
                     .await?;
 
@@ -260,7 +260,9 @@ impl Service for HydroflowCrateService {
                     "waiting for ready",
                     tokio::time::timeout(Duration::from_secs(60), stdout_receiver),
                 )
-                .await??;
+                .await
+                .context("Timed out waiting for ready")?
+                .context("Program unexpectedly quit")?;
                 if ready_line.starts_with("ready: ") {
                     *self.server_defns.try_write().unwrap() =
                         serde_json::from_str(ready_line.trim_start_matches("ready: ")).unwrap();
