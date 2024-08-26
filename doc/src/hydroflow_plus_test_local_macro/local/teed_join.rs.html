@@ -124,18 +124,18 @@
     <span class="kw">let </span>node_zero = flow.process::&lt;N0&gt;();
     <span class="kw">let </span>node_one = flow.process::&lt;N1&gt;();
 
-    <span class="kw">let </span>source = flow.source_stream(<span class="kw-2">&amp;</span>node_zero, input_stream);
+    <span class="kw">let </span>source = flow.source_stream(<span class="kw-2">&amp;</span>node_zero, input_stream).tick_batch();
     <span class="kw">let </span>map1 = source.clone().map(<span class="macro">q!</span>(|v| (v + <span class="number">1</span>, ())));
     <span class="kw">let </span>map2 = source.map(<span class="macro">q!</span>(|v| (v - <span class="number">1</span>, ())));
 
     <span class="kw">let </span>joined = map1.join(map2).map(<span class="macro">q!</span>(|t| t.<span class="number">0</span>));
 
-    joined.clone().for_each(<span class="macro">q!</span>(|v| {
+    joined.clone().all_ticks().for_each(<span class="macro">q!</span>(|v| {
         output.send(v).unwrap();
     }));
 
     <span class="kw">if </span>send_twice {
-        joined.for_each(<span class="macro">q!</span>(|v| {
+        joined.all_ticks().for_each(<span class="macro">q!</span>(|v| {
             output.send(v).unwrap();
         }));
     }

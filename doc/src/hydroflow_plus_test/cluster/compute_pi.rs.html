@@ -67,6 +67,9 @@
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
@@ -92,15 +95,18 @@
 
                 <span class="kw-2">*</span>total += <span class="number">1</span>;
             }),
-        );
+        )
+        .all_ticks();
 
     trials
         .send_bincode_interleaved(<span class="kw-2">&amp;</span>process)
-        .all_ticks()
+        .tick_batch()
+        .persist()
         .reduce(<span class="macro">q!</span>(|(inside, total), (inside_batch, total_batch)| {
             <span class="kw-2">*</span>inside += inside_batch;
             <span class="kw-2">*</span>total += total_batch;
         }))
+        .all_ticks()
         .sample_every(<span class="macro">q!</span>(Duration::from_secs(<span class="number">1</span>)))
         .for_each(<span class="macro">q!</span>(|(inside, total)| {
             <span class="macro">println!</span>(

@@ -198,6 +198,12 @@
 <a href="#198" id="198">198</a>
 <a href="#199" id="199">199</a>
 <a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
 <span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
@@ -212,17 +218,17 @@
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
-    <span class="kw">let </span><span class="kw-2">mut </span>source = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>));
+    <span class="kw">let </span><span class="kw-2">mut </span>source = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>)).tick_batch();
     <span class="kw">if </span>persist1 {
-        source = source.all_ticks();
+        source = source.persist();
     }
 
-    <span class="kw">let </span><span class="kw-2">mut </span>source2 = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">3</span>..<span class="number">6</span>));
+    <span class="kw">let </span><span class="kw-2">mut </span>source2 = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">3</span>..<span class="number">6</span>)).tick_batch();
     <span class="kw">if </span>persist2 {
-        source2 = source2.all_ticks();
+        source2 = source2.persist();
     }
 
-    source.filter_not_in(source2).for_each(<span class="macro">q!</span>(|v| {
+    source.filter_not_in(source2).all_ticks().for_each(<span class="macro">q!</span>(|v| {
         output.send(v).unwrap();
     }));
 
@@ -239,20 +245,26 @@
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
-    <span class="kw">let </span><span class="kw-2">mut </span>source = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>)).map(<span class="macro">q!</span>(|v| (v, v)));
+    <span class="kw">let </span><span class="kw-2">mut </span>source = flow
+        .source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>))
+        .map(<span class="macro">q!</span>(|v| (v, v)))
+        .tick_batch();
     <span class="kw">if </span>persist1 {
-        source = source.all_ticks();
+        source = source.persist();
     }
 
-    <span class="kw">let </span><span class="kw-2">mut </span>source2 = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">3</span>..<span class="number">6</span>));
+    <span class="kw">let </span><span class="kw-2">mut </span>source2 = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">3</span>..<span class="number">6</span>)).tick_batch();
     <span class="kw">if </span>persist2 {
-        source2 = source2.all_ticks();
+        source2 = source2.persist();
     }
 
     <span class="comment">// TODO(shadaj): inference fails without a for_each type annotation here
-    </span>source.anti_join(source2).for_each(<span class="macro">q!</span>(|v: (u32, u32)| {
-        output.send(v.<span class="number">0</span>).unwrap();
-    }));
+    </span>source
+        .anti_join(source2)
+        .all_ticks()
+        .for_each(<span class="macro">q!</span>(|v: (u32, u32)| {
+            output.send(v.<span class="number">0</span>).unwrap();
+        }));
 
     flow.with_default_optimize()
         .compile_no_network::&lt;SingleProcessGraph&gt;()

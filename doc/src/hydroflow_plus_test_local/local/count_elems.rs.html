@@ -49,6 +49,7 @@
 <a href="#49" id="49">49</a>
 <a href="#50" id="50">50</a>
 <a href="#51" id="51">51</a>
+<a href="#52" id="52">52</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
 <span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
@@ -67,7 +68,8 @@
     <span class="kw">let </span>count = source
         .map(<span class="macro">q!</span>(|<span class="kw">_</span>| <span class="number">1</span>))
         .tick_batch()
-        .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|a, b| <span class="kw-2">*</span>a += b));
+        .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|a, b| <span class="kw-2">*</span>a += b))
+        .all_ticks();
 
     count.for_each(<span class="macro">q!</span>(|v| {
         output.send(v).unwrap();

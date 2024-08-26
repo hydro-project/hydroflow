@@ -341,12 +341,14 @@
 <a href="#341" id="341">341</a>
 <a href="#342" id="342">342</a>
 <a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use </span>anyhow::{bail, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>anyhow::{bail, Context, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::Future;
 <span class="kw">use </span>hydroflow_deploy_integration::{InitConfig, ServerPort};
@@ -354,8 +356,8 @@
 <span class="kw">use </span>tokio::sync::{mpsc, RwLock};
 
 <span class="kw">use </span><span class="kw">super</span>::build::{build_crate_memoized, BuildError, BuildOutput, BuildParams};
-<span class="kw">use </span><span class="kw">super</span>::perf_options::PerfOptions;
 <span class="kw">use </span><span class="kw">super</span>::ports::{<span class="self">self</span>, HydroflowPortConfig, HydroflowSink, SourcePath};
+<span class="kw">use </span><span class="kw">super</span>::tracing_options::TracingOptions;
 <span class="kw">use </span><span class="kw">crate</span>::progress::ProgressTracker;
 <span class="kw">use crate</span>::{
     Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
@@ -365,7 +367,7 @@
     id: usize,
     <span class="kw">pub</span>(<span class="kw">super</span>) on: Arc&lt;<span class="kw">dyn </span>Host&gt;,
     build_params: BuildParams,
-    perf: <span class="prelude-ty">Option</span>&lt;PerfOptions&gt;,
+    tracing: <span class="prelude-ty">Option</span>&lt;TracingOptions&gt;,
     args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
     external_ports: Vec&lt;u16&gt;,
@@ -401,7 +403,7 @@
         rustflags: <span class="prelude-ty">Option</span>&lt;String&gt;,
         target_dir: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
         no_default_features: bool,
-        perf: <span class="prelude-ty">Option</span>&lt;PerfOptions&gt;,
+        tracing: <span class="prelude-ty">Option</span>&lt;TracingOptions&gt;,
         features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
@@ -425,7 +427,7 @@
             id,
             on,
             build_params,
-            perf,
+            tracing,
             args,
             display_id,
             external_ports,
@@ -582,7 +584,7 @@
                             .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id)),
                         built,
                         <span class="kw-2">&amp;</span>args,
-                        <span class="self">self</span>.perf.clone(),
+                        <span class="self">self</span>.tracing.clone(),
                     )
                     .<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -603,7 +605,9 @@
                     <span class="string">"waiting for ready"</span>,
                     tokio::time::timeout(Duration::from_secs(<span class="number">60</span>), stdout_receiver),
                 )
-                .<span class="kw">await</span><span class="question-mark">??</span>;
+                .<span class="kw">await
+                </span>.context(<span class="string">"Timed out waiting for ready"</span>)<span class="question-mark">?
+                </span>.context(<span class="string">"Program unexpectedly quit"</span>)<span class="question-mark">?</span>;
                 <span class="kw">if </span>ready_line.starts_with(<span class="string">"ready: "</span>) {
                     <span class="kw-2">*</span><span class="self">self</span>.server_defns.try_write().unwrap() =
                         serde_json::from_str(ready_line.trim_start_matches(<span class="string">"ready: "</span>)).unwrap();

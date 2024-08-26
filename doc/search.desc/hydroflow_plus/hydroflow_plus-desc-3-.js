@@ -1,0 +1,1 @@
+searchState.loadedDescShard("hydroflow_plus", 3, "Returns the fractional part of this <code>Duration</code>, in whole …\nReturns the fractional part of this <code>Duration</code>, in whole …\nReturns the fractional part of this <code>Duration</code>, in …\nThe checked version of <code>from_secs_f32</code>.\nThe checked version of <code>from_secs_f64</code>.")

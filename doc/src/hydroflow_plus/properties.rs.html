@@ -115,6 +115,8 @@
 <a href="#115" id="115">115</a>
 <a href="#116" id="116">116</a>
 <a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashSet;
 
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
@@ -219,7 +221,9 @@
 
         flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="macro">vec!</span>[]))
             .map(<span class="macro">q!</span>(|string: String| (string, ())))
+            .tick_batch()
             .fold_keyed(<span class="macro">q!</span>(|| <span class="number">0</span>), counter_func)
+            .all_ticks()
             .for_each(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(<span class="string">"{}: {}"</span>, string, count)));
 
         <span class="kw">let </span>built = flow

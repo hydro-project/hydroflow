@@ -203,10 +203,11 @@
 <a href="#203" id="203">203</a>
 <a href="#204" id="204">204</a>
 <a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use </span>perf_options::PerfOptions;
+<span class="kw">use </span>tracing_options::TracingOptions;
 
 <span class="kw">use </span><span class="kw">super</span>::Host;
 <span class="kw">use </span><span class="kw">crate</span>::ServiceBuilder;
@@ -217,7 +218,8 @@
 <span class="kw">pub mod </span>service;
 <span class="kw">pub use </span>service::<span class="kw-2">*</span>;
 
-<span class="kw">pub mod </span>perf_options;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>flamegraph;
+<span class="kw">pub mod </span>tracing_options;
 
 <span class="attr">#[derive(PartialEq, Clone)]
 </span><span class="kw">pub enum </span>CrateTarget {
@@ -238,7 +240,7 @@
     target_dir: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
     no_default_features: bool,
     features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
-    perf: <span class="prelude-ty">Option</span>&lt;PerfOptions&gt;,
+    tracing: <span class="prelude-ty">Option</span>&lt;TracingOptions&gt;,
     args: Vec&lt;String&gt;,
     display_name: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
@@ -257,7 +259,7 @@
             target_dir: <span class="prelude-val">None</span>,
             no_default_features: <span class="bool-val">false</span>,
             features: <span class="prelude-val">None</span>,
-            perf: <span class="prelude-val">None</span>,
+            tracing: <span class="prelude-val">None</span>,
             args: <span class="macro">vec!</span>[],
             display_name: <span class="prelude-val">None</span>,
         }
@@ -328,12 +330,12 @@
         <span class="self">self
     </span>}
 
-    <span class="kw">pub fn </span>perf(<span class="kw-2">mut </span><span class="self">self</span>, perf: <span class="kw">impl </span>Into&lt;PerfOptions&gt;) -&gt; <span class="self">Self </span>{
-        <span class="kw">if </span><span class="self">self</span>.perf.is_some() {
-            <span class="macro">panic!</span>(<span class="string">"perf path already set"</span>);
+    <span class="kw">pub fn </span>tracing(<span class="kw-2">mut </span><span class="self">self</span>, perf: <span class="kw">impl </span>Into&lt;TracingOptions&gt;) -&gt; <span class="self">Self </span>{
+        <span class="kw">if </span><span class="self">self</span>.tracing.is_some() {
+            <span class="macro">panic!</span>(<span class="string">"tracing options are already set"</span>);
         }
 
-        <span class="self">self</span>.perf = <span class="prelude-val">Some</span>(perf.into());
+        <span class="self">self</span>.tracing = <span class="prelude-val">Some</span>(perf.into());
         <span class="self">self
     </span>}
 
@@ -373,7 +375,7 @@
             <span class="self">self</span>.rustflags,
             <span class="self">self</span>.target_dir,
             <span class="self">self</span>.no_default_features,
-            <span class="self">self</span>.perf,
+            <span class="self">self</span>.tracing,
             <span class="self">self</span>.features,
             <span class="prelude-val">Some</span>(<span class="self">self</span>.args),
             <span class="self">self</span>.display_name,

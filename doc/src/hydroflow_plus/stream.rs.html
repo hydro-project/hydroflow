@@ -640,6 +640,46 @@
 <a href="#640" id="640">640</a>
 <a href="#641" id="641">641</a>
 <a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
+<a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+<a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a>
+<a href="#659" id="659">659</a>
+<a href="#660" id="660">660</a>
+<a href="#661" id="661">661</a>
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
+<a href="#667" id="667">667</a>
+<a href="#668" id="668">668</a>
+<a href="#669" id="669">669</a>
+<a href="#670" id="670">670</a>
+<a href="#671" id="671">671</a>
+<a href="#672" id="672">672</a>
+<a href="#673" id="673">673</a>
+<a href="#674" id="674">674</a>
+<a href="#675" id="675">675</a>
+<a href="#676" id="676">676</a>
+<a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -661,18 +701,18 @@
 <span class="kw">use </span><span class="kw">crate</span>::location::{CanSend, Location, LocationId};
 <span class="kw">use </span><span class="kw">crate</span>::Cluster;
 
-<span class="doccomment">/// Marks the stream as being asynchronous, which means the presence
-/// of all elements is directly influenced by the runtime's batching
-/// behavior. Aggregation operations are not permitted on streams
-/// with this tag because the developer has not explicitly specified
-/// if they want to aggregate over the entire stream or just the
-/// current batch.
-</span><span class="kw">pub struct </span>Async {}
+<span class="doccomment">/// Marks the stream as being unbounded, which means that it is not
+/// guaranteed to be complete in finite time.
+</span><span class="kw">pub enum </span>Unbounded {}
 
-<span class="doccomment">/// Marks the stream as being windowed, which means the developer has
-/// opted-into either a batched or persistent windowing semantics.
-/// Aggregation operations are permitted on streams with this tag.
-</span><span class="kw">pub struct </span>Windowed {}
+<span class="doccomment">/// Marks the stream as being bounded, which means that it is guaranteed
+/// to be complete in finite time.
+</span><span class="kw">pub enum </span>Bounded {}
+
+<span class="doccomment">/// Marks the stream as existing outside of a clock domain.
+</span><span class="kw">pub enum </span>NoTick {}
+<span class="doccomment">/// Marks the stream as being inside the single global clock domain.
+</span><span class="kw">pub enum </span>Tick {}
 
 <span class="doccomment">/// An infinite stream of elements of type `T`.
 ///
@@ -680,19 +720,21 @@
 /// - `'a`: the lifetime of the final Hydroflow graph, which constraints
 ///   which values can be captured in closures passed to operators
 /// - `T`: the type of elements in the stream
-/// - `W`: the windowing semantics of the stream, which is either [`Async`]
-///    or [`Windowed`]
+/// - `W`: the boundedness of the stream, which is either [`Bounded`]
+///    or [`Unbounded`]
+/// - `C`: the tick domain of the stream, which is either [`Tick`] or
+///   [`NoTick`]
 /// - `N`: the type of the node that the stream is materialized on
-</span><span class="kw">pub struct </span>Stream&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; {
+</span><span class="kw">pub struct </span>Stream&lt;<span class="lifetime">'a</span>, T, W, C, N: Location&gt; {
     location_kind: LocationId,
 
     ir_leaves: FlowLeaves&lt;<span class="lifetime">'a</span>&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) ir_node: RefCell&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
 
-    _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), T, N, W)&gt;,
+    _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), T, N, W, C)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, C, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, C, N&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(
         location_kind: LocationId,
         ir_leaves: FlowLeaves&lt;<span class="lifetime">'a</span>&gt;,
@@ -707,7 +749,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: Clone, W, N: Location&gt; Clone <span class="kw">for </span>Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: Clone, W, C, N: Location&gt; Clone <span class="kw">for </span>Stream&lt;<span class="lifetime">'a</span>, T, W, C, N&gt; {
     <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         <span class="kw">if </span>!<span class="macro">matches!</span>(<span class="self">self</span>.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
             <span class="kw">let </span>orig_ir_node = <span class="self">self</span>.ir_node.replace(HfPlusNode::Placeholder);
@@ -732,8 +774,11 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
-    <span class="kw">pub fn </span>map&lt;U, F: Fn(T) -&gt; U + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, U, W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, C, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, C, N&gt; {
+    <span class="kw">pub fn </span>map&lt;U, F: Fn(T) -&gt; U + <span class="lifetime">'a</span>&gt;(
+        <span class="self">self</span>,
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, U, W, C, N&gt; {
         Stream::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
@@ -747,7 +792,7 @@
     <span class="kw">pub fn </span>flat_map&lt;U, I: IntoIterator&lt;Item = U&gt;, F: Fn(T) -&gt; I + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, U, W, N&gt; {
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, U, W, C, N&gt; {
         Stream::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
@@ -758,29 +803,10 @@
         )
     }
 
-    <span class="kw">pub fn </span>enumerate(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, (usize, T), W, N&gt; {
-        Stream::new(
-            <span class="self">self</span>.location_kind,
-            <span class="self">self</span>.ir_leaves,
-            HfPlusNode::Enumerate(Box::new(<span class="self">self</span>.ir_node.into_inner())),
-        )
-    }
-
-    <span class="kw">pub fn </span>inspect&lt;F: Fn(<span class="kw-2">&amp;</span>T) + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
-        Stream::new(
-            <span class="self">self</span>.location_kind,
-            <span class="self">self</span>.ir_leaves,
-            HfPlusNode::Inspect {
-                f: f.splice().into(),
-                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
-            },
-        )
-    }
-
     <span class="kw">pub fn </span>filter&lt;F: Fn(<span class="kw-2">&amp;</span>T) -&gt; bool + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, C, N&gt; {
         Stream::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
@@ -794,7 +820,7 @@
     <span class="kw">pub fn </span>filter_map&lt;U, F: Fn(T) -&gt; <span class="prelude-ty">Option</span>&lt;U&gt; + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, U, W, N&gt; {
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, U, W, C, N&gt; {
         Stream::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
@@ -805,7 +831,10 @@
         )
     }
 
-    <span class="kw">pub fn </span>cross_singleton&lt;O&gt;(<span class="self">self</span>, other: Stream&lt;<span class="lifetime">'a</span>, O, Windowed, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, (T, O), W, N&gt;
+    <span class="kw">pub fn </span>cross_singleton&lt;O&gt;(
+        <span class="self">self</span>,
+        other: Stream&lt;<span class="lifetime">'a</span>, O, Bounded, C, N&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (T, O), W, C, N&gt;
     <span class="kw">where
         </span>O: Clone,
     {
@@ -824,18 +853,13 @@
     }
 
     <span class="doccomment">/// Allow this stream through if the other stream has elements, otherwise the output is empty.
-    </span><span class="kw">pub fn </span>continue_if&lt;U&gt;(<span class="self">self</span>, signal: Stream&lt;<span class="lifetime">'a</span>, U, Windowed, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
+    </span><span class="kw">pub fn </span>continue_if&lt;U&gt;(<span class="self">self</span>, signal: Stream&lt;<span class="lifetime">'a</span>, U, Bounded, C, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, C, N&gt; {
         <span class="self">self</span>.cross_singleton(signal.map(<span class="macro">q!</span>(|_u| ())))
             .map(<span class="macro">q!</span>(|(d, _signal)| d))
     }
 
-    <span class="doccomment">/// Allow this stream through if the other stream is empty, otherwise the output is empty.
-    </span><span class="kw">pub fn </span>continue_unless&lt;U&gt;(<span class="self">self</span>, other: Stream&lt;<span class="lifetime">'a</span>, U, Windowed, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
-        <span class="self">self</span>.continue_if(other.count().filter(<span class="macro">q!</span>(|c| <span class="kw-2">*</span>c == <span class="number">0</span>)))
-    }
-
     <span class="comment">// TODO(shadaj): should allow for differing windows, using strongest one
-    </span><span class="kw">pub fn </span>cross_product&lt;O&gt;(<span class="self">self</span>, other: Stream&lt;<span class="lifetime">'a</span>, O, W, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, (T, O), W, N&gt;
+    </span><span class="kw">pub fn </span>cross_product&lt;O&gt;(<span class="self">self</span>, other: Stream&lt;<span class="lifetime">'a</span>, O, W, C, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, (T, O), W, C, N&gt;
     <span class="kw">where
         </span>T: Clone,
         O: Clone,
@@ -854,7 +878,7 @@
         )
     }
 
-    <span class="kw">pub fn </span>union(<span class="self">self</span>, other: Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
+    <span class="kw">pub fn </span>union(<span class="self">self</span>, other: Stream&lt;<span class="lifetime">'a</span>, T, W, C, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, C, N&gt; {
         <span class="kw">if </span><span class="self">self</span>.location_kind != other.location_kind {
             <span class="macro">panic!</span>(<span class="string">"union must be called on streams on the same node"</span>);
         }
@@ -869,21 +893,16 @@
         )
     }
 
-    <span class="kw">pub fn </span>for_each&lt;F: Fn(T) + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) {
-        <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::ForEach {
-            input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
-            f: f.splice().into(),
-        });
-    }
-
     <span class="kw">pub fn </span>dest_sink&lt;S: Unpin + Sink&lt;T&gt; + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, sink: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, S&gt;) {
         <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::DestSink {
             sink: sink.splice().into(),
             input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
         });
     }
+}
 
-    <span class="kw">pub fn </span>all_ticks(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
+    <span class="kw">pub fn </span>all_ticks(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Unbounded, NoTick, N&gt; {
         Stream::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
@@ -891,31 +910,57 @@
         )
     }
 
-    <span class="kw">pub fn </span>assume_windowed(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
+    <span class="kw">pub fn </span>persist(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
         Stream::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
-            <span class="self">self</span>.ir_node.into_inner(),
+            HfPlusNode::Persist(Box::new(<span class="self">self</span>.ir_node.into_inner())),
         )
     }
-}
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, Async, N&gt; {
-    <span class="kw">pub fn </span>tick_batch(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
+    <span class="kw">pub fn </span>defer_tick(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
         Stream::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
-            <span class="self">self</span>.ir_node.into_inner(),
+            HfPlusNode::DeferTick(Box::new(<span class="self">self</span>.ir_node.into_inner())),
         )
     }
-}
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
-    <span class="kw">pub fn </span>fold&lt;A, I: Fn() -&gt; A + <span class="lifetime">'a</span>, C: Fn(<span class="kw-2">&amp;mut </span>A, T)&gt;(
+    <span class="kw">pub fn </span>inspect&lt;F: Fn(<span class="kw-2">&amp;</span>T) + <span class="lifetime">'a</span>&gt;(
+        <span class="self">self</span>,
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
+        Stream::new(
+            <span class="self">self</span>.location_kind,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::Inspect {
+                f: f.splice().into(),
+                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            },
+        )
+    }
+
+    <span class="doccomment">/// Allow this stream through if the other stream is empty, otherwise the output is empty.
+    </span><span class="kw">pub fn </span>continue_unless&lt;U&gt;(
+        <span class="self">self</span>,
+        other: Stream&lt;<span class="lifetime">'a</span>, U, Bounded, Tick, N&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
+        <span class="self">self</span>.continue_if(other.count().filter(<span class="macro">q!</span>(|c| <span class="kw-2">*</span>c == <span class="number">0</span>)))
+    }
+
+    <span class="kw">pub fn </span>enumerate(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, (usize, T), Bounded, Tick, N&gt; {
+        Stream::new(
+            <span class="self">self</span>.location_kind,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::Enumerate(Box::new(<span class="self">self</span>.ir_node.into_inner())),
+        )
+    }
+
+    <span class="kw">pub fn </span>fold&lt;A, I: Fn() -&gt; A + <span class="lifetime">'a</span>, F: Fn(<span class="kw-2">&amp;mut </span>A, T)&gt;(
         <span class="self">self</span>,
         init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I&gt;,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, C&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, A, Windowed, N&gt; {
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, A, Bounded, Tick, N&gt; {
         Stream::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
@@ -927,10 +972,10 @@
         )
     }
 
-    <span class="kw">pub fn </span>reduce&lt;C: Fn(<span class="kw-2">&amp;mut </span>T, T) + <span class="lifetime">'a</span>&gt;(
+    <span class="kw">pub fn </span>reduce&lt;F: Fn(<span class="kw-2">&amp;mut </span>T, T) + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, C&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
         Stream::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
@@ -941,7 +986,7 @@
         )
     }
 
-    <span class="kw">pub fn </span>sort(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt;
+    <span class="kw">pub fn </span>sort(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt;
     <span class="kw">where
         </span>T: Ord,
     {
@@ -952,11 +997,11 @@
         )
     }
 
-    <span class="kw">pub fn </span>count(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, usize, Windowed, N&gt; {
+    <span class="kw">pub fn </span>count(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, usize, Bounded, Tick, N&gt; {
         <span class="self">self</span>.fold(<span class="macro">q!</span>(|| <span class="number">0usize</span>), <span class="macro">q!</span>(|count, <span class="kw">_</span>| <span class="kw-2">*</span>count += <span class="number">1</span>))
     }
 
-    <span class="kw">pub fn </span>delta(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
+    <span class="kw">pub fn </span>delta(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
         Stream::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
@@ -964,15 +1009,7 @@
         )
     }
 
-    <span class="kw">pub fn </span>defer_tick(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
-        Stream::new(
-            <span class="self">self</span>.location_kind,
-            <span class="self">self</span>.ir_leaves,
-            HfPlusNode::DeferTick(Box::new(<span class="self">self</span>.ir_node.into_inner())),
-        )
-    }
-
-    <span class="kw">pub fn </span>unique(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt;
+    <span class="kw">pub fn </span>unique(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt;
     <span class="kw">where
         </span>T: Eq + Hash,
     {
@@ -982,8 +1019,63 @@
             HfPlusNode::Unique(Box::new(<span class="self">self</span>.ir_node.into_inner())),
         )
     }
+}
 
-    <span class="kw">pub fn </span>filter_not_in(<span class="self">self</span>, other: Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, NoTick, N&gt; {
+    <span class="kw">pub fn </span>tick_batch(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
+        Stream::new(
+            <span class="self">self</span>.location_kind,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner())),
+        )
+    }
+
+    <span class="kw">pub fn </span>inspect&lt;F: Fn(<span class="kw-2">&amp;</span>T) + <span class="lifetime">'a</span>&gt;(
+        <span class="self">self</span>,
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, NoTick, N&gt; {
+        Stream::new(
+            <span class="self">self</span>.location_kind,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::Persist(Box::new(HfPlusNode::Inspect {
+                f: f.splice().into(),
+                input: Box::new(HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner()))),
+            })),
+        )
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, NoTick, N&gt; {
+    <span class="kw">pub fn </span>for_each&lt;F: Fn(T) + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) {
+        <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::ForEach {
+            input: Box::new(HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner()))),
+            f: f.splice().into(),
+        });
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, Unbounded, NoTick, N&gt; {
+    <span class="kw">pub fn </span>sample_every(
+        <span class="self">self</span>,
+        duration: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, std::time::Duration&gt; + Copy + <span class="lifetime">'a</span>,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Unbounded, NoTick, N&gt; {
+        <span class="kw">let </span>interval = duration.splice();
+
+        <span class="kw">let </span>samples = Stream::&lt;<span class="lifetime">'a</span>, hydroflow::tokio::time::Instant, Bounded, Tick, N&gt;::new(
+            <span class="self">self</span>.location_kind,
+            <span class="self">self</span>.ir_leaves.clone(),
+            HfPlusNode::Source {
+                source: HfPlusSource::Interval(interval.into()),
+                location_kind: <span class="self">self</span>.location_kind,
+            },
+        );
+
+        <span class="self">self</span>.tick_batch().continue_if(samples).all_ticks()
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, C, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, C, N&gt; {
+    <span class="kw">pub fn </span>filter_not_in(<span class="self">self</span>, other: Stream&lt;<span class="lifetime">'a</span>, T, Bounded, C, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, C, N&gt;
     <span class="kw">where
         </span>T: Eq + Hash,
     {
@@ -1000,35 +1092,20 @@
             ),
         )
     }
-
-    <span class="kw">pub fn </span>sample_every(
-        <span class="self">self</span>,
-        duration: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, std::time::Duration&gt; + Copy + <span class="lifetime">'a</span>,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
-        <span class="kw">let </span>interval = duration.splice();
-
-        <span class="kw">let </span>samples = Stream::&lt;<span class="lifetime">'a</span>, hydroflow::tokio::time::Instant, Windowed, N&gt;::new(
-            <span class="self">self</span>.location_kind,
-            <span class="self">self</span>.ir_leaves.clone(),
-            HfPlusNode::Source {
-                source: HfPlusSource::Interval(interval.into()),
-                location_kind: <span class="self">self</span>.location_kind,
-            },
-        );
-
-        <span class="self">self</span>.continue_if(samples)
-    }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: Clone, W, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span>T, W, N&gt; {
-    <span class="kw">pub fn </span>cloned(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: Clone, W, C, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span>T, W, C, N&gt; {
+    <span class="kw">pub fn </span>cloned(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, C, N&gt; {
         <span class="self">self</span>.map(<span class="macro">q!</span>(|d| d.clone()))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K, V1, W, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, (K, V1), W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K, V1, W, C, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, (K, V1), W, C, N&gt; {
     <span class="comment">// TODO(shadaj): figure out window semantics
-    </span><span class="kw">pub fn </span>join&lt;W2, V2&gt;(<span class="self">self</span>, n: Stream&lt;<span class="lifetime">'a</span>, (K, V2), W2, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, (K, (V1, V2)), W, N&gt;
+    </span><span class="kw">pub fn </span>join&lt;W2, V2&gt;(
+        <span class="self">self</span>,
+        n: Stream&lt;<span class="lifetime">'a</span>, (K, V2), W2, C, N&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (K, (V1, V2)), W, C, N&gt;
     <span class="kw">where
         </span>K: Eq + Hash,
     {
@@ -1046,7 +1123,7 @@
         )
     }
 
-    <span class="kw">pub fn </span>anti_join&lt;W2&gt;(<span class="self">self</span>, n: Stream&lt;<span class="lifetime">'a</span>, K, W2, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, (K, V1), W, N&gt;
+    <span class="kw">pub fn </span>anti_join&lt;W2&gt;(<span class="self">self</span>, n: Stream&lt;<span class="lifetime">'a</span>, K, W2, C, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, (K, V1), W, C, N&gt;
     <span class="kw">where
         </span>K: Eq + Hash,
     {
@@ -1065,12 +1142,12 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K: Eq + Hash, V, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, (K, V), Windowed, N&gt; {
-    <span class="kw">pub fn </span>fold_keyed&lt;A, I: Fn() -&gt; A + <span class="lifetime">'a</span>, C: Fn(<span class="kw-2">&amp;mut </span>A, V) + <span class="lifetime">'a</span>&gt;(
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K: Eq + Hash, V, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, (K, V), Bounded, Tick, N&gt; {
+    <span class="kw">pub fn </span>fold_keyed&lt;A, I: Fn() -&gt; A + <span class="lifetime">'a</span>, F: Fn(<span class="kw-2">&amp;mut </span>A, V) + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I&gt;,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, C&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (K, A), Windowed, N&gt; {
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (K, A), Bounded, Tick, N&gt; {
         Stream::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
@@ -1085,7 +1162,7 @@
     <span class="kw">pub fn </span>reduce_keyed&lt;F: Fn(<span class="kw-2">&amp;mut </span>V, V) + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (K, V), Windowed, N&gt; {
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (K, V), Bounded, Tick, N&gt; {
         Stream::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
@@ -1150,11 +1227,11 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, NoTick, N&gt; {
     <span class="kw">pub fn </span>send_bincode&lt;N2: Location, CoreType&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, N::Out&lt;CoreType&gt;, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, N::Out&lt;CoreType&gt;, Unbounded, NoTick, N2&gt;
     <span class="kw">where
         </span>N: CanSend&lt;N2, In&lt;CoreType&gt; = T&gt;,
         CoreType: Serialize + DeserializeOwned,
@@ -1177,7 +1254,10 @@
         )
     }
 
-    <span class="kw">pub fn </span>send_bytes&lt;N2: Location&gt;(<span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">'a</span>, N::Out&lt;Bytes&gt;, Async, N2&gt;
+    <span class="kw">pub fn </span>send_bytes&lt;N2: Location&gt;(
+        <span class="self">self</span>,
+        other: <span class="kw-2">&amp;</span>N2,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, N::Out&lt;Bytes&gt;, Unbounded, NoTick, N2&gt;
     <span class="kw">where
         </span>N: CanSend&lt;N2, In&lt;Bytes&gt; = T&gt;,
     {
@@ -1202,7 +1282,7 @@
     <span class="kw">pub fn </span>send_bincode_interleaved&lt;N2: Location, Tag, CoreType&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, CoreType, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, CoreType, Unbounded, NoTick, N2&gt;
     <span class="kw">where
         </span>N: CanSend&lt;N2, In&lt;CoreType&gt; = T, Out&lt;CoreType&gt; = (Tag, CoreType)&gt;,
         CoreType: Serialize + DeserializeOwned,
@@ -1213,7 +1293,7 @@
     <span class="kw">pub fn </span>send_bytes_interleaved&lt;N2: Location, Tag&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, Bytes, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, Bytes, Unbounded, NoTick, N2&gt;
     <span class="kw">where
         </span>N: CanSend&lt;N2, In&lt;Bytes&gt; = T, Out&lt;Bytes&gt; = (Tag, Bytes)&gt;,
     {
@@ -1223,7 +1303,7 @@
     <span class="kw">pub fn </span>broadcast_bincode&lt;C2&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>Cluster&lt;C2&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, N::Out&lt;T&gt;, Async, Cluster&lt;C2&gt;&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, N::Out&lt;T&gt;, Unbounded, NoTick, Cluster&lt;C2&gt;&gt;
     <span class="kw">where
         </span>N: CanSend&lt;Cluster&lt;C2&gt;, In&lt;T&gt; = (u32, T)&gt;,
         T: Clone + Serialize + DeserializeOwned,
@@ -1243,7 +1323,7 @@
     <span class="kw">pub fn </span>broadcast_bincode_interleaved&lt;C2, Tag&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>Cluster&lt;C2&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Async, Cluster&lt;C2&gt;&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Unbounded, NoTick, Cluster&lt;C2&gt;&gt;
     <span class="kw">where
         </span>N: CanSend&lt;Cluster&lt;C2&gt;, In&lt;T&gt; = (u32, T), Out&lt;T&gt; = (Tag, T)&gt; + <span class="lifetime">'a</span>,
         T: Clone + Serialize + DeserializeOwned,
@@ -1254,7 +1334,7 @@
     <span class="kw">pub fn </span>broadcast_bytes&lt;C2&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>Cluster&lt;C2&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, N::Out&lt;Bytes&gt;, Async, Cluster&lt;C2&gt;&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, N::Out&lt;Bytes&gt;, Unbounded, NoTick, Cluster&lt;C2&gt;&gt;
     <span class="kw">where
         </span>N: CanSend&lt;Cluster&lt;C2&gt;, In&lt;Bytes&gt; = (u32, T)&gt; + <span class="lifetime">'a</span>,
         T: Clone,
@@ -1274,7 +1354,7 @@
     <span class="kw">pub fn </span>broadcast_bytes_interleaved&lt;C2, Tag&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>Cluster&lt;C2&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, Bytes, Async, Cluster&lt;C2&gt;&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, Bytes, Unbounded, NoTick, Cluster&lt;C2&gt;&gt;
     <span class="kw">where
         </span>N: CanSend&lt;Cluster&lt;C2&gt;, In&lt;Bytes&gt; = (u32, T), Out&lt;Bytes&gt; = (Tag, Bytes)&gt; + <span class="lifetime">'a</span>,
         T: Clone,

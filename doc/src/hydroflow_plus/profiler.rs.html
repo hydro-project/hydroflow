@@ -113,7 +113,6 @@
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
 <a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 
 <span class="kw">use </span>hydroflow::futures::channel::mpsc::UnboundedSender;
@@ -203,7 +202,6 @@
         <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
         flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
-            .all_ticks()
             .map(<span class="macro">q!</span>(|v| v + <span class="number">1</span>))
             .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n)));
 
@@ -222,8 +220,8 @@
         <span class="kw">let </span>counter_queue = RuntimeData::new(<span class="string">"Fake"</span>);
 
         <span class="kw">let </span>pushed_down = built
-            .optimize_with(|ir| <span class="kw">super</span>::profiling(ir, runtime_context, counters, counter_queue))
-            .with_default_optimize();
+            .with_default_optimize()
+            .optimize_with(|ir| <span class="kw">super</span>::profiling(ir, runtime_context, counters, counter_queue));
 
         <span class="macro">insta::assert_debug_snapshot!</span>(<span class="kw-2">&amp;</span>pushed_down.ir());
 

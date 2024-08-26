@@ -49,6 +49,7 @@
 <a href="#49" id="49">49</a>
 <a href="#50" id="50">50</a>
 <a href="#51" id="51">51</a>
+<a href="#52" id="52">52</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
@@ -74,11 +75,12 @@
         );
 
     trials
-        .all_ticks()
+        .persist()
         .reduce(<span class="macro">q!</span>(|(inside, total), (inside_batch, total_batch)| {
             <span class="kw-2">*</span>inside += inside_batch;
             <span class="kw-2">*</span>total += total_batch;
         }))
+        .all_ticks()
         .sample_every(<span class="macro">q!</span>(Duration::from_secs(<span class="number">1</span>)))
         .for_each(<span class="macro">q!</span>(|(inside, total)| {
             <span class="macro">println!</span>(
