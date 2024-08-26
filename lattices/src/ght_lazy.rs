@@ -101,7 +101,7 @@ where
 /// one for each height from 1 to length of the schema
 macro_rules! GhtForestType {
     ($a:tt, $( $b:tt ),* => ()) => {
-        GhtType!($a, $( $b ),* => ())
+        var_type!(GhtType!($a, $( $b ),* => ()))
     };
     ($a:tt => $c:tt, $( $d:tt ),* ) => {
         (GhtType!($a => $c, $( $d ),*), GhtForestType!($a, $c => $( $d ),*))
@@ -148,11 +148,9 @@ impl<TrieFirst, TrieSecond, TrieRest, SearchKey /* , Head, Rest */> GhtForest<Se
 where
     TrieFirst: GeneralizedHashTrieNode + GhtTakeLeaf,
     TrieSecond: GeneralizedHashTrieNode<Schema = TrieFirst::Schema> + GhtTakeLeaf,
-    SearchKey: Split<TrieFirst::Schema>,
-    var_type!(TrieSecond, ...TrieRest): VariadicExt + GhtForest<SearchKey>,
-    SearchKey: VariadicExt + Clone,
-    // GhtForestStruct<var_type!(TrieSecond, ...TrieRest)>: GhtForest<SearchKey>,
+    SearchKey: VariadicExt + Split<TrieFirst::Schema> + Clone,
     var_type!(TrieSecond, ...TrieRest): GhtForest<SearchKey>,
+    // GhtForestStruct<var_type!(TrieSecond, ...TrieRest)>: GhtForest<SearchKey>,
     TrieFirst::Schema: PartialEqVariadic + SplitBySuffix<TrieFirst::ValType> + Eq + Hash + Clone,
     TrieSecond::Schema: PartialEqVariadic + SplitBySuffix<TrieSecond::ValType> + Eq + Hash + Clone,
     Self: ForestFindLeaf<TrieFirst::Schema>,
@@ -180,6 +178,7 @@ where
                     _suffix_schema: PhantomData,
                 };
                 rest_first.merge_leaf(row.as_ref_var(), leaf);
+                assert!(rest_first.check_height());
                 // drop through and recurse: we may have to force again in the neighbor
             }
             // recurse
@@ -227,7 +226,7 @@ impl<TrieFirst, TrieRest> ForestFindLeaf<<TrieFirst as GeneralizedHashTrieNode>:
 where
     <TrieFirst as GeneralizedHashTrieNode>::Schema: PartialEqVariadic,
     TrieFirst: GeneralizedHashTrieNode,
-    TrieRest: VariadicExt + ForestFindLeaf<<TrieFirst as GeneralizedHashTrieNode>::Schema>,
+    TrieRest: ForestFindLeaf<<TrieFirst as GeneralizedHashTrieNode>::Schema>,
 {
     fn find_containing_leaf(
         &self,

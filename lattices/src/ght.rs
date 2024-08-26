@@ -36,11 +36,15 @@ pub trait GeneralizedHashTrieNode: Default {
     /// E.g. if we have GhtInner<GhtInner<GhtLeaf...>> the height is 2
     fn height(&self) -> Option<usize>;
 
+    /// debugging function to check that height is consistent along at least the leftmost path
+    fn check_height(&self) -> bool;
+
     /// report whether node is a leaf node; else an inner node
     fn is_leaf(&self) -> bool;
 
-    /// Inserts items into the hash trie.
-    fn insert(&mut self, row: Self::Schema) -> bool;
+    /// Inserts items into the hash trie. Returns the height
+    /// of this node (leaf = 0)
+    fn insert(&mut self, row: Self::Schema) -> Option<usize>;
 
     /// Returns `true` if the (entire) row is found in the trie, `false` otherwise.
     /// See `get()` below to look just for "head" keys in this node
@@ -105,6 +109,7 @@ where
     Node: GeneralizedHashTrieNode,
 {
     pub(crate) children: HashMap<Head, Node>,
+    pub(crate) height: Option<usize>,
     // pub(crate) _leaf: std::marker::PhantomData<Leaf>,
 }
 impl<Head, Node: GeneralizedHashTrieNode> Default for GhtInner<Head, Node>
@@ -116,6 +121,7 @@ where
         let children = Default::default();
         Self {
             children,
+            height: None,
             // _leaf: Default::default(),
         }
     }
@@ -136,29 +142,44 @@ where
 
     fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self {
         let mut retval: Self = Default::default();
+        let mut height = None;
         for row in input {
             // let (_prefix, suffix) = row.clone().split();
-            retval.insert(row);
+            height = retval.insert(row);
         }
+        retval.height = height;
         retval
     }
 
     fn height(&self) -> Option<usize> {
-        if let Some((_k, v)) = self.children.iter().next() {
-            v.height().map(|h| h + 1)
-        } else {
-            None
-        }
+        self.height
+    }
+
+    fn check_height(&self) -> bool {
+        self.height.unwrap()
+            == self
+                .children
+                .iter()
+                .next()
+                .and_then(|n| n.1.height())
+                .map(|h| h + 1)
+                .unwrap()
     }
 
     fn is_leaf(&self) -> bool {
         false
     }
 
-    fn insert(&mut self, row: Self::Schema) -> bool {
+    fn insert(&mut self, row: Self::Schema) -> Option<usize> {
         // TODO(mingwei): clones entire row...
         let (_prefix, var_args!(head, ..._rest)) = row.clone().split_by_suffix();
-        self.children.entry(head).or_default().insert(row)
+        self.height = self
+            .children
+            .entry(head)
+            .or_default()
+            .insert(row)
+            .map(|h| h + 1);
+        self.height
     }
 
     fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
@@ -297,12 +318,17 @@ where
         Some(0)
     }
 
+    fn check_height(&self) -> bool {
+        true
+    }
+
     fn is_leaf(&self) -> bool {
         true
     }
 
-    fn insert(&mut self, row: Self::Schema) -> bool {
-        self.elements.insert(row)
+    fn insert(&mut self, row: Self::Schema) -> Option<usize> {
+        self.elements.insert(row);
+        self.height()
     }
 
     fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
@@ -495,10 +521,13 @@ where
     ) -> bool {
         // TODO(mingwei): clones head...
         let (_prefix, var_args!(head, ..._rest)) = Self::Schema::split_by_suffix_ref(row);
-        self.children
+        let retval = self
+            .children
             .entry(head.clone())
             .or_default()
-            .merge_leaf(row, leaf)
+            .merge_leaf(row, leaf);
+        self.height = self.get(head).and_then(|n| n.height).map(|h| h + 1);
+        retval
     }
 }
 
@@ -540,8 +569,10 @@ where
             >>::split_by_suffix_ref(row);
         if let Some(old_val) = self.children.insert(head.clone(), leaf) {
             self.children.insert(head.clone(), old_val);
+            panic!();
             false
         } else {
+            self.height = Some(1);
             true
         }
     }
@@ -723,33 +754,34 @@ where
 /// Helper that does the heavy lifting for GhtNodeType!
 #[macro_export]
 macro_rules! GhtNodeTypeWithSchema {
-    // Empty key, singleton val base case.
-    (() => $z:ty => $( $schema:ty ),+ ) => (
-        $crate::ght::GhtLeaf::<$( $schema ),*, $crate::variadics::var_type!( $z ) >
+    // Empty key & Val (Leaf)
+    (() => () => $( $schema:ty ),+ ) => (
+        $crate::ght::GhtLeaf::<$( $schema ),*,  ()  >
     );
-    // Empty key, compound val base case.
-    (() => $y:ty, $( $z:ty ),* => $( $schema:ty ),+ ) => (
-        $crate::ght::GhtLeaf::<$( $schema ),*, ( $y, $crate::variadics::var_type!($( $z ),* )) >
+
+    // Empty key (Leaf)
+    (() => $( $z:ty ),* => $schema:ty ) => (
+        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ) >
     );
-    // Singleton key, empty val base case.
-    ($a:ty => ()  => ( $schema:ty ),+ ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$( $schema ),*, $crate::variadics::var_type!( $z ) >>
+
+    // Singleton key & Empty val (Inner over Leaf)
+    ($a:ty => () => $schema:ty ) => (
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, () >>
     );
-    // Singleton key, singleton val base case.
-    ($a:ty => $z:ty  => $( $schema:ty ),+ ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$( $schema ),*, $crate::variadics::var_type!( $z ) >>
+
+    // Singleton key (Inner over Leaf)
+    ($a:ty => $( $z:ty ),* => $schema:ty ) => (
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*) >>
     );
-    // Singleton key, compound val base case.
-    ($a:ty => $y:ty, $( $z:ty ),* => $( $schema:ty ),+ ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$( $schema ),*, $crate::variadics::var_type!($y, $( $z ),*) >>
+
+    // Recursive case with empty val
+    ($a:ty, $( $b:ty ),* => () => $schema:ty ) => (
+        $crate::ght::GhtInner::<$a, $crate::GhtNodeTypeWithSchema!($( $b ),* => () => $schema)>
     );
-    // Compound key, singleton val base case.
-    ($a:ty, $( $b:ty ),* => $z:ty => $( $schema:ty ),+ ) => (
-        $crate::ght::GhtInner::<$a, $crate::GhtNodeTypeWithSchema!($( $b ),* => $z => $( $schema ),*)>
-    );
+
     // Recursive case.
-    ($a:ty, $( $b:ty ),* => $( $z:ty ),* => $( $schema:ty ),+ ) => (
-        $crate::ght::GhtInner::<$a, $crate::GhtNodeTypeWithSchema!($( $b ),* => $( $z ),* => $( $schema ),*)>
+    ($a:ty, $( $b:ty ),* => $( $z:ty ),* => $schema:ty ) => (
+        $crate::ght::GhtInner::<$a, $crate::GhtNodeTypeWithSchema!($( $b ),* => $( $z ),* => $schema)>
     );
 }
 
@@ -763,13 +795,18 @@ macro_rules! GhtNodeTypeWithSchema {
 /// a la var_expr!(T1, T2, T3)
 #[macro_export]
 macro_rules! GhtType {
+    // Empty key
     (() => $( $z:ty ),* ) => (
         $crate::GhtNodeTypeWithSchema!(() => $( $z ),* => $crate::variadics::var_type!($( $z ),* ))
     );
-    ($a:ty => $( $z:ty ),*) => (
-        $crate::GhtNodeTypeWithSchema!($a => $( $z ),* => $crate::variadics::var_type!($a, $( $z ),+ ))
+
+    // Recursive case empty val
+    ($( $b:ty ),* => () ) => (
+        $crate::GhtNodeTypeWithSchema!($( $b ),* => () => $crate::variadics::var_type!($( $b ),*))
     );
-    ($a:ty, $( $b:ty ),* => $( $z:ty ),*) => (
-        $crate::GhtNodeTypeWithSchema!($a, $( $b ),* => $( $z ),* => $crate::variadics::var_type!($a, $( $b ),*, $( $z ),*))
+
+    // Recursive case
+    ($( $b:ty ),* => $( $z:ty ),*) => (
+        $crate::GhtNodeTypeWithSchema!($( $b ),* => $( $z ),* => $crate::variadics::var_type!($( $b ),*, $( $z ),*))
     );
 }
