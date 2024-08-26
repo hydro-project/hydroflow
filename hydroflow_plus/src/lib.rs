@@ -19,7 +19,10 @@ pub mod runtime_support {
 }
 
 pub mod stream;
-pub use stream::Stream;
+pub use stream::{Bounded, NoTick, Stream, Tick, Unbounded};
+
+pub mod singleton;
+pub use singleton::{Optional, Singleton};
 
 pub mod location;
 pub use location::{Cluster, Process};
