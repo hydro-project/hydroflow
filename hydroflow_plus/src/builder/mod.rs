@@ -5,6 +5,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use hydroflow::futures::stream::Stream as FuturesStream;
+use hydroflow::{tokio, tokio_stream};
 use internal::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
@@ -13,7 +14,7 @@ use stageleft::*;
 
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{Cluster, Location, LocationId, Process};
-use crate::stream::{Async, Windowed};
+use crate::stream::{Bounded, NoTick, Tick, Unbounded};
 use crate::{HfCycle, RuntimeContext, Stream};
 
 pub mod built;
@@ -189,14 +190,14 @@ impl<'a> FlowBuilder<'a> {
         }
     }
 
-    pub fn spin<L: Location>(&self, on: &L) -> Stream<'a, (), Async, L> {
+    pub fn spin<L: Location>(&self, on: &L) -> Stream<'a, (), Unbounded, NoTick, L> {
         Stream::new(
             on.id(),
             self.ir_leaves().clone(),
-            HfPlusNode::Source {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
                 source: HfPlusSource::Spin(),
                 location_kind: on.id(),
-            },
+            })),
         )
     }
 
@@ -204,7 +205,7 @@ impl<'a> FlowBuilder<'a> {
         &self,
         on: &L,
         batch_size: impl Quoted<'a, usize> + Copy + 'a,
-    ) -> Stream<'a, (), Windowed, L> {
+    ) -> Stream<'a, (), Bounded, Tick, L> {
         self.spin(on)
             .flat_map(q!(move |_| 0..batch_size))
             .map(q!(|_| ()))
@@ -215,16 +216,16 @@ impl<'a> FlowBuilder<'a> {
         &self,
         on: &L,
         e: impl Quoted<'a, E>,
-    ) -> Stream<'a, T, Async, L> {
+    ) -> Stream<'a, T, Unbounded, NoTick, L> {
         let e = e.splice();
 
         Stream::new(
             on.id(),
             self.ir_leaves().clone(),
-            HfPlusNode::Source {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
                 source: HfPlusSource::Stream(e.into()),
                 location_kind: on.id(),
-            },
+            })),
         )
     }
 
@@ -232,16 +233,16 @@ impl<'a> FlowBuilder<'a> {
         &self,
         on: &L,
         e: impl Quoted<'a, E>,
-    ) -> Stream<'a, T, Windowed, L> {
+    ) -> Stream<'a, T, Bounded, NoTick, L> {
         let e = e.splice();
 
         Stream::new(
             on.id(),
             self.ir_leaves().clone(),
-            HfPlusNode::Source {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
                 source: HfPlusSource::Iter(e.into()),
                 location_kind: on.id(),
-            },
+            })),
         )
     }
 
@@ -249,16 +250,16 @@ impl<'a> FlowBuilder<'a> {
         &self,
         on: &L,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
-    ) -> Stream<'a, (), Async, L> {
+    ) -> Stream<'a, (), Unbounded, NoTick, L> {
         let interval = interval.splice();
 
         Stream::new(
             on.id(),
             self.ir_leaves().clone(),
-            HfPlusNode::Source {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
                 source: HfPlusSource::Interval(interval.into()),
                 location_kind: on.id(),
-            },
+            })),
         )
     }
 
@@ -267,19 +268,59 @@ impl<'a> FlowBuilder<'a> {
         on: &L,
         delay: impl Quoted<'a, Duration> + Copy + 'a,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
-    ) -> Stream<'a, hydroflow::tokio::time::Instant, Async, L> {
+    ) -> Stream<'a, tokio::time::Instant, Unbounded, NoTick, L> {
         self.source_stream(
             on,
-            q!(hydroflow::tokio_stream::wrappers::IntervalStream::new(
-                hydroflow::tokio::time::interval_at(
-                    hydroflow::tokio::time::Instant::now() + delay,
-                    interval
-                )
+            q!(tokio_stream::wrappers::IntervalStream::new(
+                tokio::time::interval_at(tokio::time::Instant::now() + delay, interval)
             )),
         )
     }
 
-    pub fn cycle<T, W, L: Location>(&self, on: &L) -> (HfCycle<'a, T, W, L>, Stream<'a, T, W, L>) {
+    #[allow(clippy::type_complexity)]
+    pub fn cycle<T, W, L: Location>(
+        &self,
+        on: &L,
+    ) -> (HfCycle<'a, T, W, NoTick, L>, Stream<'a, T, W, NoTick, L>) {
+        let next_id = {
+            let on_id = match on.id() {
+                LocationId::Process(id) => id,
+                LocationId::Cluster(id) => id,
+            };
+
+            let mut cycle_ids = self.cycle_ids.borrow_mut();
+            let next_id_entry = cycle_ids.entry(on_id).or_default();
+
+            let id = *next_id_entry;
+            *next_id_entry += 1;
+            id
+        };
+
+        let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
+
+        (
+            HfCycle {
+                ident: ident.clone(),
+                location_kind: on.id(),
+                ir_leaves: self.ir_leaves().clone(),
+                _phantom: PhantomData,
+            },
+            Stream::new(
+                on.id(),
+                self.ir_leaves().clone(),
+                HfPlusNode::Persist(Box::new(HfPlusNode::CycleSource {
+                    ident,
+                    location_kind: on.id(),
+                })),
+            ),
+        )
+    }
+
+    #[allow(clippy::type_complexity)]
+    pub fn tick_cycle<T, W, L: Location>(
+        &self,
+        on: &L,
+    ) -> (HfCycle<'a, T, W, Tick, L>, Stream<'a, T, W, Tick, L>) {
         let next_id = {
             let on_id = match on.id() {
                 LocationId::Process(id) => id,

@@ -226,6 +226,7 @@ pub enum HfPlusNode<'a> {
     },
 
     Persist(Box<HfPlusNode<'a>>),
+    Unpersist(Box<HfPlusNode<'a>>),
     Delta(Box<HfPlusNode<'a>>),
 
     Union(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
@@ -519,6 +520,7 @@ impl<'a> HfPlusNode<'a> {
             }
 
             HfPlusNode::Persist(inner) => transform(inner.as_mut(), seen_tees),
+            HfPlusNode::Unpersist(inner) => transform(inner.as_mut(), seen_tees),
             HfPlusNode::Delta(inner) => transform(inner.as_mut(), seen_tees),
 
             HfPlusNode::Union(left, right) => {
@@ -621,6 +623,10 @@ impl<'a> HfPlusNode<'a> {
                 });
 
                 (persist_ident, location)
+            }
+
+            HfPlusNode::Unpersist(_) => {
+                panic!("Unpersist is a marker node and should have been optimized away. This is likely a compiler bug.")
             }
 
             HfPlusNode::Delta(inner) => {
