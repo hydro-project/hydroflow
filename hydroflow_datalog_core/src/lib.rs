@@ -828,7 +828,7 @@ mod tests {
 
             let flat_graph_ref = &flat_graph;
             insta::with_settings!({snapshot_suffix => "surface_graph"}, {
-                insta::assert_display_snapshot!(flat_graph_ref.surface_syntax_string());
+                insta::assert_snapshot!(flat_graph_ref.surface_syntax_string());
             });
 
             let tokens = hydroflow_graph_to_program(flat_graph, quote::quote! { hydroflow });
@@ -840,7 +840,7 @@ mod tests {
             };
 
             insta::with_settings!({snapshot_suffix => "datalog_program"}, {
-                insta::assert_display_snapshot!(
+                insta::assert_snapshot!(
                     prettyplease::unparse(&wrapped)
                 );
             });

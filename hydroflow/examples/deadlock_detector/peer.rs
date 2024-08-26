@@ -102,6 +102,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
 
     };
 
+    #[cfg(feature = "debugging")]
     if let Some(graph) = opts.graph {
         let serde_graph = hf
             .meta_graph()

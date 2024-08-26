@@ -46,7 +46,7 @@ pub fn compute_pi(flow: &FlowBuilder, batch_size: usize) -> (Cluster<Worker>, Pr
 
 #[cfg(test)]
 mod tests {
-    use hydroflow_plus_deploy::CLIRuntime;
+    use hydroflow_plus_deploy::DeployRuntime;
     use stageleft::RuntimeData;
 
     #[test]
@@ -58,11 +58,11 @@ mod tests {
         insta::assert_debug_snapshot!(built.ir());
 
         for (id, ir) in built
-            .compile::<CLIRuntime>(&RuntimeData::new("FAKE"))
+            .compile::<DeployRuntime>(&RuntimeData::new("FAKE"))
             .hydroflow_ir()
         {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
-                insta::assert_display_snapshot!(ir.surface_syntax_string());
+                insta::assert_snapshot!(ir.surface_syntax_string());
             });
         }
     }

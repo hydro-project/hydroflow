@@ -66,7 +66,7 @@ impl<'a, ID> HfCompiled<'a, ID> {
 }
 
 impl<'a> HfCompiled<'a, usize> {
-    pub fn with_dynamic_id(self, id: impl Quoted<'a, usize>) -> HfBuiltWithID<'a> {
+    pub fn with_dynamic_id(self, id: impl Quoted<'a, usize>) -> HfBuiltWithId<'a> {
         let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
             .expect("hydroflow_plus should be present in `Cargo.toml`");
         let root = match hydroflow_crate {
@@ -109,7 +109,7 @@ impl<'a> HfCompiled<'a, usize> {
 
         let conditioned_tokens: TokenStream = conditioned_tokens.unwrap();
         let id = id.splice();
-        HfBuiltWithID {
+        HfBuiltWithId {
             tokens: syn::parse_quote!({
                 let __given_id = #id;
                 #conditioned_tokens else {
@@ -150,14 +150,14 @@ impl<'a> FreeVariable<Hydroflow<'a>> for HfCompiled<'a, ()> {
     }
 }
 
-pub struct HfBuiltWithID<'a> {
+pub struct HfBuiltWithId<'a> {
     tokens: TokenStream,
     _phantom: PhantomData<&'a mut &'a ()>,
 }
 
-impl<'a> Quoted<'a, Hydroflow<'a>> for HfBuiltWithID<'a> {}
+impl<'a> Quoted<'a, Hydroflow<'a>> for HfBuiltWithId<'a> {}
 
-impl<'a> FreeVariable<Hydroflow<'a>> for HfBuiltWithID<'a> {
+impl<'a> FreeVariable<Hydroflow<'a>> for HfBuiltWithId<'a> {
     fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
         (None, Some(self.tokens))
     }

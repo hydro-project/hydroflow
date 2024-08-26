@@ -8,10 +8,10 @@ edition = "2021"
 stageleft_devel = []
 
 [dependencies]
-hydroflow = { path = "../hydroflow", version = "^0.8.0", default-features = false, features = ["debugging"] }
+hydroflow = { path = "../hydroflow", version = "^0.8.0", default-features = false } # , features = ["debugging"] }
 hydroflow_plus = { path = "../hydroflow_plus", version = "^0.8.0" }
 stageleft = { path = "../stageleft", version = "^0.3.0" }
-rand = "0.8.5"
+rand = "0.8.0"
 
 hydroflow_plus_test_local_macro = { path = "../hydroflow_plus_test_local_macro" }
 
@@ -19,5 +19,5 @@ hydroflow_plus_test_local_macro = { path = "../hydroflow_plus_test_local_macro" 
 stageleft_tool = { path = "../stageleft_tool", version = "^0.2.0" }
 
 [dev-dependencies]
-insta = "1.7.1"
-futures = "0.3"
+insta = "1.39"
+futures = "0.3.0"

@@ -15,10 +15,10 @@ default = []
 diagnostics = [ "hydroflow_lang/diagnostics" ]
 
 [dependencies]
-quote = "1.0.0"
-slotmap = "1.0.6"
-syn = { version = "2.0.0", features = [ "parsing", "extra-traits" ] }
-proc-macro2 = "1.0.63"
+quote = "1.0.35"
+slotmap = "1.0.0"
+syn = { version = "2.0.46", features = [ "parsing", "extra-traits" ] }
+proc-macro2 = "1.0.74"
 rust-sitter = "0.4.2"
 hydroflow_lang = { path = "../hydroflow_lang", version = "^0.8.0" }
 
@@ -26,6 +26,6 @@ hydroflow_lang = { path = "../hydroflow_lang", version = "^0.8.0" }
 rust-sitter-tool = "0.4.2"
 
 [dev-dependencies]
-insta = "1.7.1"
-prettyplease = "0.2.0"
-tempfile = "3.2.0"
+insta = "1.39"
+prettyplease = { version = "0.2.0", features = [ "verbatim" ] }
+tempfile = "3"

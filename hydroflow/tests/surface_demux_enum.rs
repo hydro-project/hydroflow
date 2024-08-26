@@ -123,3 +123,30 @@ pub fn test_demux_enum_generic() {
     test::<f32>(9., 10., 8., 5.);
     test::<u32>(9, 10, 8, 5);
 }
+
+#[multiplatform_test]
+fn test_zero_variants() {
+    #[derive(DemuxEnum)]
+    enum Never {}
+    let (_tx, rx) = hydroflow::util::unbounded_channel::<Never>();
+
+    let mut df = hydroflow_syntax! {
+        source_stream(rx)
+            -> demux_enum::<Never>();
+    };
+    df.run_available();
+}
+
+#[multiplatform_test]
+fn test_one_variant() {
+    #[derive(DemuxEnum)]
+    enum Request<T> {
+        OnlyMessage(T),
+    }
+
+    let mut df = hydroflow_syntax! {
+        input = source_iter([Request::OnlyMessage("hi")]) -> demux_enum::<Request<&'static str>>();
+        input[OnlyMessage] -> assert_eq([("hi",)]);
+    };
+    df.run_available();
+}

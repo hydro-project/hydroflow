@@ -47,12 +47,14 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
             -> network_send;
     };
 
+    #[cfg(feature = "debugging")]
     if let Some(graph) = opts.graph {
         let serde_graph = hf
             .meta_graph()
             .expect("No graph found, maybe failed to parse.");
         serde_graph.open_graph(graph, opts.write_config).unwrap();
     }
+    let _ = opts;
 
     hf.run_async().await.unwrap();
 }
