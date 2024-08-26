@@ -1295,7 +1295,9 @@ dependencies = [
  "hydroflow_deploy_integration",
  "indicatif",
  "inferno",
+ "itertools",
  "memo-map",
+ "nameof",
  "nanoid",
  "nix",
  "serde",
@@ -1859,6 +1861,12 @@ dependencies = [
  "tracing-subscriber",
  "wasm-bindgen-test",
 ]
+
+[[package]]
+name = "nameof"
+version = "1.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ce8b389a86cabeb0d8b33a61e60f3cbb4de38914342fe274e69111f3b5d9c44"
 
 [[package]]
 name = "nanoid"
@@ -3238,6 +3246,7 @@ checksum = "9cf6b47b3771c49ac75ad09a6162f53ad4b8088b76ac60e8ec1455b31a189fe1"
 dependencies = [
  "bytes",
  "futures-core",
+ "futures-io",
  "futures-sink",
  "pin-project-lite",
  "tokio",

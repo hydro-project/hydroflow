@@ -1,10 +1,12 @@
+#![allow(clippy::let_and_return)]
+
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use hydroflow_crate::perf_options::PerfOptions;
+use hydroflow_crate::tracing_options::TracingOptions;
 use hydroflow_deploy_integration::ServerBindConfig;
 
 pub mod deployment;
@@ -104,7 +106,7 @@ pub trait LaunchedHost: Send + Sync {
         id: String,
         binary: &BuildOutput,
         args: &[String],
-        perf: Option<PerfOptions>,
+        perf: Option<TracingOptions>,
     ) -> Result<Box<dyn LaunchedBinary>>;
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr>;

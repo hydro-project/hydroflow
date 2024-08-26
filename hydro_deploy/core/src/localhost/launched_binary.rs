@@ -1,20 +1,31 @@
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
-use std::process::ExitStatus;
+use std::process::{ExitStatus, Stdio};
 use std::sync::{Arc, Mutex};
 
-use anyhow::Result;
+use anyhow::{anyhow, bail, Result};
+use async_process::Command;
 use async_trait::async_trait;
-use futures::io::BufReader;
-use futures::{AsyncBufReadExt, AsyncWriteExt};
+use futures::io::BufReader as FuturesBufReader;
+use futures::{AsyncBufReadExt as _, AsyncWriteExt as _};
+use inferno::collapse::dtrace::Folder as DtraceFolder;
+use inferno::collapse::perf::Folder as PerfFolder;
+use inferno::collapse::Collapse;
+use nameof::name_of;
+use tokio::io::{AsyncBufReadExt as _, BufReader as TokioBufReader};
 use tokio::sync::{mpsc, oneshot};
+use tokio_util::compat::FuturesAsyncReadCompatExt;
+use tokio_util::io::SyncIoBridge;
 
+use crate::hydroflow_crate::flamegraph::handle_fold_data;
+use crate::hydroflow_crate::tracing_options::TracingOptions;
 use crate::progress::ProgressTracker;
 use crate::util::prioritized_broadcast;
 use crate::LaunchedBinary;
 
 pub struct LaunchedLocalhostBinary {
     child: Mutex<async_process::Child>,
+    tracing: Option<TracingOptions>,
     stdin_sender: mpsc::UnboundedSender<String>,
     stdout_deploy_receivers: Arc<Mutex<Option<oneshot::Sender<String>>>>,
     stdout_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
@@ -41,7 +52,11 @@ impl Drop for LaunchedLocalhostBinary {
 }
 
 impl LaunchedLocalhostBinary {
-    pub fn new(mut child: async_process::Child, id: String) -> Self {
+    pub fn new(
+        mut child: async_process::Child,
+        id: String,
+        tracing: Option<TracingOptions>,
+    ) -> Self {
         let (stdin_sender, mut stdin_receiver) = mpsc::unbounded_channel::<String>();
         let mut stdin = child.stdin.take().unwrap();
         tokio::spawn(async move {
@@ -56,16 +71,17 @@ impl LaunchedLocalhostBinary {
 
         let id_clone = id.clone();
         let (stdout_deploy_receivers, stdout_receivers) = prioritized_broadcast(
-            BufReader::new(child.stdout.take().unwrap()).lines(),
+            FuturesBufReader::new(child.stdout.take().unwrap()).lines(),
             move |s| ProgressTracker::println(format!("[{id_clone}] {s}")),
         );
         let (_, stderr_receivers) = prioritized_broadcast(
-            BufReader::new(child.stderr.take().unwrap()).lines(),
-            move |s| ProgressTracker::println(format!("[{id} stderr] {s}")),
+            FuturesBufReader::new(child.stderr.take().unwrap()).lines(),
+            move |s| ProgressTracker::println(&format!("[{id} stderr] {s}")),
         );
 
         Self {
             child: Mutex::new(child),
+            tracing,
             stdin_sender,
             stdout_deploy_receivers,
             stdout_receivers,
@@ -121,7 +137,93 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
     }
 
     async fn stop(&mut self) -> Result<()> {
-        self.child.get_mut().unwrap().kill()?;
+        if let Err(err) = self.child.get_mut().unwrap().kill() {
+            if !matches!(err.kind(), std::io::ErrorKind::InvalidInput) {
+                Err(err)?;
+            }
+        }
+
+        // Run perf post-processing and download perf output.
+        if let Some(tracing) = self.tracing.as_ref() {
+            let fold_data = if cfg!(target_os = "macos") || cfg!(target_family = "windows") {
+                let dtrace_outfile = tracing.dtrace_outfile.as_ref().ok_or_else(|| {
+                    anyhow!(
+                        "`{}` must be set for `dtrace` on localhost.",
+                        name_of!(dtrace_outfile in TracingOptions)
+                    )
+                })?;
+                let mut fold_er =
+                    DtraceFolder::from(tracing.fold_dtrace_options.clone().unwrap_or_default());
+
+                let fold_data =
+                    ProgressTracker::leaf("fold dtrace output".to_owned(), async move {
+                        let mut fold_data = Vec::new();
+                        fold_er.collapse_file(Some(dtrace_outfile), &mut fold_data)?;
+                        Result::<_>::Ok(fold_data)
+                    })
+                    .await?;
+                fold_data
+            } else if cfg!(target_family = "unix") {
+                let perf_raw_outfile = tracing.perf_raw_outfile.as_ref().ok_or_else(|| {
+                    anyhow!(
+                        "`{}` must be set for `perf` on localhost.",
+                        name_of!(perf_raw_outfile in TracingOptions)
+                    )
+                })?;
+
+                // Run perf script.
+                let mut perf_script = Command::new("perf")
+                    .args(["script", "--symfs=/", "-i"])
+                    .arg(perf_raw_outfile)
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()?;
+
+                let stdout = perf_script.stdout.take().unwrap().compat();
+                let mut stderr_lines =
+                    TokioBufReader::new(perf_script.stderr.take().unwrap().compat()).lines();
+
+                let mut fold_er =
+                    PerfFolder::from(tracing.fold_perf_options.clone().unwrap_or_default());
+
+                // Pattern on `()` to make sure no `Result`s are ignored.
+                let ((), fold_data, ()) = tokio::try_join!(
+                    async move {
+                        // Log stderr.
+                        while let Ok(Some(s)) = stderr_lines.next_line().await {
+                            ProgressTracker::println(&format!("[perf script stderr] {s}"));
+                        }
+                        Result::<_>::Ok(())
+                    },
+                    async move {
+                        // Stream `perf script` stdout and fold.
+                        tokio::task::spawn_blocking(move || {
+                            let mut fold_data = Vec::new();
+                            fold_er.collapse(
+                                SyncIoBridge::new(tokio::io::BufReader::new(stdout)),
+                                &mut fold_data,
+                            )?;
+                            Ok(fold_data)
+                        })
+                        .await?
+                    },
+                    async move {
+                        // Close stdin and wait for command exit.
+                        perf_script.status().await?;
+                        Ok(())
+                    },
+                )?;
+                fold_data
+            } else {
+                bail!(
+                    "Unknown OS for perf/dtrace tracing: {}",
+                    std::env::consts::OS
+                );
+            };
+
+            handle_fold_data(tracing, fold_data).await?;
+        };
+
         Ok(())
     }
 }

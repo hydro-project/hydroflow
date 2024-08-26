@@ -4,10 +4,10 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use hydro_deploy::custom_service::CustomClientPort;
-use hydro_deploy::hydroflow_crate::perf_options::PerfOptions;
 use hydro_deploy::hydroflow_crate::ports::{
     DemuxSink, HydroflowSink, HydroflowSource, TaggedSource,
 };
+use hydro_deploy::hydroflow_crate::tracing_options::TracingOptions;
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{Deployment, Host, HydroflowCrate};
 use hydroflow_plus::deploy::{ClusterSpec, Deploy, Node, ProcessSpec};
@@ -261,7 +261,7 @@ pub struct TrybuildHost {
     pub host: Arc<dyn Host>,
     pub display_name: Option<String>,
     pub rustflags: Option<String>,
-    pub perf: Option<PerfOptions>,
+    pub tracing: Option<TracingOptions>,
     pub name_hint: Option<String>,
     pub cluster_idx: Option<usize>,
 }
@@ -272,7 +272,7 @@ impl TrybuildHost {
             host,
             display_name: None,
             rustflags: None,
-            perf: None,
+            tracing: None,
             name_hint: None,
             cluster_idx: None,
         }
@@ -300,13 +300,13 @@ impl TrybuildHost {
         }
     }
 
-    pub fn perf(self, perf: PerfOptions) -> Self {
-        if self.perf.is_some() {
-            panic!("perf already set");
+    pub fn tracing(self, tracing: TracingOptions) -> Self {
+        if self.tracing.is_some() {
+            panic!("tracing already set");
         }
 
         Self {
-            perf: Some(perf),
+            tracing: Some(tracing),
             ..self
         }
     }
@@ -318,7 +318,7 @@ impl From<Arc<dyn Host>> for TrybuildHost {
             host: h,
             display_name: None,
             rustflags: None,
-            perf: None,
+            tracing: None,
             name_hint: None,
             cluster_idx: None,
         }
@@ -668,8 +668,8 @@ fn create_trybuild_service(
         ret = ret.rustflags(rustflags);
     }
 
-    if let Some(perf) = trybuild.perf {
-        ret = ret.perf(perf);
+    if let Some(tracing) = trybuild.tracing {
+        ret = ret.tracing(tracing);
     }
 
     if let Some(features) = features {
