@@ -1,7 +1,8 @@
-use gossip_protocol::Namespace;
 use hydroflow::lattices::map_union::MapUnionHashMap;
 use hydroflow::lattices::set_union::SetUnionHashSet;
 use hydroflow::lattices::{DomPair, Max};
+
+use crate::Namespace;
 
 /// Primary key for entries in a table.
 pub type RowKey = String;
@@ -13,15 +14,17 @@ pub type RowKey = String;
 pub type RowValue<C> = DomPair<C, SetUnionHashSet<String>>;
 
 /// A map from row keys to values in a table.
-pub type Table<C> = MapUnionHashMap<RowKey, RowValue<C>>;
+pub type Table<V> = MapUnionHashMap<RowKey, V>;
 
 /// Name of a table in the data store.
 pub type TableName = String;
 
 /// A map from table names to tables.
-pub type TableMap<C> = MapUnionHashMap<TableName, Table<C>>;
+pub type TableMap<V> = MapUnionHashMap<TableName, Table<V>>;
 
-pub type Namespaces<C> = MapUnionHashMap<Namespace, TableMap<C>>;
+pub type NamespaceMap<V> = MapUnionHashMap<Namespace, TableMap<V>>;
+
+pub type Namespaces<C> = NamespaceMap<RowValue<C>>;
 
 /// Timestamps used in the model.
 // TODO: This will be updated to use a more sophisticated clock type with https://github.com/hydro-project/hydroflow/issues/1207.
@@ -45,8 +48,8 @@ pub fn upsert_row<C>(
     val: String,
 ) -> Namespaces<C> {
     let value: RowValue<C> = RowValue::new_from(row_ts, SetUnionHashSet::new_from([val]));
-    let row: Table<C> = Table::new_from([(key, value)]);
-    let table: TableMap<C> = TableMap::new_from([(table_name, row)]);
+    let row: Table<RowValue<C>> = Table::new_from([(key, value)]);
+    let table: TableMap<RowValue<C>> = TableMap::new_from([(table_name, row)]);
     Namespaces::new_from([(ns, table)])
 }
 
@@ -65,7 +68,7 @@ pub fn delete_row<C>(
     key: RowKey,
 ) -> Namespaces<C> {
     let value: RowValue<C> = RowValue::new_from(row_ts, SetUnionHashSet::new_from([]));
-    let row: Table<C> = Table::new_from([(key, value)]);
+    let row: Table<RowValue<C>> = Table::new_from([(key, value)]);
     let table = TableMap::new_from([(table_name, row)]);
     Namespaces::new_from([(ns, table)])
 }
@@ -74,10 +77,10 @@ pub fn delete_row<C>(
 mod tests {
     use std::collections::HashSet;
 
-    use gossip_protocol::Namespace::System;
     use hydroflow::lattices::Merge;
 
     use crate::model::{delete_row, upsert_row, Clock, Namespaces, RowKey, TableName};
+    use crate::Namespace::System;
 
     #[test]
     fn test_table_map() {

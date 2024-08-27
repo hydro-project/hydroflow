@@ -2,13 +2,14 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::hash::Hash;
 
-use hydroflow::lattices::{IsBot, IsTop, LatticeOrd, Merge};
+use hydroflow::lattices::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use serde::{Deserialize, Serialize};
 
 /// A bounded set union lattice with a fixed size N.
 ///
 /// Once the set reaches size N, it becomes top. The items in the set are no longer tracked to
 /// reclaim associated memory.
-#[derive(Debug, Clone, Eq)]
+#[derive(Debug, Clone, Eq, Serialize, Deserialize)]
 
 pub struct BoundedSetLattice<T, const N: usize>
 where
@@ -18,6 +19,15 @@ where
     // is_top => items.is_empty() ... i.e. the items are dropped when the lattice reaches top.
     items: HashSet<T>,
     is_top: bool,
+}
+
+impl<T, const N: usize> LatticeFrom<BoundedSetLattice<T, N>> for BoundedSetLattice<T, N>
+where
+    T: Eq + Hash,
+{
+    fn lattice_from(other: BoundedSetLattice<T, N>) -> Self {
+        other
+    }
 }
 
 impl<T, const N: usize> Default for BoundedSetLattice<T, N>
