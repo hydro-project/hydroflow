@@ -90,11 +90,11 @@ impl<'a, T: Clone, W, C, N: Location> Clone for Singleton<'a, T, W, C, N> {
     }
 }
 
-impl<'a, T, N: Location> Singleton<'a, T, Bounded, Tick, N> {
+impl<'a, T, W, C, N: Location> Singleton<'a, T, W, C, N> {
     pub fn map<U, F: Fn(T) -> U + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
-    ) -> Singleton<'a, U, Bounded, Tick, N> {
+    ) -> Singleton<'a, U, W, C, N> {
         Singleton::new(
             self.location_kind,
             self.ir_leaves,
@@ -108,7 +108,7 @@ impl<'a, T, N: Location> Singleton<'a, T, Bounded, Tick, N> {
     pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
-    ) -> Stream<'a, U, Bounded, Tick, N> {
+    ) -> Stream<'a, U, W, C, N> {
         Stream::new(
             self.location_kind,
             self.ir_leaves,
@@ -122,7 +122,7 @@ impl<'a, T, N: Location> Singleton<'a, T, Bounded, Tick, N> {
     pub fn filter<F: Fn(&T) -> bool + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
-    ) -> Optional<'a, T, Bounded, Tick, N> {
+    ) -> Optional<'a, T, W, C, N> {
         Optional::new(
             self.location_kind,
             self.ir_leaves,
@@ -136,7 +136,7 @@ impl<'a, T, N: Location> Singleton<'a, T, Bounded, Tick, N> {
     pub fn filter_map<U, F: Fn(T) -> Option<U> + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
-    ) -> Optional<'a, U, Bounded, Tick, N> {
+    ) -> Optional<'a, U, W, C, N> {
         Optional::new(
             self.location_kind,
             self.ir_leaves,
@@ -146,7 +146,9 @@ impl<'a, T, N: Location> Singleton<'a, T, Bounded, Tick, N> {
             },
         )
     }
+}
 
+impl<'a, T, N: Location> Singleton<'a, T, Bounded, Tick, N> {
     pub fn cross_singleton<O>(
         self,
         other: impl Into<Optional<'a, O, Bounded, Tick, N>>,
