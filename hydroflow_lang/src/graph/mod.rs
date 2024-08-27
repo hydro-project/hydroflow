@@ -190,9 +190,10 @@ pub struct OpInstGenerics {
     pub type_args: Vec<Type>,
 }
 
-/// Gets the generic arguments for the operator. This helper method is here due to the special
-/// handling of persistence lifetimes (`'static`, `'tick`, `'mutable`) which must come before
-/// other generic parameters.
+/// Gets the generic arguments for the operator.
+///
+/// This helper method is useful due to the special handling of persistence lifetimes (`'static`,
+/// `'tick`, `'mutable`) which must come before other generic parameters.
 pub fn get_operator_generics(
     diagnostics: &mut Vec<Diagnostic>,
     operator: &Operator,

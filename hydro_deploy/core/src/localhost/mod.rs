@@ -159,9 +159,9 @@ impl LaunchedHost for LaunchedLocalhost {
         let mut command = if let Some(tracing) = tracing.as_ref() {
             if cfg!(target_os = "macos") || cfg!(target_family = "windows") {
                 // dtrace
-                ProgressTracker::println(&format!(
-                    "[{id} tracing] Profiling binary with `dtrace`.",
-                ));
+                ProgressTracker::println(
+                    format!("[{id} tracing] Profiling binary with `dtrace`.",),
+                );
                 let dtrace_outfile = tracing.dtrace_outfile.as_ref().ok_or_else(|| {
                     anyhow!(
                         "`{}` must be set for `dtrace` on localhost.",
@@ -215,7 +215,7 @@ impl LaunchedHost for LaunchedLocalhost {
             // }
             else if cfg!(target_family = "unix") {
                 // perf
-                ProgressTracker::println(&format!("[{} tracing] Tracing binary with `perf`.", id));
+                ProgressTracker::println(format!("[{} tracing] Tracing binary with `perf`.", id));
                 let perf_outfile = tracing.perf_raw_outfile.as_ref().ok_or_else(|| {
                     anyhow!(
                         "`{}` must be set for `perf` on localhost.",
@@ -257,7 +257,7 @@ impl LaunchedHost for LaunchedLocalhost {
         #[cfg(not(target_family = "unix"))]
         command.kill_on_drop(true);
 
-        ProgressTracker::println(&format!("[{}] running command: `{:?}`", id, command));
+        ProgressTracker::println(format!("[{}] running command: `{:?}`", id, command));
 
         let child = command
             .spawn()

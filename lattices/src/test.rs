@@ -270,8 +270,10 @@ pub fn check_lattice_bimorphism<LatA, LatB, Func>(
     }
 }
 
-/// Returns an iterator of `N`-length arrays containing all possible permutations (with
-/// replacement) of items in `items`. I.e. the `N`th cartesian power of `items`. I.e. the cartesian
+/// Returns an iterator of `N`-length arrays containing all permutations of `items` (with
+/// replacement).
+///
+/// I.e. the `N`th cartesian power of `items`. I.e. the cartesian
 /// product of `items` with itself `N` times.
 pub fn cartesian_power<T, const N: usize>(
     items: &[T],
