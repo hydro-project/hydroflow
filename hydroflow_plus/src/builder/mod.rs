@@ -12,11 +12,11 @@ use quote::quote;
 use runtime_support::FreeVariable;
 use stageleft::*;
 
-use crate::cycle::CycleCollection;
+use crate::cycle::{CycleCollection, CycleCollectionWithInitial};
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{Cluster, Location, LocationId, Process};
 use crate::stream::{Bounded, NoTick, Tick, Unbounded};
-use crate::{HfCycle, Optional, RuntimeContext, Stream};
+use crate::{HfCycle, Optional, RuntimeContext, Singleton, Stream};
 
 pub mod built;
 pub mod deploy;
@@ -247,6 +247,47 @@ impl<'a> FlowBuilder<'a> {
         )
     }
 
+    pub fn singleton<T: Clone, L: Location>(
+        &self,
+        on: &L,
+        e: impl Quoted<'a, T>,
+    ) -> Singleton<'a, T, Bounded, NoTick, L> {
+        let e_arr = q!([e]);
+        let e = e_arr.splice();
+
+        // we do a double persist here because if the singleton shows up on every tick,
+        // we first persist the source so that we store that value and then persist again
+        // so that it grows every tick
+        Singleton::new(
+            on.id(),
+            self.ir_leaves().clone(),
+            HfPlusNode::Persist(Box::new(HfPlusNode::Persist(Box::new(
+                HfPlusNode::Source {
+                    source: HfPlusSource::Iter(e.into()),
+                    location_kind: on.id(),
+                },
+            )))),
+        )
+    }
+
+    pub fn singleton_once<T: Clone, L: Location>(
+        &self,
+        on: &L,
+        e: impl Quoted<'a, T>,
+    ) -> Optional<'a, T, Bounded, NoTick, L> {
+        let e_arr = q!([e]);
+        let e = e_arr.splice();
+
+        Optional::new(
+            on.id(),
+            self.ir_leaves().clone(),
+            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
+                source: HfPlusSource::Iter(e.into()),
+                location_kind: on.id(),
+            })),
+        )
+    }
+
     pub fn source_interval<L: Location>(
         &self,
         on: &L,
@@ -304,6 +345,36 @@ impl<'a> FlowBuilder<'a> {
                 _phantom: PhantomData,
             },
             S::create_source(ident, self.ir_leaves.clone(), on.id()),
+        )
+    }
+
+    pub fn cycle_with_initial<S: CycleCollectionWithInitial<'a>>(
+        &self,
+        on: &S::Location,
+        initial: S,
+    ) -> (HfCycle<'a, S>, S) {
+        let next_id = {
+            let on_id = match on.id() {
+                LocationId::Process(id) => id,
+                LocationId::Cluster(id) => id,
+            };
+
+            let mut cycle_ids = self.cycle_ids.borrow_mut();
+            let next_id_entry = cycle_ids.entry(on_id).or_default();
+
+            let id = *next_id_entry;
+            *next_id_entry += 1;
+            id
+        };
+
+        let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
+
+        (
+            HfCycle {
+                ident: ident.clone(),
+                _phantom: PhantomData,
+            },
+            S::create_source(ident, self.ir_leaves.clone(), initial, on.id()),
         )
     }
 }
