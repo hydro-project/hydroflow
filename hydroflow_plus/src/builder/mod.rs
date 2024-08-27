@@ -16,7 +16,7 @@ use crate::cycle::CycleCollection;
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{Cluster, Location, LocationId, Process};
 use crate::stream::{Bounded, NoTick, Tick, Unbounded};
-use crate::{HfCycle, RuntimeContext, Stream};
+use crate::{HfCycle, Optional, RuntimeContext, Stream};
 
 pub mod built;
 pub mod deploy;
@@ -251,10 +251,10 @@ impl<'a> FlowBuilder<'a> {
         &self,
         on: &L,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
-    ) -> Stream<'a, (), Unbounded, NoTick, L> {
+    ) -> Optional<'a, (), Unbounded, NoTick, L> {
         let interval = interval.splice();
 
-        Stream::new(
+        Optional::new(
             on.id(),
             self.ir_leaves().clone(),
             HfPlusNode::Persist(Box::new(HfPlusNode::Source {
@@ -269,13 +269,16 @@ impl<'a> FlowBuilder<'a> {
         on: &L,
         delay: impl Quoted<'a, Duration> + Copy + 'a,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
-    ) -> Stream<'a, tokio::time::Instant, Unbounded, NoTick, L> {
+    ) -> Optional<'a, tokio::time::Instant, Unbounded, NoTick, L> {
         self.source_stream(
             on,
             q!(tokio_stream::wrappers::IntervalStream::new(
                 tokio::time::interval_at(tokio::time::Instant::now() + delay, interval)
             )),
         )
+        .tick_batch()
+        .first()
+        .latest()
     }
 
     pub fn cycle<S: CycleCollection<'a>>(&self, on: &S::Location) -> (HfCycle<'a, S>, S) {
