@@ -672,7 +672,7 @@ fn replica<'a>(
     // Create a cycle since we'll use this seq before we define it
     let (r_highest_seq_complete_cycle, r_highest_seq) =
         flow.cycle::<Optional<'a, i32, _, _, _>>(replicas);
-    let empty_slot = flow.source_iter(replicas, q!([-1])).tick_batch().first();
+    let empty_slot = flow.singleton_first_tick(replicas, q!(-1));
     // Either the max sequence number executed so far or -1. Need to union otherwise r_highest_seq is empty and joins with it will fail
     let r_highest_seq_with_default = r_highest_seq.union(empty_slot);
     // Find highest the sequence number of any payload that can be processed in this tick. This is the payload right before a hole.
@@ -1035,7 +1035,7 @@ fn p_ballot_calc<'a>(
 ) {
     let p_id = flow.cluster_self_id(proposers);
     let (p_ballot_num_complete_cycle, p_ballot_num) =
-        flow.cycle::<Optional<'a, u32, _, _, _>>(proposers);
+        flow.cycle_with_initial(proposers, flow.singleton(proposers, q!(0)).latest_tick());
 
     let p_new_ballot_num = p_received_max_ballot
         .clone()
@@ -1057,8 +1057,7 @@ fn p_ballot_calc<'a>(
             }
         }))
         .defer_tick();
-    let p_start_ballot_num = flow.source_iter(proposers, q!([0])).tick_batch().first();
-    p_ballot_num_complete_cycle.complete(p_start_ballot_num.union(p_new_ballot_num));
+    p_ballot_num_complete_cycle.complete(p_new_ballot_num);
 
     let p_ballot_num = p_ballot_num.latest();
 
