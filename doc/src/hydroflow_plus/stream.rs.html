@@ -680,6 +680,65 @@
 <a href="#680" id="680">680</a>
 <a href="#681" id="681">681</a>
 <a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -697,9 +756,10 @@
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use </span><span class="kw">crate</span>::builder::{ClusterIds, FlowLeaves};
+<span class="kw">use </span><span class="kw">crate</span>::cycle::CycleCollection;
 <span class="kw">use </span><span class="kw">crate</span>::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource};
 <span class="kw">use </span><span class="kw">crate</span>::location::{CanSend, Location, LocationId};
-<span class="kw">use </span><span class="kw">crate</span>::Cluster;
+<span class="kw">use crate</span>::{Cluster, Optional, Singleton};
 
 <span class="doccomment">/// Marks the stream as being unbounded, which means that it is not
 /// guaranteed to be complete in finite time.
@@ -732,6 +792,52 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) ir_node: RefCell&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
 
     _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), T, N, W, C)&gt;,
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; CycleCollection&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>Stream&lt;<span class="lifetime">'a</span>, T, W, Tick, N&gt; {
+    <span class="kw">type </span>Location = N;
+
+    <span class="kw">fn </span>create_source(ident: syn::Ident, ir_leaves: FlowLeaves&lt;<span class="lifetime">'a</span>&gt;, l: LocationId) -&gt; <span class="self">Self </span>{
+        Stream::new(
+            l,
+            ir_leaves,
+            HfPlusNode::CycleSource {
+                ident,
+                location_kind: l,
+            },
+        )
+    }
+
+    <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
+        <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
+            ident,
+            location_kind: <span class="self">self</span>.location_kind,
+            input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+        });
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; CycleCollection&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>Stream&lt;<span class="lifetime">'a</span>, T, W, NoTick, N&gt; {
+    <span class="kw">type </span>Location = N;
+
+    <span class="kw">fn </span>create_source(ident: syn::Ident, ir_leaves: FlowLeaves&lt;<span class="lifetime">'a</span>&gt;, l: LocationId) -&gt; <span class="self">Self </span>{
+        Stream::new(
+            l,
+            ir_leaves,
+            HfPlusNode::Persist(Box::new(HfPlusNode::CycleSource {
+                ident,
+                location_kind: l,
+            })),
+        )
+    }
+
+    <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
+        <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
+            ident,
+            location_kind: <span class="self">self</span>.location_kind,
+            input: Box::new(HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner()))),
+        });
+    }
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, C, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, C, N&gt; {
@@ -833,11 +939,12 @@
 
     <span class="kw">pub fn </span>cross_singleton&lt;O&gt;(
         <span class="self">self</span>,
-        other: Stream&lt;<span class="lifetime">'a</span>, O, Bounded, C, N&gt;,
+        other: <span class="kw">impl </span>Into&lt;Optional&lt;<span class="lifetime">'a</span>, O, Bounded, C, N&gt;&gt;,
     ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (T, O), W, C, N&gt;
     <span class="kw">where
         </span>O: Clone,
     {
+        <span class="kw">let </span>other: Optional&lt;<span class="lifetime">'a</span>, O, Bounded, C, N&gt; = other.into();
         <span class="kw">if </span><span class="self">self</span>.location_kind != other.location_kind {
             <span class="macro">panic!</span>(<span class="string">"cross_singleton must be called on streams on the same node"</span>);
         }
@@ -850,12 +957,6 @@
                 Box::new(other.ir_node.into_inner()),
             ),
         )
-    }
-
-    <span class="doccomment">/// Allow this stream through if the other stream has elements, otherwise the output is empty.
-    </span><span class="kw">pub fn </span>continue_if&lt;U&gt;(<span class="self">self</span>, signal: Stream&lt;<span class="lifetime">'a</span>, U, Bounded, C, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, C, N&gt; {
-        <span class="self">self</span>.cross_singleton(signal.map(<span class="macro">q!</span>(|_u| ())))
-            .map(<span class="macro">q!</span>(|(d, _signal)| d))
     }
 
     <span class="comment">// TODO(shadaj): should allow for differing windows, using strongest one
@@ -940,12 +1041,29 @@
         )
     }
 
+    <span class="kw">pub fn </span>first(<span class="self">self</span>) -&gt; Optional&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
+        Optional::new(
+            <span class="self">self</span>.location_kind,
+            <span class="self">self</span>.ir_leaves,
+            <span class="self">self</span>.ir_node.into_inner(),
+        )
+    }
+
+    <span class="doccomment">/// Allow this stream through if the other stream has elements, otherwise the output is empty.
+    </span><span class="kw">pub fn </span>continue_if&lt;U&gt;(
+        <span class="self">self</span>,
+        signal: Optional&lt;<span class="lifetime">'a</span>, U, Bounded, Tick, N&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
+        <span class="self">self</span>.cross_singleton(signal.map(<span class="macro">q!</span>(|_u| ())))
+            .map(<span class="macro">q!</span>(|(d, _signal)| d))
+    }
+
     <span class="doccomment">/// Allow this stream through if the other stream is empty, otherwise the output is empty.
     </span><span class="kw">pub fn </span>continue_unless&lt;U&gt;(
         <span class="self">self</span>,
-        other: Stream&lt;<span class="lifetime">'a</span>, U, Bounded, Tick, N&gt;,
+        other: Optional&lt;<span class="lifetime">'a</span>, U, Bounded, Tick, N&gt;,
     ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
-        <span class="self">self</span>.continue_if(other.count().filter(<span class="macro">q!</span>(|c| <span class="kw-2">*</span>c == <span class="number">0</span>)))
+        <span class="self">self</span>.continue_if(other.into_stream().count().filter(<span class="macro">q!</span>(|c| <span class="kw-2">*</span>c == <span class="number">0</span>)))
     }
 
     <span class="kw">pub fn </span>enumerate(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, (usize, T), Bounded, Tick, N&gt; {
@@ -960,8 +1078,8 @@
         <span class="self">self</span>,
         init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I&gt;,
         comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, A, Bounded, Tick, N&gt; {
-        Stream::new(
+    ) -&gt; Singleton&lt;<span class="lifetime">'a</span>, A, Bounded, Tick, N&gt; {
+        Singleton::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Fold {
@@ -975,8 +1093,8 @@
     <span class="kw">pub fn </span>reduce&lt;F: Fn(<span class="kw-2">&amp;mut </span>T, T) + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
-        Stream::new(
+    ) -&gt; Optional&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
+        Optional::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Reduce {
@@ -997,7 +1115,7 @@
         )
     }
 
-    <span class="kw">pub fn </span>count(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, usize, Bounded, Tick, N&gt; {
+    <span class="kw">pub fn </span>count(<span class="self">self</span>) -&gt; Singleton&lt;<span class="lifetime">'a</span>, usize, Bounded, Tick, N&gt; {
         <span class="self">self</span>.fold(<span class="macro">q!</span>(|| <span class="number">0usize</span>), <span class="macro">q!</span>(|count, <span class="kw">_</span>| <span class="kw-2">*</span>count += <span class="number">1</span>))
     }
 
@@ -1070,7 +1188,7 @@
             },
         );
 
-        <span class="self">self</span>.tick_batch().continue_if(samples).all_ticks()
+        <span class="self">self</span>.tick_batch().continue_if(samples.first()).all_ticks()
     }
 }
 

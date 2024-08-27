@@ -64,14 +64,10 @@
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
 <a href="#66" id="66">66</a>
-<a href="#67" id="67">67</a>
-<a href="#68" id="68">68</a>
-<a href="#69" id="69">69</a>
-<a href="#70" id="70">70</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     WriteContextArgs, RANGE_0, RANGE_1,
 };
 
@@ -105,11 +101,7 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    flow_prop_fn: <span class="prelude-val">Some</span>(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
-        <span class="comment">// Preserve input flow properties.
-        </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[flow_props_in[<span class="number">0</span>]])
-    }),
-    write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+    write_fn: |<span class="kw-2">&amp;</span>WriteContextArgs {
                    root,
                    op_span,
                    ident,
@@ -120,7 +112,7 @@
                    ..
                },
                <span class="kw">_</span>| {
-        <span class="kw">let </span>func = wc.wrap_check_func_arg(<span class="kw-2">&amp;</span>arguments[<span class="number">0</span>]);
+        <span class="kw">let </span>func = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
         <span class="kw">let </span>write_iterator = <span class="kw">if </span>is_pull {
             <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
             <span class="macro">quote_spanned!</span> {op_span=&gt;

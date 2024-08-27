@@ -433,25 +433,6 @@
 <a href="#433" id="433">433</a>
 <a href="#434" id="434">434</a>
 <a href="#435" id="435">435</a>
-<a href="#436" id="436">436</a>
-<a href="#437" id="437">437</a>
-<a href="#438" id="438">438</a>
-<a href="#439" id="439">439</a>
-<a href="#440" id="440">440</a>
-<a href="#441" id="441">441</a>
-<a href="#442" id="442">442</a>
-<a href="#443" id="443">443</a>
-<a href="#444" id="444">444</a>
-<a href="#445" id="445">445</a>
-<a href="#446" id="446">446</a>
-<a href="#447" id="447">447</a>
-<a href="#448" id="448">448</a>
-<a href="#449" id="449">449</a>
-<a href="#450" id="450">450</a>
-<a href="#451" id="451">451</a>
-<a href="#452" id="452">452</a>
-<a href="#453" id="453">453</a>
-<a href="#454" id="454">454</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -461,7 +442,7 @@
 <span class="kw">use </span>slotmap::Key;
 
 <span class="kw">use </span><span class="kw">super</span>::ops::DelayType;
-<span class="kw">use super</span>::{Color, FlowProps, GraphNodeId, GraphSubgraphId, LatticeFlowType};
+<span class="kw">use super</span>::{Color, GraphNodeId, GraphSubgraphId};
 
 <span class="doccomment">/// Trait for writing textual representations of graphs, i.e. mermaid or dot graphs.
 </span><span class="attr">#[auto_impl(<span class="kw-2">&amp;mut</span>, Box)]
@@ -486,7 +467,6 @@
         src_id: GraphNodeId,
         dst_id: GraphNodeId,
         delay_type: <span class="prelude-ty">Option</span>&lt;DelayType&gt;,
-        flow_props: <span class="prelude-ty">Option</span>&lt;FlowProps&gt;,
         label: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
         is_reference: bool,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt;;
@@ -617,22 +597,17 @@
         src_id: GraphNodeId,
         dst_id: GraphNodeId,
         delay_type: <span class="prelude-ty">Option</span>&lt;DelayType&gt;,
-        flow_props: <span class="prelude-ty">Option</span>&lt;FlowProps&gt;,
         label: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
         _is_reference: bool,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="kw">let </span>src_str = <span class="macro">format!</span>(<span class="string">"{:?}"</span>, src_id.data());
         <span class="kw">let </span>dest_str = <span class="macro">format!</span>(<span class="string">"{:?}"</span>, dst_id.data());
-        <span class="kw">let </span>lattice_flow_type = flow_props.and_then(|flow_props| flow_props.lattice_flow_type);
-        <span class="macro">write!</span>(
+        <span class="attr">#[allow(clippy::write_literal)]
+        </span><span class="macro">write!</span>(
             <span class="self">self</span>.write,
             <span class="string">"{src}{arrow_body}{arrow_head}{label}{dst}"</span>,
             src = src_str.trim(),
-            arrow_body = <span class="kw">match </span>lattice_flow_type {
-                <span class="prelude-val">None </span>=&gt; <span class="string">"--"</span>,
-                <span class="prelude-val">Some</span>(LatticeFlowType::Delta) =&gt; <span class="string">"-.-"</span>,
-                <span class="prelude-val">Some</span>(LatticeFlowType::Cumul) =&gt; <span class="string">"=="</span>,
-            },
+            arrow_body = <span class="string">"--"</span>,
             arrow_head = <span class="kw">match </span>delay_type {
                 <span class="prelude-val">None </span>| <span class="prelude-val">Some</span>(DelayType::MonotoneAccum) =&gt; <span class="string">"&gt;"</span>,
                 <span class="prelude-val">Some</span>(DelayType::Stratum) =&gt; <span class="string">"x"</span>,
@@ -645,17 +620,14 @@
             },
             dst = dest_str.trim(),
         )<span class="question-mark">?</span>;
-        <span class="kw">if </span>delay_type.is_some() || lattice_flow_type.is_some() {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(delay_type) = delay_type {
             <span class="macro">write!</span>(
                 <span class="self">self</span>.write,
                 <span class="string">"; linkStyle {} stroke:{}"</span>,
                 <span class="self">self</span>.link_count,
-                <span class="kw">match </span>(delay_type, lattice_flow_type) {
-                    (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; <span class="macro">unreachable!</span>(),
-                    (<span class="prelude-val">Some</span>(DelayType::Stratum), <span class="kw">_</span>)
-                    | (<span class="prelude-val">Some</span>(DelayType::Tick), <span class="kw">_</span>)
-                    | (<span class="prelude-val">Some</span>(DelayType::TickLazy), <span class="kw">_</span>) =&gt; <span class="string">"red"</span>,
-                    (<span class="prelude-val">Some</span>(DelayType::MonotoneAccum), <span class="kw">_</span>) | (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; <span class="string">"#060"</span>,
+                <span class="kw">match </span>delay_type {
+                    DelayType::Stratum | DelayType::Tick | DelayType::TickLazy =&gt; <span class="string">"red"</span>,
+                    DelayType::MonotoneAccum =&gt; <span class="string">"#060"</span>,
                 }
             )<span class="question-mark">?</span>;
         }
@@ -796,11 +768,9 @@
         src_id: GraphNodeId,
         dst_id: GraphNodeId,
         delay_type: <span class="prelude-ty">Option</span>&lt;DelayType&gt;,
-        flow_props: <span class="prelude-ty">Option</span>&lt;FlowProps&gt;,
         label: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
         _is_reference: bool,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
-        <span class="kw">let </span>lattice_flow_type = flow_props.and_then(|flow_props| flow_props.lattice_flow_type);
         <span class="kw">let </span><span class="kw-2">mut </span>properties = Vec::&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;::new();
         <span class="kw">if let </span><span class="prelude-val">Some</span>(label) = label {
             properties.push(<span class="macro">format!</span>(<span class="string">"label=\"{}\""</span>, escape_dot(label, <span class="string">"\\n"</span>)).into());
@@ -808,14 +778,6 @@
         <span class="comment">// Color
         </span><span class="kw">if </span>delay_type.is_some() {
             properties.push(<span class="string">"color=red"</span>.into());
-        } <span class="kw">else if </span>lattice_flow_type.is_some() {
-            properties.push(<span class="string">"color=darkgreen"</span>.into());
-        }
-        <span class="comment">// Bold or dashed
-        </span><span class="kw">match </span>lattice_flow_type {
-            <span class="prelude-val">None </span>=&gt; {}
-            <span class="prelude-val">Some</span>(LatticeFlowType::Delta) =&gt; properties.push(<span class="string">"style=dashed"</span>.into()),
-            <span class="prelude-val">Some</span>(LatticeFlowType::Cumul) =&gt; properties.push(<span class="string">"style=bold"</span>.into()),
         }
 
         <span class="macro">write!</span>(

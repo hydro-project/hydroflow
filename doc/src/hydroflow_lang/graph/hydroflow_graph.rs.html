@@ -1542,47 +1542,6 @@
 <a href="#1542" id="1542">1542</a>
 <a href="#1543" id="1543">1543</a>
 <a href="#1544" id="1544">1544</a>
-<a href="#1545" id="1545">1545</a>
-<a href="#1546" id="1546">1546</a>
-<a href="#1547" id="1547">1547</a>
-<a href="#1548" id="1548">1548</a>
-<a href="#1549" id="1549">1549</a>
-<a href="#1550" id="1550">1550</a>
-<a href="#1551" id="1551">1551</a>
-<a href="#1552" id="1552">1552</a>
-<a href="#1553" id="1553">1553</a>
-<a href="#1554" id="1554">1554</a>
-<a href="#1555" id="1555">1555</a>
-<a href="#1556" id="1556">1556</a>
-<a href="#1557" id="1557">1557</a>
-<a href="#1558" id="1558">1558</a>
-<a href="#1559" id="1559">1559</a>
-<a href="#1560" id="1560">1560</a>
-<a href="#1561" id="1561">1561</a>
-<a href="#1562" id="1562">1562</a>
-<a href="#1563" id="1563">1563</a>
-<a href="#1564" id="1564">1564</a>
-<a href="#1565" id="1565">1565</a>
-<a href="#1566" id="1566">1566</a>
-<a href="#1567" id="1567">1567</a>
-<a href="#1568" id="1568">1568</a>
-<a href="#1569" id="1569">1569</a>
-<a href="#1570" id="1570">1570</a>
-<a href="#1571" id="1571">1571</a>
-<a href="#1572" id="1572">1572</a>
-<a href="#1573" id="1573">1573</a>
-<a href="#1574" id="1574">1574</a>
-<a href="#1575" id="1575">1575</a>
-<a href="#1576" id="1576">1576</a>
-<a href="#1577" id="1577">1577</a>
-<a href="#1578" id="1578">1578</a>
-<a href="#1579" id="1579">1579</a>
-<a href="#1580" id="1580">1580</a>
-<a href="#1581" id="1581">1581</a>
-<a href="#1582" id="1582">1582</a>
-<a href="#1583" id="1583">1583</a>
-<a href="#1584" id="1584">1584</a>
-<a href="#1585" id="1585">1585</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -1602,9 +1561,9 @@
     WriteContextArgs, OPERATORS,
 };
 <span class="kw">use super</span>::{
-    change_spans, get_operator_generics, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphNode,
-    GraphNodeId, GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT,
-    HANDOFF_NODE_STR, HYDROFLOW, MODULE_BOUNDARY_NODE_STR,
+    change_spans, get_operator_generics, Color, DiMulGraph, GraphEdgeId, GraphNode, GraphNodeId,
+    GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
+    HYDROFLOW, MODULE_BOUNDARY_NODE_STR,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::{PrettyRowCol, PrettySpan};
@@ -1643,10 +1602,6 @@
     </span>node_singleton_references: SparseSecondaryMap&lt;GraphNodeId, Vec&lt;<span class="prelude-ty">Option</span>&lt;GraphNodeId&gt;&gt;&gt;,
     <span class="doccomment">/// What variable name each graph node belongs to (if any). For debugging (graph writing) purposes only.
     </span>node_varnames: SparseSecondaryMap&lt;GraphNodeId, Varname&gt;,
-
-    <span class="comment">// TODO(mingwei): #[serde(skip)] this and recompute as needed, to reduce codegen.
-    </span><span class="doccomment">/// Stream properties.
-    </span>flow_props: SecondaryMap&lt;GraphEdgeId, FlowProps&gt;,
 
     <span class="doccomment">/// If this subgraph is 'lazy' then when it sends data to a lower stratum it does not cause a new tick to start
     /// This is to support lazy defers
@@ -2292,25 +2247,6 @@
     }
 }
 
-<span class="doccomment">/// Flow properties
-</span><span class="kw">impl </span>HydroflowGraph {
-    <span class="doccomment">/// Gets the flow properties associated with the edge, if set.
-    </span><span class="kw">pub fn </span>edge_flow_props(<span class="kw-2">&amp;</span><span class="self">self</span>, edge_id: GraphEdgeId) -&gt; <span class="prelude-ty">Option</span>&lt;FlowProps&gt; {
-        <span class="self">self</span>.flow_props.get(edge_id).copied()
-    }
-
-    <span class="doccomment">/// Sets the flow properties associated with the given edge.
-    ///
-    /// Returns the old flow properties, if set.
-    </span><span class="kw">pub fn </span>set_edge_flow_props(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        edge_id: GraphEdgeId,
-        flow_props: FlowProps,
-    ) -&gt; <span class="prelude-ty">Option</span>&lt;FlowProps&gt; {
-        <span class="self">self</span>.flow_props.insert(edge_id, flow_props)
-    }
-}
-
 <span class="doccomment">/// Display/output methods.
 </span><span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// Helper to generate a deterministic `Ident` for the given node.
@@ -2525,13 +2461,6 @@
                                 })
                                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-                            <span class="comment">// Corresponds 1:1 to inputs.
-                            </span><span class="kw">let </span>flow_props_in = <span class="self">self
-                                </span>.graph
-                                .predecessor_edges(node_id)
-                                .map(|edge_id| <span class="self">self</span>.flow_props.get(edge_id).copied())
-                                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-
                             <span class="kw">let </span>is_pull = idx &lt; pull_to_push_idx;
 
                             <span class="kw">let </span>singleton_output_ident = <span class="kw-2">&amp;</span><span class="kw">if </span>op_constraints.has_singleton_output {
@@ -2581,7 +2510,6 @@
                                 op_inst,
                                 arguments,
                                 arguments_handles,
-                                flow_props_in: <span class="kw-2">&amp;*</span>flow_props_in,
                             };
 
                             <span class="kw">let </span>write_result =
@@ -2985,19 +2913,11 @@
                 dst_port = <span class="self">self</span>.edge_ports(succ_edge).<span class="number">1</span>;
             }
 
-            <span class="kw">let </span>flow_props = <span class="self">self</span>.edge_flow_props(edge_id); <span class="comment">// Should be the same both before &amp; after handoffs.
-            </span><span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
+            <span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
             <span class="kw">let </span>delay_type = <span class="self">self
                 </span>.node_op_inst(dst_id)
                 .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-            graph_write.write_edge(
-                src_id,
-                dst_id,
-                delay_type,
-                flow_props,
-                label.as_deref(),
-                <span class="bool-val">false</span>,
-            )<span class="question-mark">?</span>;
+            graph_write.write_edge(src_id, dst_id, delay_type, label.as_deref(), <span class="bool-val">false</span>)<span class="question-mark">?</span>;
         }
 
         <span class="comment">// Write reference edges.
@@ -3010,10 +2930,8 @@
                     .flatten()
                 {
                     <span class="kw">let </span>delay_type = <span class="prelude-val">Some</span>(DelayType::Stratum);
-                    <span class="kw">let </span>flow_props = <span class="prelude-val">None</span>;
                     <span class="kw">let </span>label = <span class="prelude-val">None</span>;
-                    graph_write
-                        .write_edge(src_ref_id, dst_id, delay_type, flow_props, label, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+                    graph_write.write_edge(src_ref_id, dst_id, delay_type, label, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
                 }
             }
         }

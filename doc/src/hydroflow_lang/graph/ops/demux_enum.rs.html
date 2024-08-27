@@ -188,17 +188,13 @@
 <a href="#188" id="188">188</a>
 <a href="#189" id="189">189</a>
 <a href="#190" id="190">190</a>
-<a href="#191" id="191">191</a>
-<a href="#192" id="192">192</a>
-<a href="#193" id="193">193</a>
-<a href="#194" id="194">194</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::Ident;
 <span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>syn::spanned::Spanned;
 <span class="kw">use </span>syn::{PathArguments, PathSegment, Token, Type, TypePath};
 
 <span class="kw">use super</span>::{
-    FlowPropArgs, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
     OperatorWriteOutput, PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
@@ -249,10 +245,6 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">Some</span>(|| PortListSpec::Variadic),
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    flow_prop_fn: <span class="prelude-val">Some</span>(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
-        <span class="comment">// Preserve input flow properties.
-        </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[flow_props_in[<span class="number">0</span>]])
-    }),
     write_fn: |<span class="kw-2">&amp;</span>WriteContextArgs {
                    root,
                    op_span,
