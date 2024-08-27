@@ -2,6 +2,8 @@ use std::cmp::Ordering::{self, *};
 
 use crate::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
+/// Adds a new "top" value to the nested lattice type.
+///
 /// Given an existing lattice, wrap it into a new lattice with a new top element. The new top
 /// element compares as less than all the values of the wrapped lattice.  This can be used for
 /// giving a sensible default/bottom element to lattices that don't necessarily have one.

@@ -76,7 +76,7 @@ impl LaunchedLocalhostBinary {
         );
         let (_, stderr_receivers) = prioritized_broadcast(
             FuturesBufReader::new(child.stderr.take().unwrap()).lines(),
-            move |s| ProgressTracker::println(&format!("[{id} stderr] {s}")),
+            move |s| ProgressTracker::println(format!("[{id} stderr] {s}")),
         );
 
         Self {
@@ -191,7 +191,7 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
                     async move {
                         // Log stderr.
                         while let Ok(Some(s)) = stderr_lines.next_line().await {
-                            ProgressTracker::println(&format!("[perf script stderr] {s}"));
+                            ProgressTracker::println(format!("[perf script stderr] {s}"));
                         }
                         Result::<_>::Ok(())
                     },
