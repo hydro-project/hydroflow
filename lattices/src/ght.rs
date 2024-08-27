@@ -34,17 +34,18 @@ pub trait GeneralizedHashTrieNode: Default {
 
     /// Report the height of the tree if its not empty. This is the length of a root to leaf path -1.
     /// E.g. if we have GhtInner<GhtInner<GhtLeaf...>> the height is 2
-    fn height(&self) -> Option<usize>;
+    fn height(&self) -> usize {
+        Self::static_height()
+    }
 
-    /// debugging function to check that height is consistent along at least the leftmost path
-    fn check_height(&self) -> bool;
+    /// Return the height of this node in the GhT. Leaf = 0.
+    fn static_height() -> usize;
 
     /// report whether node is a leaf node; else an inner node
     fn is_leaf(&self) -> bool;
 
-    /// Inserts items into the hash trie. Returns the height
-    /// of this node (leaf = 0)
-    fn insert(&mut self, row: Self::Schema) -> Option<usize>;
+    /// Inserts items into the hash trie.
+    fn insert(&mut self, row: Self::Schema) -> bool;
 
     /// Returns `true` if the (entire) row is found in the trie, `false` otherwise.
     /// See `get()` below to look just for "head" keys in this node
@@ -109,7 +110,6 @@ where
     Node: GeneralizedHashTrieNode,
 {
     pub(crate) children: HashMap<Head, Node>,
-    pub(crate) height: Option<usize>,
     // pub(crate) _leaf: std::marker::PhantomData<Leaf>,
 }
 impl<Head, Node: GeneralizedHashTrieNode> Default for GhtInner<Head, Node>
@@ -121,7 +121,6 @@ where
         let children = Default::default();
         Self {
             children,
-            height: None,
             // _leaf: Default::default(),
         }
     }
@@ -142,44 +141,26 @@ where
 
     fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self {
         let mut retval: Self = Default::default();
-        let mut height = None;
+        let mut result = true;
         for row in input {
             // let (_prefix, suffix) = row.clone().split();
-            height = retval.insert(row);
+            result = result && retval.insert(row);
         }
-        retval.height = height;
         retval
     }
 
-    fn height(&self) -> Option<usize> {
-        self.height
-    }
-
-    fn check_height(&self) -> bool {
-        self.height.unwrap()
-            == self
-                .children
-                .iter()
-                .next()
-                .and_then(|n| n.1.height())
-                .map(|h| h + 1)
-                .unwrap()
+    fn static_height() -> usize {
+        Node::static_height() + 1
     }
 
     fn is_leaf(&self) -> bool {
         false
     }
 
-    fn insert(&mut self, row: Self::Schema) -> Option<usize> {
+    fn insert(&mut self, row: Self::Schema) -> bool {
         // TODO(mingwei): clones entire row...
         let (_prefix, var_args!(head, ..._rest)) = row.clone().split_by_suffix();
-        self.height = self
-            .children
-            .entry(head)
-            .or_default()
-            .insert(row)
-            .map(|h| h + 1);
-        self.height
+        self.children.entry(head).or_default().insert(row)
     }
 
     fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
@@ -314,21 +295,16 @@ where
         retval
     }
 
-    fn height(&self) -> Option<usize> {
-        Some(0)
-    }
-
-    fn check_height(&self) -> bool {
-        true
+    fn static_height() -> usize {
+        0
     }
 
     fn is_leaf(&self) -> bool {
         true
     }
 
-    fn insert(&mut self, row: Self::Schema) -> Option<usize> {
-        self.elements.insert(row);
-        self.height()
+    fn insert(&mut self, row: Self::Schema) -> bool {
+        self.elements.insert(row)
     }
 
     fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
@@ -526,7 +502,7 @@ where
             .entry(head.clone())
             .or_default()
             .merge_leaf(row, leaf);
-        self.height = self.get(head).and_then(|n| n.height).map(|h| h + 1);
+        // self.height = self.get(head).and_then(|n| n.old_height).map(|h| h + 1);
         retval
     }
 }
@@ -572,7 +548,6 @@ where
             panic!();
             false
         } else {
-            self.height = Some(1);
             true
         }
     }
@@ -751,9 +726,39 @@ where
 //     }
 // }
 
-/// Helper that does the heavy lifting for GhtNodeType!
+// /// trait for the height of a node in the Ght
+// #[sealed]
+// pub trait GhtHeight: GeneralizedHashTrieNode {
+//     fn the_height() -> usize;
+// }
+
+// #[sealed]
+// impl<Schema, ValType> GhtHeight for GhtLeaf<Schema, ValType>
+// where
+//     Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<ValType> + PartialEqVariadic,
+//     ValType: VariadicExt + Clone + Eq + Hash + PartialEqVariadic,
+//     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
+// {
+//     fn the_height() -> usize {
+//         0
+//     }
+// }
+
+// #[sealed]
+// impl<Head, Node> GhtHeight for GhtInner<Head, Node>
+// where
+//     Head: 'static + Hash + Eq + Clone,
+//     Node: 'static + GhtHeight,
+//     Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
+// {
+//     fn the_height() -> usize {
+//         Node::the_height() + 1
+//     }
+// }
+
+/// Helper that does the heavy lifting for GhtType!
 #[macro_export]
-macro_rules! GhtNodeTypeWithSchema {
+macro_rules! GhtTypeWithSchema {
     // Empty key & Val (Leaf)
     (() => () => $( $schema:ty ),+ ) => (
         $crate::ght::GhtLeaf::<$( $schema ),*,  ()  >
@@ -776,12 +781,12 @@ macro_rules! GhtNodeTypeWithSchema {
 
     // Recursive case with empty val
     ($a:ty, $( $b:ty ),* => () => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::GhtNodeTypeWithSchema!($( $b ),* => () => $schema)>
+        $crate::ght::GhtInner::<$a, $crate::GhtTypeWithSchema!($( $b ),* => () => $schema)>
     );
 
     // Recursive case.
     ($a:ty, $( $b:ty ),* => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::GhtNodeTypeWithSchema!($( $b ),* => $( $z ),* => $schema)>
+        $crate::ght::GhtInner::<$a, $crate::GhtTypeWithSchema!($( $b ),* => $( $z ),* => $schema)>
     );
 }
 
@@ -797,16 +802,16 @@ macro_rules! GhtNodeTypeWithSchema {
 macro_rules! GhtType {
     // Empty key
     (() => $( $z:ty ),* ) => (
-        $crate::GhtNodeTypeWithSchema!(() => $( $z ),* => $crate::variadics::var_type!($( $z ),* ))
+        $crate::GhtTypeWithSchema!(() => $( $z ),* => $crate::variadics::var_type!($( $z ),* ))
     );
 
     // Recursive case empty val
     ($( $b:ty ),* => () ) => (
-        $crate::GhtNodeTypeWithSchema!($( $b ),* => () => $crate::variadics::var_type!($( $b ),*))
+        $crate::GhtTypeWithSchema!($( $b ),* => () => $crate::variadics::var_type!($( $b ),*))
     );
 
     // Recursive case
     ($( $b:ty ),* => $( $z:ty ),*) => (
-        $crate::GhtNodeTypeWithSchema!($( $b ),* => $( $z ),* => $crate::variadics::var_type!($( $b ),*, $( $z ),*))
+        $crate::GhtTypeWithSchema!($( $b ),* => $( $z ),* => $crate::variadics::var_type!($( $b ),*, $( $z ),*))
     );
 }

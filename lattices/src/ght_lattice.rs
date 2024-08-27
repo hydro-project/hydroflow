@@ -457,10 +457,7 @@ where
                 children.insert(head.clone(), val);
             }
         }
-        GhtInner {
-            children,
-            height: ght_a.height(),
-        }
+        GhtInner { children }
     }
 }
 

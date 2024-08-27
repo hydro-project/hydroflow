@@ -5,7 +5,7 @@ mod test {
 
     use variadics::{var_expr, var_type, VariadicExt};
 
-    use crate::ght::{GeneralizedHashTrieNode, GhtInner, GhtLeaf, GhtPrefixIter};
+    use crate::ght::{GeneralizedHashTrieNode, GhtLeaf, GhtPrefixIter};
     use crate::ght_lattice::{
         //     DeepJoinLatticeBimorphism, GhtBimorphism,
         GhtCartesianProductBimorphism,
@@ -13,7 +13,7 @@ mod test {
     };
     use crate::ght_lazy::{ColumnLazyTrieNode, ForestFindLeaf, GhtForest}; // GhtForestStruct};
     use crate::{
-        GhtForestType, GhtNodeTypeWithSchema, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd,
+        GhtForestType, GhtType, GhtTypeWithSchema, LatticeBimorphism, Merge, NaiveLatticeOrd,
     };
 
     #[test]
@@ -75,16 +75,16 @@ mod test {
         let mut htrie = <GhtType!(u16, u32 => u64)>::default();
         htrie.insert(var_expr!(42, 314, 43770));
         assert_eq!(htrie.recursive_iter().count(), 1);
-        assert_eq!(htrie.height(), Some(2));
+        assert_eq!(htrie.height(), 2);
         htrie.insert(var_expr!(42, 315, 43770));
         assert_eq!(htrie.recursive_iter().count(), 2);
-        assert_eq!(htrie.height(), Some(2));
+        assert_eq!(htrie.height(), 2);
         htrie.insert(var_expr!(42, 314, 30619));
         assert_eq!(htrie.recursive_iter().count(), 3);
-        assert_eq!(htrie.height(), Some(2));
+        assert_eq!(htrie.height(), 2);
         htrie.insert(var_expr!(43, 10, 600));
         assert_eq!(htrie.recursive_iter().count(), 4);
-        assert_eq!(htrie.height(), Some(2));
+        assert_eq!(htrie.height(), 2);
         assert!(htrie.contains(var_expr!(&42, &314, &30619)));
         assert!(htrie.contains(var_expr!(&42, &315, &43770)));
         assert!(htrie.contains(var_expr!(&43, &10, &600)));
@@ -92,9 +92,9 @@ mod test {
         type LongKeyLongValTrie = GhtType!(u32, u64 => u16, &'static str);
         let mut htrie = LongKeyLongValTrie::new_from(vec![var_expr!(1, 999, 222, "hello")]);
         htrie.insert(var_expr!(1, 999, 111, "bye"));
-        assert_eq!(htrie.height(), Some(2));
+        assert_eq!(htrie.height(), 2);
         htrie.insert(var_expr!(1, 1000, 123, "cya"));
-        assert_eq!(htrie.height(), Some(2));
+        assert_eq!(htrie.height(), 2);
         // println!("htrie: {:?}", htrie);
         assert!(htrie.contains(var_expr!(&1, &999, &222, &"hello")));
         assert!(htrie.contains(var_expr!(&1, &999, &111, &"bye")));
@@ -241,7 +241,7 @@ mod test {
 
     // #[test]
     // fn test_find_containing_leaf() {
-    //     type MyGht = GhtNodeType!(u32, u32 => u32);
+    //     type MyGht = GhtType!(u32, u32 => u32);
     //     type InputType = var_type!(u32, u32, u32);
     //     let input: HashSet<InputType> = HashSet::from_iter(
     //         [
@@ -372,8 +372,8 @@ mod test {
 
     // #[test]
     // fn test_join_bimorphism() {
-    //     type MyGhtATrie = GhtNodeType!(u32, u64, u16 => &'static str);
-    //     type MyGhtBTrie = GhtNodeType!(u32, u64, u16 => &'static str);
+    //     type MyGhtATrie = GhtType!(u32, u64, u16 => &'static str);
+    //     type MyGhtBTrie = GhtType!(u32, u64, u16 => &'static str);
 
     //     let mut ght_a = MyGhtATrie::default();
     //     let mut ght_b = MyGhtBTrie::default();
@@ -404,7 +404,7 @@ mod test {
     //         .iter()
     //         .copied()
     //         .collect();
-    //         // type CartProdOld = GhtNodeType!(() => u64, u16, &'static str, u64, u16, &'static str);
+    //         // type CartProdOld = GhtType!(() => u64, u16, &'static str, u64, u16, &'static str);
     //         type CartProd = GhtLeaf<
     //             var_type!(u32, u64, u16, &'static str, u64, u16, &'static str),
     //             var_type!(),
@@ -441,7 +441,7 @@ mod test {
     //         .iter()
     //         .copied()
     //         .collect();
-    //         // type CartProd = GhtNodeType!(u16, &'static str, u16 => &'static str);
+    //         // type CartProd = GhtType!(u16, &'static str, u16 => &'static str);
     //         type CartProd = GhtInner<
     //             u16,
     //             GhtInner<
@@ -475,7 +475,7 @@ mod test {
     //             .iter()
     //             .copied()
     //             .collect();
-    //         // type MyGhtOut = GhtNodeType!(&'static str => &'static str);
+    //         // type MyGhtOut = GhtType!(&'static str => &'static str);
     //         type MyGhtOut = GhtInner<
     //             &'static str,
     //             GhtLeaf<
@@ -539,7 +539,7 @@ mod test {
 
     // #[test]
     // fn test_recursive_iter_keys() {
-    //     type MyGht = GhtNodeType!(u32 => u32, u32);
+    //     type MyGht = GhtType!(u32 => u32, u32);
     //     type InputType = var_type!(u32, u32, u32);
     //     type OutputType = var_type!(u32);
     //     type ResultType<'a> = var_type!(&'a u32);
@@ -590,7 +590,7 @@ mod test {
 
     // #[test]
     // fn test_split_key_val() {
-    //     type MyGht = GhtNodeType!(u32 => u32, u32);
+    //     type MyGht = GhtType!(u32 => u32, u32);
     //     type InputType = var_type!(u32, u32, u32);
     //     type ResultType<'a> = (var_type!(&'a u32), var_type!(&'a u32, &'a u32));
     //     let input: HashSet<InputType> = HashSet::from_iter(
@@ -615,7 +615,7 @@ mod test {
 
     // #[test]
     // fn test_key_cmp() {
-    //     type MyRoot = GhtNodeType!(u16, u32 => u64);
+    //     type MyRoot = GhtType!(u16, u32 => u64);
     //     let mut trie1 = MyRoot::default();
     //     (*trie1.get_mut_trie()).insert(var_expr!(1, 2, 3));
     //     let mut trie2 = MyRoot::default();
@@ -846,29 +846,15 @@ mod test {
     #[test]
     fn test_force() {
         type LeafType = GhtType!(() => u16, u32, u64);
-
-        let mut colt = <LeafType as Default>::default();
-
         let n = LeafType::new_from(vec![
             var_expr!(1, 1, 1),
             var_expr!(1, 2, 2),
             var_expr!(1, 3, 3),
             var_expr!(2, 4, 4),
         ]);
-        let out = n.force();
-        println!("resulting trie is {:?}", out);
-
-        for t in [
-            var_expr!(1, 1, 1),
-            var_expr!(1, 2, 2),
-            var_expr!(1, 3, 3),
-            var_expr!(2, 4, 4),
-        ] {
-            colt.insert(t);
-        }
-        // This causes a type error: the underlying trie type changes with force!
-        // colt.trie = colt.force();
-        println!("resulting COLT is {:?}", colt);
+        let out = n.force().unwrap();
+        // println!("resulting trie is {:?}", out);
+        assert_eq!(out.height(), 1);
     }
 
     #[test]
@@ -912,8 +898,8 @@ mod test {
         let mut s_forest = SForest::default();
         // car(forest) is forced once
         s_forest.0 = table_s.force().unwrap();
-        assert!(s_forest.0.height().unwrap() == 1);
-        assert!(s_forest.1 .0.height().is_none());
+        assert!(s_forest.0.height() == 1);
+        assert!(s_forest.1 .0.height() == 2);
 
         // set up T forest
         type TForest = GhtForestType!(u16, u32, u64);
@@ -923,9 +909,6 @@ mod test {
 
         // remainder of original test
         for r in table_r.elements {
-            type KeyType = var_type!(u16, u32);
-
-            let key_len = KeyType::LEN;
             println!("r tup is {:?}", r);
             s_forest.find_containing_leaf(r.as_ref_var());
 

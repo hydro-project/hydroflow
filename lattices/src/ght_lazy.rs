@@ -162,7 +162,7 @@ where
 {
     fn force<'a>(&mut self, search_key: SearchKey) -> bool {
         let var_expr!(first, ...rest) = self; //.forest;
-        if let Some(_h) = first.height().filter(|&h| h < SearchKey::LEN) {
+        if first.height() < SearchKey::LEN {
             let (row, _): (
                 TrieFirst::Schema,
                 <SearchKey as Split<<TrieFirst as GeneralizedHashTrieNode>::Schema>>::Suffix,
@@ -178,7 +178,6 @@ where
                     _suffix_schema: PhantomData,
                 };
                 rest_first.merge_leaf(row.as_ref_var(), leaf);
-                assert!(rest_first.check_height());
                 // drop through and recurse: we may have to force again in the neighbor
             }
             // recurse
