@@ -25,9 +25,10 @@ use crate::diagnostic::{Diagnostic, Level};
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 use crate::process_singletons;
 
-/// A graph representing a Hydroflow dataflow graph (with or without subgraph partitioning,
-/// stratification, and handoff insertion). This is a "meta" graph used for generating Rust source
-/// code in macros from Hydroflow surface sytnax.
+/// An abstract "meta graph" representation of a Hydroflow graph.
+///
+/// Can be with or without subgraph partitioning, stratification, and handoff insertion. This is
+/// the meta graph used for generating Rust source code in macros from Hydroflow surface sytnax.
 ///
 /// This struct has a lot of methods for manipulating the graph, vaguely grouped together in
 /// separate `impl` blocks. You might notice a few particularly specific arbitray-seeming methods

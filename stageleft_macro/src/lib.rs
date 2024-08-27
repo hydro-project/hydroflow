@@ -6,6 +6,8 @@ use syn::{AngleBracketedGenericArguments, Token, Type};
 
 mod quote_impl;
 
+/// Creates a quoted expression for Hydroflow+.
+///
 /// Creates a quoted expression, which can be typechecked but has its AST serialized
 /// until it is spliced into a staged entrypoint. Returns a value which implements
 /// `Quoted<T>`, where `T` is the type of the expression, and also may implement
@@ -150,8 +152,9 @@ pub fn runtime(
     })
 }
 
-/// A utility for declaring top-level public modules in a Stageleft crate that will
-/// export macros. This gets around errors in compiling the macro crate when there
+/// A utility for declaring top-level public modules in a Stageleft crate that exports macros.
+///
+/// This gets around errors in compiling the macro crate when there
 /// are `pub mod` declarations at the top-level file.
 ///
 /// This macro will only work on nightly with `#![feature(proc_macro_hygiene)]`,
