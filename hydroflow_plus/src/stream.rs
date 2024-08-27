@@ -270,7 +270,10 @@ impl<'a, T, N: Location> Stream<'a, T, Bounded, Tick, N> {
         )
     }
 
-    pub fn persist(self) -> Stream<'a, T, Bounded, Tick, N> {
+    pub fn persist(self) -> Stream<'a, T, Bounded, Tick, N>
+    where
+        T: Clone,
+    {
         Stream::new(
             self.location_kind,
             self.ir_leaves,
@@ -407,6 +410,13 @@ impl<'a, T, W, N: Location> Stream<'a, T, W, NoTick, N> {
         )
     }
 
+    pub fn tick_prefix(self) -> Stream<'a, T, Bounded, Tick, N>
+    where
+        T: Clone,
+    {
+        self.tick_batch().persist()
+    }
+
     pub fn inspect<F: Fn(&T) + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
@@ -448,6 +458,39 @@ impl<'a, T, N: Location> Stream<'a, T, Unbounded, NoTick, N> {
         );
 
         self.tick_batch().continue_if(samples.first()).all_ticks()
+    }
+
+    pub fn fold<A, I: Fn() -> A + 'a, F: Fn(&mut A, T)>(
+        self,
+        init: impl IntoQuotedMut<'a, I>,
+        comb: impl IntoQuotedMut<'a, F>,
+    ) -> Singleton<'a, A, Unbounded, NoTick, N> {
+        // unbounded singletons are represented as a stream
+        // which produces all values from all ticks every tick,
+        // so delta will always give the lastest aggregation
+        Singleton::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Persist(Box::new(HfPlusNode::Fold {
+                init: init.splice().into(),
+                acc: comb.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            })),
+        )
+    }
+
+    pub fn reduce<F: Fn(&mut T, T) + 'a>(
+        self,
+        comb: impl IntoQuotedMut<'a, F>,
+    ) -> Optional<'a, T, Unbounded, NoTick, N> {
+        Optional::new(
+            self.location_kind,
+            self.ir_leaves,
+            HfPlusNode::Persist(Box::new(HfPlusNode::Reduce {
+                f: comb.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            })),
+        )
     }
 }
 
