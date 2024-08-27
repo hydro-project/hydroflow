@@ -226,11 +226,15 @@
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 
 <span class="kw">use crate</span>::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
-<span class="doccomment">/// Given an existing lattice, wrap it into a new lattice with a new top element. The new top
+<span class="doccomment">/// Adds a new "top" value to the nested lattice type.
+///
+/// Given an existing lattice, wrap it into a new lattice with a new top element. The new top
 /// element compares as less than all the values of the wrapped lattice.  This can be used for
 /// giving a sensible default/bottom element to lattices that don't necessarily have one.
 ///

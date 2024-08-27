@@ -1542,6 +1542,7 @@
 <a href="#1542" id="1542">1542</a>
 <a href="#1543" id="1543">1543</a>
 <a href="#1544" id="1544">1544</a>
+<a href="#1545" id="1545">1545</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -1569,9 +1570,10 @@
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::{PrettyRowCol, PrettySpan};
 <span class="kw">use </span><span class="kw">crate</span>::process_singletons;
 
-<span class="doccomment">/// A graph representing a Hydroflow dataflow graph (with or without subgraph partitioning,
-/// stratification, and handoff insertion). This is a "meta" graph used for generating Rust source
-/// code in macros from Hydroflow surface sytnax.
+<span class="doccomment">/// An abstract "meta graph" representation of a Hydroflow graph.
+///
+/// Can be with or without subgraph partitioning, stratification, and handoff insertion. This is
+/// the meta graph used for generating Rust source code in macros from Hydroflow surface sytnax.
 ///
 /// This struct has a lot of methods for manipulating the graph, vaguely grouped together in
 /// separate `impl` blocks. You might notice a few particularly specific arbitray-seeming methods

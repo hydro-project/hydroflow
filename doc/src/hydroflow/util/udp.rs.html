@@ -65,7 +65,6 @@
 <a href="#65" id="65">65</a>
 <a href="#66" id="66">66</a>
 <a href="#67" id="67">67</a>
-<a href="#68" id="68">68</a>
 </pre></div><pre class="rust"><code><span class="attr">#![cfg(not(target_arch = <span class="string">"wasm32"</span>))]
 
 </span><span class="kw">use </span>std::net::SocketAddr;
@@ -81,9 +80,8 @@
 </span><span class="kw">pub type </span>UdpFramedSink&lt;Codec, Item&gt; = SplitSink&lt;UdpFramed&lt;Codec&gt;, (Item, SocketAddr)&gt;;
 <span class="doccomment">/// A framed UDP `Stream` (receiving).
 </span><span class="kw">pub type </span>UdpFramedStream&lt;Codec&gt; = SplitStream&lt;UdpFramed&lt;Codec&gt;&gt;;
-<span class="doccomment">/// Helper creates a UDP `Stream` and `Sink` from the given socket, using the given `Codec` to
-/// handle delineation between inputs/outputs. Also returns the bound UdpSocket, which will be
-/// different than the input UdpSocket if the input socket was set to port 0.
+<span class="doccomment">/// Returns a UDP `Stream`, `Sink`, and address for the given socket, using the given `Codec` to
+/// handle delineation between inputs/outputs.
 </span><span class="kw">pub fn </span>udp_framed&lt;Codec, Item&gt;(
     socket: UdpSocket,
     codec: Codec,

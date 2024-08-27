@@ -117,22 +117,41 @@
 <a href="#117" id="117">117</a>
 <a href="#118" id="118">118</a>
 <a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashSet;
 
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
 <span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusLeaf, HfPlusNode, SeenTees};
 
-<span class="doccomment">/// schema : table per algebraic property with the list of expressions that satisfy the property
-/// interface: can "tag" an expression with a property and it will add it to that table
-/// can also run a check to see if an expression satisfies a property
+<span class="doccomment">/// Structure for tracking expressions known to have particular algebraic properties.
+///
+/// # Schema
+///
+/// Each field in this struct corresponds to an algebraic property, and contains the list of
+/// expressions that satisfy the property. Currently only `commutative`.
+///
+/// # Interface
+///
+/// "Tag" an expression with a property and it will add it to that table. For example, [`Self::add_commutative_tag`].
+/// Can also run a check to see if an expression satisfies a property.
 </span><span class="attr">#[derive(Default)]
 </span><span class="kw">pub struct </span>PropertyDatabase {
     commutative: HashSet&lt;syn::Expr&gt;,
 }
 
-<span class="attr">#[allow(dead_code)]
-</span><span class="comment">// allows us to convert the hydroflow datatype for folds to a binary operation for the algebra property tests
+<span class="doccomment">/// Allows us to convert the hydroflow datatype for folds to a binary operation for the algebra
+/// property tests.
+</span><span class="attr">#[allow(dead_code)]
 </span><span class="kw">fn </span>convert_hf_to_binary&lt;I, A: Default, F: Fn(<span class="kw-2">&amp;mut </span>A, I)&gt;(f: F) -&gt; <span class="kw">impl </span>Fn(I, I) -&gt; A {
     <span class="kw">move </span>|a, b| {
         <span class="kw">let </span><span class="kw-2">mut </span>acc = Default::default();
@@ -143,7 +162,8 @@
 }
 
 <span class="kw">impl </span>PropertyDatabase {
-    <span class="kw">pub fn </span>add_commutative_tag&lt;<span class="lifetime">'a</span>, I, A, F: Fn(<span class="kw-2">&amp;mut </span>A, I), Q: Quoted&lt;<span class="lifetime">'a</span>, F&gt; + Clone&gt;(
+    <span class="doccomment">/// Tags the expression as commutative.
+    </span><span class="kw">pub fn </span>add_commutative_tag&lt;<span class="lifetime">'a</span>, I, A, F: Fn(<span class="kw-2">&amp;mut </span>A, I), Q: Quoted&lt;<span class="lifetime">'a</span>, F&gt; + Clone&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         expr: Q,
     ) -&gt; Q {

@@ -304,6 +304,9 @@
 <a href="#304" id="304">304</a>
 <a href="#305" id="305">305</a>
 <a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -322,7 +325,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 <span class="kw">use </span><span class="kw">crate</span>::location::{Cluster, Location, LocationId, Process};
 <span class="kw">use </span><span class="kw">crate</span>::stream::{Bounded, NoTick, Tick, Unbounded};
-<span class="kw">use crate</span>::{HfCycle, RuntimeContext, Stream};
+<span class="kw">use crate</span>::{HfCycle, Optional, RuntimeContext, Stream};
 
 <span class="kw">pub mod </span>built;
 <span class="kw">pub mod </span>deploy;
@@ -557,10 +560,10 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         on: <span class="kw-2">&amp;</span>L,
         interval: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Duration&gt; + Copy + <span class="lifetime">'a</span>,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (), Unbounded, NoTick, L&gt; {
+    ) -&gt; Optional&lt;<span class="lifetime">'a</span>, (), Unbounded, NoTick, L&gt; {
         <span class="kw">let </span>interval = interval.splice();
 
-        Stream::new(
+        Optional::new(
             on.id(),
             <span class="self">self</span>.ir_leaves().clone(),
             HfPlusNode::Persist(Box::new(HfPlusNode::Source {
@@ -575,13 +578,16 @@
         on: <span class="kw-2">&amp;</span>L,
         delay: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Duration&gt; + Copy + <span class="lifetime">'a</span>,
         interval: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Duration&gt; + Copy + <span class="lifetime">'a</span>,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, tokio::time::Instant, Unbounded, NoTick, L&gt; {
+    ) -&gt; Optional&lt;<span class="lifetime">'a</span>, tokio::time::Instant, Unbounded, NoTick, L&gt; {
         <span class="self">self</span>.source_stream(
             on,
             <span class="macro">q!</span>(tokio_stream::wrappers::IntervalStream::new(
                 tokio::time::interval_at(tokio::time::Instant::now() + delay, interval)
             )),
         )
+        .tick_batch()
+        .first()
+        .latest()
     }
 
     <span class="kw">pub fn </span>cycle&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, on: <span class="kw-2">&amp;</span>S::Location) -&gt; (HfCycle&lt;<span class="lifetime">'a</span>, S&gt;, S) {

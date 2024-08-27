@@ -360,6 +360,20 @@
 <a href="#360" id="360">360</a>
 <a href="#361" id="361">361</a>
 <a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 </span><span class="doccomment">//! Helper utilities for the Hydroflow surface syntax.
 
@@ -539,6 +553,7 @@
 }
 
 <span class="doccomment">/// Returns a newline-delimited bytes `Sender`, `Receiver`, and `SocketAddr` bound to the given address.
+///
 /// The input `addr` may have a port of `0`, the returned `SocketAddr` will be the address of the newly bound endpoint.
 /// The inbound connections can be used in full duplex mode. When a `(T, SocketAddr)` pair is fed to the `Sender`
 /// returned by this function, the `SocketAddr` will be looked up against the currently existing connections.
@@ -570,7 +585,9 @@
         </span>.unwrap()
 }
 
-<span class="doccomment">/// This is inverse of bind_tcp_bytes. `(Bytes, SocketAddr)` pairs fed to the returned `Sender` will initiate new tcp connections to the specified `SocketAddr`.
+<span class="doccomment">/// The inverse of [`bind_tcp_bytes`].
+///
+/// `(Bytes, SocketAddr)` pairs fed to the returned `Sender` will initiate new tcp connections to the specified `SocketAddr`.
 /// These connections will be cached and reused, so that there will only be one connection per destination endpoint. When the endpoint sends data back it will be available via the returned `Receiver`
 </span><span class="attr">#[cfg(not(target_arch = <span class="string">"wasm32"</span>))]
 </span><span class="kw">pub fn </span>connect_tcp_bytes() -&gt; (
@@ -601,9 +618,13 @@
     slice.sort_unstable_by(|a, b| f(a).cmp(f(b)))
 }
 
-<span class="doccomment">/// When a child process is spawned often you want to wait until the child process is ready before moving on.
-/// One way to do that synchronization is by waiting for the child process to output something and match regex against that output.
-/// For example, you could wait until the child process outputs "Client live!" which would indicate that it is ready to receive input now on stdin.
+<span class="doccomment">/// Waits for a specific process output before returning.
+///
+/// When a child process is spawned often you want to wait until the child process is ready before
+/// moving on. One way to do that synchronization is by waiting for the child process to output
+/// something and match regex against that output. For example, you could wait until the child
+/// process outputs "Client live!" which would indicate that it is ready to receive input now on
+/// stdin.
 </span><span class="kw">pub fn </span>wait_for_process_output(
     output_so_far: <span class="kw-2">&amp;mut </span>String,
     output: <span class="kw-2">&amp;mut </span>ChildStdout,
@@ -626,8 +647,10 @@
     }
 }
 
-<span class="doccomment">/// When a `Child` is dropped normally nothing happens but in unit tests you usually want to terminate
-/// the child and wait for it to terminate. `DroppableChild` does that for us.
+<span class="doccomment">/// Terminates the inner [`Child`] process when dropped.
+///
+/// When a `Child` is dropped normally nothing happens but in unit tests you usually want to
+/// terminate the child and wait for it to terminate. `DroppableChild` does that for us.
 </span><span class="kw">pub struct </span>DroppableChild(Child);
 
 <span class="kw">impl </span>Drop <span class="kw">for </span>DroppableChild {
@@ -641,9 +664,12 @@
     }
 }
 
-<span class="doccomment">/// rust examples are meant to be run by people and have a natural interface for that. This makes unit testing them cumbersome.
-/// This function wraps calling cargo run and piping the stdin/stdout of the example to easy to handle returned objects.
-/// The function also returns a `DroppableChild` which will ensure that the child processes will be cleaned up appropriately.
+<span class="doccomment">/// Run a rust example as a test.
+///
+/// Rust examples are meant to be run by people and have a natural interface for that. This makes
+/// unit testing them cumbersome. This function wraps calling cargo run and piping the stdin/stdout
+/// of the example to easy to handle returned objects. The function also returns a `DroppableChild`
+/// which will ensure that the child processes will be cleaned up appropriately.
 </span><span class="kw">pub fn </span>run_cargo_example(test_name: <span class="kw-2">&amp;</span>str, args: <span class="kw-2">&amp;</span>str) -&gt; (DroppableChild, ChildStdin, ChildStdout) {
     <span class="kw">let </span><span class="kw-2">mut </span>server = <span class="kw">if </span>args.is_empty() {
         std::process::Command::new(<span class="string">"cargo"</span>)
@@ -671,19 +697,21 @@
     (DroppableChild(server), stdin, stdout)
 }
 
-<span class="doccomment">/// Returns an [`Stream`] that emits `n` items at a time from `iter` at a time, yielding in-between.
+<span class="doccomment">/// Converts an iterator into a stream that emits `n` items at a time, yielding between each batch.
+///
 /// This is useful for breaking up a large iterator across several ticks: `source_iter(...)` always
 /// releases all items in the first tick. However using `iter_batches_stream` with `source_stream(...)`
 /// will cause `n` items to be released each tick. (Although more than that may be emitted if there
 /// are loops in the stratum).
 </span><span class="kw">pub fn </span>iter_batches_stream&lt;I&gt;(
-    <span class="kw-2">mut </span>iter: I,
+    iter: I,
     n: usize,
 ) -&gt; futures::stream::PollFn&lt;<span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;I::Item&gt;&gt;&gt;
 <span class="kw">where
-    </span>I: Iterator + Unpin,
+    </span>I: IntoIterator + Unpin,
 {
     <span class="kw">let </span><span class="kw-2">mut </span>count = <span class="number">0</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>iter = iter.into_iter();
     futures::stream::poll_fn(<span class="kw">move </span>|ctx| {
         count += <span class="number">1</span>;
         <span class="kw">if </span>n &lt; count {

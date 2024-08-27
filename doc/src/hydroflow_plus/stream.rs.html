@@ -739,6 +739,49 @@
 <a href="#739" id="739">739</a>
 <a href="#740" id="740">740</a>
 <a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
+<a href="#765" id="765">765</a>
+<a href="#766" id="766">766</a>
+<a href="#767" id="767">767</a>
+<a href="#768" id="768">768</a>
+<a href="#769" id="769">769</a>
+<a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
+<a href="#774" id="774">774</a>
+<a href="#775" id="775">775</a>
+<a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -1011,7 +1054,10 @@
         )
     }
 
-    <span class="kw">pub fn </span>persist(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
+    <span class="kw">pub fn </span>persist(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt;
+    <span class="kw">where
+        </span>T: Clone,
+    {
         Stream::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
@@ -1148,6 +1194,13 @@
         )
     }
 
+    <span class="kw">pub fn </span>tick_prefix(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt;
+    <span class="kw">where
+        </span>T: Clone,
+    {
+        <span class="self">self</span>.tick_batch().persist()
+    }
+
     <span class="kw">pub fn </span>inspect&lt;F: Fn(<span class="kw-2">&amp;</span>T) + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
@@ -1189,6 +1242,39 @@
         );
 
         <span class="self">self</span>.tick_batch().continue_if(samples.first()).all_ticks()
+    }
+
+    <span class="kw">pub fn </span>fold&lt;A, I: Fn() -&gt; A + <span class="lifetime">'a</span>, F: Fn(<span class="kw-2">&amp;mut </span>A, T)&gt;(
+        <span class="self">self</span>,
+        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I&gt;,
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+    ) -&gt; Singleton&lt;<span class="lifetime">'a</span>, A, Unbounded, NoTick, N&gt; {
+        <span class="comment">// unbounded singletons are represented as a stream
+        // which produces all values from all ticks every tick,
+        // so delta will always give the lastest aggregation
+        </span>Singleton::new(
+            <span class="self">self</span>.location_kind,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::Persist(Box::new(HfPlusNode::Fold {
+                init: init.splice().into(),
+                acc: comb.splice().into(),
+                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            })),
+        )
+    }
+
+    <span class="kw">pub fn </span>reduce&lt;F: Fn(<span class="kw-2">&amp;mut </span>T, T) + <span class="lifetime">'a</span>&gt;(
+        <span class="self">self</span>,
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+    ) -&gt; Optional&lt;<span class="lifetime">'a</span>, T, Unbounded, NoTick, N&gt; {
+        Optional::new(
+            <span class="self">self</span>.location_kind,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::Persist(Box::new(HfPlusNode::Reduce {
+                f: comb.splice().into(),
+                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            })),
+        )
     }
 }
 

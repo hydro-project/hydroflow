@@ -431,9 +431,9 @@
         <span class="kw">let </span><span class="kw-2">mut </span>command = <span class="kw">if let </span><span class="prelude-val">Some</span>(tracing) = tracing.as_ref() {
             <span class="kw">if </span><span class="macro">cfg!</span>(target_os = <span class="string">"macos"</span>) || <span class="macro">cfg!</span>(target_family = <span class="string">"windows"</span>) {
                 <span class="comment">// dtrace
-                </span>ProgressTracker::println(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                    <span class="string">"[{id} tracing] Profiling binary with `dtrace`."</span>,
-                ));
+                </span>ProgressTracker::println(
+                    <span class="macro">format!</span>(<span class="string">"[{id} tracing] Profiling binary with `dtrace`."</span>,),
+                );
                 <span class="kw">let </span>dtrace_outfile = tracing.dtrace_outfile.as_ref().ok_or_else(|| {
                     <span class="macro">anyhow!</span>(
                         <span class="string">"`{}` must be set for `dtrace` on localhost."</span>,
@@ -487,7 +487,7 @@
             // }
             </span><span class="kw">else if </span><span class="macro">cfg!</span>(target_family = <span class="string">"unix"</span>) {
                 <span class="comment">// perf
-                </span>ProgressTracker::println(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"[{} tracing] Tracing binary with `perf`."</span>, id));
+                </span>ProgressTracker::println(<span class="macro">format!</span>(<span class="string">"[{} tracing] Tracing binary with `perf`."</span>, id));
                 <span class="kw">let </span>perf_outfile = tracing.perf_raw_outfile.as_ref().ok_or_else(|| {
                     <span class="macro">anyhow!</span>(
                         <span class="string">"`{}` must be set for `perf` on localhost."</span>,
@@ -529,7 +529,7 @@
         <span class="attr">#[cfg(not(target_family = <span class="string">"unix"</span>))]
         </span>command.kill_on_drop(<span class="bool-val">true</span>);
 
-        ProgressTracker::println(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"[{}] running command: `{:?}`"</span>, id, command));
+        ProgressTracker::println(<span class="macro">format!</span>(<span class="string">"[{}] running command: `{:?}`"</span>, id, command));
 
         <span class="kw">let </span>child = command
             .spawn()
