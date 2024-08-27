@@ -428,78 +428,70 @@ expression: built.ir()
         location_kind: Cluster(
             0,
         ),
-        input: Union(
-            Source {
-                source: Iter(
-                    { use crate :: __staged :: cluster :: paxos :: * ; [0] },
-                ),
-                location_kind: Cluster(
-                    0,
-                ),
-            },
-            DeferTick(
-                Map {
-                    f: { use crate :: __staged :: cluster :: paxos :: * ; let p_id = __hydroflow_plus_cluster_self_id_0 ; move | (received_max_ballot , ballot_num) : (Ballot , u32) | { if received_max_ballot > (Ballot { num : ballot_num , id : p_id , }) { received_max_ballot . num + 1 } else { ballot_num } } },
-                    input: CrossSingleton(
-                        Tee {
-                            inner: RefCell {
-                                value: Fold {
-                                    init: { use crate :: __staged :: cluster :: paxos :: * ; | | Ballot { num : 0 , id : 0 } },
-                                    acc: { use crate :: __staged :: cluster :: paxos :: * ; | curr_max_ballot : & mut Ballot , new_ballot : Ballot | { if new_ballot > * curr_max_ballot { * curr_max_ballot = new_ballot ; } } },
-                                    input: Persist(
+        input: DeferTick(
+            Map {
+                f: { use crate :: __staged :: cluster :: paxos :: * ; let p_id = __hydroflow_plus_cluster_self_id_0 ; move | (received_max_ballot , ballot_num) : (Ballot , u32) | { if received_max_ballot > (Ballot { num : ballot_num , id : p_id , }) { received_max_ballot . num + 1 } else { ballot_num } } },
+                input: CrossSingleton(
+                    Tee {
+                        inner: RefCell {
+                            value: Fold {
+                                init: { use crate :: __staged :: cluster :: paxos :: * ; | | Ballot { num : 0 , id : 0 } },
+                                acc: { use crate :: __staged :: cluster :: paxos :: * ; | curr_max_ballot : & mut Ballot , new_ballot : Ballot | { if new_ballot > * curr_max_ballot { * curr_max_ballot = new_ballot ; } } },
+                                input: Persist(
+                                    Union(
                                         Union(
-                                            Union(
-                                                Map {
-                                                    f: { use crate :: __staged :: cluster :: paxos :: * ; | (_ , p1b) : (_ , P1b) | p1b . max_ballot },
-                                                    input: Tee {
-                                                        inner: RefCell {
-                                                            value: CycleSource {
-                                                                ident: Ident {
-                                                                    sym: cycle_2,
-                                                                },
-                                                                location_kind: Cluster(
-                                                                    0,
-                                                                ),
+                                            Map {
+                                                f: { use crate :: __staged :: cluster :: paxos :: * ; | (_ , p1b) : (_ , P1b) | p1b . max_ballot },
+                                                input: Tee {
+                                                    inner: RefCell {
+                                                        value: CycleSource {
+                                                            ident: Ident {
+                                                                sym: cycle_2,
                                                             },
+                                                            location_kind: Cluster(
+                                                                0,
+                                                            ),
                                                         },
                                                     },
                                                 },
-                                                Map {
-                                                    f: { use crate :: __staged :: cluster :: paxos :: * ; | (_ , p2b) : (_ , P2b) | p2b . max_ballot },
-                                                    input: Tee {
-                                                        inner: RefCell {
-                                                            value: CycleSource {
-                                                                ident: Ident {
-                                                                    sym: cycle_3,
-                                                                },
-                                                                location_kind: Cluster(
-                                                                    0,
-                                                                ),
+                                            },
+                                            Map {
+                                                f: { use crate :: __staged :: cluster :: paxos :: * ; | (_ , p2b) : (_ , P2b) | p2b . max_ballot },
+                                                input: Tee {
+                                                    inner: RefCell {
+                                                        value: CycleSource {
+                                                            ident: Ident {
+                                                                sym: cycle_3,
                                                             },
+                                                            location_kind: Cluster(
+                                                                0,
+                                                            ),
                                                         },
-                                                    },
-                                                },
-                                            ),
-                                            Tee {
-                                                inner: RefCell {
-                                                    value: CycleSource {
-                                                        ident: Ident {
-                                                            sym: cycle_1,
-                                                        },
-                                                        location_kind: Cluster(
-                                                            0,
-                                                        ),
                                                     },
                                                 },
                                             },
                                         ),
+                                        Tee {
+                                            inner: RefCell {
+                                                value: CycleSource {
+                                                    ident: Ident {
+                                                        sym: cycle_1,
+                                                    },
+                                                    location_kind: Cluster(
+                                                        0,
+                                                    ),
+                                                },
+                                            },
+                                        },
                                     ),
-                                },
+                                ),
                             },
                         },
-                        Tee {
-                            inner: RefCell {
-                                value: CycleSource {
+                    },
+                    Tee {
+                        inner: RefCell {
+                            value: Union(
+                                CycleSource {
                                     ident: Ident {
                                         sym: cycle_4,
                                     },
@@ -507,11 +499,21 @@ expression: built.ir()
                                         0,
                                     ),
                                 },
-                            },
+                                Persist(
+                                    Source {
+                                        source: Iter(
+                                            { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                        ),
+                                        location_kind: Cluster(
+                                            0,
+                                        ),
+                                    },
+                                ),
+                            ),
                         },
-                    ),
-                },
-            ),
+                    },
+                ),
+            },
         ),
     },
     ForEach {
@@ -634,14 +636,26 @@ expression: built.ir()
                                             inner: RefCell {
                                                 value: Tee {
                                                     inner: RefCell {
-                                                        value: CycleSource {
-                                                            ident: Ident {
-                                                                sym: cycle_4,
+                                                        value: Union(
+                                                            CycleSource {
+                                                                ident: Ident {
+                                                                    sym: cycle_4,
+                                                                },
+                                                                location_kind: Cluster(
+                                                                    0,
+                                                                ),
                                                             },
-                                                            location_kind: Cluster(
-                                                                0,
+                                                            Persist(
+                                                                Source {
+                                                                    source: Iter(
+                                                                        { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                    ),
+                                                                    location_kind: Cluster(
+                                                                        0,
+                                                                    ),
+                                                                },
                                                             ),
-                                                        },
+                                                        ),
                                                     },
                                                 },
                                             },
@@ -722,14 +736,26 @@ expression: built.ir()
                                                     inner: RefCell {
                                                         value: Tee {
                                                             inner: RefCell {
-                                                                value: CycleSource {
-                                                                    ident: Ident {
-                                                                        sym: cycle_4,
+                                                                value: Union(
+                                                                    CycleSource {
+                                                                        ident: Ident {
+                                                                            sym: cycle_4,
+                                                                        },
+                                                                        location_kind: Cluster(
+                                                                            0,
+                                                                        ),
                                                                     },
-                                                                    location_kind: Cluster(
-                                                                        0,
+                                                                    Persist(
+                                                                        Source {
+                                                                            source: Iter(
+                                                                                { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                            ),
+                                                                            location_kind: Cluster(
+                                                                                0,
+                                                                            ),
+                                                                        },
                                                                     ),
-                                                                },
+                                                                ),
                                                             },
                                                         },
                                                     },
@@ -809,14 +835,26 @@ expression: built.ir()
                                         inner: RefCell {
                                             value: Tee {
                                                 inner: RefCell {
-                                                    value: CycleSource {
-                                                        ident: Ident {
-                                                            sym: cycle_4,
+                                                    value: Union(
+                                                        CycleSource {
+                                                            ident: Ident {
+                                                                sym: cycle_4,
+                                                            },
+                                                            location_kind: Cluster(
+                                                                0,
+                                                            ),
                                                         },
-                                                        location_kind: Cluster(
-                                                            0,
+                                                        Persist(
+                                                            Source {
+                                                                source: Iter(
+                                                                    { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                ),
+                                                                location_kind: Cluster(
+                                                                    0,
+                                                                ),
+                                                            },
                                                         ),
-                                                    },
+                                                    ),
                                                 },
                                             },
                                         },
@@ -885,14 +923,26 @@ expression: built.ir()
                                                                                                     inner: RefCell {
                                                                                                         value: Tee {
                                                                                                             inner: RefCell {
-                                                                                                                value: CycleSource {
-                                                                                                                    ident: Ident {
-                                                                                                                        sym: cycle_4,
+                                                                                                                value: Union(
+                                                                                                                    CycleSource {
+                                                                                                                        ident: Ident {
+                                                                                                                            sym: cycle_4,
+                                                                                                                        },
+                                                                                                                        location_kind: Cluster(
+                                                                                                                            0,
+                                                                                                                        ),
                                                                                                                     },
-                                                                                                                    location_kind: Cluster(
-                                                                                                                        0,
+                                                                                                                    Persist(
+                                                                                                                        Source {
+                                                                                                                            source: Iter(
+                                                                                                                                { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                                            ),
+                                                                                                                            location_kind: Cluster(
+                                                                                                                                0,
+                                                                                                                            ),
+                                                                                                                        },
                                                                                                                     ),
-                                                                                                                },
+                                                                                                                ),
                                                                                                             },
                                                                                                         },
                                                                                                     },
@@ -1509,14 +1559,26 @@ expression: built.ir()
                                                                                                                             inner: RefCell {
                                                                                                                                 value: Tee {
                                                                                                                                     inner: RefCell {
-                                                                                                                                        value: CycleSource {
-                                                                                                                                            ident: Ident {
-                                                                                                                                                sym: cycle_4,
+                                                                                                                                        value: Union(
+                                                                                                                                            CycleSource {
+                                                                                                                                                ident: Ident {
+                                                                                                                                                    sym: cycle_4,
+                                                                                                                                                },
+                                                                                                                                                location_kind: Cluster(
+                                                                                                                                                    0,
+                                                                                                                                                ),
                                                                                                                                             },
-                                                                                                                                            location_kind: Cluster(
-                                                                                                                                                0,
+                                                                                                                                            Persist(
+                                                                                                                                                Source {
+                                                                                                                                                    source: Iter(
+                                                                                                                                                        { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                                                                    ),
+                                                                                                                                                    location_kind: Cluster(
+                                                                                                                                                        0,
+                                                                                                                                                    ),
+                                                                                                                                                },
                                                                                                                                             ),
-                                                                                                                                        },
+                                                                                                                                        ),
                                                                                                                                     },
                                                                                                                                 },
                                                                                                                             },
@@ -2156,14 +2218,26 @@ expression: built.ir()
                                 inner: RefCell {
                                     value: Tee {
                                         inner: RefCell {
-                                            value: CycleSource {
-                                                ident: Ident {
-                                                    sym: cycle_4,
+                                            value: Union(
+                                                CycleSource {
+                                                    ident: Ident {
+                                                        sym: cycle_4,
+                                                    },
+                                                    location_kind: Cluster(
+                                                        0,
+                                                    ),
                                                 },
-                                                location_kind: Cluster(
-                                                    0,
+                                                Persist(
+                                                    Source {
+                                                        source: Iter(
+                                                            { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                        ),
+                                                        location_kind: Cluster(
+                                                            0,
+                                                        ),
+                                                    },
                                                 ),
-                                            },
+                                            ),
                                         },
                                     },
                                 },
@@ -2421,14 +2495,26 @@ expression: built.ir()
                                             inner: RefCell {
                                                 value: Tee {
                                                     inner: RefCell {
-                                                        value: CycleSource {
-                                                            ident: Ident {
-                                                                sym: cycle_4,
+                                                        value: Union(
+                                                            CycleSource {
+                                                                ident: Ident {
+                                                                    sym: cycle_4,
+                                                                },
+                                                                location_kind: Cluster(
+                                                                    0,
+                                                                ),
                                                             },
-                                                            location_kind: Cluster(
-                                                                0,
+                                                            Persist(
+                                                                Source {
+                                                                    source: Iter(
+                                                                        { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                    ),
+                                                                    location_kind: Cluster(
+                                                                        0,
+                                                                    ),
+                                                                },
                                                             ),
-                                                        },
+                                                        ),
                                                     },
                                                 },
                                             },
@@ -2593,14 +2679,26 @@ expression: built.ir()
                                                             inner: RefCell {
                                                                 value: Tee {
                                                                     inner: RefCell {
-                                                                        value: CycleSource {
-                                                                            ident: Ident {
-                                                                                sym: cycle_4,
+                                                                        value: Union(
+                                                                            CycleSource {
+                                                                                ident: Ident {
+                                                                                    sym: cycle_4,
+                                                                                },
+                                                                                location_kind: Cluster(
+                                                                                    0,
+                                                                                ),
                                                                             },
-                                                                            location_kind: Cluster(
-                                                                                0,
+                                                                            Persist(
+                                                                                Source {
+                                                                                    source: Iter(
+                                                                                        { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                    ),
+                                                                                    location_kind: Cluster(
+                                                                                        0,
+                                                                                    ),
+                                                                                },
                                                                             ),
-                                                                        },
+                                                                        ),
                                                                     },
                                                                 },
                                                             },
@@ -2731,14 +2829,26 @@ expression: built.ir()
                                                                             inner: RefCell {
                                                                                 value: Tee {
                                                                                     inner: RefCell {
-                                                                                        value: CycleSource {
-                                                                                            ident: Ident {
-                                                                                                sym: cycle_4,
+                                                                                        value: Union(
+                                                                                            CycleSource {
+                                                                                                ident: Ident {
+                                                                                                    sym: cycle_4,
+                                                                                                },
+                                                                                                location_kind: Cluster(
+                                                                                                    0,
+                                                                                                ),
                                                                                             },
-                                                                                            location_kind: Cluster(
-                                                                                                0,
+                                                                                            Persist(
+                                                                                                Source {
+                                                                                                    source: Iter(
+                                                                                                        { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                    ),
+                                                                                                    location_kind: Cluster(
+                                                                                                        0,
+                                                                                                    ),
+                                                                                                },
                                                                                             ),
-                                                                                        },
+                                                                                        ),
                                                                                     },
                                                                                 },
                                                                             },
@@ -2908,14 +3018,26 @@ expression: built.ir()
                                                                                                                                 inner: RefCell {
                                                                                                                                     value: Tee {
                                                                                                                                         inner: RefCell {
-                                                                                                                                            value: CycleSource {
-                                                                                                                                                ident: Ident {
-                                                                                                                                                    sym: cycle_4,
+                                                                                                                                            value: Union(
+                                                                                                                                                CycleSource {
+                                                                                                                                                    ident: Ident {
+                                                                                                                                                        sym: cycle_4,
+                                                                                                                                                    },
+                                                                                                                                                    location_kind: Cluster(
+                                                                                                                                                        0,
+                                                                                                                                                    ),
                                                                                                                                                 },
-                                                                                                                                                location_kind: Cluster(
-                                                                                                                                                    0,
+                                                                                                                                                Persist(
+                                                                                                                                                    Source {
+                                                                                                                                                        source: Iter(
+                                                                                                                                                            { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                                                                        ),
+                                                                                                                                                        location_kind: Cluster(
+                                                                                                                                                            0,
+                                                                                                                                                        ),
+                                                                                                                                                    },
                                                                                                                                                 ),
-                                                                                                                                            },
+                                                                                                                                            ),
                                                                                                                                         },
                                                                                                                                     },
                                                                                                                                 },
@@ -2932,14 +3054,26 @@ expression: built.ir()
                                                                                                 inner: RefCell {
                                                                                                     value: Tee {
                                                                                                         inner: RefCell {
-                                                                                                            value: CycleSource {
-                                                                                                                ident: Ident {
-                                                                                                                    sym: cycle_4,
+                                                                                                            value: Union(
+                                                                                                                CycleSource {
+                                                                                                                    ident: Ident {
+                                                                                                                        sym: cycle_4,
+                                                                                                                    },
+                                                                                                                    location_kind: Cluster(
+                                                                                                                        0,
+                                                                                                                    ),
                                                                                                                 },
-                                                                                                                location_kind: Cluster(
-                                                                                                                    0,
+                                                                                                                Persist(
+                                                                                                                    Source {
+                                                                                                                        source: Iter(
+                                                                                                                            { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                                        ),
+                                                                                                                        location_kind: Cluster(
+                                                                                                                            0,
+                                                                                                                        ),
+                                                                                                                    },
                                                                                                                 ),
-                                                                                                            },
+                                                                                                            ),
                                                                                                         },
                                                                                                     },
                                                                                                 },
@@ -2987,14 +3121,26 @@ expression: built.ir()
                                                                                                                                                     inner: RefCell {
                                                                                                                                                         value: Tee {
                                                                                                                                                             inner: RefCell {
-                                                                                                                                                                value: CycleSource {
-                                                                                                                                                                    ident: Ident {
-                                                                                                                                                                        sym: cycle_4,
+                                                                                                                                                                value: Union(
+                                                                                                                                                                    CycleSource {
+                                                                                                                                                                        ident: Ident {
+                                                                                                                                                                            sym: cycle_4,
+                                                                                                                                                                        },
+                                                                                                                                                                        location_kind: Cluster(
+                                                                                                                                                                            0,
+                                                                                                                                                                        ),
                                                                                                                                                                     },
-                                                                                                                                                                    location_kind: Cluster(
-                                                                                                                                                                        0,
+                                                                                                                                                                    Persist(
+                                                                                                                                                                        Source {
+                                                                                                                                                                            source: Iter(
+                                                                                                                                                                                { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                                                                                            ),
+                                                                                                                                                                            location_kind: Cluster(
+                                                                                                                                                                                0,
+                                                                                                                                                                            ),
+                                                                                                                                                                        },
                                                                                                                                                                     ),
-                                                                                                                                                                },
+                                                                                                                                                                ),
                                                                                                                                                             },
                                                                                                                                                         },
                                                                                                                                                     },
@@ -3043,14 +3189,26 @@ expression: built.ir()
                                                                                                                                         inner: RefCell {
                                                                                                                                             value: Tee {
                                                                                                                                                 inner: RefCell {
-                                                                                                                                                    value: CycleSource {
-                                                                                                                                                        ident: Ident {
-                                                                                                                                                            sym: cycle_4,
+                                                                                                                                                    value: Union(
+                                                                                                                                                        CycleSource {
+                                                                                                                                                            ident: Ident {
+                                                                                                                                                                sym: cycle_4,
+                                                                                                                                                            },
+                                                                                                                                                            location_kind: Cluster(
+                                                                                                                                                                0,
+                                                                                                                                                            ),
                                                                                                                                                         },
-                                                                                                                                                        location_kind: Cluster(
-                                                                                                                                                            0,
+                                                                                                                                                        Persist(
+                                                                                                                                                            Source {
+                                                                                                                                                                source: Iter(
+                                                                                                                                                                    { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                                                                                ),
+                                                                                                                                                                location_kind: Cluster(
+                                                                                                                                                                    0,
+                                                                                                                                                                ),
+                                                                                                                                                            },
                                                                                                                                                         ),
-                                                                                                                                                    },
+                                                                                                                                                    ),
                                                                                                                                                 },
                                                                                                                                             },
                                                                                                                                         },
@@ -3069,14 +3227,26 @@ expression: built.ir()
                                                                                                 inner: RefCell {
                                                                                                     value: Tee {
                                                                                                         inner: RefCell {
-                                                                                                            value: CycleSource {
-                                                                                                                ident: Ident {
-                                                                                                                    sym: cycle_4,
+                                                                                                            value: Union(
+                                                                                                                CycleSource {
+                                                                                                                    ident: Ident {
+                                                                                                                        sym: cycle_4,
+                                                                                                                    },
+                                                                                                                    location_kind: Cluster(
+                                                                                                                        0,
+                                                                                                                    ),
                                                                                                                 },
-                                                                                                                location_kind: Cluster(
-                                                                                                                    0,
+                                                                                                                Persist(
+                                                                                                                    Source {
+                                                                                                                        source: Iter(
+                                                                                                                            { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                                        ),
+                                                                                                                        location_kind: Cluster(
+                                                                                                                            0,
+                                                                                                                        ),
+                                                                                                                    },
                                                                                                                 ),
-                                                                                                            },
+                                                                                                            ),
                                                                                                         },
                                                                                                     },
                                                                                                 },
@@ -3261,14 +3431,26 @@ expression: built.ir()
                                                                                     inner: RefCell {
                                                                                         value: Tee {
                                                                                             inner: RefCell {
-                                                                                                value: CycleSource {
-                                                                                                    ident: Ident {
-                                                                                                        sym: cycle_4,
+                                                                                                value: Union(
+                                                                                                    CycleSource {
+                                                                                                        ident: Ident {
+                                                                                                            sym: cycle_4,
+                                                                                                        },
+                                                                                                        location_kind: Cluster(
+                                                                                                            0,
+                                                                                                        ),
                                                                                                     },
-                                                                                                    location_kind: Cluster(
-                                                                                                        0,
+                                                                                                    Persist(
+                                                                                                        Source {
+                                                                                                            source: Iter(
+                                                                                                                { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                            ),
+                                                                                                            location_kind: Cluster(
+                                                                                                                0,
+                                                                                                            ),
+                                                                                                        },
                                                                                                     ),
-                                                                                                },
+                                                                                                ),
                                                                                             },
                                                                                         },
                                                                                     },
@@ -3347,14 +3529,26 @@ expression: built.ir()
                                                                                             inner: RefCell {
                                                                                                 value: Tee {
                                                                                                     inner: RefCell {
-                                                                                                        value: CycleSource {
-                                                                                                            ident: Ident {
-                                                                                                                sym: cycle_4,
+                                                                                                        value: Union(
+                                                                                                            CycleSource {
+                                                                                                                ident: Ident {
+                                                                                                                    sym: cycle_4,
+                                                                                                                },
+                                                                                                                location_kind: Cluster(
+                                                                                                                    0,
+                                                                                                                ),
                                                                                                             },
-                                                                                                            location_kind: Cluster(
-                                                                                                                0,
+                                                                                                            Persist(
+                                                                                                                Source {
+                                                                                                                    source: Iter(
+                                                                                                                        { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                                    ),
+                                                                                                                    location_kind: Cluster(
+                                                                                                                        0,
+                                                                                                                    ),
+                                                                                                                },
                                                                                                             ),
-                                                                                                        },
+                                                                                                        ),
                                                                                                     },
                                                                                                 },
                                                                                             },
@@ -3620,14 +3814,26 @@ expression: built.ir()
                                                                                                             inner: RefCell {
                                                                                                                 value: Tee {
                                                                                                                     inner: RefCell {
-                                                                                                                        value: CycleSource {
-                                                                                                                            ident: Ident {
-                                                                                                                                sym: cycle_4,
+                                                                                                                        value: Union(
+                                                                                                                            CycleSource {
+                                                                                                                                ident: Ident {
+                                                                                                                                    sym: cycle_4,
+                                                                                                                                },
+                                                                                                                                location_kind: Cluster(
+                                                                                                                                    0,
+                                                                                                                                ),
                                                                                                                             },
-                                                                                                                            location_kind: Cluster(
-                                                                                                                                0,
+                                                                                                                            Persist(
+                                                                                                                                Source {
+                                                                                                                                    source: Iter(
+                                                                                                                                        { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                                                    ),
+                                                                                                                                    location_kind: Cluster(
+                                                                                                                                        0,
+                                                                                                                                    ),
+                                                                                                                                },
                                                                                                                             ),
-                                                                                                                        },
+                                                                                                                        ),
                                                                                                                     },
                                                                                                                 },
                                                                                                             },
@@ -3644,14 +3850,26 @@ expression: built.ir()
                                                                             inner: RefCell {
                                                                                 value: Tee {
                                                                                     inner: RefCell {
-                                                                                        value: CycleSource {
-                                                                                            ident: Ident {
-                                                                                                sym: cycle_4,
+                                                                                        value: Union(
+                                                                                            CycleSource {
+                                                                                                ident: Ident {
+                                                                                                    sym: cycle_4,
+                                                                                                },
+                                                                                                location_kind: Cluster(
+                                                                                                    0,
+                                                                                                ),
                                                                                             },
-                                                                                            location_kind: Cluster(
-                                                                                                0,
+                                                                                            Persist(
+                                                                                                Source {
+                                                                                                    source: Iter(
+                                                                                                        { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                    ),
+                                                                                                    location_kind: Cluster(
+                                                                                                        0,
+                                                                                                    ),
+                                                                                                },
                                                                                             ),
-                                                                                        },
+                                                                                        ),
                                                                                     },
                                                                                 },
                                                                             },
@@ -3699,14 +3917,26 @@ expression: built.ir()
                                                                                                                                 inner: RefCell {
                                                                                                                                     value: Tee {
                                                                                                                                         inner: RefCell {
-                                                                                                                                            value: CycleSource {
-                                                                                                                                                ident: Ident {
-                                                                                                                                                    sym: cycle_4,
+                                                                                                                                            value: Union(
+                                                                                                                                                CycleSource {
+                                                                                                                                                    ident: Ident {
+                                                                                                                                                        sym: cycle_4,
+                                                                                                                                                    },
+                                                                                                                                                    location_kind: Cluster(
+                                                                                                                                                        0,
+                                                                                                                                                    ),
                                                                                                                                                 },
-                                                                                                                                                location_kind: Cluster(
-                                                                                                                                                    0,
+                                                                                                                                                Persist(
+                                                                                                                                                    Source {
+                                                                                                                                                        source: Iter(
+                                                                                                                                                            { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                                                                        ),
+                                                                                                                                                        location_kind: Cluster(
+                                                                                                                                                            0,
+                                                                                                                                                        ),
+                                                                                                                                                    },
                                                                                                                                                 ),
-                                                                                                                                            },
+                                                                                                                                            ),
                                                                                                                                         },
                                                                                                                                     },
                                                                                                                                 },
@@ -3755,14 +3985,26 @@ expression: built.ir()
                                                                                                                     inner: RefCell {
                                                                                                                         value: Tee {
                                                                                                                             inner: RefCell {
-                                                                                                                                value: CycleSource {
-                                                                                                                                    ident: Ident {
-                                                                                                                                        sym: cycle_4,
+                                                                                                                                value: Union(
+                                                                                                                                    CycleSource {
+                                                                                                                                        ident: Ident {
+                                                                                                                                            sym: cycle_4,
+                                                                                                                                        },
+                                                                                                                                        location_kind: Cluster(
+                                                                                                                                            0,
+                                                                                                                                        ),
                                                                                                                                     },
-                                                                                                                                    location_kind: Cluster(
-                                                                                                                                        0,
+                                                                                                                                    Persist(
+                                                                                                                                        Source {
+                                                                                                                                            source: Iter(
+                                                                                                                                                { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                                                            ),
+                                                                                                                                            location_kind: Cluster(
+                                                                                                                                                0,
+                                                                                                                                            ),
+                                                                                                                                        },
                                                                                                                                     ),
-                                                                                                                                },
+                                                                                                                                ),
                                                                                                                             },
                                                                                                                         },
                                                                                                                     },
@@ -3781,14 +4023,26 @@ expression: built.ir()
                                                                             inner: RefCell {
                                                                                 value: Tee {
                                                                                     inner: RefCell {
-                                                                                        value: CycleSource {
-                                                                                            ident: Ident {
-                                                                                                sym: cycle_4,
+                                                                                        value: Union(
+                                                                                            CycleSource {
+                                                                                                ident: Ident {
+                                                                                                    sym: cycle_4,
+                                                                                                },
+                                                                                                location_kind: Cluster(
+                                                                                                    0,
+                                                                                                ),
                                                                                             },
-                                                                                            location_kind: Cluster(
-                                                                                                0,
+                                                                                            Persist(
+                                                                                                Source {
+                                                                                                    source: Iter(
+                                                                                                        { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                    ),
+                                                                                                    location_kind: Cluster(
+                                                                                                        0,
+                                                                                                    ),
+                                                                                                },
                                                                                             ),
-                                                                                        },
+                                                                                        ),
                                                                                     },
                                                                                 },
                                                                             },
@@ -3973,14 +4227,26 @@ expression: built.ir()
                                                                 inner: RefCell {
                                                                     value: Tee {
                                                                         inner: RefCell {
-                                                                            value: CycleSource {
-                                                                                ident: Ident {
-                                                                                    sym: cycle_4,
+                                                                            value: Union(
+                                                                                CycleSource {
+                                                                                    ident: Ident {
+                                                                                        sym: cycle_4,
+                                                                                    },
+                                                                                    location_kind: Cluster(
+                                                                                        0,
+                                                                                    ),
                                                                                 },
-                                                                                location_kind: Cluster(
-                                                                                    0,
+                                                                                Persist(
+                                                                                    Source {
+                                                                                        source: Iter(
+                                                                                            { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                        ),
+                                                                                        location_kind: Cluster(
+                                                                                            0,
+                                                                                        ),
+                                                                                    },
                                                                                 ),
-                                                                            },
+                                                                            ),
                                                                         },
                                                                     },
                                                                 },
@@ -4059,14 +4325,26 @@ expression: built.ir()
                                                                         inner: RefCell {
                                                                             value: Tee {
                                                                                 inner: RefCell {
-                                                                                    value: CycleSource {
-                                                                                        ident: Ident {
-                                                                                            sym: cycle_4,
+                                                                                    value: Union(
+                                                                                        CycleSource {
+                                                                                            ident: Ident {
+                                                                                                sym: cycle_4,
+                                                                                            },
+                                                                                            location_kind: Cluster(
+                                                                                                0,
+                                                                                            ),
                                                                                         },
-                                                                                        location_kind: Cluster(
-                                                                                            0,
+                                                                                        Persist(
+                                                                                            Source {
+                                                                                                source: Iter(
+                                                                                                    { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; 0 } ; [e] },
+                                                                                                ),
+                                                                                                location_kind: Cluster(
+                                                                                                    0,
+                                                                                                ),
+                                                                                            },
                                                                                         ),
-                                                                                    },
+                                                                                    ),
                                                                                 },
                                                                             },
                                                                         },
@@ -4410,7 +4688,7 @@ expression: built.ir()
                                             },
                                             Source {
                                                 source: Iter(
-                                                    { use crate :: __staged :: cluster :: paxos :: * ; [- 1] },
+                                                    { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; - 1 } ; [e] },
                                                 ),
                                                 location_kind: Cluster(
                                                     3,
@@ -4690,7 +4968,7 @@ expression: built.ir()
                                                                         },
                                                                         Source {
                                                                             source: Iter(
-                                                                                { use crate :: __staged :: cluster :: paxos :: * ; [- 1] },
+                                                                                { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; - 1 } ; [e] },
                                                                             ),
                                                                             location_kind: Cluster(
                                                                                 3,
@@ -4997,7 +5275,7 @@ expression: built.ir()
                                                                                             },
                                                                                             Source {
                                                                                                 source: Iter(
-                                                                                                    { use crate :: __staged :: cluster :: paxos :: * ; [- 1] },
+                                                                                                    { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; - 1 } ; [e] },
                                                                                                 ),
                                                                                                 location_kind: Cluster(
                                                                                                     3,
@@ -5475,7 +5753,7 @@ expression: built.ir()
                                                                                                     },
                                                                                                     Source {
                                                                                                         source: Iter(
-                                                                                                            { use crate :: __staged :: cluster :: paxos :: * ; [- 1] },
+                                                                                                            { use hydroflow_plus :: __staged :: builder :: * ; let e = { use crate :: __staged :: cluster :: paxos :: * ; - 1 } ; [e] },
                                                                                                         ),
                                                                                                         location_kind: Cluster(
                                                                                                             3,
