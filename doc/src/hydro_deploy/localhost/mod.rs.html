@@ -270,6 +270,8 @@
 <a href="#270" id="270">270</a>
 <a href="#271" id="271">271</a>
 <a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
@@ -501,8 +503,10 @@
                         <span class="string">"record"</span>,
                         <span class="string">"-F"</span>,
                         <span class="kw-2">&amp;</span>tracing.frequency.to_string(),
+                        <span class="string">"-e"</span>,
+                        <span class="string">"cycles:u"</span>,
                         <span class="string">"--call-graph"</span>,
-                        <span class="string">"dwarf,64000"</span>,
+                        <span class="string">"dwarf,65528"</span>,
                         <span class="string">"-o"</span>,
                     ])
                     .arg(perf_outfile)

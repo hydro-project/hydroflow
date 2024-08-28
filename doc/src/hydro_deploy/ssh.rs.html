@@ -833,7 +833,7 @@
                 </span><span class="kw">if let </span><span class="prelude-val">Some</span>(TracingOptions { frequency, .. }) = tracing.clone() {
                     <span class="comment">// Attach perf to the command
                     </span>command = <span class="macro">format!</span>(
-                        <span class="string">"perf record -F {frequency} --call-graph dwarf,64000 -o {PERF_OUTFILE} {command}"</span>,
+                        <span class="string">"perf record -F {frequency} -e cycles:u --call-graph dwarf,65528 -o {PERF_OUTFILE} {command}"</span>,
                     );
                 }
                 channel.exec(<span class="kw-2">&amp;</span>command).<span class="kw">await</span><span class="question-mark">?</span>;

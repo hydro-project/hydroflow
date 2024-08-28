@@ -782,6 +782,10 @@
 <a href="#782" id="782">782</a>
 <a href="#783" id="783">783</a>
 <a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -799,7 +803,7 @@
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use </span><span class="kw">crate</span>::builder::{ClusterIds, FlowLeaves};
-<span class="kw">use </span><span class="kw">crate</span>::cycle::CycleCollection;
+<span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleComplete};
 <span class="kw">use </span><span class="kw">crate</span>::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource};
 <span class="kw">use </span><span class="kw">crate</span>::location::{CanSend, Location, LocationId};
 <span class="kw">use crate</span>::{Cluster, Optional, Singleton};
@@ -837,6 +841,16 @@
     _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), T, N, W, C)&gt;,
 }
 
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; CycleComplete&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>Stream&lt;<span class="lifetime">'a</span>, T, W, Tick, N&gt; {
+    <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
+        <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
+            ident,
+            location_kind: <span class="self">self</span>.location_kind,
+            input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+        });
+    }
+}
+
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; CycleCollection&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>Stream&lt;<span class="lifetime">'a</span>, T, W, Tick, N&gt; {
     <span class="kw">type </span>Location = N;
 
@@ -850,12 +864,14 @@
             },
         )
     }
+}
 
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; CycleComplete&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>Stream&lt;<span class="lifetime">'a</span>, T, W, NoTick, N&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
         <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
             ident,
             location_kind: <span class="self">self</span>.location_kind,
-            input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            input: Box::new(HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner()))),
         });
     }
 }
@@ -872,14 +888,6 @@
                 location_kind: l,
             })),
         )
-    }
-
-    <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
-        <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
-            ident,
-            location_kind: <span class="self">self</span>.location_kind,
-            input: Box::new(HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner()))),
-        });
     }
 }
 

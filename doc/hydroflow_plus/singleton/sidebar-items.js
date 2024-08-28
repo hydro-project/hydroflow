@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Optional","Singleton"]};
+window.SIDEBAR_ITEMS = {"struct":["Optional","Singleton"],"trait":["CrossResult"]};

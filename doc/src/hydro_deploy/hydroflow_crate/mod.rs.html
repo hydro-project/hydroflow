@@ -204,9 +204,11 @@
 <a href="#204" id="204">204</a>
 <a href="#205" id="205">205</a>
 <a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
 
+<span class="kw">use </span>nameof::name_of;
 <span class="kw">use </span>tracing_options::TracingOptions;
 
 <span class="kw">use </span><span class="kw">super</span>::Host;
@@ -269,7 +271,7 @@
     /// equivalent to `cargo run --bin &lt;name&gt;`.
     </span><span class="kw">pub fn </span>bin(<span class="kw-2">mut </span><span class="self">self</span>, bin: <span class="kw">impl </span>Into&lt;String&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">if </span><span class="self">self</span>.target != CrateTarget::Default {
-            <span class="macro">panic!</span>(<span class="string">"target already set"</span>);
+            <span class="macro">panic!</span>(<span class="string">"{} already set"</span>, <span class="macro">name_of!</span>(target <span class="kw">in </span><span class="self">Self</span>));
         }
 
         <span class="self">self</span>.target = CrateTarget::Bin(bin.into());
@@ -280,7 +282,7 @@
     /// equivalent to `cargo run --example &lt;name&gt;`.
     </span><span class="kw">pub fn </span>example(<span class="kw-2">mut </span><span class="self">self</span>, example: <span class="kw">impl </span>Into&lt;String&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">if </span><span class="self">self</span>.target != CrateTarget::Default {
-            <span class="macro">panic!</span>(<span class="string">"target already set"</span>);
+            <span class="macro">panic!</span>(<span class="string">"{} already set"</span>, <span class="macro">name_of!</span>(target <span class="kw">in </span><span class="self">Self</span>));
         }
 
         <span class="self">self</span>.target = CrateTarget::Example(example.into());
@@ -291,7 +293,7 @@
     /// Equivalent to `cargo run --profile &lt;profile&gt;`.
     </span><span class="kw">pub fn </span>profile(<span class="kw-2">mut </span><span class="self">self</span>, profile: <span class="kw">impl </span>Into&lt;String&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">if </span><span class="self">self</span>.profile.is_some() {
-            <span class="macro">panic!</span>(<span class="string">"profile already set"</span>);
+            <span class="macro">panic!</span>(<span class="string">"{} already set"</span>, <span class="macro">name_of!</span>(profile <span class="kw">in </span><span class="self">Self</span>));
         }
 
         <span class="self">self</span>.profile = <span class="prelude-val">Some</span>(profile.into());
@@ -300,7 +302,7 @@
 
     <span class="kw">pub fn </span>rustflags(<span class="kw-2">mut </span><span class="self">self</span>, rustflags: <span class="kw">impl </span>Into&lt;String&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">if </span><span class="self">self</span>.rustflags.is_some() {
-            <span class="macro">panic!</span>(<span class="string">"rustflags already set"</span>);
+            <span class="macro">panic!</span>(<span class="string">"{} already set"</span>, <span class="macro">name_of!</span>(rustflags <span class="kw">in </span><span class="self">Self</span>));
         }
 
         <span class="self">self</span>.rustflags = <span class="prelude-val">Some</span>(rustflags.into());
@@ -309,7 +311,7 @@
 
     <span class="kw">pub fn </span>target_dir(<span class="kw-2">mut </span><span class="self">self</span>, target_dir: <span class="kw">impl </span>Into&lt;PathBuf&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">if </span><span class="self">self</span>.target_dir.is_some() {
-            <span class="macro">panic!</span>(<span class="string">"target_dir already set"</span>);
+            <span class="macro">panic!</span>(<span class="string">"{} already set"</span>, <span class="macro">name_of!</span>(target_dir <span class="kw">in </span><span class="self">Self</span>));
         }
 
         <span class="self">self</span>.target_dir = <span class="prelude-val">Some</span>(target_dir.into());
@@ -323,7 +325,7 @@
 
     <span class="kw">pub fn </span>features(<span class="kw-2">mut </span><span class="self">self</span>, features: <span class="kw">impl </span>IntoIterator&lt;Item = <span class="kw">impl </span>Into&lt;String&gt;&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">if </span><span class="self">self</span>.features.is_some() {
-            <span class="macro">panic!</span>(<span class="string">"features already set"</span>);
+            <span class="macro">panic!</span>(<span class="string">"{} already set"</span>, <span class="macro">name_of!</span>(features <span class="kw">in </span><span class="self">Self</span>));
         }
 
         <span class="self">self</span>.features = <span class="prelude-val">Some</span>(features.into_iter().map(|s| s.into()).collect());
@@ -332,7 +334,7 @@
 
     <span class="kw">pub fn </span>tracing(<span class="kw-2">mut </span><span class="self">self</span>, perf: <span class="kw">impl </span>Into&lt;TracingOptions&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">if </span><span class="self">self</span>.tracing.is_some() {
-            <span class="macro">panic!</span>(<span class="string">"tracing options are already set"</span>);
+            <span class="macro">panic!</span>(<span class="string">"{} already set"</span>, <span class="macro">name_of!</span>(tracing <span class="kw">in </span><span class="self">Self</span>));
         }
 
         <span class="self">self</span>.tracing = <span class="prelude-val">Some</span>(perf.into());
@@ -348,7 +350,7 @@
     <span class="doccomment">/// Sets the display name for this service, which will be used in logging.
     </span><span class="kw">pub fn </span>display_name(<span class="kw-2">mut </span><span class="self">self</span>, display_name: <span class="kw">impl </span>Into&lt;String&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">if </span><span class="self">self</span>.display_name.is_some() {
-            <span class="macro">panic!</span>(<span class="string">"display_name already set"</span>);
+            <span class="macro">panic!</span>(<span class="string">"{} already set"</span>, <span class="macro">name_of!</span>(display_name <span class="kw">in </span><span class="self">Self</span>));
         }
 
         <span class="self">self</span>.display_name = <span class="prelude-val">Some</span>(display_name.into());

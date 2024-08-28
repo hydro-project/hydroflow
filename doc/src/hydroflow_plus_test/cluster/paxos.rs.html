@@ -1162,7 +1162,6 @@
 <a href="#1162" id="1162">1162</a>
 <a href="#1163" id="1163">1163</a>
 <a href="#1164" id="1164">1164</a>
-<a href="#1165" id="1165">1165</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::rc::Rc;
@@ -1837,7 +1836,7 @@
     <span class="comment">// Create a cycle since we'll use this seq before we define it
     </span><span class="kw">let </span>(r_highest_seq_complete_cycle, r_highest_seq) =
         flow.cycle::&lt;Optional&lt;<span class="lifetime">'a</span>, i32, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;(replicas);
-    <span class="kw">let </span>empty_slot = flow.source_iter(replicas, <span class="macro">q!</span>([-<span class="number">1</span>])).tick_batch().first();
+    <span class="kw">let </span>empty_slot = flow.singleton_first_tick(replicas, <span class="macro">q!</span>(-<span class="number">1</span>));
     <span class="comment">// Either the max sequence number executed so far or -1. Need to union otherwise r_highest_seq is empty and joins with it will fail
     </span><span class="kw">let </span>r_highest_seq_with_default = r_highest_seq.union(empty_slot);
     <span class="comment">// Find highest the sequence number of any payload that can be processed in this tick. This is the payload right before a hole.
@@ -2200,7 +2199,7 @@
 ) {
     <span class="kw">let </span>p_id = flow.cluster_self_id(proposers);
     <span class="kw">let </span>(p_ballot_num_complete_cycle, p_ballot_num) =
-        flow.cycle::&lt;Optional&lt;<span class="lifetime">'a</span>, u32, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;(proposers);
+        flow.cycle_with_initial(proposers, flow.singleton(proposers, <span class="macro">q!</span>(<span class="number">0</span>)).latest_tick());
 
     <span class="kw">let </span>p_new_ballot_num = p_received_max_ballot
         .clone()
@@ -2222,8 +2221,7 @@
             }
         }))
         .defer_tick();
-    <span class="kw">let </span>p_start_ballot_num = flow.source_iter(proposers, <span class="macro">q!</span>([<span class="number">0</span>])).tick_batch().first();
-    p_ballot_num_complete_cycle.complete(p_start_ballot_num.union(p_new_ballot_num));
+    p_ballot_num_complete_cycle.complete(p_new_ballot_num);
 
     <span class="kw">let </span>p_ballot_num = p_ballot_num.latest();
 
