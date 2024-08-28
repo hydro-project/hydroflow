@@ -987,30 +987,39 @@ impl HydroflowGraph {
                             subgraph_op_iter_code.push(write_iterator);
 
                             if include_type_guards {
-                                let source_info = {
-                                    // TODO: This crashes when running tests from certain directories because of diagnostics flag being turned on when it should not be on.
-                                    // Not sure of the solution yet, but it is not too important because the file is usually obvious as there can only be one until module support is added.
-                                    // #[cfg(feature = "diagnostics")]
-                                    // let path = op_span.unwrap().source_file().path();
-                                    #[cfg(feature = "diagnostics")]
-                                    let location = "unknown"; // path.display();
+                                #[cfg(not(feature = "diagnostics"))]
+                                let source_info = Option::<String>::None;
 
-                                    #[cfg(not(feature = "diagnostics"))]
-                                    let location = "unknown";
+                                #[cfg(feature = "diagnostics")]
+                                let source_info = std::panic::catch_unwind(|| op_span.unwrap())
+                                    .map(|op_span| {
+                                        format!(
+                                            "loc_{}_{}_{}_{}_{}",
+                                            op_span
+                                                .source_file()
+                                                .path()
+                                                .display()
+                                                .to_string()
+                                                .replace(|x: char| !x.is_alphanumeric(), "_"),
+                                            op_span.start().line(),
+                                            op_span.start().column(),
+                                            op_span.end().line(),
+                                            op_span.end().column(),
+                                        )
+                                    })
+                                    .ok();
 
-                                    let location = location
-                                        .to_string()
-                                        .replace(|x: char| !x.is_alphanumeric(), "_");
-
+                                #[allow(clippy::unnecessary_literal_unwrap)]
+                                let source_info = source_info.unwrap_or_else(|| {
                                     format!(
-                                        "loc_{}_start_{}_{}_end_{}_{}",
-                                        location,
+                                        "loc_nopath_{}_{}_{}_{}",
                                         op_span.start().line,
                                         op_span.start().column,
                                         op_span.end().line,
                                         op_span.end().column
                                     )
-                                };
+                                });
+
                                 let fn_ident = format_ident!(
                                     "{}__{}__{}",
                                     ident,

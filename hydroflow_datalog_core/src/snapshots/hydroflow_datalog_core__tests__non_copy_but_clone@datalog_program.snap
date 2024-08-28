@@ -64,7 +64,7 @@ fn main() {
                     let op_7v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_7v1__source_stream__loc_unknown_start_2_28_end_2_50<
+                        pub fn op_7v1__source_stream__loc_nopath_2_28_2_50<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
@@ -91,7 +91,7 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_7v1__source_stream__loc_unknown_start_2_28_end_2_50(op_7v1)
+                        op_7v1__source_stream__loc_nopath_2_28_2_50(op_7v1)
                     };
                     let op_2v1 = op_7v1
                         .filter(|item| {
@@ -113,7 +113,7 @@ fn main() {
                     let op_2v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_2v1__unique__loc_unknown_start_2_19_end_2_26<
+                        pub fn op_2v1__unique__loc_nopath_2_19_2_26<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
@@ -140,13 +140,13 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_2v1__unique__loc_unknown_start_2_19_end_2_26(op_2v1)
+                        op_2v1__unique__loc_nopath_2_19_2_26(op_2v1)
                     };
                     let op_9v1 = op_2v1.map(|row: (_,)| ((row.0.clone(), row.0), ()));
                     let op_9v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_9v1__map__loc_unknown_start_1_0_end_1_0<
+                        pub fn op_9v1__map__loc_nopath_1_0_1_0<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
@@ -173,13 +173,13 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_9v1__map__loc_unknown_start_1_0_end_1_0(op_9v1)
+                        op_9v1__map__loc_nopath_1_0_1_0(op_9v1)
                     };
                     let op_10v1 = op_9v1.map(|(g, a): ((_, _), _)| (g.0, g.1));
                     let op_10v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_10v1__map__loc_unknown_start_1_0_end_1_0<
+                        pub fn op_10v1__map__loc_nopath_1_0_1_0<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
@@ -206,7 +206,7 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_10v1__map__loc_unknown_start_1_0_end_1_0(op_10v1)
+                        op_10v1__map__loc_nopath_1_0_1_0(op_10v1)
                     };
                     let op_5v1 = op_10v1
                         .filter(|item| {
@@ -228,7 +228,7 @@ fn main() {
                     let op_5v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_5v1__unique__loc_unknown_start_3_20_end_3_26<
+                        pub fn op_5v1__unique__loc_nopath_3_20_3_26<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
@@ -255,7 +255,7 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_5v1__unique__loc_unknown_start_3_20_end_3_26(op_5v1)
+                        op_5v1__unique__loc_nopath_3_20_3_26(op_5v1)
                     };
                     let op_8v1 = hydroflow::pusherator::for_each::ForEach::new(|v| {
                         result.send(v).unwrap()
@@ -263,7 +263,7 @@ fn main() {
                     let op_8v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_8v1__for_each__loc_unknown_start_3_28_end_3_65<
+                        pub fn op_8v1__for_each__loc_nopath_3_28_3_65<
                             Item,
                             Input: hydroflow::pusherator::Pusherator<Item = Item>,
                         >(
@@ -288,7 +288,7 @@ fn main() {
                             }
                             Push { inner: input }
                         }
-                        op_8v1__for_each__loc_unknown_start_3_28_end_3_65(op_8v1)
+                        op_8v1__for_each__loc_nopath_3_28_3_65(op_8v1)
                     };
                     #[inline(always)]
                     fn pivot_run_sg_1v1<
@@ -305,4 +305,3 @@ fn main() {
         }
     }
 }
-
