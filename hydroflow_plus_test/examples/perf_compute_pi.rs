@@ -62,7 +62,7 @@ async fn main() {
                         .dtrace_outfile("leader.stacks")
                         .fold_outfile("leader.data.folded")
                         .flamegraph_outfile("leader.svg")
-                        .frequency(5)
+                        .frequency(128)
                         .build(),
                 ),
         )
@@ -78,7 +78,7 @@ async fn main() {
                                 .dtrace_outfile(format!("cluster{}.leader.stacks", idx))
                                 .fold_outfile(format!("cluster{}.data.folded", idx))
                                 .flamegraph_outfile(format!("cluster{}.svg", idx))
-                                .frequency(5)
+                                .frequency(128)
                                 .build(),
                         )
                 })

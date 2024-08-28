@@ -229,8 +229,10 @@ impl LaunchedHost for LaunchedLocalhost {
                         "record",
                         "-F",
                         &tracing.frequency.to_string(),
+                        "-e",
+                        "cycles:u",
                         "--call-graph",
-                        "dwarf,64000",
+                        "dwarf,65528",
                         "-o",
                     ])
                     .arg(perf_outfile)
