@@ -12,6 +12,7 @@ use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{Deployment, Host, HydroflowCrate};
 use hydroflow_plus::deploy::{ClusterSpec, Deploy, Node, ProcessSpec};
 use hydroflow_plus::lang::graph::HydroflowGraph;
+use nameof::name_of;
 use sha2::{Digest, Sha256};
 use stageleft::Quoted;
 use tokio::sync::RwLock;
@@ -278,20 +279,20 @@ impl TrybuildHost {
         }
     }
 
-    pub fn display_name(self, name: impl Into<String>) -> Self {
+    pub fn display_name(self, display_name: impl Into<String>) -> Self {
         if self.display_name.is_some() {
-            panic!("display_name already set");
+            panic!("{} already set", name_of!(display_name in Self));
         }
 
         Self {
-            display_name: Some(name.into()),
+            display_name: Some(display_name.into()),
             ..self
         }
     }
 
     pub fn rustflags(self, rustflags: impl Into<String>) -> Self {
         if self.rustflags.is_some() {
-            panic!("rustflags already set");
+            panic!("{} already set", name_of!(rustflags in Self));
         }
 
         Self {
@@ -302,7 +303,7 @@ impl TrybuildHost {
 
     pub fn tracing(self, tracing: TracingOptions) -> Self {
         if self.tracing.is_some() {
-            panic!("tracing already set");
+            panic!("{} already set", name_of!(tracing in Self));
         }
 
         Self {

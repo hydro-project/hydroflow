@@ -380,7 +380,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
                 if let Some(TracingOptions { frequency, .. }) = tracing.clone() {
                     // Attach perf to the command
                     command = format!(
-                        "perf record -F {frequency} --call-graph dwarf,64000 -o {PERF_OUTFILE} {command}",
+                        "perf record -F {frequency} -e cycles:u --call-graph dwarf,65528 -o {PERF_OUTFILE} {command}",
                     );
                 }
                 channel.exec(&command).await?;

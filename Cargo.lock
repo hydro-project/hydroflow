@@ -1452,6 +1452,7 @@ version = "0.8.0"
 dependencies = [
  "hydro_deploy",
  "hydroflow_plus",
+ "nameof",
  "prettyplease",
  "serde",
  "sha2",

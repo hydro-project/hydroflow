@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use nameof::name_of;
 use tracing_options::TracingOptions;
 
 use super::Host;
@@ -63,7 +64,7 @@ impl HydroflowCrate {
     /// equivalent to `cargo run --bin <name>`.
     pub fn bin(mut self, bin: impl Into<String>) -> Self {
         if self.target != CrateTarget::Default {
-            panic!("target already set");
+            panic!("{} already set", name_of!(target in Self));
         }
 
         self.target = CrateTarget::Bin(bin.into());
@@ -74,7 +75,7 @@ impl HydroflowCrate {
     /// equivalent to `cargo run --example <name>`.
     pub fn example(mut self, example: impl Into<String>) -> Self {
         if self.target != CrateTarget::Default {
-            panic!("target already set");
+            panic!("{} already set", name_of!(target in Self));
         }
 
         self.target = CrateTarget::Example(example.into());
@@ -85,7 +86,7 @@ impl HydroflowCrate {
     /// Equivalent to `cargo run --profile <profile>`.
     pub fn profile(mut self, profile: impl Into<String>) -> Self {
         if self.profile.is_some() {
-            panic!("profile already set");
+            panic!("{} already set", name_of!(profile in Self));
         }
 
         self.profile = Some(profile.into());
@@ -94,7 +95,7 @@ impl HydroflowCrate {
 
     pub fn rustflags(mut self, rustflags: impl Into<String>) -> Self {
         if self.rustflags.is_some() {
-            panic!("rustflags already set");
+            panic!("{} already set", name_of!(rustflags in Self));
         }
 
         self.rustflags = Some(rustflags.into());
@@ -103,7 +104,7 @@ impl HydroflowCrate {
 
     pub fn target_dir(mut self, target_dir: impl Into<PathBuf>) -> Self {
         if self.target_dir.is_some() {
-            panic!("target_dir already set");
+            panic!("{} already set", name_of!(target_dir in Self));
         }
 
         self.target_dir = Some(target_dir.into());
@@ -117,7 +118,7 @@ impl HydroflowCrate {
 
     pub fn features(mut self, features: impl IntoIterator<Item = impl Into<String>>) -> Self {
         if self.features.is_some() {
-            panic!("features already set");
+            panic!("{} already set", name_of!(features in Self));
         }
 
         self.features = Some(features.into_iter().map(|s| s.into()).collect());
@@ -126,7 +127,7 @@ impl HydroflowCrate {
 
     pub fn tracing(mut self, perf: impl Into<TracingOptions>) -> Self {
         if self.tracing.is_some() {
-            panic!("tracing options are already set");
+            panic!("{} already set", name_of!(tracing in Self));
         }
 
         self.tracing = Some(perf.into());
@@ -142,7 +143,7 @@ impl HydroflowCrate {
     /// Sets the display name for this service, which will be used in logging.
     pub fn display_name(mut self, display_name: impl Into<String>) -> Self {
         if self.display_name.is_some() {
-            panic!("display_name already set");
+            panic!("{} already set", name_of!(display_name in Self));
         }
 
         self.display_name = Some(display_name.into());
