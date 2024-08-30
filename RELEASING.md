@@ -18,6 +18,8 @@ messages, but requires manually intervention to do so in some situations.
 ```sh
 cargo install cargo-smart-release
 ```
+Re-run this command before each release to update the tool before testing locally, as the CI will
+always use the latest version.
 
 ## Dry run to ensure changelogs can be generated
 
@@ -120,12 +122,17 @@ cargo changelog --write <crate_to_be_moved> <other_crate_to_be_moved> ...
 ```
 (This command is provided by `cargo install cargo-smart-release`; don't use any other `cargo changelog` command)
 
-Then, before committing the changes, go through the modified `CHANGELOG.md` files and add a prefix
-to the `Commit Statistics` and `Commit Details` headers, for example: `Pre-Move Commit Statistics`/`Pre-Move Commit Details`.
+Next (even if there are no changes), go through the modified `CHANGELOG.md` files and add a prefix
+to **all** (not just the new) the `Commit Statistics` and `Commit Details` headers, for example:
+`Pre-Move Commit Statistics`/`Pre-Move Commit Details`.
 This is necessary because otherwise `cargo-smart-release` will treat those sections as auto-generated
 and will not preserve them, but then won't regenerate them due to the package moving. Commit the
 updated changelogs and cherry-pick that commit to the latest version if you went back in history.
 The changelogs should now be safely preserved by future releases.
+
+## Addendum: Renaming crates
+
+TODO
 
 ## Addendum: The GitHub App account
 

@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-ba2df44efd42b7c4d37ebefbf82e77c6f1d4cb94/> use `TcpListenerStream` instead of spawning task, fix #659
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#1121](https://github.com/hydro-project/hydroflow/issues/1121)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -73,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Auto-configure Hydro Deploy based on Hydroflow+ plans ([`9e27582`](https://github.com/hydro-project/hydroflow/commit/9e275824c88b24d060a7de5822e1359959b36b03))
 </details>
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -82,7 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1046](https://github.com/hydro-project/hydroflow/issues/1046), [#986](https://github.com/hydro-project/hydroflow/issues/986)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 

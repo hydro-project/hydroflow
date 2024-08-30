@@ -71,7 +71,7 @@
    We could make the publicly facing `stdout`, `stderr` APIs return `impl Stream<Output = String>` in the future, maybe
  - <csr-id-141eae1c3a1869fa42756250618a21ea2a2c7e34/> replace some uses of `tokio::sync::RwLock` with `std::sync::Mutex` #430 (3/3)
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -80,7 +80,7 @@
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1339](https://github.com/hydro-project/hydroflow/issues/1339), [#1346](https://github.com/hydro-project/hydroflow/issues/1346), [#1347](https://github.com/hydro-project/hydroflow/issues/1347), [#1356](https://github.com/hydro-project/hydroflow/issues/1356)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -111,7 +111,7 @@
  - <csr-id-6e571726ff40818fbe9bbe9923511877c20fb243/> add API to get the cluster ID of the current node
    feat(hydroflow_plus): add API to get the cluster ID of the current node
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -120,7 +120,7 @@
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1194](https://github.com/hydro-project/hydroflow/issues/1194), [#1238](https://github.com/hydro-project/hydroflow/issues/1238)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -147,7 +147,7 @@
    for having developers run the optimizer during deployment as well in
    case it changes the network topology.
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -156,7 +156,7 @@
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1100](https://github.com/hydro-project/hydroflow/issues/1100), [#1101](https://github.com/hydro-project/hydroflow/issues/1101)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -181,7 +181,7 @@
  - <csr-id-eb34ccd13f56e1d07cbae35ead79daeb3b9bad20/> use an IR before lowering to Hydroflow
    Makes it possible to write custom optimization passes.
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -190,7 +190,7 @@
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1070](https://github.com/hydro-project/hydroflow/issues/1070), [#1080](https://github.com/hydro-project/hydroflow/issues/1080)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -232,7 +232,7 @@
  - <csr-id-53d7aee8dcc574d47864ec89bfea30a82eab0ee7/> improve Rust API for defining services
  - <csr-id-c50ca121b6d5e30dc07843f82caa135b68626301/> split Rust core from Python bindings
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -240,7 +240,7 @@
  - 9 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 6 unique issues were worked on: [#1013](https://github.com/hydro-project/hydroflow/issues/1013), [#1056](https://github.com/hydro-project/hydroflow/issues/1056), [#986](https://github.com/hydro-project/hydroflow/issues/986), [#987](https://github.com/hydro-project/hydroflow/issues/987), [#995](https://github.com/hydro-project/hydroflow/issues/995), [#996](https://github.com/hydro-project/hydroflow/issues/996)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
