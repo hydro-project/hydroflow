@@ -132,7 +132,38 @@ The changelogs should now be safely preserved by future releases.
 
 ## Addendum: Renaming crates
 
-TODO
+First, follow the [steps above for moving crates](#addendum-moving-crates).
+
+After renaming a crate, `cargo-smart-release` will see it a brand new crate with no published
+versions on crates.io, and will therefore not bump the version. This is not desired behavior, and
+generating the changelog will fail unintelligibly due to the conflicting versions:
+```log
+BUG: User segments are never auto-generated: ...
+```
+
+To fix this, before releasing, manually bump the version of the renamed crate. `Cargo.toml`:
+```toml
+name = "crate_old_name"
+publish = true
+version = "0.8.0"
+# becomes
+name = "crate_new_name"
+publish = true
+version = "0.9.0"
+```
+(In this case, bumping the minor version)
+
+You will also need to manually update any crates that depend on the renamed crate as well:
+```toml
+crate_old_name = { path = "../crate_old_path", version = "^0.8.0" }
+# becomes
+crate_new_name = { path = "../crate_new_path", version = "^0.9.0" }
+```
+
+Commit those changes, then continue as normal.
+
+(There may be other issues with the `git tag`s `cargo-smart-release` uses to track versions if you
+are renaming a crate _back to an old name_).
 
 ## Addendum: The GitHub App account
 
