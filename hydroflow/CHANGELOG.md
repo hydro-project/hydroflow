@@ -5,7 +5,100 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.9.0 (2024-08-30)
+
+### Chore
+
+ - <csr-id-a2ec110ccadb97e293b19d83a155d98d94224bba/> manually set versions for crates renamed in #1413
+ - <csr-id-11af32828bab6e4a4264d2635ff71a12bb0bb778/> lower min dependency versions where possible, update `Cargo.lock`
+   Moved from #1418
+   
+   ---------
+ - <csr-id-3c41e1e9b505bb84474ec10df30fb65c6d6f90cb/> drop unused dependencies
+
+### Documentation
+
+ - <csr-id-f5f1eb0c612f5c0c1752360d972ef6853c5e12f0/> cleanup doc comments for clippy latest
+
+### New Features
+
+ - <csr-id-9e5f58ef773f0aee39a9705d9845361a2488649b/> allow `demux_enum` to have any number of outputs, fix #1329
+ - <csr-id-3850b4793b33ce7c4e88c80868335ba7506c4229/> Added simulation framework.
+   Will move it out of the blind gossip PR next.
+ - <csr-id-bd793e2fc1db735a6e623973028e99675a7933e0/> add `cross_singleton` operator
+   This operator is necessary to eliminate performance bottlenecks in Paxos
+   where cross-products result in unnecessary cloning and lack of
+   short-circuit behavior results in values being cloned out of the
+   internal state of `reduce_keyed`.
+
+### Bug Fixes
+
+ - <csr-id-22c72189bb76412955d29b03c5d99894c558a07c/> remove `FlowProps`
+ - <csr-id-75dd4fbb772a3ae7e58989aacab2121a1a487557/> `fold<'tick>` should always emit a value
+
+### Refactor (BREAKING)
+
+ - <csr-id-0a465e55dd39c76bc1aefb020460a639d792fe87/> rename integration crates to drop CLI references
+ - <csr-id-a2147864b24110c9ae2c1553e9e8b55bd5065f15/> `Deployment.stop()` for graceful shutdown including updated `perf` profile downloading
+   * `perf` profile downloading moved from the `drop()` impl to `async fn
+   stop()`
+   * download perf data via stdout
+   * update async-ssh2-lite to 0.5 to cleanup tokio compat issues
+   
+   WIP for #1365
+
+### Style (BREAKING)
+
+ - <csr-id-fa417205569d8c49c85b0c2324118e0f9b1c8407/> rename some `CLI`->`Deploy`, decapitalize acronym names
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 12 commits contributed to the release.
+ - 12 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 11 unique issues were worked on: [#1370](https://github.com/hydro-project/hydroflow/issues/1370), [#1373](https://github.com/hydro-project/hydroflow/issues/1373), [#1399](https://github.com/hydro-project/hydroflow/issues/1399), [#1407](https://github.com/hydro-project/hydroflow/issues/1407), [#1409](https://github.com/hydro-project/hydroflow/issues/1409), [#1413](https://github.com/hydro-project/hydroflow/issues/1413), [#1416](https://github.com/hydro-project/hydroflow/issues/1416), [#1417](https://github.com/hydro-project/hydroflow/issues/1417), [#1420](https://github.com/hydro-project/hydroflow/issues/1420), [#1423](https://github.com/hydro-project/hydroflow/issues/1423), [#1428](https://github.com/hydro-project/hydroflow/issues/1428)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1370](https://github.com/hydro-project/hydroflow/issues/1370)**
+    - `Deployment.stop()` for graceful shutdown including updated `perf` profile downloading ([`a214786`](https://github.com/hydro-project/hydroflow/commit/a2147864b24110c9ae2c1553e9e8b55bd5065f15))
+ * **[#1373](https://github.com/hydro-project/hydroflow/issues/1373)**
+    - Add `cross_singleton` operator ([`bd793e2`](https://github.com/hydro-project/hydroflow/commit/bd793e2fc1db735a6e623973028e99675a7933e0))
+ * **[#1399](https://github.com/hydro-project/hydroflow/issues/1399)**
+    - Rename some `CLI`->`Deploy`, decapitalize acronym names ([`fa41720`](https://github.com/hydro-project/hydroflow/commit/fa417205569d8c49c85b0c2324118e0f9b1c8407))
+ * **[#1407](https://github.com/hydro-project/hydroflow/issues/1407)**
+    - `fold<'tick>` should always emit a value ([`75dd4fb`](https://github.com/hydro-project/hydroflow/commit/75dd4fbb772a3ae7e58989aacab2121a1a487557))
+ * **[#1409](https://github.com/hydro-project/hydroflow/issues/1409)**
+    - Allow `demux_enum` to have any number of outputs, fix #1329 ([`9e5f58e`](https://github.com/hydro-project/hydroflow/commit/9e5f58ef773f0aee39a9705d9845361a2488649b))
+ * **[#1413](https://github.com/hydro-project/hydroflow/issues/1413)**
+    - Rename integration crates to drop CLI references ([`0a465e5`](https://github.com/hydro-project/hydroflow/commit/0a465e55dd39c76bc1aefb020460a639d792fe87))
+ * **[#1416](https://github.com/hydro-project/hydroflow/issues/1416)**
+    - Added simulation framework. ([`3850b47`](https://github.com/hydro-project/hydroflow/commit/3850b4793b33ce7c4e88c80868335ba7506c4229))
+ * **[#1417](https://github.com/hydro-project/hydroflow/issues/1417)**
+    - Drop unused dependencies ([`3c41e1e`](https://github.com/hydro-project/hydroflow/commit/3c41e1e9b505bb84474ec10df30fb65c6d6f90cb))
+ * **[#1420](https://github.com/hydro-project/hydroflow/issues/1420)**
+    - Remove `FlowProps` ([`22c7218`](https://github.com/hydro-project/hydroflow/commit/22c72189bb76412955d29b03c5d99894c558a07c))
+ * **[#1423](https://github.com/hydro-project/hydroflow/issues/1423)**
+    - Lower min dependency versions where possible, update `Cargo.lock` ([`11af328`](https://github.com/hydro-project/hydroflow/commit/11af32828bab6e4a4264d2635ff71a12bb0bb778))
+ * **[#1428](https://github.com/hydro-project/hydroflow/issues/1428)**
+    - Cleanup doc comments for clippy latest ([`f5f1eb0`](https://github.com/hydro-project/hydroflow/commit/f5f1eb0c612f5c0c1752360d972ef6853c5e12f0))
+ * **Uncategorized**
+    - Manually set versions for crates renamed in #1413 ([`a2ec110`](https://github.com/hydro-project/hydroflow/commit/a2ec110ccadb97e293b19d83a155d98d94224bba))
+</details>
+
 ## 0.8.0 (2024-07-23)
+
+<csr-id-3098f77fd99882aae23c4b31017aa4b761306197/>
+<csr-id-f1442a0161fe7a1827a60cb96ff11646d711373d/>
+<csr-id-70a3f9e19f70fae0967eb96c454ab922c0f5290b/>
+<csr-id-b3c233dadd7ebc57eb7e8ee111e43e8dddb9c882/>
+<csr-id-67c0e51fb25ea1a2e3aae197c1984920b46759fa/>
+<csr-id-12b8ba53f28eb9de1318b41cdf1e23282f6f0eb6/>
 
 ### Chore
 
@@ -16,6 +109,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-2a4881d7c981bdf8f4deae9902e7d305f36c4203/> test code snipets, generate output for `surface_flows`, fix #814
 
 ### Bug Fixes
+
+<csr-id-b79f1a4c8f30131c8ca2ab4900efed9ded819581/>
+<csr-id-dfb5ec9022d2f854d65d68e55ae5c445ddbb8f5e/>
+<csr-id-39ad0d68de5281c1ee4ecc97e05a1d14c602538b/>
+<csr-id-1ad690b993f38ac6a03667fdce56e6603076b1d2/>
 
  - <csr-id-f45b9ddbfca84e11398f3dec774b713b5b071422/> allow `ensure_singleton_referencers_succeed_persist` to ignore `identity`/`tee`/`union` operators, helps #1290
    Adds tests for `ensure_singleton_referencers_succeed_persist` persist
@@ -32,23 +130,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    Option 2 of #1298
    
    * Main feature in the title is in `src/scheduled/{context,graph}.rs`
-   * Codegen for some stateful operators (those which can be used as singletons, and some others) is changed to use the new API.
-   * Add a test `test_cartesian_product_tick_state` for #1298
-   * Rest of the diff is snapshot changes
-   
-   Other `'tick` state will need to be cleared, but existing implementation does that when the iterator runs, which is good enough. There is only a problem if a singleton can reference the state before the iterator runs, in that case.
- - <csr-id-b79f1a4c8f30131c8ca2ab4900efed9ded819581/> allow use of generics in `demux_enum::<...>()` op
-   ensures turbofish syntax for the match clauses, which is needed when there are generic parameters in the type
-   
-   adds a test as well
- - <csr-id-dfb5ec9022d2f854d65d68e55ae5c445ddbb8f5e/> yield before `collect_ready_async` to ensure background async tasks can send to the stream
- - <csr-id-39ad0d68de5281c1ee4ecc97e05a1d14c602538b/> make sure tasks are spawned!!!!
-   fix bug introduced in #978
- - <csr-id-1ad690b993f38ac6a03667fdce56e6603076b1d2/> Make inner for `WithTop` & `WithBot` private
-   `Option<T>` is not a lattice, so it is unsafe to expose as public.
-   
-   I also updated documentation to lead with intention before
-   implementation (minor cleanup).
+* Codegen for some stateful operators (those which can be used as singletons, and some others) is changed to use the new API.
+* Add a test `test_cartesian_product_tick_state` for #1298
+* Rest of the diff is snapshot changes
 
 ### Refactor
 
@@ -98,45 +182,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    This has a very unintuitive replaying behavior, if `y` receives multiple
    updates:
    1. `y` receives an item `10`
-   2. `stream` receives an item `20`
-   3. `(10, 20)` is emitted
-   4. `y` receives an item `11`
-   5. `(11, 20)` is emitted
+2. `stream` receives an item `20`
+3. `(10, 20)` is emitted
+4. `y` receives an item `11`
+5. `(11, 20)` is emitted
    In this case the item `20` gets emitted twice.
-   
-   To emulate this unintuitive behavior, we currently ensure that a
-   `persist::<'static>()` exists before operator that references the
-   singleton (`filter`, in this case). (Note that this is equivalent to
-   `cross_join::<'static>()` and not `cross_join::<'tick>()`)
-   
-   However singletons also have had a different mechanism that affects
-   this- currently singleton references create a next-stratum constraint,
-   that ensures a singleton referencer must be in a later stratum than the
-   singleton it is referencing.
-   
-   Note that this actually prevents the example situation above from
-   happening-- the updates to `y` will be received all at once at the start
-   of the next stratum.
-   
-   This means that actually, currently singletons are equivalent to
-   something like:
-   ```rust
-   stream -> cj[0];
-   y -> next_stratum() -> last() -> cj[1];
-   cj = cross_join() -> filter(|(item, y)| ...) -> ...
-   ```
-   `last()` is a hypothetical operator that only keeps the most recent item
-   output by `y`. `next_stratum() -> last()` is equivalent to `reduce(|acc,
-   item| *acc = item)` (since that comes with a stratum barrier). So
-   technically this is a slightly different behavior than just cross_join,
-   but it is more intuitive.
-   ```rust
-   stream -> cj[0];
-   y -> reduce(|acc, item| { *acc = item; }) -> cj[1];
-   cj = cross_join() -> filter(|(item, y)| ...) -> ...
-   ```
-   
-   Also fixes #1293
 
 ### Refactor (BREAKING)
 
@@ -153,8 +203,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 16 commits contributed to the release over the course of 54 calendar days.
- - 59 days passed between releases.
+ - 17 commits contributed to the release.
  - 16 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 17 unique issues were worked on: [#1143](https://github.com/hydro-project/hydroflow/issues/1143), [#1216](https://github.com/hydro-project/hydroflow/issues/1216), [#1244](https://github.com/hydro-project/hydroflow/issues/1244), [#1260](https://github.com/hydro-project/hydroflow/issues/1260), [#1271](https://github.com/hydro-project/hydroflow/issues/1271), [#1273](https://github.com/hydro-project/hydroflow/issues/1273), [#1274](https://github.com/hydro-project/hydroflow/issues/1274), [#1280](https://github.com/hydro-project/hydroflow/issues/1280), [#1283](https://github.com/hydro-project/hydroflow/issues/1283), [#1295](https://github.com/hydro-project/hydroflow/issues/1295), [#1296](https://github.com/hydro-project/hydroflow/issues/1296), [#1297](https://github.com/hydro-project/hydroflow/issues/1297), [#1300](https://github.com/hydro-project/hydroflow/issues/1300), [#1309](https://github.com/hydro-project/hydroflow/issues/1309), [#1312](https://github.com/hydro-project/hydroflow/issues/1312), [#1332](https://github.com/hydro-project/hydroflow/issues/1332), [#1345](https://github.com/hydro-project/hydroflow/issues/1345)
 
@@ -198,7 +247,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Remove singleton referencer `persist::<'static>()` insertion ([`755e8a6`](https://github.com/hydro-project/hydroflow/commit/755e8a6d2c2b30b5d28b60315bb099030d3f3964))
  * **[#1345](https://github.com/hydro-project/hydroflow/issues/1345)**
     - Enable clippy `upper-case-acronyms-aggressive` ([`12b8ba5`](https://github.com/hydro-project/hydroflow/commit/12b8ba53f28eb9de1318b41cdf1e23282f6f0eb6))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.8.0, hydroflow_datalog_core v0.8.0, hydroflow_datalog v0.8.0, hydroflow_macro v0.8.0, lattices_macro v0.5.5, lattices v0.5.6, variadics v0.0.5, pusherator v0.0.7, hydroflow v0.8.0, hydroflow_plus v0.8.0, hydro_deploy v0.8.0, hydro_cli v0.8.0, hydroflow_plus_cli_integration v0.8.0, safety bump 7 crates ([`ca6c16b`](https://github.com/hydro-project/hydroflow/commit/ca6c16b4a7ce35e155fe7fc6c7d1676c37c9e4de))
 </details>
+
+<csr-unknown>
+Other 'tick state will need to be cleared, but existing implementation does that when the iterator runs, which is good enough. There is only a problem if a singleton can reference the state before the iterator runs, in that case. allow use of generics in demux_enum::<...>() opensures turbofish syntax for the match clauses, which is needed when there are generic parameters in the typeadds a test as well yield before collect_ready_async to ensure background async tasks can send to the stream make sure tasks are spawned!!!!fix bug introduced in #978 Make inner for WithTop & WithBot privateOption<T> is not a lattice, so it is unsafe to expose as public.I also updated documentation to lead with intention beforeimplementation (minor cleanup).To emulate this unintuitive behavior, we currently ensure that apersist::<'static>() exists before operator that references thesingleton (filter, in this case). (Note that this is equivalent tocross_join::<'static>() and not cross_join::<'tick>())However singletons also have had a different mechanism that affectsthis- currently singleton references create a next-stratum constraint,that ensures a singleton referencer must be in a later stratum than thesingleton it is referencing.Note that this actually prevents the example situation above fromhappening– the updates to y will be received all at once at the startof the next stratum.This means that actually, currently singletons are equivalent tosomething like:ruststream -> cj[0];
+y -> next_stratum() -> last() -> cj[1];
+cj = cross_join() -> filter(|(item, y)| ...) -> ...
+last() is a hypothetical operator that only keeps the most recent itemoutput by y. next_stratum() -> last() is equivalent to reduce(|acc, item| *acc = item) (since that comes with a stratum barrier). Sotechnically this is a slightly different behavior than just cross_join,but it is more intuitive.ruststream -> cj[0];
+y -> reduce(|acc, item| { *acc = item; }) -> cj[1];
+cj = cross_join() -> filter(|(item, y)| ...) -> ...
+Also fixes #1293<csr-unknown/>
 
 ## 0.7.0 (2024-05-24)
 
@@ -281,8 +341,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 31 commits contributed to the release over the course of 42 calendar days.
- - 44 days passed between releases.
+ - 31 commits contributed to the release.
  - 27 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 23 unique issues were worked on: [#1120](https://github.com/hydro-project/hydroflow/issues/1120), [#1143](https://github.com/hydro-project/hydroflow/issues/1143), [#1152](https://github.com/hydro-project/hydroflow/issues/1152), [#1159](https://github.com/hydro-project/hydroflow/issues/1159), [#1164](https://github.com/hydro-project/hydroflow/issues/1164), [#1166](https://github.com/hydro-project/hydroflow/issues/1166), [#1167](https://github.com/hydro-project/hydroflow/issues/1167), [#1171](https://github.com/hydro-project/hydroflow/issues/1171), [#1176](https://github.com/hydro-project/hydroflow/issues/1176), [#1178](https://github.com/hydro-project/hydroflow/issues/1178), [#1182](https://github.com/hydro-project/hydroflow/issues/1182), [#1190](https://github.com/hydro-project/hydroflow/issues/1190), [#1191](https://github.com/hydro-project/hydroflow/issues/1191), [#1192](https://github.com/hydro-project/hydroflow/issues/1192), [#1193](https://github.com/hydro-project/hydroflow/issues/1193), [#1196](https://github.com/hydro-project/hydroflow/issues/1196), [#1197](https://github.com/hydro-project/hydroflow/issues/1197), [#1198](https://github.com/hydro-project/hydroflow/issues/1198), [#1199](https://github.com/hydro-project/hydroflow/issues/1199), [#1204](https://github.com/hydro-project/hydroflow/issues/1204), [#1232](https://github.com/hydro-project/hydroflow/issues/1232), [#1236](https://github.com/hydro-project/hydroflow/issues/1236), [#1238](https://github.com/hydro-project/hydroflow/issues/1238)
 
@@ -376,7 +435,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 6 commits contributed to the release.
- - 3 days passed between releases.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#1134](https://github.com/hydro-project/hydroflow/issues/1134), [#1148](https://github.com/hydro-project/hydroflow/issues/1148), [#1150](https://github.com/hydro-project/hydroflow/issues/1150)
 
@@ -474,8 +532,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 28 commits contributed to the release over the course of 31 calendar days.
- - 34 days passed between releases.
+ - 28 commits contributed to the release.
  - 27 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 18 unique issues were worked on: [#1068](https://github.com/hydro-project/hydroflow/issues/1068), [#1086](https://github.com/hydro-project/hydroflow/issues/1086), [#1087](https://github.com/hydro-project/hydroflow/issues/1087), [#1089](https://github.com/hydro-project/hydroflow/issues/1089), [#1090](https://github.com/hydro-project/hydroflow/issues/1090), [#1091](https://github.com/hydro-project/hydroflow/issues/1091), [#1093](https://github.com/hydro-project/hydroflow/issues/1093), [#1094](https://github.com/hydro-project/hydroflow/issues/1094), [#1102](https://github.com/hydro-project/hydroflow/issues/1102), [#1113](https://github.com/hydro-project/hydroflow/issues/1113), [#1125](https://github.com/hydro-project/hydroflow/issues/1125), [#1128](https://github.com/hydro-project/hydroflow/issues/1128), [#1132](https://github.com/hydro-project/hydroflow/issues/1132), [#1133](https://github.com/hydro-project/hydroflow/issues/1133), [#1137](https://github.com/hydro-project/hydroflow/issues/1137), [#1140](https://github.com/hydro-project/hydroflow/issues/1140), [#1145](https://github.com/hydro-project/hydroflow/issues/1145), [#1146](https://github.com/hydro-project/hydroflow/issues/1146)
 
@@ -572,8 +629,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 10 commits contributed to the release over the course of 24 calendar days.
- - 28 days passed between releases.
+ - 10 commits contributed to the release.
  - 9 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 6 unique issues were worked on: [#1015](https://github.com/hydro-project/hydroflow/issues/1015), [#1057](https://github.com/hydro-project/hydroflow/issues/1057), [#1060](https://github.com/hydro-project/hydroflow/issues/1060), [#1061](https://github.com/hydro-project/hydroflow/issues/1061), [#1084](https://github.com/hydro-project/hydroflow/issues/1084), [#1085](https://github.com/hydro-project/hydroflow/issues/1085)
 
@@ -622,8 +678,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release over the course of 2 calendar days.
- - 3 days passed between releases.
+ - 5 commits contributed to the release.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1041](https://github.com/hydro-project/hydroflow/issues/1041), [#1051](https://github.com/hydro-project/hydroflow/issues/1051), [#1054](https://github.com/hydro-project/hydroflow/issues/1054), [#1055](https://github.com/hydro-project/hydroflow/issues/1055)
 
@@ -693,6 +748,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    --
  - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup
    --
+ - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup
+   --
 
 ### Bug Fixes
 
@@ -730,8 +787,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 27 commits contributed to the release over the course of 109 calendar days.
- - 110 days passed between releases.
+ - 27 commits contributed to the release.
  - 26 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 23 unique issues were worked on: [#1003](https://github.com/hydro-project/hydroflow/issues/1003), [#1005](https://github.com/hydro-project/hydroflow/issues/1005), [#1024](https://github.com/hydro-project/hydroflow/issues/1024), [#1025](https://github.com/hydro-project/hydroflow/issues/1025), [#1026](https://github.com/hydro-project/hydroflow/issues/1026), [#1032](https://github.com/hydro-project/hydroflow/issues/1032), [#1036](https://github.com/hydro-project/hydroflow/issues/1036), [#899](https://github.com/hydro-project/hydroflow/issues/899), [#909](https://github.com/hydro-project/hydroflow/issues/909), [#942](https://github.com/hydro-project/hydroflow/issues/942), [#945](https://github.com/hydro-project/hydroflow/issues/945), [#948](https://github.com/hydro-project/hydroflow/issues/948), [#950](https://github.com/hydro-project/hydroflow/issues/950), [#959](https://github.com/hydro-project/hydroflow/issues/959), [#960](https://github.com/hydro-project/hydroflow/issues/960), [#967](https://github.com/hydro-project/hydroflow/issues/967), [#971](https://github.com/hydro-project/hydroflow/issues/971), [#974](https://github.com/hydro-project/hydroflow/issues/974), [#978](https://github.com/hydro-project/hydroflow/issues/978), [#979](https://github.com/hydro-project/hydroflow/issues/979), [#984](https://github.com/hydro-project/hydroflow/issues/984), [#986](https://github.com/hydro-project/hydroflow/issues/986), [#996](https://github.com/hydro-project/hydroflow/issues/996)
 
@@ -886,8 +942,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 46 commits contributed to the release over the course of 49 calendar days.
- - 56 days passed between releases.
+ - 46 commits contributed to the release.
  - 43 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 19 unique issues were worked on: [#882](https://github.com/hydro-project/hydroflow/issues/882), [#884](https://github.com/hydro-project/hydroflow/issues/884), [#885](https://github.com/hydro-project/hydroflow/issues/885), [#886](https://github.com/hydro-project/hydroflow/issues/886), [#887](https://github.com/hydro-project/hydroflow/issues/887), [#892](https://github.com/hydro-project/hydroflow/issues/892), [#893](https://github.com/hydro-project/hydroflow/issues/893), [#896](https://github.com/hydro-project/hydroflow/issues/896), [#897](https://github.com/hydro-project/hydroflow/issues/897), [#898](https://github.com/hydro-project/hydroflow/issues/898), [#902](https://github.com/hydro-project/hydroflow/issues/902), [#906](https://github.com/hydro-project/hydroflow/issues/906), [#918](https://github.com/hydro-project/hydroflow/issues/918), [#919](https://github.com/hydro-project/hydroflow/issues/919), [#923](https://github.com/hydro-project/hydroflow/issues/923), [#924](https://github.com/hydro-project/hydroflow/issues/924), [#926](https://github.com/hydro-project/hydroflow/issues/926), [#932](https://github.com/hydro-project/hydroflow/issues/932), [#935](https://github.com/hydro-project/hydroflow/issues/935)
 
@@ -1042,8 +1097,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 25 commits contributed to the release over the course of 39 calendar days.
- - 42 days passed between releases.
+ - 25 commits contributed to the release.
  - 22 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 23 unique issues were worked on: [#820](https://github.com/hydro-project/hydroflow/issues/820), [#821](https://github.com/hydro-project/hydroflow/issues/821), [#822](https://github.com/hydro-project/hydroflow/issues/822), [#823](https://github.com/hydro-project/hydroflow/issues/823), [#833](https://github.com/hydro-project/hydroflow/issues/833), [#835](https://github.com/hydro-project/hydroflow/issues/835), [#837](https://github.com/hydro-project/hydroflow/issues/837), [#840](https://github.com/hydro-project/hydroflow/issues/840), [#842](https://github.com/hydro-project/hydroflow/issues/842), [#843](https://github.com/hydro-project/hydroflow/issues/843), [#844](https://github.com/hydro-project/hydroflow/issues/844), [#845](https://github.com/hydro-project/hydroflow/issues/845), [#846](https://github.com/hydro-project/hydroflow/issues/846), [#848](https://github.com/hydro-project/hydroflow/issues/848), [#851](https://github.com/hydro-project/hydroflow/issues/851), [#853](https://github.com/hydro-project/hydroflow/issues/853), [#857](https://github.com/hydro-project/hydroflow/issues/857), [#861](https://github.com/hydro-project/hydroflow/issues/861), [#870](https://github.com/hydro-project/hydroflow/issues/870), [#872](https://github.com/hydro-project/hydroflow/issues/872), [#874](https://github.com/hydro-project/hydroflow/issues/874), [#878](https://github.com/hydro-project/hydroflow/issues/878), [#880](https://github.com/hydro-project/hydroflow/issues/880)
 
@@ -1202,8 +1256,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 34 commits contributed to the release over the course of 31 calendar days.
- - 33 days passed between releases.
+ - 34 commits contributed to the release.
  - 31 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 25 unique issues were worked on: [#739](https://github.com/hydro-project/hydroflow/issues/739), [#743](https://github.com/hydro-project/hydroflow/issues/743), [#745](https://github.com/hydro-project/hydroflow/issues/745), [#748](https://github.com/hydro-project/hydroflow/issues/748), [#749](https://github.com/hydro-project/hydroflow/issues/749), [#755](https://github.com/hydro-project/hydroflow/issues/755), [#761](https://github.com/hydro-project/hydroflow/issues/761), [#763](https://github.com/hydro-project/hydroflow/issues/763), [#765](https://github.com/hydro-project/hydroflow/issues/765), [#772](https://github.com/hydro-project/hydroflow/issues/772), [#773](https://github.com/hydro-project/hydroflow/issues/773), [#774](https://github.com/hydro-project/hydroflow/issues/774), [#775](https://github.com/hydro-project/hydroflow/issues/775), [#778](https://github.com/hydro-project/hydroflow/issues/778), [#780](https://github.com/hydro-project/hydroflow/issues/780), [#784](https://github.com/hydro-project/hydroflow/issues/784), [#788](https://github.com/hydro-project/hydroflow/issues/788), [#789](https://github.com/hydro-project/hydroflow/issues/789), [#791](https://github.com/hydro-project/hydroflow/issues/791), [#792](https://github.com/hydro-project/hydroflow/issues/792), [#799](https://github.com/hydro-project/hydroflow/issues/799), [#801](https://github.com/hydro-project/hydroflow/issues/801), [#803](https://github.com/hydro-project/hydroflow/issues/803), [#804](https://github.com/hydro-project/hydroflow/issues/804), [#809](https://github.com/hydro-project/hydroflow/issues/809)
 
@@ -1297,7 +1350,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 4 commits contributed to the release.
- - 1 day passed between releases.
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -1374,7 +1426,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 18 commits contributed to the release.
- - 6 days passed between releases.
  - 17 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 12 unique issues were worked on: [#686](https://github.com/hydro-project/hydroflow/issues/686), [#690](https://github.com/hydro-project/hydroflow/issues/690), [#692](https://github.com/hydro-project/hydroflow/issues/692), [#696](https://github.com/hydro-project/hydroflow/issues/696), [#697](https://github.com/hydro-project/hydroflow/issues/697), [#702](https://github.com/hydro-project/hydroflow/issues/702), [#706](https://github.com/hydro-project/hydroflow/issues/706), [#708](https://github.com/hydro-project/hydroflow/issues/708), [#714](https://github.com/hydro-project/hydroflow/issues/714), [#716](https://github.com/hydro-project/hydroflow/issues/716), [#719](https://github.com/hydro-project/hydroflow/issues/719), [#721](https://github.com/hydro-project/hydroflow/issues/721)
 
@@ -1443,7 +1494,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 8 commits contributed to the release.
- - 2 days passed between releases.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#661](https://github.com/hydro-project/hydroflow/issues/661), [#671](https://github.com/hydro-project/hydroflow/issues/671), [#677](https://github.com/hydro-project/hydroflow/issues/677), [#684](https://github.com/hydro-project/hydroflow/issues/684)
 
@@ -1491,8 +1541,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 19 commits contributed to the release over the course of 17 calendar days.
- - 18 days passed between releases.
+ - 19 commits contributed to the release.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 14 unique issues were worked on: [#625](https://github.com/hydro-project/hydroflow/issues/625), [#638](https://github.com/hydro-project/hydroflow/issues/638), [#640](https://github.com/hydro-project/hydroflow/issues/640), [#641](https://github.com/hydro-project/hydroflow/issues/641), [#642](https://github.com/hydro-project/hydroflow/issues/642), [#644](https://github.com/hydro-project/hydroflow/issues/644), [#649](https://github.com/hydro-project/hydroflow/issues/649), [#650](https://github.com/hydro-project/hydroflow/issues/650), [#651](https://github.com/hydro-project/hydroflow/issues/651), [#654](https://github.com/hydro-project/hydroflow/issues/654), [#656](https://github.com/hydro-project/hydroflow/issues/656), [#657](https://github.com/hydro-project/hydroflow/issues/657), [#660](https://github.com/hydro-project/hydroflow/issues/660), [#667](https://github.com/hydro-project/hydroflow/issues/667)
 
@@ -1557,8 +1606,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release over the course of 5 calendar days.
- - 6 days passed between releases.
+ - 7 commits contributed to the release.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 6 unique issues were worked on: [#622](https://github.com/hydro-project/hydroflow/issues/622), [#629](https://github.com/hydro-project/hydroflow/issues/629), [#632](https://github.com/hydro-project/hydroflow/issues/632), [#633](https://github.com/hydro-project/hydroflow/issues/633), [#634](https://github.com/hydro-project/hydroflow/issues/634), [#635](https://github.com/hydro-project/hydroflow/issues/635)
 
@@ -1584,7 +1632,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Release hydroflow v0.0.1 ([`0f91773`](https://github.com/hydro-project/hydroflow/commit/0f917734bd2c840e47acf788322dd1a4a4100488))
 </details>
 
-## 0.0.0 (2023-04-26)
+## 0.0.0 (2023-04-25)
 
 <csr-id-62fcfb157eaaaabedfeb5c77b2a6df89ee1a6852/>
 <csr-id-bc3d12f563dab96f4751ec21cd20b193eea95456/>
@@ -1610,7 +1658,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 489 commits contributed to the release over the course of 552 calendar days.
+ - 489 commits contributed to the release.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 191 unique issues were worked on: [#100](https://github.com/hydro-project/hydroflow/issues/100), [#101](https://github.com/hydro-project/hydroflow/issues/101), [#102](https://github.com/hydro-project/hydroflow/issues/102), [#111](https://github.com/hydro-project/hydroflow/issues/111), [#113](https://github.com/hydro-project/hydroflow/issues/113), [#116](https://github.com/hydro-project/hydroflow/issues/116), [#12](https://github.com/hydro-project/hydroflow/issues/12), [#120](https://github.com/hydro-project/hydroflow/issues/120), [#121](https://github.com/hydro-project/hydroflow/issues/121), [#122](https://github.com/hydro-project/hydroflow/issues/122), [#127](https://github.com/hydro-project/hydroflow/issues/127), [#137](https://github.com/hydro-project/hydroflow/issues/137), [#146](https://github.com/hydro-project/hydroflow/issues/146), [#147](https://github.com/hydro-project/hydroflow/issues/147), [#15](https://github.com/hydro-project/hydroflow/issues/15), [#155](https://github.com/hydro-project/hydroflow/issues/155), [#160](https://github.com/hydro-project/hydroflow/issues/160), [#162](https://github.com/hydro-project/hydroflow/issues/162), [#163](https://github.com/hydro-project/hydroflow/issues/163), [#164](https://github.com/hydro-project/hydroflow/issues/164), [#165](https://github.com/hydro-project/hydroflow/issues/165), [#18](https://github.com/hydro-project/hydroflow/issues/18), [#184](https://github.com/hydro-project/hydroflow/issues/184), [#187](https://github.com/hydro-project/hydroflow/issues/187), [#190](https://github.com/hydro-project/hydroflow/issues/190), [#207](https://github.com/hydro-project/hydroflow/issues/207), [#209](https://github.com/hydro-project/hydroflow/issues/209), [#211](https://github.com/hydro-project/hydroflow/issues/211), [#213](https://github.com/hydro-project/hydroflow/issues/213), [#222](https://github.com/hydro-project/hydroflow/issues/222), [#230](https://github.com/hydro-project/hydroflow/issues/230), [#231](https://github.com/hydro-project/hydroflow/issues/231), [#234](https://github.com/hydro-project/hydroflow/issues/234), [#235](https://github.com/hydro-project/hydroflow/issues/235), [#236](https://github.com/hydro-project/hydroflow/issues/236), [#237](https://github.com/hydro-project/hydroflow/issues/237), [#238](https://github.com/hydro-project/hydroflow/issues/238), [#239](https://github.com/hydro-project/hydroflow/issues/239), [#248](https://github.com/hydro-project/hydroflow/issues/248), [#249](https://github.com/hydro-project/hydroflow/issues/249), [#250](https://github.com/hydro-project/hydroflow/issues/250), [#254](https://github.com/hydro-project/hydroflow/issues/254), [#259](https://github.com/hydro-project/hydroflow/issues/259), [#261](https://github.com/hydro-project/hydroflow/issues/261), [#262](https://github.com/hydro-project/hydroflow/issues/262), [#268](https://github.com/hydro-project/hydroflow/issues/268), [#277](https://github.com/hydro-project/hydroflow/issues/277), [#278](https://github.com/hydro-project/hydroflow/issues/278), [#279](https://github.com/hydro-project/hydroflow/issues/279), [#28](https://github.com/hydro-project/hydroflow/issues/28), [#282](https://github.com/hydro-project/hydroflow/issues/282), [#284](https://github.com/hydro-project/hydroflow/issues/284), [#285](https://github.com/hydro-project/hydroflow/issues/285), [#288](https://github.com/hydro-project/hydroflow/issues/288), [#294](https://github.com/hydro-project/hydroflow/issues/294), [#295](https://github.com/hydro-project/hydroflow/issues/295), [#296](https://github.com/hydro-project/hydroflow/issues/296), [#298](https://github.com/hydro-project/hydroflow/issues/298), [#3](https://github.com/hydro-project/hydroflow/issues/3), [#30](https://github.com/hydro-project/hydroflow/issues/30), [#300](https://github.com/hydro-project/hydroflow/issues/300), [#301](https://github.com/hydro-project/hydroflow/issues/301), [#307](https://github.com/hydro-project/hydroflow/issues/307), [#309](https://github.com/hydro-project/hydroflow/issues/309), [#32](https://github.com/hydro-project/hydroflow/issues/32), [#321](https://github.com/hydro-project/hydroflow/issues/321), [#329](https://github.com/hydro-project/hydroflow/issues/329), [#33](https://github.com/hydro-project/hydroflow/issues/33), [#333](https://github.com/hydro-project/hydroflow/issues/333), [#34](https://github.com/hydro-project/hydroflow/issues/34), [#344](https://github.com/hydro-project/hydroflow/issues/344), [#350](https://github.com/hydro-project/hydroflow/issues/350), [#358](https://github.com/hydro-project/hydroflow/issues/358), [#363](https://github.com/hydro-project/hydroflow/issues/363), [#369](https://github.com/hydro-project/hydroflow/issues/369), [#37](https://github.com/hydro-project/hydroflow/issues/37), [#372](https://github.com/hydro-project/hydroflow/issues/372), [#374](https://github.com/hydro-project/hydroflow/issues/374), [#376](https://github.com/hydro-project/hydroflow/issues/376), [#38](https://github.com/hydro-project/hydroflow/issues/38), [#381](https://github.com/hydro-project/hydroflow/issues/381), [#382](https://github.com/hydro-project/hydroflow/issues/382), [#383](https://github.com/hydro-project/hydroflow/issues/383), [#388](https://github.com/hydro-project/hydroflow/issues/388), [#39](https://github.com/hydro-project/hydroflow/issues/39), [#397](https://github.com/hydro-project/hydroflow/issues/397), [#40](https://github.com/hydro-project/hydroflow/issues/40), [#403](https://github.com/hydro-project/hydroflow/issues/403), [#409](https://github.com/hydro-project/hydroflow/issues/409), [#411](https://github.com/hydro-project/hydroflow/issues/411), [#412](https://github.com/hydro-project/hydroflow/issues/412), [#413](https://github.com/hydro-project/hydroflow/issues/413), [#417](https://github.com/hydro-project/hydroflow/issues/417), [#420](https://github.com/hydro-project/hydroflow/issues/420), [#43](https://github.com/hydro-project/hydroflow/issues/43), [#431](https://github.com/hydro-project/hydroflow/issues/431), [#435](https://github.com/hydro-project/hydroflow/issues/435), [#437](https://github.com/hydro-project/hydroflow/issues/437), [#442](https://github.com/hydro-project/hydroflow/issues/442), [#443](https://github.com/hydro-project/hydroflow/issues/443), [#444](https://github.com/hydro-project/hydroflow/issues/444), [#445](https://github.com/hydro-project/hydroflow/issues/445), [#448 1/2](https://github.com/hydro-project/hydroflow/issues/448 1/2), [#448 2/2](https://github.com/hydro-project/hydroflow/issues/448 2/2), [#452](https://github.com/hydro-project/hydroflow/issues/452), [#459](https://github.com/hydro-project/hydroflow/issues/459), [#46](https://github.com/hydro-project/hydroflow/issues/46), [#460](https://github.com/hydro-project/hydroflow/issues/460), [#461](https://github.com/hydro-project/hydroflow/issues/461), [#465](https://github.com/hydro-project/hydroflow/issues/465), [#466](https://github.com/hydro-project/hydroflow/issues/466), [#468](https://github.com/hydro-project/hydroflow/issues/468), [#469](https://github.com/hydro-project/hydroflow/issues/469), [#470](https://github.com/hydro-project/hydroflow/issues/470), [#471](https://github.com/hydro-project/hydroflow/issues/471), [#472](https://github.com/hydro-project/hydroflow/issues/472), [#475](https://github.com/hydro-project/hydroflow/issues/475), [#477](https://github.com/hydro-project/hydroflow/issues/477), [#479](https://github.com/hydro-project/hydroflow/issues/479), [#48](https://github.com/hydro-project/hydroflow/issues/48), [#484](https://github.com/hydro-project/hydroflow/issues/484), [#487](https://github.com/hydro-project/hydroflow/issues/487), [#492](https://github.com/hydro-project/hydroflow/issues/492), [#493](https://github.com/hydro-project/hydroflow/issues/493), [#495](https://github.com/hydro-project/hydroflow/issues/495), [#497](https://github.com/hydro-project/hydroflow/issues/497), [#499](https://github.com/hydro-project/hydroflow/issues/499), [#500](https://github.com/hydro-project/hydroflow/issues/500), [#501](https://github.com/hydro-project/hydroflow/issues/501), [#502](https://github.com/hydro-project/hydroflow/issues/502), [#505](https://github.com/hydro-project/hydroflow/issues/505), [#509](https://github.com/hydro-project/hydroflow/issues/509), [#511](https://github.com/hydro-project/hydroflow/issues/511), [#512](https://github.com/hydro-project/hydroflow/issues/512), [#516](https://github.com/hydro-project/hydroflow/issues/516), [#518](https://github.com/hydro-project/hydroflow/issues/518), [#520](https://github.com/hydro-project/hydroflow/issues/520), [#521](https://github.com/hydro-project/hydroflow/issues/521), [#522](https://github.com/hydro-project/hydroflow/issues/522), [#523](https://github.com/hydro-project/hydroflow/issues/523), [#524](https://github.com/hydro-project/hydroflow/issues/524), [#526](https://github.com/hydro-project/hydroflow/issues/526), [#529](https://github.com/hydro-project/hydroflow/issues/529), [#530](https://github.com/hydro-project/hydroflow/issues/530), [#536](https://github.com/hydro-project/hydroflow/issues/536), [#538](https://github.com/hydro-project/hydroflow/issues/538), [#540](https://github.com/hydro-project/hydroflow/issues/540), [#541](https://github.com/hydro-project/hydroflow/issues/541), [#543](https://github.com/hydro-project/hydroflow/issues/543), [#547](https://github.com/hydro-project/hydroflow/issues/547), [#548 #550](https://github.com/hydro-project/hydroflow/issues/548 #550), [#549](https://github.com/hydro-project/hydroflow/issues/549), [#551](https://github.com/hydro-project/hydroflow/issues/551), [#555](https://github.com/hydro-project/hydroflow/issues/555), [#556](https://github.com/hydro-project/hydroflow/issues/556), [#558](https://github.com/hydro-project/hydroflow/issues/558), [#559](https://github.com/hydro-project/hydroflow/issues/559), [#56](https://github.com/hydro-project/hydroflow/issues/56), [#566](https://github.com/hydro-project/hydroflow/issues/566), [#567](https://github.com/hydro-project/hydroflow/issues/567), [#568](https://github.com/hydro-project/hydroflow/issues/568), [#571](https://github.com/hydro-project/hydroflow/issues/571), [#576](https://github.com/hydro-project/hydroflow/issues/576), [#578](https://github.com/hydro-project/hydroflow/issues/578), [#584](https://github.com/hydro-project/hydroflow/issues/584), [#586](https://github.com/hydro-project/hydroflow/issues/586), [#589](https://github.com/hydro-project/hydroflow/issues/589), [#590](https://github.com/hydro-project/hydroflow/issues/590), [#591](https://github.com/hydro-project/hydroflow/issues/591), [#593](https://github.com/hydro-project/hydroflow/issues/593), [#597](https://github.com/hydro-project/hydroflow/issues/597), [#598](https://github.com/hydro-project/hydroflow/issues/598), [#6](https://github.com/hydro-project/hydroflow/issues/6), [#60](https://github.com/hydro-project/hydroflow/issues/60), [#602](https://github.com/hydro-project/hydroflow/issues/602), [#605](https://github.com/hydro-project/hydroflow/issues/605), [#607](https://github.com/hydro-project/hydroflow/issues/607), [#608](https://github.com/hydro-project/hydroflow/issues/608), [#61](https://github.com/hydro-project/hydroflow/issues/61), [#617](https://github.com/hydro-project/hydroflow/issues/617), [#618](https://github.com/hydro-project/hydroflow/issues/618), [#63](https://github.com/hydro-project/hydroflow/issues/63), [#64](https://github.com/hydro-project/hydroflow/issues/64), [#8](https://github.com/hydro-project/hydroflow/issues/8), [#80](https://github.com/hydro-project/hydroflow/issues/80), [#84](https://github.com/hydro-project/hydroflow/issues/84), [#86](https://github.com/hydro-project/hydroflow/issues/86), [#89](https://github.com/hydro-project/hydroflow/issues/89), [#91](https://github.com/hydro-project/hydroflow/issues/91), [#95](https://github.com/hydro-project/hydroflow/issues/95), [#98](https://github.com/hydro-project/hydroflow/issues/98)
 

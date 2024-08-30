@@ -1,10 +1,13 @@
 
 
-## Unreleased
+## 0.9.0 (2024-08-30)
+
+<csr-id-5f2789a13d1602f170e678fe9bbc59caf69db4b5/>
 
 ### New Features
 
  - <csr-id-46a8a2cb08732bb21096e824bc4542d208c68fb2/> use trybuild to compile subgraph binaries
+ - <csr-id-6568263e03899d4e96837690e6e59284c194d7ff/> Add end-to-end flamegraph generation for macos and linux localhost, fix #1351
 
 ### Refactor (BREAKING)
 
@@ -18,6 +21,62 @@
    * #1395
    * __->__ #1394
  - <csr-id-0eba702f62e7a6816cf931b01a2ea5643bd7321d/> defer network instantiation until after finalizing IR
+   ---
+   [//]: # (BEGIN SAPLING FOOTER)
+   Stack created with [Sapling](https://sapling-scm.com). Best reviewed
+   with
+   [ReviewStack](https://reviewstack.dev/hydro-project/hydroflow/pull/1377).
+   * #1395
+   * #1394
+   * __->__ #1377
+
+### Style (BREAKING)
+
+ - <csr-id-fa417205569d8c49c85b0c2324118e0f9b1c8407/> rename some `CLI`->`Deploy`, decapitalize acronym names
+
+### Refactor (BREAKING)
+
+ - <csr-id-0a465e55dd39c76bc1aefb020460a639d792fe87/> rename integration crates to drop CLI references
+
+### Style
+
+ - <csr-id-3fde68d0db0414017cfb771a218b14b8f57d1686/> use `name_of!` macro
+
+### Other
+
+ - <csr-id-c41787f527859cb9d704736ecdea5ca7bc641460/> update `RELEASING.md` notes, prep for release, wip
+
+### Bug Fixes
+
+ - <csr-id-22c72189bb76412955d29b03c5d99894c558a07c/> remove `FlowProps`
+
+### Chore
+
+ - <csr-id-a2ec110ccadb97e293b19d83a155d98d94224bba/> manually set versions for crates renamed in #1413
+ - <csr-id-11af32828bab6e4a4264d2635ff71a12bb0bb778/> lower min dependency versions where possible, update `Cargo.lock`
+   Moved from #1418
+   
+   ---------
+
+<csr-id-128aaecd40edce57dc254afdcd61ecd5b9948d71/> simplify process/cluster specs
+   ---
+   [//]: # (BEGIN SAPLING FOOTER)
+   Stack created with [Sapling](https://sapling-scm.com). Best reviewed
+   with
+   [ReviewStack](https://reviewstack.dev/hydro-project/hydroflow/pull/1394).
+   * #1395
+   * __->__ #1394
+ - <csr-id-0eba702f62e7a6816cf931b01a2ea5643bd7321d/> defer network instantiation until after finalizing IR
+   ---
+   [//]: # (BEGIN SAPLING FOOTER)
+   Stack created with [Sapling](https://sapling-scm.com). Best reviewed
+   with
+   [ReviewStack](https://reviewstack.dev/hydro-project/hydroflow/pull/1377).
+   * #1395
+   * #1394
+   * __->__ #1377
+
+<csr-id-0eba702f62e7a6816cf931b01a2ea5643bd7321d/> defer network instantiation until after finalizing IR
    ---
    [//]: # (BEGIN SAPLING FOOTER)
    Stack created with [Sapling](https://sapling-scm.com). Best reviewed
@@ -50,6 +109,37 @@
     - Disentangle instantiated nodes from locations ([`5f2789a`](https://github.com/hydro-project/hydroflow/commit/5f2789a13d1602f170e678fe9bbc59caf69db4b5))
  * **[#1398](https://github.com/hydro-project/hydroflow/issues/1398)**
     - Use trybuild to compile subgraph binaries ([`46a8a2c`](https://github.com/hydro-project/hydroflow/commit/46a8a2cb08732bb21096e824bc4542d208c68fb2))
+</details>
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 8 commits contributed to the release.
+ - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 6 unique issues were worked on: [#1396](https://github.com/hydro-project/hydroflow/issues/1396), [#1399](https://github.com/hydro-project/hydroflow/issues/1399), [#1413](https://github.com/hydro-project/hydroflow/issues/1413), [#1420](https://github.com/hydro-project/hydroflow/issues/1420), [#1423](https://github.com/hydro-project/hydroflow/issues/1423), [#1429](https://github.com/hydro-project/hydroflow/issues/1429)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1396](https://github.com/hydro-project/hydroflow/issues/1396)**
+    - Add end-to-end flamegraph generation for macos and linux localhost, fix #1351 ([`6568263`](https://github.com/hydro-project/hydroflow/commit/6568263e03899d4e96837690e6e59284c194d7ff))
+ * **[#1399](https://github.com/hydro-project/hydroflow/issues/1399)**
+    - Rename some `CLI`->`Deploy`, decapitalize acronym names ([`fa41720`](https://github.com/hydro-project/hydroflow/commit/fa417205569d8c49c85b0c2324118e0f9b1c8407))
+ * **[#1413](https://github.com/hydro-project/hydroflow/issues/1413)**
+    - Rename integration crates to drop CLI references ([`0a465e5`](https://github.com/hydro-project/hydroflow/commit/0a465e55dd39c76bc1aefb020460a639d792fe87))
+ * **[#1420](https://github.com/hydro-project/hydroflow/issues/1420)**
+    - Remove `FlowProps` ([`22c7218`](https://github.com/hydro-project/hydroflow/commit/22c72189bb76412955d29b03c5d99894c558a07c))
+ * **[#1423](https://github.com/hydro-project/hydroflow/issues/1423)**
+    - Lower min dependency versions where possible, update `Cargo.lock` ([`11af328`](https://github.com/hydro-project/hydroflow/commit/11af32828bab6e4a4264d2635ff71a12bb0bb778))
+ * **[#1429](https://github.com/hydro-project/hydroflow/issues/1429)**
+    - Use `name_of!` macro ([`3fde68d`](https://github.com/hydro-project/hydroflow/commit/3fde68d0db0414017cfb771a218b14b8f57d1686))
+ * **Uncategorized**
+    - Manually set versions for crates renamed in #1413 ([`a2ec110`](https://github.com/hydro-project/hydroflow/commit/a2ec110ccadb97e293b19d83a155d98d94224bba))
+    - Update `RELEASING.md` notes, prep for release, wip ([`c41787f`](https://github.com/hydro-project/hydroflow/commit/c41787f527859cb9d704736ecdea5ca7bc641460))
 </details>
 
 ## v0.8.0 (2024-07-23)
