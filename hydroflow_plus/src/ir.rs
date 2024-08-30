@@ -1,46 +1,15 @@
 use core::panic;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
-use std::ops::Deref;
 use std::rc::Rc;
 
 use hydroflow_lang::graph::FlatGraphBuilder;
 use hydroflow_lang::parse::Pipeline;
-use proc_macro2::{Span, TokenStream};
-use quote::ToTokens;
+use proc_macro2::Span;
 use syn::parse_quote;
 
 use crate::deploy::Deploy;
 use crate::location::LocationId;
-
-#[derive(Clone)]
-pub struct DebugExpr(pub syn::Expr);
-
-impl From<syn::Expr> for DebugExpr {
-    fn from(expr: syn::Expr) -> DebugExpr {
-        DebugExpr(expr)
-    }
-}
-
-impl Deref for DebugExpr {
-    type Target = syn::Expr;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl ToTokens for DebugExpr {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.0.to_tokens(tokens);
-    }
-}
-
-impl std::fmt::Debug for DebugExpr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0.to_token_stream())
-    }
-}
 
 pub enum DebugInstantiate<'a> {
     Building(),
@@ -65,9 +34,9 @@ impl std::fmt::Debug for DebugPipelineFn {
 /// A source in a Hydroflow+ graph, where data enters the graph.
 #[derive(Debug)]
 pub enum HfPlusSource {
-    Stream(DebugExpr),
-    Iter(DebugExpr),
-    Interval(DebugExpr),
+    Stream(syn::Expr),
+    Iter(syn::Expr),
+    Interval(syn::Expr),
     Spin(),
 }
 
@@ -77,11 +46,11 @@ pub enum HfPlusSource {
 #[derive(Debug)]
 pub enum HfPlusLeaf<'a> {
     ForEach {
-        f: DebugExpr,
+        f: syn::Expr,
         input: Box<HfPlusNode<'a>>,
     },
     DestSink {
-        sink: DebugExpr,
+        sink: syn::Expr,
         input: Box<HfPlusNode<'a>>,
     },
     CycleSink {
@@ -237,26 +206,26 @@ pub enum HfPlusNode<'a> {
     AntiJoin(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
 
     Map {
-        f: DebugExpr,
+        f: syn::Expr,
         input: Box<HfPlusNode<'a>>,
     },
     FlatMap {
-        f: DebugExpr,
+        f: syn::Expr,
         input: Box<HfPlusNode<'a>>,
     },
     Filter {
-        f: DebugExpr,
+        f: syn::Expr,
         input: Box<HfPlusNode<'a>>,
     },
     FilterMap {
-        f: DebugExpr,
+        f: syn::Expr,
         input: Box<HfPlusNode<'a>>,
     },
 
     DeferTick(Box<HfPlusNode<'a>>),
     Enumerate(Box<HfPlusNode<'a>>),
     Inspect {
-        f: DebugExpr,
+        f: syn::Expr,
         input: Box<HfPlusNode<'a>>,
     },
 
@@ -264,22 +233,22 @@ pub enum HfPlusNode<'a> {
 
     Sort(Box<HfPlusNode<'a>>),
     Fold {
-        init: DebugExpr,
-        acc: DebugExpr,
+        init: syn::Expr,
+        acc: syn::Expr,
         input: Box<HfPlusNode<'a>>,
     },
     FoldKeyed {
-        init: DebugExpr,
-        acc: DebugExpr,
+        init: syn::Expr,
+        acc: syn::Expr,
         input: Box<HfPlusNode<'a>>,
     },
 
     Reduce {
-        f: DebugExpr,
+        f: syn::Expr,
         input: Box<HfPlusNode<'a>>,
     },
     ReduceKeyed {
-        f: DebugExpr,
+        f: syn::Expr,
         input: Box<HfPlusNode<'a>>,
     },
 

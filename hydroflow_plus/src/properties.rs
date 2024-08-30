@@ -61,7 +61,7 @@ fn properties_optimize_node<'a>(
         seen_tees,
     );
     match node {
-        HfPlusNode::ReduceKeyed { f, .. } if db.is_tagged_commutative(&f.0) => {
+        HfPlusNode::ReduceKeyed { f, .. } if db.is_tagged_commutative(f) => {
             dbg!("IDENTIFIED COMMUTATIVE OPTIMIZATION for {:?}", &f);
         }
         _ => {}

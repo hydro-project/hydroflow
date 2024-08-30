@@ -224,7 +224,7 @@ impl<'a> FlowBuilder<'a> {
             on.id(),
             self.ir_leaves().clone(),
             HfPlusNode::Persist(Box::new(HfPlusNode::Source {
-                source: HfPlusSource::Stream(e.into()),
+                source: HfPlusSource::Stream(e),
                 location_kind: on.id(),
             })),
         )
@@ -241,7 +241,7 @@ impl<'a> FlowBuilder<'a> {
             on.id(),
             self.ir_leaves().clone(),
             HfPlusNode::Persist(Box::new(HfPlusNode::Source {
-                source: HfPlusSource::Iter(e.into()),
+                source: HfPlusSource::Iter(e),
                 location_kind: on.id(),
             })),
         )
@@ -263,7 +263,7 @@ impl<'a> FlowBuilder<'a> {
             self.ir_leaves().clone(),
             HfPlusNode::Persist(Box::new(HfPlusNode::Persist(Box::new(
                 HfPlusNode::Source {
-                    source: HfPlusSource::Iter(e.into()),
+                    source: HfPlusSource::Iter(e),
                     location_kind: on.id(),
                 },
             )))),
@@ -282,7 +282,7 @@ impl<'a> FlowBuilder<'a> {
             on.id(),
             self.ir_leaves().clone(),
             HfPlusNode::Source {
-                source: HfPlusSource::Iter(e.into()),
+                source: HfPlusSource::Iter(e),
                 location_kind: on.id(),
             },
         )
@@ -299,7 +299,7 @@ impl<'a> FlowBuilder<'a> {
             on.id(),
             self.ir_leaves().clone(),
             HfPlusNode::Persist(Box::new(HfPlusNode::Source {
-                source: HfPlusSource::Interval(interval.into()),
+                source: HfPlusSource::Interval(interval),
                 location_kind: on.id(),
             })),
         )

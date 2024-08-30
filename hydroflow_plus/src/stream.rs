@@ -152,7 +152,7 @@ impl<'a, T, W, C, N: Location> Stream<'a, T, W, C, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Map {
-                f: f.splice().into(),
+                f: f.splice(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -166,7 +166,7 @@ impl<'a, T, W, C, N: Location> Stream<'a, T, W, C, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::FlatMap {
-                f: f.splice().into(),
+                f: f.splice(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -180,7 +180,7 @@ impl<'a, T, W, C, N: Location> Stream<'a, T, W, C, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Filter {
-                f: f.splice().into(),
+                f: f.splice(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -194,7 +194,7 @@ impl<'a, T, W, C, N: Location> Stream<'a, T, W, C, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::FilterMap {
-                f: f.splice().into(),
+                f: f.splice(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -259,7 +259,7 @@ impl<'a, T, W, C, N: Location> Stream<'a, T, W, C, N> {
 
     pub fn dest_sink<S: Unpin + Sink<T> + 'a>(self, sink: impl Quoted<'a, S>) {
         self.ir_leaves.borrow_mut().as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::DestSink {
-            sink: sink.splice().into(),
+            sink: sink.splice(),
             input: Box::new(self.ir_node.into_inner()),
         });
     }
@@ -301,7 +301,7 @@ impl<'a, T, N: Location> Stream<'a, T, Bounded, Tick, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Inspect {
-                f: f.splice().into(),
+                f: f.splice(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -349,8 +349,8 @@ impl<'a, T, N: Location> Stream<'a, T, Bounded, Tick, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Fold {
-                init: init.splice().into(),
-                acc: comb.splice().into(),
+                init: init.splice(),
+                acc: comb.splice(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -364,7 +364,7 @@ impl<'a, T, N: Location> Stream<'a, T, Bounded, Tick, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Reduce {
-                f: comb.splice().into(),
+                f: comb.splice(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -429,7 +429,7 @@ impl<'a, T, W, N: Location> Stream<'a, T, W, NoTick, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Persist(Box::new(HfPlusNode::Inspect {
-                f: f.splice().into(),
+                f: f.splice(),
                 input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
             })),
         )
@@ -440,7 +440,7 @@ impl<'a, T, W, N: Location> Stream<'a, T, W, NoTick, N> {
     pub fn for_each<F: Fn(T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) {
         self.ir_leaves.borrow_mut().as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::ForEach {
             input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
-            f: f.splice().into(),
+            f: f.splice(),
         });
     }
 }
@@ -456,7 +456,7 @@ impl<'a, T, N: Location> Stream<'a, T, Unbounded, NoTick, N> {
             self.location_kind,
             self.ir_leaves.clone(),
             HfPlusNode::Source {
-                source: HfPlusSource::Interval(interval.into()),
+                source: HfPlusSource::Interval(interval),
                 location_kind: self.location_kind,
             },
         );
@@ -476,8 +476,8 @@ impl<'a, T, N: Location> Stream<'a, T, Unbounded, NoTick, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Persist(Box::new(HfPlusNode::Fold {
-                init: init.splice().into(),
-                acc: comb.splice().into(),
+                init: init.splice(),
+                acc: comb.splice(),
                 input: Box::new(self.ir_node.into_inner()),
             })),
         )
@@ -491,7 +491,7 @@ impl<'a, T, N: Location> Stream<'a, T, Unbounded, NoTick, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Persist(Box::new(HfPlusNode::Reduce {
-                f: comb.splice().into(),
+                f: comb.splice(),
                 input: Box::new(self.ir_node.into_inner()),
             })),
         )
@@ -576,8 +576,8 @@ impl<'a, K: Eq + Hash, V, N: Location> Stream<'a, (K, V), Bounded, Tick, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::FoldKeyed {
-                init: init.splice().into(),
-                acc: comb.splice().into(),
+                init: init.splice(),
+                acc: comb.splice(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -591,7 +591,7 @@ impl<'a, K: Eq + Hash, V, N: Location> Stream<'a, (K, V), Bounded, Tick, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::ReduceKeyed {
-                f: comb.splice().into(),
+                f: comb.splice(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
