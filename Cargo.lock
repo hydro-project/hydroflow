@@ -1385,7 +1385,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_deploy_integration"
-version = "0.5.2"
+version = "0.9.0"
 dependencies = [
  "async-recursion",
  "async-trait",
@@ -1448,7 +1448,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_plus_deploy"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "hydro_deploy",
  "hydroflow_plus",
