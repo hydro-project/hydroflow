@@ -4,15 +4,579 @@ expression: built.ir()
 ---
 [
     ForEach {
-        f: { use crate :: __staged :: properties :: tests :: * ; | (string , count) | println ! ("{}: {}" , string , count) },
+        f: Expr::Block {
+            attrs: [],
+            label: None,
+            block: Block {
+                brace_token: Brace,
+                stmts: [
+                    Stmt::Item(
+                        Item::Use {
+                            attrs: [],
+                            vis: Visibility::Inherited,
+                            use_token: Use,
+                            leading_colon: None,
+                            tree: UseTree::Path(
+                                UsePath {
+                                    ident: Ident {
+                                        sym: crate,
+                                    },
+                                    colon2_token: PathSep,
+                                    tree: UseTree::Path(
+                                        UsePath {
+                                            ident: Ident {
+                                                sym: __staged,
+                                            },
+                                            colon2_token: PathSep,
+                                            tree: UseTree::Path(
+                                                UsePath {
+                                                    ident: Ident {
+                                                        sym: properties,
+                                                        span: bytes(202..212),
+                                                    },
+                                                    colon2_token: PathSep,
+                                                    tree: UseTree::Path(
+                                                        UsePath {
+                                                            ident: Ident {
+                                                                sym: tests,
+                                                                span: bytes(214..219),
+                                                            },
+                                                            colon2_token: PathSep,
+                                                            tree: UseTree::Glob(
+                                                                UseGlob {
+                                                                    star_token: Star,
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ),
+                            semi_token: Semi,
+                        },
+                    ),
+                    Stmt::Expr(
+                        Expr::Closure {
+                            attrs: [],
+                            lifetimes: None,
+                            constness: None,
+                            movability: None,
+                            asyncness: None,
+                            capture: None,
+                            or1_token: Or,
+                            inputs: [
+                                Pat::Tuple {
+                                    attrs: [],
+                                    paren_token: Paren,
+                                    elems: [
+                                        Pat::Ident {
+                                            attrs: [],
+                                            by_ref: None,
+                                            mutability: None,
+                                            ident: Ident {
+                                                sym: string,
+                                            },
+                                            subpat: None,
+                                        },
+                                        Comma,
+                                        Pat::Ident {
+                                            attrs: [],
+                                            by_ref: None,
+                                            mutability: None,
+                                            ident: Ident {
+                                                sym: count,
+                                            },
+                                            subpat: None,
+                                        },
+                                    ],
+                                },
+                            ],
+                            or2_token: Or,
+                            output: ReturnType::Default,
+                            body: Expr::Macro {
+                                attrs: [],
+                                mac: Macro {
+                                    path: Path {
+                                        leading_colon: None,
+                                        segments: [
+                                            PathSegment {
+                                                ident: Ident {
+                                                    sym: println,
+                                                },
+                                                arguments: PathArguments::None,
+                                            },
+                                        ],
+                                    },
+                                    bang_token: Not,
+                                    delimiter: MacroDelimiter::Paren(
+                                        Paren,
+                                    ),
+                                    tokens: TokenStream [
+                                        Literal {
+                                            lit: "{}: {}",
+                                            span: bytes(177..185),
+                                        },
+                                        Punct {
+                                            char: ',',
+                                            spacing: Alone,
+                                        },
+                                        Ident {
+                                            sym: string,
+                                        },
+                                        Punct {
+                                            char: ',',
+                                            spacing: Alone,
+                                        },
+                                        Ident {
+                                            sym: count,
+                                        },
+                                    ],
+                                },
+                            },
+                        },
+                        None,
+                    ),
+                ],
+            },
+        },
         input: FoldKeyed {
-            init: { use crate :: __staged :: properties :: tests :: * ; | | 0 },
-            acc: { use crate :: __staged :: properties :: tests :: * ; | count : & mut i32 , _ | * count += 1 },
+            init: Expr::Block {
+                attrs: [],
+                label: None,
+                block: Block {
+                    brace_token: Brace,
+                    stmts: [
+                        Stmt::Item(
+                            Item::Use {
+                                attrs: [],
+                                vis: Visibility::Inherited,
+                                use_token: Use,
+                                leading_colon: None,
+                                tree: UseTree::Path(
+                                    UsePath {
+                                        ident: Ident {
+                                            sym: crate,
+                                        },
+                                        colon2_token: PathSep,
+                                        tree: UseTree::Path(
+                                            UsePath {
+                                                ident: Ident {
+                                                    sym: __staged,
+                                                },
+                                                colon2_token: PathSep,
+                                                tree: UseTree::Path(
+                                                    UsePath {
+                                                        ident: Ident {
+                                                            sym: properties,
+                                                            span: bytes(123..133),
+                                                        },
+                                                        colon2_token: PathSep,
+                                                        tree: UseTree::Path(
+                                                            UsePath {
+                                                                ident: Ident {
+                                                                    sym: tests,
+                                                                    span: bytes(135..140),
+                                                                },
+                                                                colon2_token: PathSep,
+                                                                tree: UseTree::Glob(
+                                                                    UseGlob {
+                                                                        star_token: Star,
+                                                                    },
+                                                                ),
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                                semi_token: Semi,
+                            },
+                        ),
+                        Stmt::Expr(
+                            Expr::Closure {
+                                attrs: [],
+                                lifetimes: None,
+                                constness: None,
+                                movability: None,
+                                asyncness: None,
+                                capture: None,
+                                or1_token: Or,
+                                inputs: [],
+                                or2_token: Or,
+                                output: ReturnType::Default,
+                                body: Expr::Lit {
+                                    attrs: [],
+                                    lit: Lit::Int {
+                                        token: 0,
+                                    },
+                                },
+                            },
+                            None,
+                        ),
+                    ],
+                },
+            },
+            acc: Expr::Block {
+                attrs: [],
+                label: None,
+                block: Block {
+                    brace_token: Brace,
+                    stmts: [
+                        Stmt::Item(
+                            Item::Use {
+                                attrs: [],
+                                vis: Visibility::Inherited,
+                                use_token: Use,
+                                leading_colon: None,
+                                tree: UseTree::Path(
+                                    UsePath {
+                                        ident: Ident {
+                                            sym: crate,
+                                        },
+                                        colon2_token: PathSep,
+                                        tree: UseTree::Path(
+                                            UsePath {
+                                                ident: Ident {
+                                                    sym: __staged,
+                                                },
+                                                colon2_token: PathSep,
+                                                tree: UseTree::Path(
+                                                    UsePath {
+                                                        ident: Ident {
+                                                            sym: properties,
+                                                            span: bytes(159..169),
+                                                        },
+                                                        colon2_token: PathSep,
+                                                        tree: UseTree::Path(
+                                                            UsePath {
+                                                                ident: Ident {
+                                                                    sym: tests,
+                                                                    span: bytes(171..176),
+                                                                },
+                                                                colon2_token: PathSep,
+                                                                tree: UseTree::Glob(
+                                                                    UseGlob {
+                                                                        star_token: Star,
+                                                                    },
+                                                                ),
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                                semi_token: Semi,
+                            },
+                        ),
+                        Stmt::Expr(
+                            Expr::Closure {
+                                attrs: [],
+                                lifetimes: None,
+                                constness: None,
+                                movability: None,
+                                asyncness: None,
+                                capture: None,
+                                or1_token: Or,
+                                inputs: [
+                                    Pat::Type {
+                                        attrs: [],
+                                        pat: Pat::Ident {
+                                            attrs: [],
+                                            by_ref: None,
+                                            mutability: None,
+                                            ident: Ident {
+                                                sym: count,
+                                            },
+                                            subpat: None,
+                                        },
+                                        colon_token: Colon,
+                                        ty: Type::Reference {
+                                            and_token: And,
+                                            lifetime: None,
+                                            mutability: Some(
+                                                Mut,
+                                            ),
+                                            elem: Type::Path {
+                                                qself: None,
+                                                path: Path {
+                                                    leading_colon: None,
+                                                    segments: [
+                                                        PathSegment {
+                                                            ident: Ident {
+                                                                sym: i32,
+                                                            },
+                                                            arguments: PathArguments::None,
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        },
+                                    },
+                                    Comma,
+                                    Pat::Wild {
+                                        attrs: [],
+                                        underscore_token: Underscore,
+                                    },
+                                ],
+                                or2_token: Or,
+                                output: ReturnType::Default,
+                                body: Expr::Binary {
+                                    attrs: [],
+                                    left: Expr::Unary {
+                                        attrs: [],
+                                        op: UnOp::Deref(
+                                            Star,
+                                        ),
+                                        expr: Expr::Path {
+                                            attrs: [],
+                                            qself: None,
+                                            path: Path {
+                                                leading_colon: None,
+                                                segments: [
+                                                    PathSegment {
+                                                        ident: Ident {
+                                                            sym: count,
+                                                        },
+                                                        arguments: PathArguments::None,
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    },
+                                    op: BinOp::AddAssign(
+                                        PlusEq,
+                                    ),
+                                    right: Expr::Lit {
+                                        attrs: [],
+                                        lit: Lit::Int {
+                                            token: 1,
+                                        },
+                                    },
+                                },
+                            },
+                            None,
+                        ),
+                    ],
+                },
+            },
             input: Map {
-                f: { use crate :: __staged :: properties :: tests :: * ; | string : String | (string , ()) },
+                f: Expr::Block {
+                    attrs: [],
+                    label: None,
+                    block: Block {
+                        brace_token: Brace,
+                        stmts: [
+                            Stmt::Item(
+                                Item::Use {
+                                    attrs: [],
+                                    vis: Visibility::Inherited,
+                                    use_token: Use,
+                                    leading_colon: None,
+                                    tree: UseTree::Path(
+                                        UsePath {
+                                            ident: Ident {
+                                                sym: crate,
+                                            },
+                                            colon2_token: PathSep,
+                                            tree: UseTree::Path(
+                                                UsePath {
+                                                    ident: Ident {
+                                                        sym: __staged,
+                                                    },
+                                                    colon2_token: PathSep,
+                                                    tree: UseTree::Path(
+                                                        UsePath {
+                                                            ident: Ident {
+                                                                sym: properties,
+                                                                span: bytes(87..97),
+                                                            },
+                                                            colon2_token: PathSep,
+                                                            tree: UseTree::Path(
+                                                                UsePath {
+                                                                    ident: Ident {
+                                                                        sym: tests,
+                                                                        span: bytes(99..104),
+                                                                    },
+                                                                    colon2_token: PathSep,
+                                                                    tree: UseTree::Glob(
+                                                                        UseGlob {
+                                                                            star_token: Star,
+                                                                        },
+                                                                    ),
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                    semi_token: Semi,
+                                },
+                            ),
+                            Stmt::Expr(
+                                Expr::Closure {
+                                    attrs: [],
+                                    lifetimes: None,
+                                    constness: None,
+                                    movability: None,
+                                    asyncness: None,
+                                    capture: None,
+                                    or1_token: Or,
+                                    inputs: [
+                                        Pat::Type {
+                                            attrs: [],
+                                            pat: Pat::Ident {
+                                                attrs: [],
+                                                by_ref: None,
+                                                mutability: None,
+                                                ident: Ident {
+                                                    sym: string,
+                                                },
+                                                subpat: None,
+                                            },
+                                            colon_token: Colon,
+                                            ty: Type::Path {
+                                                qself: None,
+                                                path: Path {
+                                                    leading_colon: None,
+                                                    segments: [
+                                                        PathSegment {
+                                                            ident: Ident {
+                                                                sym: String,
+                                                            },
+                                                            arguments: PathArguments::None,
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        },
+                                    ],
+                                    or2_token: Or,
+                                    output: ReturnType::Default,
+                                    body: Expr::Tuple {
+                                        attrs: [],
+                                        paren_token: Paren,
+                                        elems: [
+                                            Expr::Path {
+                                                attrs: [],
+                                                qself: None,
+                                                path: Path {
+                                                    leading_colon: None,
+                                                    segments: [
+                                                        PathSegment {
+                                                            ident: Ident {
+                                                                sym: string,
+                                                            },
+                                                            arguments: PathArguments::None,
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            Comma,
+                                            Expr::Tuple {
+                                                attrs: [],
+                                                paren_token: Paren,
+                                                elems: [],
+                                            },
+                                        ],
+                                    },
+                                },
+                                None,
+                            ),
+                        ],
+                    },
+                },
                 input: Source {
                     source: Iter(
-                        { use crate :: __staged :: properties :: tests :: * ; vec ! [] },
+                        Expr::Block {
+                            attrs: [],
+                            label: None,
+                            block: Block {
+                                brace_token: Brace,
+                                stmts: [
+                                    Stmt::Item(
+                                        Item::Use {
+                                            attrs: [],
+                                            vis: Visibility::Inherited,
+                                            use_token: Use,
+                                            leading_colon: None,
+                                            tree: UseTree::Path(
+                                                UsePath {
+                                                    ident: Ident {
+                                                        sym: crate,
+                                                    },
+                                                    colon2_token: PathSep,
+                                                    tree: UseTree::Path(
+                                                        UsePath {
+                                                            ident: Ident {
+                                                                sym: __staged,
+                                                            },
+                                                            colon2_token: PathSep,
+                                                            tree: UseTree::Path(
+                                                                UsePath {
+                                                                    ident: Ident {
+                                                                        sym: properties,
+                                                                        span: bytes(53..63),
+                                                                    },
+                                                                    colon2_token: PathSep,
+                                                                    tree: UseTree::Path(
+                                                                        UsePath {
+                                                                            ident: Ident {
+                                                                                sym: tests,
+                                                                                span: bytes(65..70),
+                                                                            },
+                                                                            colon2_token: PathSep,
+                                                                            tree: UseTree::Glob(
+                                                                                UseGlob {
+                                                                                    star_token: Star,
+                                                                                },
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                            semi_token: Semi,
+                                        },
+                                    ),
+                                    Stmt::Expr(
+                                        Expr::Macro {
+                                            attrs: [],
+                                            mac: Macro {
+                                                path: Path {
+                                                    leading_colon: None,
+                                                    segments: [
+                                                        PathSegment {
+                                                            ident: Ident {
+                                                                sym: vec,
+                                                            },
+                                                            arguments: PathArguments::None,
+                                                        },
+                                                    ],
+                                                },
+                                                bang_token: Not,
+                                                delimiter: MacroDelimiter::Bracket(
+                                                    Bracket,
+                                                ),
+                                                tokens: TokenStream [],
+                                            },
+                                        },
+                                        None,
+                                    ),
+                                ],
+                            },
+                        },
                     ),
                     location_kind: Process(
                         0,
