@@ -5,7 +5,7 @@ use std::hash::Hash;
 
 use variadics::{var_expr, var_type, CloneVariadic, SplitBySuffix, VariadicExt};
 
-use crate::ght::{GeneralizedHashTrieNode, GhtInner, GhtLeaf};
+use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
 use crate::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
 
 //////////////////////////
@@ -74,6 +74,7 @@ where
     Head: Hash + Eq + 'static + Clone,
     Node: GeneralizedHashTrieNode + 'static + PartialEq,
     Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
+    GhtInner<Head, Node>: GhtGet,
 {
     fn eq(&self, other: &GhtInner<Head, Node>) -> bool {
         if self.children.len() != other.children.len() {
@@ -409,7 +410,7 @@ impl<Bimorphism> GhtBimorphism<Bimorphism> {
 impl<GhtA, GhtB, ValFunc, GhtOut> LatticeBimorphism<GhtA, GhtB> for GhtBimorphism<ValFunc>
 where
     GhtA: GeneralizedHashTrieNode,
-    GhtA::Head: Clone,
+    // GhtA::Head: Clone,
     GhtB: GeneralizedHashTrieNode,
     GhtOut: GeneralizedHashTrieNode, // FromIterator<var_type!(...GhtA::Schema, ...GhtB::ValType)>,
     for<'a, 'b> ValFunc: LatticeBimorphism<&'a GhtA, &'b GhtB, Output = GhtOut>,
@@ -441,8 +442,8 @@ where
     Head: Clone + Hash + Eq,
     ValFunc: LatticeBimorphism<&'a GhtA::Get, &'b GhtB::Get>,
     ValFunc::Output: GeneralizedHashTrieNode,
-    GhtA: GeneralizedHashTrieNode<Head = Head>,
-    GhtB: GeneralizedHashTrieNode<Head = Head>,
+    GhtA: GeneralizedHashTrieNode<Head = Head> + GhtGet,
+    GhtB: GeneralizedHashTrieNode<Head = Head> + GhtGet,
     <GhtA::SuffixSchema as VariadicExt>::AsRefVar<'a>: CloneVariadic,
     <GhtB::SuffixSchema as VariadicExt>::AsRefVar<'b>: CloneVariadic,
 {

@@ -2,9 +2,23 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use sealed::sealed;
-use variadics::{var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt};
+use variadics::{
+    var_args, var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, Variadic, VariadicExt,
+};
 
-use crate::ght::{GeneralizedHashTrieNode, GhtHasChildren, GhtInner, GhtLeaf, GhtTakeLeaf};
+use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtHasChildren, GhtInner, GhtLeaf, GhtTakeLeaf};
+
+// Remaining Questions
+// 1. Should the first element in the forest be a single GhtLeaf?
+//    Doesn't seem to help with columnstore case (its just the range [1..]) but it's that way in the paper.
+// 2. How does "get" work?
+//    - get on a leaf forces. That should work ok.
+//    - get on an internal node "just get"s .. what's the analogy in the forest if get on an inner fails?
+//      Could there be "previously forced siblings"? Do we need get tombstones/sibling pointers?
+//      See Figure 11 in the paper: x0->b0 would be in the sibling. What do I do for get(0)?
+// 3. Similarly, how does "iter" work? Where are "all the keys"?
+// I think maybe we need to understand the context in which get and iter are called and figure out
+// forest-appropriate outer algorithms
 
 #[sealed]
 /// COLT from Wang/Willsey/Suciu
@@ -16,8 +30,8 @@ pub trait ColumnLazyTrieNode: GeneralizedHashTrieNode {
     fn drain(&mut self) -> Option<impl Iterator<Item = Self::Schema>>;
 
     /// result of `force`ing a node
-    type Force: GeneralizedHashTrieNode + GhtHasChildren;
-    // + for<'a> HtPrefixIter<<Self::Schema as VariadicExt>::AsRefVar<'a>>;
+    type Force: GeneralizedHashTrieNode; // + GhtHasChildren;
+                                         // + for<'a> HtPrefixIter<<Self::Schema as VariadicExt>::AsRefVar<'a>>;
     /// Force the generation of a parent node, as in the Wang/Willsey/Suciu COLT structure
     fn force(self) -> Option<Self::Force>;
 
@@ -75,8 +89,9 @@ where
     }
     // Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>
     type Force = GhtInner<Head, GhtLeaf<Schema, Rest>>;
-    fn force(self) -> Option<Self::Force> {
+    fn force(mut self) -> Option<Self::Force> {
         let mut retval = Self::Force::default();
+        self.forced = true;
         for row in self.into_iter().unwrap() {
             // let var_expr!(h, ...r) = row;
             // retval.insert((h, r));
@@ -87,6 +102,7 @@ where
 
     fn force_drain(&mut self) -> Option<GhtInner<Head, GhtLeaf<Schema, Rest>>> {
         let mut retval = Self::Force::default();
+        self.forced = true;
         for row in self.drain().unwrap() {
             // let var_expr!(h, ...r) = row;
             // retval.insert((h, r));
@@ -100,21 +116,21 @@ where
 /// Constructs a forest (variadic list) of Ght structs,
 /// one for each height from 1 to length of the schema
 macro_rules! GhtForestType {
-    ($a:tt, $( $b:tt ),* => ()) => {
+    ($a:ty, $( $b:ty ),* => ()) => {
         var_type!(GhtType!($a, $( $b ),* => ()))
     };
-    ($a:tt => $c:tt, $( $d:tt ),* ) => {
+    ($a:ty => $c:ty, $( $d:ty ),* ) => {
         (GhtType!($a => $c, $( $d ),*), GhtForestType!($a, $c => $( $d ),*))
     };
-    ($a:tt, $( $b:tt ),* => $c:tt) => {
+    ($a:ty, $( $b:ty ),* => $c:ty) => {
         (GhtType!($a, $( $b ),* => $c), GhtForestType!($a, $( $b ),*, $c => ()))
     };
 
-    ($a:tt, $( $b:tt ),* => $c:tt, $( $d:tt ),* ) => {
+    ($a:ty, $( $b:ty ),* => $c:ty, $( $d:ty ),* ) => {
         (GhtType!($a, $( $b ),* => $c, $( $d ),*), GhtForestType!($a, $( $b ),* , $c => $( $d ),*))
     };
 
-    ($a:tt, $( $b:tt ),* ) => {
+    ($a:ty, $( $b:ty ),* ) => {
         GhtForestType!($a => $( $b ),*)
     };
 }
@@ -131,6 +147,10 @@ where
     /// it will force the leaf into the next trie over and recurse.
     /// returns true if it forces (1 or more times), and false otherwise.
     fn force(&mut self, search_key: SearchKey) -> bool;
+
+    // /// given a prefix search_key, return a list of node references,
+    // /// one per trie.
+    // fn get(&self, search_key: SearchKey) -> VariadicExt;
 }
 
 // /// GhtForestStruct is a metadata node pointing to a variadic list of GHTs
@@ -175,6 +195,7 @@ where
                 // So we just need a new GhtLeaf with the right ValType.
                 let leaf = GhtLeaf::<TrieSecond::Schema, TrieSecond::ValType> {
                     elements: leaf.elements,
+                    forced: false,
                     _suffix_schema: PhantomData,
                 };
                 rest_first.merge_leaf(row.as_ref_var(), leaf);
@@ -186,6 +207,15 @@ where
             false
         }
     }
+
+    // fn get<'a>(&self, search_key: SearchKey) -> VariadicExt {
+    //     let var_expr!(first, ...rest) = self; //.forest;
+    //     if first.height() < SearchKey::LEN {
+    //         var_expr!((), <var_type!(TrieSecond, ...TrieRest) as GhtForest<SearchKey>>::get(rest, search_key))
+    //     } else {
+
+    //     }
+    // }
 }
 
 /// If we're on the last trie in the forest, there's nowhere to force right to
@@ -266,32 +296,88 @@ where
     }
 }
 
-// impl<TrieFirst, TrieRest> Default for GhtForestStruct<var_type!(TrieFirst, ...TrieRest)>
+/// Virtual COLT "node" with an API similar to GeneralizedHashTrieNode
+/// Essentially a variadic of Option<&'_ Subtrie>
+#[sealed]
+pub trait ColtNode {
+    // /// Schema variadic: the schema of the relation stored in this COLT.
+    // /// This type is the same in all Tries and nodes of the COLT.
+    // type Schema: VariadicExt + Eq + Hash + Clone;
+    // /// SuffixSchema variadic: the suffix of the schema *from this node of the trie
+    // /// downward*. The first entry in this variadic is of type Head.
+    // /// This type is the same in all Tries of the COLT (but changes as we traverse downward)
+    // type SuffixSchema: VariadicExt + Eq + Hash + Clone;
+    /// The type of the first column in the SuffixSchema
+    /// This type is the same in all Tries of the COLT (but changes as we traverse downward)
+    type Head: Eq + Hash;
+
+    /// Type returned by [`Self::get`].
+    type Get; //: ColtNode;
+
+    /// On an Inner node, retrieves the value (child) associated with the given "head" key.
+    /// returns an `Option` containing a reference to the value if found, or `None` if not found.
+    /// On a Leaf node, returns None.
+    fn get(&self, head: &Self::Head) -> Self::Get;
+}
+
+// // #[derive(RefCast)]
+// // #[repr(transparent)]
+// struct ColtNodeStruct<T>
 // where
-//     // T: VariadicExt,
-//     TrieFirst: Default + GeneralizedHashTrieNode,
-//     TrieRest: VariadicExt,
-//     GhtForestStruct<TrieRest>: Default,
-//     // for<'a> <TrieRest as VariadicExt>::AsRefVar<'a>: PartialEq,
-//     // <TrieFirst as GhtHasChildren>::Node: Eq + Hash,
-//     // GhtLeaf<TrieFirst::Node>: GeneralizedHashTrieNode,
-//     // need something like TrieFirst::Schema = TrieRest.0::Schema?
+//     T: VariadicExt,
 // {
-//     fn default() -> Self {
-//         let first_trie = TrieFirst::default();
-//         let rest = GhtForestStruct::<TrieRest>::default();
-//         let rest_forest: TrieRest = rest.forest;
+//     forest: T,
+// }
 
-//         Self {
-//             forest: var_expr!(first_trie, ...rest_forest),
-//         }
+// #[sealed]
+// impl<'a, First, Head> ColtNode<Head> for var_type!(Option<&'a First>)
+// where
+//     First: GeneralizedHashTrieNode + GhtGet<Head>,
+//     Head: Eq + Hash,
+// {
+//     // type Schema = First::Schema;
+//     // type SuffixSchema = First::SuffixSchema;
+//     // type Head = Head;
+//     type Get = var_type!(Option<&'a First::Get>);
+
+//     fn get(&self, head: &Head) -> Self::Get {
+//         var_expr!(self.0.unwrap().get(head))
 //     }
 // }
 
-// impl Default for GhtForestStruct<var_type!()> {
-//     fn default() -> Self {
-//         Self {
-//             forest: var_expr!(),
-//         }
-//     }
-// }
+#[sealed]
+impl<'a, First, Rest> ColtNode for var_type!(Option<&'a First>, ...Rest)
+where
+    First: GeneralizedHashTrieNode<Head = Rest::Head> + GhtHasChildren + GhtGet, /* + GhtHasChildren, */
+    Rest: ColtNode,
+    <First as GhtGet>::Get: 'a,
+    // var_type!(Option<&'a First::Get>, ...Rest::Get): ColtNode,
+{
+    // type Schema = First::Schema;
+    // type SuffixSchema = First::SuffixSchema;
+    type Head = First::Head;
+    type Get = var_type!(Option<&'a First::Get>, ...Rest::Get);
+
+    fn get(&self, head: &First::Head) -> Self::Get {
+        let (first, rest) = self;
+        if let Some(first) = *first {
+            if first.height() == 1 {
+                var_expr!(None, ...Rest::get(rest, head))
+            } else {
+                var_expr!(<First as GhtGet>::get(first, head), ...Rest::get(rest, head))
+            }
+        } else {
+            var_expr!(None, ...Rest::get(rest, head))
+        }
+    }
+}
+
+#[sealed]
+impl ColtNode for var_type!() {
+    type Head = ();
+    type Get = var_type!();
+
+    fn get(&self, _head: &Self::Head) -> Self::Get {
+        var_expr!()
+    }
+}

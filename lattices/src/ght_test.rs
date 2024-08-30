@@ -5,16 +5,14 @@ mod test {
 
     use variadics::{var_expr, var_type, VariadicExt};
 
-    use crate::ght::{GeneralizedHashTrieNode, GhtLeaf, GhtPrefixIter};
+    use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtLeaf, GhtPrefixIter};
     use crate::ght_lattice::{
         //     DeepJoinLatticeBimorphism, GhtBimorphism,
         GhtCartesianProductBimorphism,
         //     GhtNodeKeyedBimorphism, GhtValTypeProductBimorphism,
     };
-    use crate::ght_lazy::{ColumnLazyTrieNode, ForestFindLeaf, GhtForest}; // GhtForestStruct};
-    use crate::{
-        GhtForestType, GhtType, GhtTypeWithSchema, LatticeBimorphism, Merge, NaiveLatticeOrd,
-    };
+    use crate::ght_lazy::{ColtNode, ColumnLazyTrieNode, ForestFindLeaf, GhtForest}; /* GhtForestStruct}; */
+    use crate::{GhtForestType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
 
     #[test]
     fn basic_test() {
@@ -151,8 +149,9 @@ mod test {
 
         let leaf_key = inner.iter().next().unwrap();
         let leaf = inner.get(leaf_key).unwrap();
-        let t = leaf.iter().next().unwrap();
-        assert_eq!(t, &var_expr!(42, 314, 43770));
+        // Should not be possible to call iter() on leaf
+        // let t = leaf.iter().next();
+        // assert!(leaf.iter().next().is_none());
     }
 
     #[test]
@@ -1017,5 +1016,46 @@ mod test {
             "(3, 3, 3, 3) leaf: {:?}",
             forest.find_containing_leaf(var_expr!(3, 3, 3, 3).as_ref_var())
         );
+    }
+
+    #[test]
+    fn test_scale_forest() {
+        type MyForest = GhtForestType!(bool, usize, &'static str => i32);
+        let mut forest = MyForest::default();
+
+        forest.0.insert(var_expr!(true, 1, "hello", -5));
+        assert_eq!(forest.0.recursive_iter().count(), 1);
+        for i in 1..1000000 {
+            forest.0.insert(var_expr!(true, 1, "hello", i));
+        }
+        for i in 1..10 {
+            forest.0.insert(var_expr!(true, 2, "hello", i));
+        }
+        assert_eq!(forest.0.recursive_iter().count(), 1000009);
+        let leaf =
+            ForestFindLeaf::<var_type!(bool, usize, &'static str, i32)>::find_containing_leaf(
+                &forest,
+                var_expr!(true, 2, "hello", 2).as_ref_var(),
+            );
+        println!("leaf size: {}", leaf.unwrap().elements.len());
+        // println!("forest.0: {:?}", forest.0);
+        println!("forest.1: {:?}", forest.1 .0);
+    }
+
+    #[test]
+    fn test_colt_get() {
+        type MyForest = GhtForestType!(u8, u16, u32, u64);
+        let mut forest = MyForest::default();
+        forest.0.insert(var_expr!(1, 1, 1, 1));
+        forest.0.insert(var_expr!(2, 2, 2, 2));
+        forest.0.insert(var_expr!(3, 3, 3, 3));
+
+        GhtForest::<var_type!(u8, u16, u32, u64)>::force(&mut forest, var_expr!(1, 1, 1, 1));
+        // println!("Forest after forcing (1, 1, 1, 1): {:?}", forest);
+
+        let get_result = ColtNode::get(&forest.as_ref_var().as_option(), &1);
+        assert_eq!(get_result.len(), forest.len());
+        assert_eq!(get_result.0.unwrap().height(), 0);
+        let get_result2 = ColtNode::get(&get_result, &1);
     }
 }

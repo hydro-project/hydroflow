@@ -188,6 +188,9 @@ pub trait VariadicExt: Variadic {
     fn iter_any_mut(&mut self) -> Self::IterAnyMut<'_>
     where
         Self: 'static;
+
+    type AsOption;
+    fn as_option(self) -> Self::AsOption;
 }
 #[sealed]
 impl<Item, Rest> VariadicExt for (Item, Rest)
@@ -258,6 +261,12 @@ where
         let item: &mut dyn Any = item;
         std::iter::once(item).chain(rest.iter_any_mut())
     }
+
+    type AsOption = (Option<Item>, Rest::AsOption);
+    fn as_option(self) -> Self::AsOption {
+        let var_args!(item, ...rest) = self;
+        var_expr!(Some(item), ...rest.as_option())
+    }
 }
 #[sealed]
 impl VariadicExt for () {
@@ -300,6 +309,9 @@ impl VariadicExt for () {
     {
         std::iter::empty()
     }
+
+    type AsOption = ();
+    fn as_option(self) -> Self::AsOption {}
 }
 
 /// A variadic of either shared references, exclusive references, or both.
