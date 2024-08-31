@@ -84,28 +84,74 @@ pub trait GeneralizedHashTrieNode: Default {
     ) -> Option<&'_ GhtLeaf<Self::Schema, Self::ValType>>;
 }
 
-/// A trait for the get method, which works differently on leaves than internal nodes
-pub trait GhtGet: GeneralizedHashTrieNode {
-    /// Type returned by [`Self::get`].
-    type Get: GeneralizedHashTrieNode<Schema = Self::Schema>;
-
-    /// On an Inner node, retrieves the value (child) associated with the given "head" key.
-    /// returns an `Option` containing a reference to the value if found, or `None` if not found.
-    /// On a Leaf node, returns None.
-    fn get(&self, head: &Self::Head) -> Option<&'_ Self::Get>;
-
-    // /// The type of items returned by iter
-    // type IterKey: Eq + Hash;
-    /// Iterator for the "head" keys (from inner nodes) or elements (from leaf nodes).
-    fn iter<'a>(&'a self) -> impl Iterator<Item = &'a Self::Head>;
-}
-
 /// A trait for internal nodes of a GHT
 pub trait GhtHasChildren: GeneralizedHashTrieNode + GhtGet {
     /// The child node's type
     type Node: GeneralizedHashTrieNode;
     /// return the hash map of children, mutable
     fn children(&mut self) -> &mut HashMap<Self::Head, Self::Node>;
+}
+
+pub trait GhtKeyTrait<Head, Schema> {
+    fn head(self) -> Option<Head>;
+    fn schema(self) -> Option<Schema>;
+}
+
+impl<Head, Schema> GhtKeyTrait<Head, Schema> for GhtKey<Head, Schema> {
+    fn head(self) -> Option<Head> {
+        if let GhtKey::Head(head) = self {
+            Some(head)
+        } else {
+            None
+        }
+    }
+    fn schema(self) -> Option<Schema> {
+        if let GhtKey::Schema(head) = self {
+            Some(head)
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum GhtKey<Head, Schema> {
+    Head(Head),
+    Schema(Schema),
+}
+
+impl<Head, Schema> PartialEq for GhtKey<Head, Schema>
+where
+    Head: Eq,
+    Schema: Eq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (GhtKey::Head(x), GhtKey::Head(y)) => x == y,
+            (GhtKey::Schema(x), GhtKey::Schema(y)) => x == y,
+            _ => false,
+        }
+    }
+}
+
+impl<Head, Schema> Eq for GhtKey<Head, Schema>
+where
+    Head: Eq,
+    Schema: Eq,
+{
+}
+
+impl<Head, Schema> Hash for GhtKey<Head, Schema>
+where
+    Head: Hash,
+    Schema: Hash,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            GhtKey::Head(x) => x.hash(state),
+            GhtKey::Schema(x) => x.hash(state),
+        }
+    }
 }
 
 /// internal node of a HashTrie
@@ -208,29 +254,6 @@ where
     }
 }
 
-impl<Head, Node> GhtGet for GhtInner<Head, Node>
-where
-    Head: 'static + Eq + Hash + Clone,
-    Node: 'static + GeneralizedHashTrieNode,
-    Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
-{
-    /// Type returned by [`Self::get`].
-    type Get = Node;
-
-    /// On an Inner node, retrieves the value (child) associated with the given "head" key.
-    /// returns an `Option` containing a reference to the value if found, or `None` if not found.
-    /// On a Leaf node, returns None.
-    fn get(&self, head: &Head) -> Option<&'_ Self::Get> {
-        self.children.get(head)
-    }
-
-    // /// The type of items returned by iter
-    // type IterKey = Self::Head;
-    fn iter(&'_ self) -> impl Iterator<Item = &'_ Self::Head> {
-        self.children.keys()
-    }
-}
-
 impl<Head, Node> FromIterator<Node::Schema> for GhtInner<Head, Node>
 where
     Head: 'static + Hash + Eq + Clone,
@@ -297,18 +320,26 @@ where
     }
 }
 #[sealed]
-impl<Schema, ValType> GeneralizedHashTrieNode for GhtLeaf<Schema, ValType>
+impl<Schema, ValHead, ValRest> GeneralizedHashTrieNode
+    for GhtLeaf<Schema, var_type!(ValHead, ...ValRest)>
 where
-    Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<ValType> + PartialEqVariadic,
-    ValType: Clone + Eq + Hash + PartialEqVariadic,
-    <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
+    Schema: 'static
+        + Eq
+        + VariadicExt
+        + Hash
+        + Clone
+        + SplitBySuffix<var_type!(ValHead, ...ValRest)>
+        + PartialEqVariadic,
+    ValHead: Clone + Eq + Hash,
+    var_type!(ValHead, ...ValRest): Clone + Eq + Hash + PartialEqVariadic,
+    <Schema as SplitBySuffix<var_type!(ValHead, ...ValRest)>>::Prefix: Eq + Hash + Clone,
     // for<'a> Schema::AsRefVar<'a>: PartialEq,
 {
     type Schema = Schema;
-    type SuffixSchema = ValType;
-    type ValType = ValType;
-    type KeyType = <Schema as SplitBySuffix<ValType>>::Prefix;
-    type Head = Schema;
+    type SuffixSchema = var_type!(ValHead, ...ValRest);
+    type ValType = var_type!(ValHead, ...ValRest);
+    type KeyType = <Schema as SplitBySuffix<var_type!(ValHead, ...ValRest)>>::Prefix;
+    type Head = ValHead;
 
     fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self {
         let mut retval: Self = Default::default();
@@ -361,11 +392,127 @@ where
     }
 }
 
+// XXX JMH THIS IS UGLY. MOVE Head, KeyType, ValType, SuffixSchema to another trait
+#[sealed]
+impl<Schema> GeneralizedHashTrieNode for GhtLeaf<Schema, ()>
+where
+    Schema: 'static
+        + Eq
+        + VariadicExt
+        + Hash
+        + Clone
+        // + SplitBySuffix<var_type!(ValHead, ...ValRest)>
+        + PartialEqVariadic,
+    // ValHead: Clone + Eq + Hash,
+    // var_type!(ValHead, ...ValRest): Clone + Eq + Hash + PartialEqVariadic,
+    // <Schema as SplitBySuffix<var_type!(ValHead, ...ValRest)>>::Prefix: Eq + Hash + Clone,
+    // for<'a> Schema::AsRefVar<'a>: PartialEq,
+{
+    type Schema = Schema;
+    type SuffixSchema = (); // var_type!(ValHead, ...ValRest);
+    type ValType = (); // var_type!(ValHead, ...ValRest);
+    type KeyType = Schema; //<Schema as SplitBySuffix<var_type!(ValHead, ...ValRest)>>::Prefix;
+    type Head = ();
+
+    fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self {
+        let mut retval: Self = Default::default();
+        for i in input {
+            retval.insert(i);
+        }
+        retval
+    }
+
+    fn static_height() -> usize {
+        0
+    }
+
+    fn is_leaf(&self) -> bool {
+        true
+    }
+
+    fn insert(&mut self, row: Self::Schema) -> bool {
+        self.elements.insert(row)
+    }
+
+    fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
+        self.elements
+            .iter()
+            .any(|r| Schema::eq_ref(r.as_ref_var(), row))
+    }
+
+    fn recursive_iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
+        self.elements.iter().map(Schema::as_ref_var)
+    }
+
+    type DeepJoin<Other> = <(Self, Other) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism
+    where
+        Other: GeneralizedHashTrieNode,
+        (Self, Other): DeepJoinLatticeBimorphism;
+
+    fn find_containing_leaf(
+        &self,
+        row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
+    ) -> Option<&'_ GhtLeaf<<Self as GeneralizedHashTrieNode>::Schema, Self::ValType>> {
+        // TODO(mingwei): actually use the hash set as a hash set
+        if self.elements.iter().any(|x| {
+            // let (_prefix, suffix) = Schema::split_by_suffix_ref(x.as_ref_var());
+            <Schema as PartialEqVariadic>::eq_ref(row, x.as_ref_var())
+        }) {
+            Some(self)
+        } else {
+            None
+        }
+    }
+}
+
+/// A trait for the get method, which works differently on leaves than internal nodes
+pub trait GhtGet: GeneralizedHashTrieNode {
+    /// Type returned by [`Self::get`].
+    type Get: GeneralizedHashTrieNode<Schema = Self::Schema>;
+
+    /// On an Inner node, retrieves the value (child) associated with the given "head" key.
+    /// returns an `Option` containing a reference to the value if found, or `None` if not found.
+    /// On a Leaf node, returns None.
+    fn get(&self, head: &GhtKey<Self::Head, Self::Schema>) -> Option<&'_ Self::Get>;
+
+    // /// The type of items returned by iter
+    // type IterKey: Eq + Hash;
+    /// Iterator for the "head" keys (from inner nodes) or elements (from leaf nodes).
+    fn iter(&self) -> impl Iterator<Item = GhtKey<Self::Head, Self::Schema>>;
+}
+
+impl<Head, Node> GhtGet for GhtInner<Head, Node>
+where
+    Head: 'static + Eq + Hash + Clone,
+    Node: 'static + GeneralizedHashTrieNode,
+    Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
+{
+    /// Type returned by [`Self::get`].
+    type Get = Node;
+
+    /// On an Inner node, retrieves the value (child) associated with the given "head" key.
+    /// returns an `Option` containing a reference to the value if found, or `None` if not found.
+    /// On a Leaf node, returns None.
+    fn get(&self, head: &GhtKey<Self::Head, Self::Schema>) -> Option<&'_ Self::Get> {
+        if let GhtKey::Head(the_head) = head {
+            self.children.get(the_head)
+        } else {
+            None
+        }
+    }
+
+    // /// The type of items returned by iter
+    // type IterKey = Self::Head;
+    fn iter(&self) -> impl Iterator<Item = GhtKey<Self::Head, Self::Schema>> {
+        self.children.keys().map(|k| GhtKey::Head(k.clone()))
+    }
+}
 impl<Schema, ValType> GhtGet for GhtLeaf<Schema, ValType>
 where
     Schema: 'static + Eq + Hash + Clone + PartialEqVariadic + SplitBySuffix<ValType>,
     ValType: Eq + Hash + Clone + PartialEqVariadic,
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
+    GhtLeaf<Schema, ValType>: GeneralizedHashTrieNode<Schema = Schema>,
 {
     /// Type returned by [`Self::get`].
     type Get = GhtLeaf<Schema, ValType>;
@@ -373,14 +520,14 @@ where
     /// On an Inner node, retrieves the value (child) associated with the given "head" key.
     /// returns an `Option` containing a reference to the value if found, or `None` if not found.
     /// On a Leaf node, returns None.
-    fn get(&self, _head: &Self::Head) -> Option<&'_ Self::Get> {
+    fn get(&self, _head: &GhtKey<Self::Head, Self::Schema>) -> Option<&'_ Self::Get> {
         None
     }
 
     // /// The type of items returned by iter
     // type IterKey = Self::Schema;
-    fn iter<'a>(&'a self) -> impl Iterator<Item = &'a Schema> {
-        self.elements.iter()
+    fn iter(&self) -> impl Iterator<Item = GhtKey<Self::Head, Self::Schema>> {
+        self.elements.iter().map(|e| GhtKey::Schema(e.clone()))
     }
 }
 
@@ -457,8 +604,14 @@ where
     ValType: 'static + Hash + Clone + Eq + VariadicExt + PartialEqVariadic,
     Head: 'static + Hash + Eq + Clone,
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
-    <Self as GeneralizedHashTrieNode>::Schema:
-        SplitBySuffix<<Self as GeneralizedHashTrieNode>::SuffixSchema>,
+    // <Self as GeneralizedHashTrieNode>::Schema:
+    //     SplitBySuffix<<Self as GeneralizedHashTrieNode>::SuffixSchema>,
+    GhtLeaf<Schema, ValType>: GeneralizedHashTrieNode<Schema = Schema, ValType = ValType>,
+    // Schema: SplitBySuffix<<Self as GeneralizedHashTrieNode>::SuffixSchema>,
+    Schema: SplitBySuffix<(
+        Head,
+        <GhtLeaf<Schema, ValType> as GeneralizedHashTrieNode>::SuffixSchema,
+    )>,
 {
     fn take_containing_leaf(
         &mut self,

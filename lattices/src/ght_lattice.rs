@@ -5,7 +5,7 @@ use std::hash::Hash;
 
 use variadics::{var_expr, var_type, CloneVariadic, SplitBySuffix, VariadicExt};
 
-use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
+use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtKey, GhtLeaf};
 use crate::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
 
 //////////////////////////
@@ -75,6 +75,7 @@ where
     Node: GeneralizedHashTrieNode + 'static + PartialEq,
     Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
     GhtInner<Head, Node>: GhtGet,
+    <GhtInner<Head, Node> as GhtGet>::Get: PartialEq,
 {
     fn eq(&self, other: &GhtInner<Head, Node>) -> bool {
         if self.children.len() != other.children.len() {
@@ -82,11 +83,18 @@ where
         }
 
         for head in self.iter() {
-            if other.get(head).is_none() {
-                return false;
-            }
-            if !self.get(head).unwrap().eq(other.get(head).unwrap()) {
-                return false;
+            if let GhtKey::Head(_the_head) = head.clone() {
+                let other_node = other.get(&head);
+                if other_node.is_none() {
+                    return false;
+                }
+                let this_node = self.get(&head);
+                if this_node.is_none() {
+                    return false;
+                }
+                if this_node.unwrap() != other_node.unwrap() {
+                    return false;
+                }
             }
         }
         true
@@ -443,7 +451,7 @@ where
     ValFunc: LatticeBimorphism<&'a GhtA::Get, &'b GhtB::Get>,
     ValFunc::Output: GeneralizedHashTrieNode,
     GhtA: GeneralizedHashTrieNode<Head = Head> + GhtGet,
-    GhtB: GeneralizedHashTrieNode<Head = Head> + GhtGet,
+    GhtB: GeneralizedHashTrieNode<Head = Head, Schema = GhtA::Schema> + GhtGet,
     <GhtA::SuffixSchema as VariadicExt>::AsRefVar<'a>: CloneVariadic,
     <GhtB::SuffixSchema as VariadicExt>::AsRefVar<'b>: CloneVariadic,
 {
@@ -452,10 +460,15 @@ where
     fn call(&mut self, ght_a: &'a GhtA, ght_b: &'b GhtB) -> Self::Output {
         let mut children = HashMap::<Head, ValFunc::Output>::new();
         for head in ght_b.iter() {
-            if let Some(get_a) = ght_a.get(head) {
-                let get_b = ght_b.get(head).unwrap();
-                let val = self.bimorphism.call(get_a, get_b);
-                children.insert(head.clone(), val);
+            match head.clone() {
+                GhtKey::Head(the_head) => {
+                    if let Some(get_a) = ght_a.get(&head) {
+                        let get_b = ght_b.get(&head).unwrap();
+                        let val = self.bimorphism.call(get_a, get_b);
+                        children.insert(the_head.clone(), val);
+                    }
+                }
+                _ => {}
             }
         }
         GhtInner { children }

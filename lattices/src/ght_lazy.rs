@@ -6,7 +6,9 @@ use variadics::{
     var_args, var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, Variadic, VariadicExt,
 };
 
-use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtHasChildren, GhtInner, GhtLeaf, GhtTakeLeaf};
+use crate::ght::{
+    GeneralizedHashTrieNode, GhtGet, GhtHasChildren, GhtInner, GhtKey, GhtLeaf, GhtTakeLeaf,
+};
 
 // Remaining Questions
 // 1. Should the first element in the forest be a single GhtLeaf?
@@ -79,6 +81,8 @@ where
     Schema: SplitBySuffix<Rest>,
     <Schema as SplitBySuffix<(Head, Rest)>>::Prefix: Eq + Hash + Clone,
     <Schema as SplitBySuffix<Rest>>::Prefix: Eq + Hash + Clone,
+    GhtLeaf<Schema, Rest>: GeneralizedHashTrieNode<Schema = Schema>,
+    GhtInner<Head, GhtLeaf<Schema, Rest>>: GeneralizedHashTrieNode<Schema = Schema>,
 {
     fn into_iter(self) -> Option<impl Iterator<Item = Self::Schema>> {
         Some(self.elements.into_iter())
@@ -302,7 +306,7 @@ where
 pub trait ColtNode {
     // /// Schema variadic: the schema of the relation stored in this COLT.
     // /// This type is the same in all Tries and nodes of the COLT.
-    // type Schema: VariadicExt + Eq + Hash + Clone;
+    type Schema: VariadicExt + Eq + Hash + Clone;
     // /// SuffixSchema variadic: the suffix of the schema *from this node of the trie
     // /// downward*. The first entry in this variadic is of type Head.
     // /// This type is the same in all Tries of the COLT (but changes as we traverse downward)
@@ -317,7 +321,7 @@ pub trait ColtNode {
     /// On an Inner node, retrieves the value (child) associated with the given "head" key.
     /// returns an `Option` containing a reference to the value if found, or `None` if not found.
     /// On a Leaf node, returns None.
-    fn get(&self, head: &Self::Head) -> Self::Get;
+    fn get(&self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get;
 }
 
 // // #[derive(RefCast)]
@@ -329,42 +333,45 @@ pub trait ColtNode {
 //     forest: T,
 // }
 
-// #[sealed]
-// impl<'a, First, Head> ColtNode<Head> for var_type!(Option<&'a First>)
-// where
-//     First: GeneralizedHashTrieNode + GhtGet<Head>,
-//     Head: Eq + Hash,
-// {
-//     // type Schema = First::Schema;
-//     // type SuffixSchema = First::SuffixSchema;
-//     // type Head = Head;
-//     type Get = var_type!(Option<&'a First::Get>);
+#[sealed]
+impl<'a, First> ColtNode for var_type!(Option<&'a First>)
+where
+    First: GeneralizedHashTrieNode + GhtHasChildren + GhtGet,
+{
+    type Schema = First::Schema;
+    // type SuffixSchema = First::SuffixSchema;
+    type Head = First::Head;
+    type Get = var_type!(Option<&'a First::Get>);
 
-//     fn get(&self, head: &Head) -> Self::Get {
-//         var_expr!(self.0.unwrap().get(head))
-//     }
-// }
+    fn get(&self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
+        var_expr!(self.0.unwrap().get(head))
+    }
+}
 
 #[sealed]
 impl<'a, First, Rest> ColtNode for var_type!(Option<&'a First>, ...Rest)
 where
-    First: GeneralizedHashTrieNode<Head = Rest::Head> + GhtHasChildren + GhtGet, /* + GhtHasChildren, */
+    First: GeneralizedHashTrieNode<Head = Rest::Head, Schema = Rest::Schema> + GhtGet, /* + GhtHasChildren, */
     Rest: ColtNode,
     <First as GhtGet>::Get: 'a,
     // var_type!(Option<&'a First::Get>, ...Rest::Get): ColtNode,
 {
-    // type Schema = First::Schema;
+    type Schema = Rest::Schema;
     // type SuffixSchema = First::SuffixSchema;
     type Head = First::Head;
     type Get = var_type!(Option<&'a First::Get>, ...Rest::Get);
 
-    fn get(&self, head: &First::Head) -> Self::Get {
+    fn get(&self, head: &GhtKey<First::Head, Self::Schema>) -> Self::Get {
         let (first, rest) = self;
         if let Some(first) = *first {
             if first.height() == 1 {
                 var_expr!(None, ...Rest::get(rest, head))
-            } else {
+            } else if let GhtKey::Head(_first_head) = head {
                 var_expr!(<First as GhtGet>::get(first, head), ...Rest::get(rest, head))
+            } else {
+                // probably shouldn't end up down here
+                panic!();
+                var_expr!(None, ...Rest::get(rest, head))
             }
         } else {
             var_expr!(None, ...Rest::get(rest, head))
@@ -372,12 +379,13 @@ where
     }
 }
 
-#[sealed]
-impl ColtNode for var_type!() {
-    type Head = ();
-    type Get = var_type!();
+// #[sealed]
+// impl ColtNode for var_type!() {
+//     type Head = ();
+//     type Get = var_type!();
+//     type Schema = ();
 
-    fn get(&self, _head: &Self::Head) -> Self::Get {
-        var_expr!()
-    }
-}
+//     fn get(&self, _head: &Self::Head) -> Self::Get {
+//         var_expr!()
+//     }
+// }
