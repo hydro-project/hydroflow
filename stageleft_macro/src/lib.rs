@@ -370,7 +370,7 @@ pub fn entry(
             #root::runtime_support::set_macro_to_crate(macro_crate_name, final_crate_name);
 
             let output_core = {
-                #root::Quoted::splice(#input_name #passed_generics(#root::QuotedContext::create(), #(#params_to_pass),*))
+                #root::Quoted::splice_untyped(#input_name #passed_generics(#root::QuotedContext::create(), #(#params_to_pass),*))
             };
 
             let final_crate_root = #root::runtime_support::get_final_crate_name(final_crate_name);

@@ -218,7 +218,7 @@ impl<'a> FlowBuilder<'a> {
         on: &L,
         e: impl Quoted<'a, E>,
     ) -> Stream<'a, T, Unbounded, NoTick, L> {
-        let e = e.splice();
+        let e = e.splice_untyped();
 
         Stream::new(
             on.id(),
@@ -235,7 +235,7 @@ impl<'a> FlowBuilder<'a> {
         on: &L,
         e: impl Quoted<'a, E>,
     ) -> Stream<'a, T, Bounded, NoTick, L> {
-        let e = e.splice();
+        let e = e.splice_untyped();
 
         Stream::new(
             on.id(),
@@ -253,7 +253,7 @@ impl<'a> FlowBuilder<'a> {
         e: impl Quoted<'a, T>,
     ) -> Singleton<'a, T, Bounded, NoTick, L> {
         let e_arr = q!([e]);
-        let e = e_arr.splice();
+        let e = e_arr.splice_untyped();
 
         // we do a double persist here because if the singleton shows up on every tick,
         // we first persist the source so that we store that value and then persist again
@@ -276,7 +276,7 @@ impl<'a> FlowBuilder<'a> {
         e: impl Quoted<'a, T>,
     ) -> Optional<'a, T, Bounded, Tick, L> {
         let e_arr = q!([e]);
-        let e = e_arr.splice();
+        let e = e_arr.splice_untyped();
 
         Optional::new(
             on.id(),
@@ -293,7 +293,7 @@ impl<'a> FlowBuilder<'a> {
         on: &L,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
     ) -> Optional<'a, (), Unbounded, NoTick, L> {
-        let interval = interval.splice();
+        let interval = interval.splice_untyped();
 
         Optional::new(
             on.id(),
