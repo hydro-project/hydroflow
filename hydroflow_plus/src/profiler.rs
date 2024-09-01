@@ -48,7 +48,7 @@ fn add_profiling_node<'a>(
                 );
             }
         }))
-        .splice()
+        .splice_untyped()
         .into(),
         input: Box::new(orig_node),
     }

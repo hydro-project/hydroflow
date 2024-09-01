@@ -30,7 +30,7 @@ pub fn deploy_o2o(p1_port: &str, p2_port: &str) -> (syn::Expr, syn::Expr) {
                     .connect_local_blocking::<ConnectedDirect>()
                     .into_sink()
             })
-            .splice()
+            .splice_untyped()
         },
         {
             q!({
@@ -38,7 +38,7 @@ pub fn deploy_o2o(p1_port: &str, p2_port: &str) -> (syn::Expr, syn::Expr) {
                     .connect_local_blocking::<ConnectedDirect>()
                     .into_source()
             })
-            .splice()
+            .splice_untyped()
         },
     )
 }
@@ -53,7 +53,7 @@ pub fn deploy_o2m(p1_port: &str, c2_port: &str) -> (syn::Expr, syn::Expr) {
                     .connect_local_blocking::<ConnectedDemux<ConnectedDirect>>()
                     .into_sink()
             })
-            .splice()
+            .splice_untyped()
         },
         {
             q!({
@@ -61,7 +61,7 @@ pub fn deploy_o2m(p1_port: &str, c2_port: &str) -> (syn::Expr, syn::Expr) {
                     .connect_local_blocking::<ConnectedDirect>()
                     .into_source()
             })
-            .splice()
+            .splice_untyped()
         },
     )
 }
@@ -76,7 +76,7 @@ pub fn deploy_m2o(c1_port: &str, p2_port: &str) -> (syn::Expr, syn::Expr) {
                     .connect_local_blocking::<ConnectedDirect>()
                     .into_sink()
             })
-            .splice()
+            .splice_untyped()
         },
         {
             q!({
@@ -84,7 +84,7 @@ pub fn deploy_m2o(c1_port: &str, p2_port: &str) -> (syn::Expr, syn::Expr) {
                     .connect_local_blocking::<ConnectedTagged<ConnectedDirect>>()
                     .into_source()
             })
-            .splice()
+            .splice_untyped()
         },
     )
 }
@@ -99,7 +99,7 @@ pub fn deploy_m2m(c1_port: &str, c2_port: &str) -> (syn::Expr, syn::Expr) {
                     .connect_local_blocking::<ConnectedDemux<ConnectedDirect>>()
                     .into_sink()
             })
-            .splice()
+            .splice_untyped()
         },
         {
             q!({
@@ -107,7 +107,7 @@ pub fn deploy_m2m(c1_port: &str, c2_port: &str) -> (syn::Expr, syn::Expr) {
                     .connect_local_blocking::<ConnectedTagged<ConnectedDirect>>()
                     .into_source()
             })
-            .splice()
+            .splice_untyped()
         },
     )
 }

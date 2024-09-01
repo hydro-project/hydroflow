@@ -111,7 +111,7 @@ impl<'a> HfCompiled<'a, usize> {
         }
 
         let conditioned_tokens: TokenStream = conditioned_tokens.unwrap();
-        let id = id.splice();
+        let id = id.splice_untyped();
         HfBuiltWithId {
             tokens: syn::parse_quote!({
                 let __given_id = #id;
