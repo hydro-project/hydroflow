@@ -63,7 +63,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
                         .connect_local_blocking::<ConnectedDirect>()
                         .into_sink()
                 })
-                .splice()
+                .splice_untyped()
             },
             {
                 let port = p2_port.as_str();
@@ -73,7 +73,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
                         .connect_local_blocking::<ConnectedDirect>()
                         .into_source()
                 })
-                .splice()
+                .splice_untyped()
             },
         )
     }
@@ -104,7 +104,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
                         .connect_local_blocking::<ConnectedDemux<ConnectedDirect>>()
                         .into_sink()
                 })
-                .splice()
+                .splice_untyped()
             },
             {
                 let port = c2_port.as_str();
@@ -114,7 +114,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
                         .connect_local_blocking::<ConnectedDirect>()
                         .into_source()
                 })
-                .splice()
+                .splice_untyped()
             },
         )
     }
@@ -145,7 +145,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
                         .connect_local_blocking::<ConnectedDirect>()
                         .into_sink()
                 })
-                .splice()
+                .splice_untyped()
             },
             {
                 let port = p2_port.as_str();
@@ -155,7 +155,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
                         .connect_local_blocking::<ConnectedTagged<ConnectedDirect>>()
                         .into_source()
                 })
-                .splice()
+                .splice_untyped()
             },
         )
     }
@@ -186,7 +186,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
                         .connect_local_blocking::<ConnectedDemux<ConnectedDirect>>()
                         .into_sink()
                 })
-                .splice()
+                .splice_untyped()
             },
             {
                 let port = c2_port.as_str();
@@ -196,7 +196,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
                         .connect_local_blocking::<ConnectedTagged<ConnectedDirect>>()
                         .into_source()
                 })
-                .splice()
+                .splice_untyped()
             },
         )
     }

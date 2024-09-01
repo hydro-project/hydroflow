@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 
 use internal::CaptureVec;
 use proc_macro2::{Span, TokenStream};
+use proc_macro_crate::FoundCrate;
 use quote::quote;
 
 pub mod internal {
@@ -100,7 +101,7 @@ impl<'a> QuotedContext for BorrowBounds<'a> {
 }
 
 pub trait Quoted<'a, T>: FreeVariable<T> {
-    fn splice(self) -> syn::Expr
+    fn splice_untyped(self) -> syn::Expr
     where
         Self: Sized,
     {
@@ -110,6 +111,109 @@ pub trait Quoted<'a, T>: FreeVariable<T> {
         }
 
         syn::parse2(value.unwrap()).unwrap()
+    }
+
+    fn splice_typed(self) -> syn::Expr
+    where
+        Self: Sized,
+    {
+        let inner_expr = self.splice_untyped();
+        let stageleft_crate = proc_macro_crate::crate_name("stageleft")
+            .unwrap_or_else(|_| panic!("stageleft should be present in `Cargo.toml`"));
+        let stageleft_root = match stageleft_crate {
+            FoundCrate::Name(name) => syn::Ident::new(&name, Span::call_site()),
+            FoundCrate::Itself => syn::Ident::new("crate", Span::call_site()),
+        };
+
+        let out_type = quote_type::<T>();
+
+        syn::parse_quote! {
+            #stageleft_root::runtime_support::type_hint::<#out_type>(#inner_expr)
+        }
+    }
+
+    fn splice_fn0<O>(self) -> syn::Expr
+    where
+        Self: Sized,
+        T: Fn() -> O,
+    {
+        let inner_expr = self.splice_untyped();
+        let stageleft_crate = proc_macro_crate::crate_name("stageleft")
+            .unwrap_or_else(|_| panic!("stageleft should be present in `Cargo.toml`"));
+        let stageleft_root = match stageleft_crate {
+            FoundCrate::Name(name) => syn::Ident::new(&name, Span::call_site()),
+            FoundCrate::Itself => syn::Ident::new("crate", Span::call_site()),
+        };
+
+        let out_type = quote_type::<O>();
+
+        syn::parse_quote! {
+            #stageleft_root::runtime_support::fn0_type_hint::<#out_type>(#inner_expr)
+        }
+    }
+
+    fn splice_fn1<I, O>(self) -> syn::Expr
+    where
+        Self: Sized,
+        T: Fn(I) -> O,
+    {
+        let inner_expr = self.splice_untyped();
+        let stageleft_crate = proc_macro_crate::crate_name("stageleft")
+            .unwrap_or_else(|_| panic!("stageleft should be present in `Cargo.toml`"));
+        let stageleft_root = match stageleft_crate {
+            FoundCrate::Name(name) => syn::Ident::new(&name, Span::call_site()),
+            FoundCrate::Itself => syn::Ident::new("crate", Span::call_site()),
+        };
+
+        let in_type = quote_type::<I>();
+        let out_type = quote_type::<O>();
+
+        syn::parse_quote! {
+            #stageleft_root::runtime_support::fn1_type_hint::<#in_type, #out_type>(#inner_expr)
+        }
+    }
+
+    fn splice_fn1_borrow<I, O>(self) -> syn::Expr
+    where
+        Self: Sized,
+        T: Fn(&I) -> O,
+    {
+        let inner_expr = self.splice_untyped();
+        let stageleft_crate = proc_macro_crate::crate_name("stageleft")
+            .unwrap_or_else(|_| panic!("stageleft should be present in `Cargo.toml`"));
+        let stageleft_root = match stageleft_crate {
+            FoundCrate::Name(name) => syn::Ident::new(&name, Span::call_site()),
+            FoundCrate::Itself => syn::Ident::new("crate", Span::call_site()),
+        };
+
+        let in_type = quote_type::<I>();
+        let out_type = quote_type::<O>();
+
+        syn::parse_quote! {
+            #stageleft_root::runtime_support::fn1_borrow_type_hint::<#in_type, #out_type>(#inner_expr)
+        }
+    }
+
+    fn splice_fn2_borrow_mut<I1, I2, O>(self) -> syn::Expr
+    where
+        Self: Sized,
+        T: Fn(&mut I1, I2) -> O,
+    {
+        let inner_expr = self.splice_untyped();
+        let stageleft_crate = proc_macro_crate::crate_name("stageleft")
+            .unwrap_or_else(|_| panic!("stageleft should be present in `Cargo.toml`"));
+        let stageleft_root = match stageleft_crate {
+            FoundCrate::Name(name) => syn::Ident::new(&name, Span::call_site()),
+            FoundCrate::Itself => syn::Ident::new("crate", Span::call_site()),
+        };
+
+        let in1_type = quote_type::<I1>();
+        let in2_type = quote_type::<I2>();
+        let out_type = quote_type::<O>();
+
+        syn::parse_quote! {
+            #stageleft_root::runtime_support::fn2_borrow_mut_type_hint::<#in1_type, #in2_type, #out_type>(#inner_expr)
+        }
     }
 }
 
