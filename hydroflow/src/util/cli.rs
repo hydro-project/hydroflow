@@ -2,11 +2,6 @@
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::io::Write;
-use std::fs::File;
-use std::fs::OpenOptions;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-
 
 pub use hydroflow_cli_integration::*;
 use serde::de::DeserializeOwned;
@@ -62,10 +57,9 @@ impl<T> HydroCLI<T> {
 async fn init_no_ack_start<T: DeserializeOwned + Default>() -> HydroCLI<T> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
-    let mut trimmed = input.trim();
+    let trimmed = input.trim();
 
     let bind_config = serde_json::from_str::<InitConfig>(trimmed).unwrap();
-    // println!("{:?}", bind_config);
 
     // config telling other services how to connect to me
     let mut bind_results: HashMap<String, ServerPort> = HashMap::new();

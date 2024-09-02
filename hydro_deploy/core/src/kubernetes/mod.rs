@@ -7,7 +7,6 @@ use anyhow::Result;
 use async_trait::async_trait;
 use hydroflow_cli_integration::ServerBindConfig;
 use tokio::sync::RwLock;
-use std::fs::Metadata;
 
 use super::{
     ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
@@ -15,14 +14,11 @@ use super::{
 };
 
 use futures::{StreamExt, TryStreamExt};
-use std::io::Write;
 use k8s_openapi::api::core::v1::Pod;
 use kube::{
     api::{Api, AttachParams, ListParams, PostParams, ResourceExt, WatchEvent, WatchParams},
     Client,
 };
-use std::time::Duration;
-use tokio::time::sleep;
 
 use tokio::io::AsyncWriteExt;
 use nanoid::nanoid;

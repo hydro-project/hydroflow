@@ -11,7 +11,7 @@ use async_ssh2_lite::ssh2::ErrorCode;
 use async_ssh2_lite::{AsyncChannel, AsyncSession, Error, SessionConfiguration};
 use async_trait::async_trait;
 use futures::io::BufReader;
-use futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt, TryStreamExt, join};
+use futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt};
 use hydroflow_cli_integration::ServerBindConfig;
 use nanoid::nanoid;
 use tokio::net::{TcpListener, TcpStream};
