@@ -94,8 +94,6 @@ impl Host for PodHost {
             let pod_id = nanoid!(10, &alphabet); // pod names can only contain alphanumeric characters
             let pod_name = format!("hydro-{}", pod_id);
 
-            ProgressTracker::println(format!("New pod name: {:?}", pod_name).as_str());
-
             // Blank template for a new pod
             let p: Pod = serde_json::from_value(serde_json::json!({
                 "apiVersion": "v1",
@@ -117,13 +115,13 @@ impl Host for PodHost {
             let lp = ListParams::default().fields(&format!("metadata.name={}", pod_name)); // only want results for our pod
             let mut found_existing_pod = false;
             for p in pods.list(&lp).await.unwrap() {
-                ProgressTracker::println(format!("Found Pod: {}", p.name_any()).as_str());
+                // ProgressTracker::println(format!("Found Pod: {}", p.name_any()).as_str());
                 if p.name_any() == pod_name {
                     found_existing_pod = true;
                 }
             }
             if !found_existing_pod {
-                ProgressTracker::println(format!("Creating new pod {:?}", pod_name).as_str());
+                // ProgressTracker::println(format!("Creating new pod {:?}", pod_name).as_str());
                 let res = pods.create(&PostParams::default(), &p).await;
                 match res {
                     Err(e) => ProgressTracker::println(format!("{:?}", e).as_str()),
@@ -202,7 +200,8 @@ impl Host for PodHost {
                     false
                 }
             }
-            ClientStrategy::InternalTcpPort(_target_host) => _target_host.launched(), // TODO: if I'm on the same cluster, can just return true first
+            // target_host.as_any().downcast_ref::<PodHost>()
+            ClientStrategy::InternalTcpPort(_target_host) => true, // TODO: if I'm on the same cluster, can just return true first
             ClientStrategy::ForwardedTcpPort(_) => true,
         }
     }
@@ -245,7 +244,6 @@ impl LaunchedHost for LaunchedPod {
     }
 
     async fn copy_binary(&self, binary: Arc<(String, Vec<u8>, PathBuf)>) -> Result<()> {
-        ProgressTracker::println("Copying binary in Pod");
         // Create a new pod in the running kubernetes cluster (we assume the user already has one up)
         let client = Client::try_default().await?;
         let pods: Api<Pod> = Api::default_namespaced(client);
@@ -274,9 +272,9 @@ impl LaunchedHost for LaunchedPod {
 
             // Flush the stdin to finish sending the file through
             tar_stdin.flush().await?;
-        }
 
-        sleep(Duration::from_secs(2)).await;
+            tar.join().await?; // TODO: Do something with the result of this
+        }
 
         Ok(())
     }
@@ -287,7 +285,7 @@ impl LaunchedHost for LaunchedPod {
         binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
-        ProgressTracker::println("Launching binary in Pod");
+        // ProgressTracker::println("Launching binary in Pod");
 
         let client = Client::try_default().await?;
         let pods: Api<Pod> = Api::default_namespaced(client);
@@ -303,8 +301,6 @@ impl LaunchedHost for LaunchedPod {
         let mut launch_binary = pods
             .exec(pod_name, args_list, &ap)
             .await?;
-
-        ProgressTracker::println("Returning from launch binary in Pod");
 
         Ok(Arc::new(RwLock::new(LaunchedPodBinary::new(
             &mut launch_binary, id,

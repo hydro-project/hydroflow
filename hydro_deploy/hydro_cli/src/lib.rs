@@ -159,6 +159,20 @@ impl Deployment {
     }
 
     #[allow(non_snake_case)]
+    fn PodHost(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
+        let arc = self.underlying.blocking_write().PodHost();
+
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(Host {
+                underlying: arc.clone(),
+            })
+            .add_subclass(KubernetesPodHost { underlying: arc }),
+        )?
+        .into_py(py))
+    }
+
+    #[allow(non_snake_case)]
     fn Localhost(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         let arc = self.underlying.blocking_write().Localhost();
 
@@ -349,6 +363,30 @@ impl LocalhostHost {
         .into_py(py))
     }
 }
+
+#[pyclass(extends=Host, subclass)]
+struct KubernetesPodHost {
+    underlying: Arc<RwLock<core::PodHost>>,
+}
+
+#[pymethods]
+impl KubernetesPodHost {
+    fn client_only(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
+        let arc = Arc::new(RwLock::new(
+            self.underlying.try_read().unwrap().client_only(),
+        ));
+
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(Host {
+                underlying: arc.clone(),
+            })
+            .add_subclass(KubernetesPodHost { underlying: arc }),
+        )?
+        .into_py(py))
+    }
+}
+
 
 #[pyclass]
 #[derive(Clone)]
@@ -870,6 +908,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
 
     module.add_class::<Host>()?;
     module.add_class::<LocalhostHost>()?;
+    module.add_class::<KubernetesPodHost>()?;
 
     module.add_class::<GCPNetwork>()?;
     module.add_class::<GCPComputeEngineHost>()?;
