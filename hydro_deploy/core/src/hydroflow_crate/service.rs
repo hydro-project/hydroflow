@@ -244,7 +244,9 @@ impl Service for HydroflowCrateService {
                 let mut host_write = self.on.write().await;
                 let launched = host_write.provision(resource_result).await;
 
+                ProgressTracker::println("About to copy binary!");
                 launched.copy_binary(built.clone()).await?;
+                ProgressTracker::println("Done copying binary");
 
                 self.launched_host = Some(launched);
                 Ok(())

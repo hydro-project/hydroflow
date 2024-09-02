@@ -153,6 +153,8 @@ impl Host for PodHost {
 
         }
 
+        ProgressTracker::println("finished provisioning");
+
         self.launched.as_ref().unwrap().clone()
     }
 
@@ -241,18 +243,19 @@ impl LaunchedHost for LaunchedPod {
 
     async fn copy_binary(&self, binary: Arc<(String, Vec<u8>, PathBuf)>) -> Result<()> {
         // Create a new pod in the running kubernetes cluster (we assume the user already has one up)
+        ProgressTracker::println("Copying binary to pod");
         let client = Client::try_default().await?;
         let pods: Api<Pod> = Api::default_namespaced(client);
 
         let file_name = format!("hydro-{}-binary", binary.0);
-        let metadata = std::fs::metadata("/Users/nickjiang/Nick/Hydro/hydroflow/hydro_deploy/core/src/kubernetes/hello_world_aarch64_musl")?;  // importantly, this file has executable permissions
-
+        // let metadata = std::fs::metadata("/Users/nickjiang/Nick/Hydro/hydroflow/hydro_deploy/core/src/kubernetes/hello_world_aarch64_musl")?;  // importantly, this file has executable permissions
         {
             let binary_data = binary.1.clone();
             let mut header = tar::Header::new_gnu();
             header.set_path(file_name).unwrap();
             header.set_size(binary_data.len() as u64);
-            header.set_metadata(&metadata);
+            // header.set_metadata(&metadata);
+            header.set_mode(0o755); // give the binary executable permissions
             header.set_cksum();
 
             let mut ar = tar::Builder::new(Vec::new());
@@ -265,12 +268,20 @@ impl LaunchedHost for LaunchedPod {
                 .await?;
             let mut tar_stdin = tar.stdin().unwrap();
             tar_stdin.write_all(&data).await?;
+            ProgressTracker::println("Wrote all the stdin");
 
             // Flush the stdin to finish sending the file through
             tar_stdin.flush().await?;
 
-            tar.join().await?; // TODO: Do something with the result of this
+            ProgressTracker::println("Flushed!");
+            drop(tar_stdin); // Ensure stdin is closed before joining
+            let result = tar.join().await;
+            match result {
+                Ok(_) => ProgressTracker::println("Successfully copied binary to pod"),
+                Err(e) => ProgressTracker::println(&format!("Failed to copy binary to pod: {:?}", e)),
+            }
         }
+        ProgressTracker::println("Finishd copying binary to pod");
 
         Ok(())
     }
@@ -281,7 +292,7 @@ impl LaunchedHost for LaunchedPod {
         binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
-        // ProgressTracker::println("Launching binary in Pod");
+        ProgressTracker::println("Launching binary in Pod");
 
         let client = Client::try_default().await?;
         let pods: Api<Pod> = Api::default_namespaced(client);
@@ -294,9 +305,15 @@ impl LaunchedHost for LaunchedPod {
 
         // Execute binary inside the new pod
         let ap = AttachParams::default().stdin(true).stdout(true).stderr(true);
-        let mut launch_binary = pods
-            .exec(pod_name, args_list, &ap)
-            .await?;
+        let mut launch_binary = match pods.exec(pod_name, args_list, &ap).await {
+            Ok(exec) => exec,
+            Err(e) => {
+                ProgressTracker::println(&format!("Failed to launch binary in Pod: {:?}", e));
+                return Err(e.into());
+            }
+        };
+
+        // ProgressTracker::println(&format!("Launched binary in pod {:?}", pod_name));
 
         Ok(Arc::new(RwLock::new(LaunchedPodBinary::new(
             &mut launch_binary, id,
