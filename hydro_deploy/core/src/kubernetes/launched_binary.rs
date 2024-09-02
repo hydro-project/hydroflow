@@ -3,8 +3,7 @@ use std::sync::Arc;
 
 use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
-use futures::io::BufReader;
-use futures::{AsyncBufReadExt, StreamExt, TryStreamExt};
+use futures::{StreamExt, TryStreamExt};
 use kube::api::AttachedProcess;
 use tokio::sync::RwLock;
 
