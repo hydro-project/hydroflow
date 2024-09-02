@@ -2,6 +2,11 @@
 
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::io::Write;
+use std::fs::File;
+use std::fs::OpenOptions;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+
 
 pub use hydroflow_deploy_integration::*;
 use serde::de::DeserializeOwned;
@@ -65,9 +70,10 @@ impl<T> DeployPorts<T> {
 pub async fn init_no_ack_start<T: DeserializeOwned + Default>() -> DeployPorts<T> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
-    let trimmed = input.trim();
+    let mut trimmed = input.trim();
 
     let bind_config = serde_json::from_str::<InitConfig>(trimmed).unwrap();
+    // println!("{:?}", bind_config);
 
     // config telling other services how to connect to me
     let mut bind_results: HashMap<String, ServerPort> = HashMap::new();
@@ -79,6 +85,8 @@ pub async fn init_no_ack_start<T: DeserializeOwned + Default>() -> DeployPorts<T
     }
 
     let bind_serialized = serde_json::to_string(&bind_results).unwrap();
+
+    // We print this line to let other services know the specific port I'm listening on
     println!("ready: {bind_serialized}");
 
     let mut start_buf = String::new();
