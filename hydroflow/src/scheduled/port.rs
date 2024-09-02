@@ -6,7 +6,8 @@ use ref_cast::RefCast;
 use sealed::sealed;
 
 use super::HandoffId;
-use crate::scheduled::handoff::{CanReceive, Handoff, TryCanReceive};
+use crate::scheduled::graph::Hydroflow;
+use crate::scheduled::handoff::{CanReceive, Handoff, TeeingHandoff, TryCanReceive};
 
 /// An empty trait used to denote [`Polarity`]: either **send** or **receive**.
 ///
@@ -19,10 +20,12 @@ pub trait Polarity: 'static {}
 /// An uninstantiable type used to tag port [`Polarity`] as **send**.
 ///
 /// See also: [`RECV`].
+#[allow(clippy::upper_case_acronyms)]
 pub enum SEND {}
 /// An uninstantiable type used to tag port [`Polarity`] as **receive**.
 ///
 /// See also: [`SEND`].
+#[allow(clippy::upper_case_acronyms)]
 pub enum RECV {}
 #[sealed]
 impl Polarity for SEND {}
@@ -30,7 +33,7 @@ impl Polarity for SEND {}
 impl Polarity for RECV {}
 
 /// Lightweight ID struct representing an input or output port for a [`Handoff`] added to a
-/// [`Hydroflow`](super::graph::Hydroflow) instance..
+/// [`Hydroflow`] instance..
 #[must_use]
 pub struct Port<S: Polarity, H>
 where
@@ -44,6 +47,23 @@ where
 pub type SendPort<H> = Port<SEND, H>;
 /// Recv-specific variant of [`Port`]. An input port.
 pub type RecvPort<H> = Port<RECV, H>;
+
+/// Methods for [`TeeingHandoff`] teeing and dropping.
+impl<T: Clone> RecvPort<TeeingHandoff<T>> {
+    /// Tees this [`TeeingHandoff`], given the [`Hydroflow`] instance it belongs to.
+    pub fn tee(&self, hf: &mut Hydroflow) -> RecvPort<TeeingHandoff<T>> {
+        hf.teeing_handoff_tee(self)
+    }
+
+    /// Marks this output of a [`TeeingHandoff`] as dropped so that no more data will be sent to
+    /// it, given the [`Hydroflow`] instance it belongs to.
+    ///
+    /// It is recommended to not not use this method and instead simply avoid teeing a
+    /// [`TeeingHandoff`] when it is not needed.
+    pub fn drop(self, hf: &mut Hydroflow) {
+        hf.teeing_handoff_drop(self)
+    }
+}
 
 /// Wrapper around a handoff to differentiate between output and input.
 #[derive(RefCast)]

@@ -1,10 +1,9 @@
 use quote::quote_spanned;
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput, WriteContextArgs,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
-use crate::graph::GraphEdgeType;
 
 /// > Arguments: An [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
 ///
@@ -47,11 +46,11 @@ use crate::graph::GraphEdgeType;
 /// Instead of discrete values we send arbitrary streams of bytes into an `AsyncWrite` value. For
 /// example, writings a stream of bytes to a file, a socket, or stdout.
 ///
-/// To handle those situations we can use a codec from [`tokio_util::codec`](crate::tokio_util::codec).
+/// To handle those situations we can use a codec from [`tokio_util::codec`](https://docs.rs/tokio-util/latest/tokio_util/codec/index.html).
 /// These specify ways in which the byte stream is broken into individual items, such as with
 /// newlines or with length delineation.
 ///
-/// If we only want to write a stream of bytes without delineation we can use the [`BytesCodec`](crate::tokio_util::codec::BytesCodec).
+/// If we only want to write a stream of bytes without delineation we can use the [`BytesCodec`](https://docs.rs/tokio-util/latest/tokio_util/codec/struct.BytesCodec.html).
 ///
 /// In this example we use a [`duplex`](crate::tokio::io::duplex) as our `AsyncWrite` with a
 /// `BytesCodec`.
@@ -93,19 +92,17 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    hydroflow,
                    op_span,
                    ident,
                    is_pull,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                _| {

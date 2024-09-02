@@ -1,0 +1,45 @@
+---
+source: stageleft_macro/src/quote_impl/mod.rs
+expression: "prettyplease::unparse(&wrapped)"
+---
+fn main() {
+    {
+        move |
+            set_mod: &mut String,
+            set_crate_name: &mut &'static str,
+            set_tokens: &mut stageleft::internal::TokenStream,
+            _vec_to_set: &mut stageleft::internal::CaptureVec,
+            run: bool|
+        {
+            #[allow(unused, non_upper_case_globals, non_snake_case)]
+            let x = {
+                let _out = ::stageleft::runtime_support::FreeVariable::uninitialized(&x);
+                _vec_to_set
+                    .push((
+                        "x".to_string(),
+                        ::stageleft::runtime_support::FreeVariable::to_tokens(x),
+                    ));
+                _out
+            };
+            *set_mod = module_path!().to_string();
+            *set_crate_name = env!("STAGELEFT_FINAL_CRATE_NAME");
+            *set_tokens = stageleft::internal::quote! {
+                { let x = x + 2; let _ = x + 2; }
+            };
+            if !run {
+                #[allow(unused, non_upper_case_globals, non_snake_case)]
+                ::std::mem::forget(x);
+                unsafe {
+                    return ::std::mem::MaybeUninit::uninit().assume_init();
+                }
+            }
+            #[allow(unreachable_code, unused_qualifications)]
+            {
+                {
+                    let x = x + 2;
+                    let _ = x + 2;
+                }
+            }
+        }
+    }
+}

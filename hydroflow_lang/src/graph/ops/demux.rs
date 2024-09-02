@@ -6,11 +6,10 @@ use syn::spanned::Spanned;
 use syn::{Expr, Pat};
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
+    OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
+    PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{OperatorInstance, PortIndexValue, GraphEdgeType};
 use crate::pretty_span::PrettySpan;
 
 // TODO(mingwei): Preprocess rustdoc links in mdbook or in the `operator_docgen` macro.
@@ -26,7 +25,7 @@ use crate::pretty_span::PrettySpan;
 /// > Note: The [`Pusherator`](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html)
 /// > trait is automatically imported to enable the [`.give(...)` method](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give).
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// ```hydroflow
 /// my_demux = source_iter(1..=100) -> demux(|v, var_args!(fzbz, fizz, buzz, rest)|
@@ -53,12 +52,10 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Variadic),
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,
@@ -66,12 +63,8 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
                    outputs,
                    is_pull,
                    op_name,
-                   op_inst:
-                       OperatorInstance {
-                           output_ports,
-                           arguments,
-                           ..
-                       },
+                   op_inst: OperatorInstance { output_ports, .. },
+                   arguments,
                    ..
                },
                diagnostics| {
@@ -81,13 +74,13 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
             diagnostics.push(Diagnostic::spanned(
                 func.span(),
                 Level::Error,
-                "Argument must be a two-argument closure expression"),
-            );
+                "Argument must be a two-argument closure expression",
+            ));
             return Err(());
         };
         if 2 != func.inputs.len() {
             diagnostics.push(Diagnostic::spanned(
-                func.span(),
+                func.inputs.span(),
                 Level::Error,
                 &*format!(
                     "Closure provided to `{}(..)` must have two arguments: \

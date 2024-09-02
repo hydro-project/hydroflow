@@ -54,7 +54,7 @@ pub fn q_impl(root: TokenStream, expr: syn::Expr) -> TokenStream {
                 }
             }
 
-            #[allow(unreachable_code)]
+            #[allow(unreachable_code, unused_qualifications)]
             {
                 #expr
             }
@@ -79,7 +79,7 @@ mod tests {
             };
 
             insta::with_settings!({snapshot_suffix => "macro_tokens"}, {
-                insta::assert_display_snapshot!(
+                insta::assert_snapshot!(
                     prettyplease::unparse(&wrapped)
                 );
             });
@@ -98,6 +98,29 @@ mod tests {
         test_quote! {
             x + 2
         }
+    }
+
+    #[test]
+    fn test_capture_copy_local() {
+        test_quote! {
+            (x + 2) + (x + 2)
+        }
+    }
+
+    #[test]
+    fn test_capture_copy_local_block() {
+        test_quote! {{
+            let _ = x + 2;
+            let _ = x + 2;
+        }}
+    }
+
+    #[test]
+    fn test_capture_copy_local_block_let() {
+        test_quote! {{
+            let x = x + 2;
+            let _ = x + 2;
+        }}
     }
 
     #[test]

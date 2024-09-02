@@ -13,10 +13,9 @@ use syn::punctuated::Punctuated;
 use syn::{parse_quote_spanned, Expr, Token};
 
 use super::{
-    FlowProps, GraphEdgeType, GraphNode, GraphNodeId, GraphSubgraphId, LatticeFlowType,
-    OpInstGenerics, OperatorInstance, PortIndexValue,
+    GraphNode, GraphNodeId, GraphSubgraphId, OpInstGenerics, OperatorInstance, PortIndexValue,
 };
-use crate::diagnostic::{Diagnostic, Level};
+use crate::diagnostic::Diagnostic;
 use crate::parse::{Operator, PortIndex};
 
 /// The delay (soft barrier) type, for each input to an operator if needed.
@@ -67,6 +66,10 @@ pub struct OperatorConstraints {
     /// If this operator receives external inputs and therefore must be in
     /// stratum 0.
     pub is_external_input: bool,
+    /// If this operator has a singleton reference output. For stateful operators.
+    /// If true, [`WriteContextArgs::singleton_output_ident`] will be set to a meaningful value in
+    /// the [`Self::write_fn`] invocation.
+    pub has_singleton_output: bool,
 
     /// What named or numbered input ports to expect?
     pub ports_inn: Option<fn() -> PortListSpec>,
@@ -75,61 +78,13 @@ pub struct OperatorConstraints {
 
     /// Determines if this input must be preceeded by a stratum barrier.
     pub input_delaytype_fn: fn(&PortIndexValue) -> Option<DelayType>,
-    /// The required edge type for each input. Return `None` when any is OK, or for unknown `PortIndexValue` inputs.
-    pub input_edgetype_fn: fn(&PortIndexValue) -> Option<GraphEdgeType>,
-    /// Specifies the edge type for each output port.
-    pub output_edgetype_fn: fn(&PortIndexValue) -> GraphEdgeType,
-
-    /// Return the output flow types for the given input flow types.
-    ///
-    /// The first [`FlowPropArgs`] argument provides the input flow types (if set) and other
-    /// arguments such as the operator span, operator name, etc.
-    ///
-    /// The second argument is a vec to push [`Diagnostic`]s into to emit them.
-    ///
-    /// If only one flow type is returned for an operator with multiple outputs, that flow type
-    /// will be used for all outputs. Besides that case, it is an error to return a number of flow
-    /// props which does not match the number of outputs.
-    pub flow_prop_fn: Option<FlowPropFn>,
-
     /// The operator's codegen. Returns code that is emited is several different locations. See [`OperatorWriteOutput`].
     pub write_fn: WriteFn,
 }
 
-/// Type alias for [`OperatorConstraints::flow_prop_fn`]'s type.
-pub type FlowPropFn =
-    fn(FlowPropArgs<'_>, &mut Vec<Diagnostic>) -> Result<Vec<Option<FlowProps>>, ()>;
-
 /// Type alias for [`OperatorConstraints::write_fn`]'s type.
 pub type WriteFn =
     fn(&WriteContextArgs<'_>, &mut Vec<Diagnostic>) -> Result<OperatorWriteOutput, ()>;
-
-/// Arguments provided to [`OperatorConstraints::flow_prop_fn`].
-pub struct FlowPropArgs<'a> {
-    /// The source span of this operator.
-    pub op_span: Span,
-
-    /// Operator name.
-    pub op_name: &'static str,
-    /// Operator instance arguments object.
-    pub op_inst: &'a OperatorInstance,
-
-    /// Flow properties corresponding to each input.
-    ///
-    /// Sometimes (due to cycles, and for now usually due to no-yet-updated operators) the input
-    /// flow props might not be set yet (`None`).
-    pub flow_props_in: &'a [Option<FlowProps>],
-
-    /// Internal: TODO(mingwei): new token value for output flows.
-    pub(crate) new_star_ord: usize,
-}
-impl FlowPropArgs<'_> {
-    /// Returns a new `star_ord` token, representing a new order/provenance.
-    /// TODO(mingwei): This shouldn't return the same value for multiple calls.
-    pub fn new_star_ord(&self) -> usize {
-        self.new_star_ord
-    }
-}
 
 impl Debug for OperatorConstraints {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -228,48 +183,6 @@ pub const IDENTITY_WRITE_FN: WriteFn = |write_context_args, _| {
     })
 };
 
-/// [`OperatorConstraints::flow_prop_fn`] for `lattice_fold` and `lattice_reduce`.
-pub const LATTICE_FOLD_REDUCE_FLOW_PROP_FN: FlowPropFn =
-    |fp @ FlowPropArgs {
-         op_span, op_name, ..
-     },
-     diagnostics| {
-        let input_flow_type = fp.flow_props_in[0].and_then(|fp| fp.lattice_flow_type);
-        match input_flow_type {
-            Some(LatticeFlowType::Delta) => (),
-            Some(LatticeFlowType::Cumul) => diagnostics.push(Diagnostic::spanned(
-                op_span,
-                Level::Warning,
-                format!("`{}` input is already cumulative lattice flow, this operator is redundant.", op_name),
-            )),
-            None => diagnostics.push(Diagnostic::spanned(
-                op_span,
-                Level::Warning,
-                format!("`{}` expects lattice flow input, has sequential input. This may be an error in the future.", op_name),
-            )),
-        }
-        Ok(vec![Some(FlowProps {
-            star_ord: fp.new_star_ord(),
-            lattice_flow_type: Some(LatticeFlowType::Cumul),
-        })])
-    };
-
-/// [`OperatorConstraints::flow_prop_fn`] for `join` and `cross_join`.
-pub const JOIN_CROSS_JOIN_FLOW_PROP_FN: FlowPropFn =
-    |ref fp @ FlowPropArgs { flow_props_in, .. }, _diagnostics| {
-        let lattice_flow_type = flow_props_in
-            .iter()
-            .map(|flow_props| flow_props.and_then(|fp| fp.lattice_flow_type))
-            .reduce(std::cmp::min)
-            .flatten();
-        // TODO(mingwei): diagnostics warning for mismatch between 'static vs 'tick and flow props.
-        // Previously this upgraded `'static` joins to `Cumul`, which is dubious.
-        Ok(vec![Some(FlowProps {
-            star_ord: fp.new_star_ord(),
-            lattice_flow_type,
-        })])
-    };
-
 /// Helper to write the `write_iterator` portion of [`OperatorConstraints::write_fn`] output for
 /// the null operator - an operator that ignores all inputs and produces no output.
 pub fn null_write_iterator_fn(
@@ -290,6 +203,7 @@ pub fn null_write_iterator_fn(
 ) -> TokenStream {
     let default_type = parse_quote_spanned! {op_span=> _};
     let iter_type = type_args.first().unwrap_or(&default_type);
+
     if is_pull {
         quote_spanned! {op_span=>
             #(
@@ -330,9 +244,9 @@ declare_ops![
     anti_join_multiset::ANTI_JOIN_MULTISET,
     assert::ASSERT,
     assert_eq::ASSERT_EQ,
-    cast::CAST,
     cross_join::CROSS_JOIN,
     cross_join_multiset::CROSS_JOIN_MULTISET,
+    cross_singleton::CROSS_SINGLETON,
     demux::DEMUX,
     demux_enum::DEMUX_ENUM,
     dest_file::DEST_FILE,
@@ -364,7 +278,6 @@ declare_ops![
     lattice_reduce::LATTICE_REDUCE,
     map::MAP,
     union::UNION,
-    _upcast::_UPCAST,
     multiset_delta::MULTISET_DELTA,
     next_stratum::NEXT_STRATUM,
     defer_signal::DEFER_SIGNAL,
@@ -383,7 +296,6 @@ declare_ops![
     source_file::SOURCE_FILE,
     source_interval::SOURCE_INTERVAL,
     source_iter::SOURCE_ITER,
-    source_iter_delta::SOURCE_ITER_DELTA,
     source_json::SOURCE_JSON,
     source_stdin::SOURCE_STDIN,
     source_stream::SOURCE_STREAM,
@@ -443,22 +355,21 @@ pub struct WriteContextArgs<'a> {
     pub inputs: &'a [Ident],
     /// Output operator idents (or ref idents; used for push).
     pub outputs: &'a [Ident],
-    /// Input edge types (value or reference).
-    pub input_edgetypes: &'a [GraphEdgeType],
-    /// Output edge types (value or reference). Likely not that useful (since the operator decides
-    /// its output edgetypes) but provided for completeness,
-    pub output_edgetypes: &'a [GraphEdgeType],
+    /// Ident for the singleton output of this operator, if any.
+    pub singleton_output_ident: &'a Ident,
 
     /// Operator name.
     pub op_name: &'static str,
     /// Operator instance arguments object.
     pub op_inst: &'a OperatorInstance,
-
-    /// Flow properties corresponding to each input.
+    /// Arguments provided by the user into the operator as arguments.
+    /// I.e. the `a, b, c` in `-> my_op(a, b, c) -> `.
     ///
-    /// Sometimes (due to cycles, and for now usually due to no-yet-updated operators) the input
-    /// flow props might not be set yet (`None`).
-    pub flow_props_in: &'a [Option<FlowProps>],
+    /// These arguments include singleton postprocessing codegen, with
+    /// [`std::cell::RefCell::borrow_mut`] code pre-generated.
+    pub arguments: &'a Punctuated<Expr, Token![,]>,
+    /// Same as [`Self::arguments`] but with only `StateHandle`s, no borrowing code.
+    pub arguments_handles: &'a Punctuated<Expr, Token![,]>,
 }
 impl WriteContextArgs<'_> {
     /// Generate a (almost certainly) unique identifier with the given suffix.
@@ -476,31 +387,6 @@ impl WriteContextArgs<'_> {
             ),
             self.op_span,
         )
-    }
-
-    /// Wraps the `func_arg` closure with a type checker macro corresponding to the first `flow_props` flow type.
-    ///
-    /// * `None` => No checking.
-    /// * `Some(Cumul) => Monotonic function.
-    /// * `Some(Delta) => Morphism.
-    pub fn wrap_check_func_arg(&self, func_arg: &Expr) -> TokenStream {
-        let root = self.root;
-        let span = self.op_span;
-        match self
-            .flow_props_in
-            .first()
-            .copied()
-            .flatten()
-            .and_then(|flow_props| flow_props.lattice_flow_type)
-        {
-            None => quote_spanned!(span=> #func_arg),
-            Some(LatticeFlowType::Cumul) => quote_spanned! {span=>
-                #root::monotonic_fn!(#func_arg)
-            },
-            Some(LatticeFlowType::Delta) => quote_spanned! {span=>
-                #root::morphism!(#func_arg)
-            },
-        }
     }
 }
 

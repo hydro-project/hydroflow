@@ -2,15 +2,14 @@ use quote::quote_spanned;
 use syn::parse_quote_spanned;
 
 use super::{
-    make_missing_runtime_msg, OperatorCategory,
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    make_missing_runtime_msg, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::{OperatorInstance, GraphEdgeType};
 
 /// > 0 input streams, 1 output stream
 ///
 /// > Arguments: An [`AsRef`](https://doc.rust-lang.org/std/convert/trait.AsRef.html)`<`[`Path`](https://doc.rust-lang.org/nightly/std/path/struct.Path.html)`>`
-/// for a file to read.
+/// > for a file to read.
 ///
 /// Reads the referenced file one line at a time. The line will NOT include the line ending.
 ///
@@ -30,18 +29,16 @@ pub const SOURCE_FILE: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: &(0..=1),
     is_external_input: true,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    op_span,
                    ident,
                    op_name,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                diagnostics| {
@@ -63,10 +60,7 @@ pub const SOURCE_FILE: OperatorConstraints = OperatorConstraints {
             };
         };
         let wc = WriteContextArgs {
-            op_inst: &OperatorInstance {
-                arguments: parse_quote_spanned!(op_span=> #ident_filelines),
-                ..wc.op_inst.clone()
-            },
+            arguments: &parse_quote_spanned!(op_span=> #ident_filelines),
             ..wc.clone()
         };
 

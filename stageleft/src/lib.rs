@@ -13,12 +13,15 @@ pub mod internal {
     pub type CaptureVec = Vec<(String, (Option<TokenStream>, Option<TokenStream>))>;
 }
 
-pub use stageleft_macro::{entry, q, quse_fn, runtime};
+pub use stageleft_macro::{entry, q, quse_fn, runtime, top_level_mod};
 
 pub mod runtime_support;
 use runtime_support::FreeVariable;
 
 use crate::runtime_support::get_final_crate_name;
+
+mod type_name;
+pub use type_name::quote_type;
 
 #[cfg(windows)]
 #[macro_export]
@@ -39,13 +42,21 @@ macro_rules! PATH_SEPARATOR {
 #[macro_export]
 macro_rules! stageleft_crate {
     ($macro_crate:ident) => {
-        #[cfg(not(feature = "macro"))]
+        #[cfg(not(stageleft_macro))]
         #[doc(hidden)]
         pub use $macro_crate as __macro;
 
-        #[cfg(not(feature = "macro"))]
+        #[cfg(stageleft_macro)]
+        include!(concat!(
+            env!("OUT_DIR"),
+            $crate::PATH_SEPARATOR!(),
+            "lib_macro.rs"
+        ));
+
+        #[cfg(not(feature = "stageleft_devel"))]
+        #[cfg(not(stageleft_macro))]
         #[doc(hidden)]
-        #[allow(unused, ambiguous_glob_reexports)]
+        #[allow(unused, ambiguous_glob_reexports, clippy::suspicious_else_formatting)]
         pub mod __staged {
             include!(concat!(
                 env!("OUT_DIR"),
@@ -59,8 +70,9 @@ macro_rules! stageleft_crate {
 #[macro_export]
 macro_rules! stageleft_no_entry_crate {
     () => {
+        #[cfg(not(feature = "stageleft_devel"))]
         #[doc(hidden)]
-        #[allow(unused, ambiguous_glob_reexports)]
+        #[allow(unused, ambiguous_glob_reexports, clippy::suspicious_else_formatting)]
         pub mod __staged {
             include!(concat!(
                 env!("OUT_DIR"),
@@ -71,23 +83,20 @@ macro_rules! stageleft_no_entry_crate {
     };
 }
 
-#[macro_export]
-macro_rules! stageleft_macro_crate {
-    () => {
-        include!(concat!(
-            env!("OUT_DIR"),
-            $crate::PATH_SEPARATOR!(),
-            "lib.rs"
-        ));
-    };
-}
-
 pub trait QuotedContext {
     fn create() -> Self;
 }
 
-impl QuotedContext for () {
-    fn create() -> Self {}
+pub struct BorrowBounds<'a> {
+    _marker: PhantomData<&'a &'a mut ()>,
+}
+
+impl<'a> QuotedContext for BorrowBounds<'a> {
+    fn create() -> Self {
+        BorrowBounds {
+            _marker: PhantomData,
+        }
+    }
 }
 
 pub trait Quoted<'a, T>: FreeVariable<T> {
@@ -170,7 +179,6 @@ impl<
             .segments
             .iter()
             .skip(1)
-            .skip_while(|p| p.ident == "__staged") // skip crate
             .cloned()
             .collect::<Vec<_>>();
         let module_path = if module_path_segments.is_empty() {
@@ -220,7 +228,7 @@ pub struct RuntimeData<T> {
     _phantom: PhantomData<T>,
 }
 
-impl<'a, T> Quoted<'a, T> for RuntimeData<T> {}
+impl<'a, T: 'a> Quoted<'a, T> for RuntimeData<T> {}
 
 impl<T: Copy> Copy for RuntimeData<T> {}
 

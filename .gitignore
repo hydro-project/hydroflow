@@ -1,10 +1,13 @@
-/target*
+/target
 /rust.git
 /*.dot
 __pycache__/
 **/.DS_Store
+**/target-bisector-*
 
 # Profiling related outputs of the perf binary and cargo-flamegraph
 perf.data
 perf.data.old
 flamegraph.svg
+
+/rustc-ice-*.txt

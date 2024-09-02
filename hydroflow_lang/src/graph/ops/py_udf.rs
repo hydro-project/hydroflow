@@ -1,11 +1,9 @@
 use proc_macro2::Literal;
 use quote::quote_spanned;
 
-use crate::graph::GraphEdgeType;
-
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorInstance,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
 
 /// > Arguments: First, the source code for a python module, second, the name of a unary function
@@ -63,12 +61,10 @@ pub const PY_UDF: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    op_span,
@@ -79,7 +75,7 @@ pub const PY_UDF: OperatorConstraints = OperatorConstraints {
                    outputs,
                    is_pull,
                    op_name,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                _| {

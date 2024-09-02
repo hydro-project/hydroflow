@@ -1,10 +1,9 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::GraphEdgeType;
 
 /// > Arguments: A single closure `FnMut(&Item)`.
 ///
@@ -13,7 +12,7 @@ use crate::graph::GraphEdgeType;
 /// mainly useful for debugging as in the example below, and it is generally an
 /// anti-pattern to provide a closure with side effects.
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// ```hydroflow
 /// source_iter([1, 2, 3, 4])
@@ -25,21 +24,16 @@ pub const INSPECT: OperatorConstraints = OperatorConstraints {
     categories: &[OperatorCategory::Map],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
-    hard_range_out: RANGE_1,
-    soft_range_out: RANGE_1,
+    hard_range_out: &(0..=1),
+    soft_range_out: &(0..=1),
     num_args: 1,
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
-        // Preserve input flow properties.
-        Ok(vec![flow_props_in[0]])
-    }),
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,
@@ -47,7 +41,7 @@ pub const INSPECT: OperatorConstraints = OperatorConstraints {
                    inputs,
                    outputs,
                    is_pull,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                _| {

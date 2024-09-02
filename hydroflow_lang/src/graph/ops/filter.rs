@@ -1,10 +1,9 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::GraphEdgeType;
 
 /// Filter outputs a subsequence of the items it receives at its input, according to a
 /// Rust boolean closure passed in as an argument.
@@ -13,7 +12,7 @@ use crate::graph::GraphEdgeType;
 /// not modify or take ownership of the values. If you need to modify the values while filtering
 /// use [`filter_map`](#filter_map) instead.
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// ```hydroflow
 /// source_iter(vec!["hello", "world"]) -> filter(|x| x.starts_with('w'))
@@ -30,15 +29,10 @@ pub const FILTER: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
-        // Preserve input flow properties.
-        Ok(vec![flow_props_in[0]])
-    }),
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,
@@ -46,7 +40,7 @@ pub const FILTER: OperatorConstraints = OperatorConstraints {
                    inputs,
                    outputs,
                    is_pull,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                _| {

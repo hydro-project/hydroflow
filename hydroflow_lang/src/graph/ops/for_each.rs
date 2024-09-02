@@ -1,10 +1,9 @@
 use quote::quote_spanned;
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput, WriteContextArgs,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
-use crate::graph::GraphEdgeType;
 
 /// > 1 input stream, 0 output streams
 ///
@@ -13,7 +12,7 @@ use crate::graph::GraphEdgeType;
 /// Iterates through a stream passing each element to the closure in the
 /// argument.
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// ```hydroflow
 ///     source_iter(vec!["Hello", "World"])
@@ -30,21 +29,19 @@ pub const FOR_EACH: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
-    write_fn: |wc @ &WriteContextArgs {
+    write_fn: |&WriteContextArgs {
                    root,
                    op_span,
                    ident,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                _| {
-        let func = wc.wrap_check_func_arg(&arguments[0]);
+        let func = &arguments[0];
         let write_iterator = quote_spanned! {op_span=>
             let #ident = #root::pusherator::for_each::ForEach::new(#func);
         };

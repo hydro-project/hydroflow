@@ -9,24 +9,27 @@ use std::marker::PhantomData;
 
 use hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
 use hydroflow_lang::graph::HydroflowGraph;
-use instant::Instant;
 use ref_cast::RefCast;
+use smallvec::SmallVec;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
+use web_time::SystemTime;
 
 use super::context::Context;
 use super::handoff::handoff_list::PortList;
-use super::handoff::{Handoff, HandoffMeta};
+use super::handoff::{Handoff, HandoffMeta, TeeingHandoff};
 use super::port::{RecvCtx, RecvPort, SendCtx, SendPort, RECV, SEND};
 use super::reactor::Reactor;
 use super::state::StateHandle;
 use super::subgraph::Subgraph;
 use super::{HandoffId, SubgraphId};
+use crate::scheduled::ticks::{TickDuration, TickInstant};
 use crate::Never;
 
 /// A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
 pub struct Hydroflow<'a> {
     pub(super) subgraphs: Vec<SubgraphData<'a>>,
     pub(super) context: Context,
+
     handoffs: Vec<HandoffData>,
 
     /// TODO(mingwei): separate scheduler into its own struct/trait?
@@ -48,22 +51,7 @@ impl<'a> Default for Hydroflow<'a> {
     fn default() -> Self {
         let stratum_queues = vec![Default::default()]; // Always initialize stratum #0.
         let (event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
-        let context = Context {
-            states: Vec::new(),
-
-            event_queue_send,
-
-            current_stratum: 0,
-            current_tick: 0,
-
-            current_tick_start: Instant::now(),
-            subgraph_last_tick_run_in: None,
-
-            subgraph_id: SubgraphId(0),
-
-            tasks_to_spawn: Vec::new(),
-            task_join_handles: Vec::new(),
-        };
+        let context = Context::new(event_queue_send);
         Self {
             subgraphs: Vec::new(),
             context,
@@ -79,6 +67,93 @@ impl<'a> Default for Hydroflow<'a> {
         }
     }
 }
+
+/// Methods for [`TeeingHandoff`] teeing and dropping.
+impl<'a> Hydroflow<'a> {
+    /// Tees a [`TeeingHandoff`].
+    pub fn teeing_handoff_tee<T>(
+        &mut self,
+        tee_parent_port: &RecvPort<TeeingHandoff<T>>,
+    ) -> RecvPort<TeeingHandoff<T>>
+    where
+        T: Clone,
+    {
+        // Handoff ID of new tee output.
+        let new_hoff_id = HandoffId(self.handoffs.len());
+
+        // If we're teeing from a child make sure to find root.
+        let tee_root = self.handoffs[tee_parent_port.handoff_id.0].pred_handoffs[0];
+
+        // Set up teeing metadata.
+        // Go to `tee_root`'s successors and insert self (the new tee output).
+        let tee_root_data = &mut self.handoffs[tee_root.0];
+        tee_root_data.succ_handoffs.push(new_hoff_id);
+
+        // Add our new handoff id into the subgraph data if the send `tee_root` has already been
+        // used to add a subgraph.
+        assert!(
+            tee_root_data.preds.len() <= 1,
+            "Tee send side should only have one sender (or none set yet)."
+        );
+        if let Some(&pred_sg_id) = tee_root_data.preds.first() {
+            self.subgraphs[pred_sg_id.0].succs.push(new_hoff_id);
+        }
+
+        // Insert new handoff output.
+        let teeing_handoff = tee_root_data
+            .handoff
+            .any_ref()
+            .downcast_ref::<TeeingHandoff<T>>()
+            .unwrap();
+        let new_handoff = teeing_handoff.tee();
+        let new_name = Cow::Owned(format!("{} tee {:?}", tee_root_data.name, new_hoff_id));
+        let mut new_handoff_data = HandoffData::new(new_name, new_handoff, new_hoff_id);
+        // Set self's predecessor as `tee_root`.
+        new_handoff_data.pred_handoffs = vec![tee_root];
+        self.handoffs.push(new_handoff_data);
+
+        let output_port = RecvPort {
+            handoff_id: new_hoff_id,
+            _marker: PhantomData,
+        };
+        output_port
+    }
+
+    /// Marks an output of a [`TeeingHandoff`] as dropped so that no more data will be sent to it.
+    ///
+    /// It is recommended to not not use this method and instead simply avoid teeing a
+    /// [`TeeingHandoff`] when it is not needed.
+    pub fn teeing_handoff_drop<T>(&mut self, tee_port: RecvPort<TeeingHandoff<T>>)
+    where
+        T: Clone,
+    {
+        let data = &self.handoffs[tee_port.handoff_id.0];
+        let teeing_handoff = data
+            .handoff
+            .any_ref()
+            .downcast_ref::<TeeingHandoff<T>>()
+            .unwrap();
+        teeing_handoff.drop();
+
+        let tee_root = data.pred_handoffs[0];
+        let tee_root_data = &mut self.handoffs[tee_root.0];
+        // Remove this output from the send succ handoff list.
+        tee_root_data
+            .succ_handoffs
+            .retain(|&succ_hoff| succ_hoff != tee_port.handoff_id);
+        // Remove from subgraph successors if send port was already connected.
+        assert!(
+            tee_root_data.preds.len() <= 1,
+            "Tee send side should only have one sender (or none set yet)."
+        );
+        if let Some(&pred_sg_id) = tee_root_data.preds.first() {
+            self.subgraphs[pred_sg_id.0]
+                .succs
+                .retain(|&succ_hoff| succ_hoff != tee_port.handoff_id);
+        }
+    }
+}
+
 impl<'a> Hydroflow<'a> {
     /// Create a new empty Hydroflow graph.
     pub fn new() -> Self {
@@ -93,7 +168,11 @@ impl<'a> Hydroflow<'a> {
 
         let mut op_inst_diagnostics = Vec::new();
         meta_graph.insert_node_op_insts_all(&mut op_inst_diagnostics);
-        assert!(op_inst_diagnostics.is_empty());
+        assert!(
+            op_inst_diagnostics.is_empty(),
+            "Expected no diagnostics, got: {:#?}",
+            op_inst_diagnostics
+        );
 
         assert!(self.meta_graph.replace(meta_graph).is_none());
     }
@@ -128,7 +207,7 @@ impl<'a> Hydroflow<'a> {
     }
 
     /// Gets the current tick (local time) count.
-    pub fn current_tick(&self) -> usize {
+    pub fn current_tick(&self) -> TickInstant {
         self.context.current_tick
     }
 
@@ -190,8 +269,12 @@ impl<'a> Hydroflow<'a> {
 
     /// Runs the current stratum of the dataflow until no more local work is available (does not receive events).
     /// Returns true if any work was done.
-    #[tracing::instrument(level = "trace", skip(self), fields(tick = self.context.current_tick, stratum = self.context.current_stratum), ret)]
+    #[tracing::instrument(level = "trace", skip(self), fields(tick = u64::from(self.context.current_tick), stratum = self.context.current_stratum), ret)]
     pub fn run_stratum(&mut self) -> bool {
+        // Make sure to spawn tasks once hydroflow is running!
+        // This drains the task buffer, so becomes a no-op after first call.
+        self.context.spawn_tasks();
+
         let current_tick = self.context.current_tick;
 
         let mut work_done = false;
@@ -215,7 +298,6 @@ impl<'a> Hydroflow<'a> {
             }
 
             let sg_data = &self.subgraphs[sg_id.0];
-
             for &handoff_id in sg_data.succs.iter() {
                 let handoff = &self.handoffs[handoff_id.0];
                 if !handoff.handoff.is_bottom() {
@@ -259,7 +341,7 @@ impl<'a> Hydroflow<'a> {
             // Starting the tick, reset this to `false`.
             tracing::trace!("Starting tick, setting `can_start_tick = false`.");
             self.can_start_tick = false;
-            self.context.current_tick_start = Instant::now();
+            self.context.current_tick_start = SystemTime::now();
 
             // Ensure external events are received before running the tick.
             if !self.events_received_tick {
@@ -273,7 +355,7 @@ impl<'a> Hydroflow<'a> {
 
         loop {
             tracing::trace!(
-                tick = self.context.current_tick,
+                tick = u64::from(self.context.current_tick),
                 stratum = self.context.current_stratum,
                 "Looking for work on stratum."
             );
@@ -281,7 +363,7 @@ impl<'a> Hydroflow<'a> {
             // If current stratum has work, return true.
             if !self.stratum_queues[self.context.current_stratum].is_empty() {
                 tracing::trace!(
-                    tick = self.context.current_tick,
+                    tick = u64::from(self.context.current_tick),
                     stratum = self.context.current_stratum,
                     "Work found on stratum."
                 );
@@ -295,11 +377,12 @@ impl<'a> Hydroflow<'a> {
                     can_start_tick = self.can_start_tick,
                     "End of tick {}, starting tick {}.",
                     self.context.current_tick,
-                    self.context.current_tick + 1,
+                    self.context.current_tick + TickDuration::SINGLE_TICK,
                 );
+                self.context.reset_state_at_end_of_tick();
 
                 self.context.current_stratum = 0;
-                self.context.current_tick += 1;
+                self.context.current_tick += TickDuration::SINGLE_TICK;
                 self.events_received_tick = false;
 
                 if current_tick_only {
@@ -311,7 +394,7 @@ impl<'a> Hydroflow<'a> {
                     self.try_recv_events();
                     if std::mem::replace(&mut self.can_start_tick, false) {
                         tracing::trace!(
-                            tick = self.context.current_tick,
+                            tick = u64::from(self.context.current_tick),
                             "`can_start_tick` is `true`, continuing."
                         );
                         // Do a full loop more to find where events have been added.
@@ -356,7 +439,6 @@ impl<'a> Hydroflow<'a> {
     /// TODO(mingwei): Currently blocks forever, no notion of "completion."
     #[tracing::instrument(level = "trace", skip(self), ret)]
     pub async fn run_async(&mut self) -> Option<Never> {
-        self.context.spawn_tasks();
         loop {
             // Run any work which is immediately available.
             self.run_available_async().await;
@@ -483,6 +565,18 @@ impl<'a> Hydroflow<'a> {
         Some(count + extra_count)
     }
 
+    /// Schedules a subgraph to be run. See also: [`Context::schedule_subgraph`].
+    pub fn schedule_subgraph(&mut self, sg_id: SubgraphId) -> bool {
+        let sg_data = &self.subgraphs[sg_id.0];
+        let already_scheduled = sg_data.is_scheduled.replace(true);
+        if !already_scheduled {
+            self.stratum_queues[sg_data.stratum].push_back(sg_id);
+            true
+        } else {
+            false
+        }
+    }
+
     /// Adds a new compiled subgraph with the specified inputs and outputs in stratum 0.
     pub fn add_subgraph<Name, R, W, F>(
         &mut self,
@@ -521,8 +615,8 @@ impl<'a> Hydroflow<'a> {
         let sg_id = SubgraphId(self.subgraphs.len());
 
         let (mut subgraph_preds, mut subgraph_succs) = Default::default();
-        recv_ports.set_graph_meta(&mut *self.handoffs, None, Some(sg_id), &mut subgraph_preds);
-        send_ports.set_graph_meta(&mut *self.handoffs, Some(sg_id), None, &mut subgraph_succs);
+        recv_ports.set_graph_meta(&mut *self.handoffs, &mut subgraph_preds, sg_id, true);
+        send_ports.set_graph_meta(&mut *self.handoffs, &mut subgraph_succs, sg_id, false);
 
         let subgraph = move |context: &mut Context, handoffs: &mut Vec<HandoffData>| {
             let recv = recv_ports.make_ctx(&*handoffs);
@@ -654,7 +748,8 @@ impl<'a> Hydroflow<'a> {
 
         // Create and insert handoff.
         let handoff = H::default();
-        self.handoffs.push(HandoffData::new(name.into(), handoff));
+        self.handoffs
+            .push(HandoffData::new(name.into(), handoff, handoff_id));
 
         // Make ports.
         let input_port = SendPort {
@@ -677,6 +772,19 @@ impl<'a> Hydroflow<'a> {
         T: Any,
     {
         self.context.add_state(state)
+    }
+
+    /// Sets a hook to modify the state at the end of each tick, using the supplied closure.
+    ///
+    /// This is part of the "state API".
+    pub fn set_state_tick_hook<T>(
+        &mut self,
+        handle: StateHandle<T>,
+        tick_hook_fn: impl 'static + FnMut(&mut T),
+    ) where
+        T: Any,
+    {
+        self.context.set_state_tick_hook(handle, tick_hook_fn)
     }
 
     /// Gets a exclusive (mut) ref to the internal context, setting the subgraph ID.
@@ -724,8 +832,23 @@ pub struct HandoffData {
     pub(super) name: Cow<'static, str>,
     /// Crate-visible to crate for `handoff_list` internals.
     pub(super) handoff: Box<dyn HandoffMeta>,
-    pub(super) preds: Vec<SubgraphId>,
-    pub(super) succs: Vec<SubgraphId>,
+    /// Preceeding subgraphs (including the send side of a teeing handoff).
+    pub(super) preds: SmallVec<[SubgraphId; 1]>,
+    /// Successor subgraphs (including recv sides of teeing handoffs).
+    pub(super) succs: SmallVec<[SubgraphId; 1]>,
+
+    /// Predecessor handoffs, used by teeing handoffs.
+    /// Should be `self` on any teeing send sides (input).
+    /// Should be the send `HandoffId` if this is teeing recv side (output).
+    /// Should be just `self`'s `HandoffId` on other handoffs.
+    /// This field is only used in initialization.
+    pub(super) pred_handoffs: Vec<HandoffId>,
+    /// Successor handoffs, used by teeing handoffs.
+    /// Should be a list of outputs on the teeing send side (input).
+    /// Should be `self` on any teeing recv sides (outputs).
+    /// Should be just `self`'s `HandoffId` on other handoffs.
+    /// This field is only used in initialization.
+    pub(super) succ_handoffs: Vec<HandoffId>,
 }
 impl std::fmt::Debug for HandoffData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
@@ -736,13 +859,20 @@ impl std::fmt::Debug for HandoffData {
     }
 }
 impl HandoffData {
-    pub fn new(name: Cow<'static, str>, handoff: impl 'static + HandoffMeta) -> Self {
+    /// New with `pred_handoffs` and `succ_handoffs` set to its own [`HandoffId`]: `vec![hoff_id]`.
+    pub fn new(
+        name: Cow<'static, str>,
+        handoff: impl 'static + HandoffMeta,
+        hoff_id: HandoffId,
+    ) -> Self {
         let (preds, succs) = Default::default();
         Self {
             name,
             handoff: Box::new(handoff),
             preds,
             succs,
+            pred_handoffs: vec![hoff_id],
+            succ_handoffs: vec![hoff_id],
         }
     }
 }
@@ -770,7 +900,7 @@ pub(super) struct SubgraphData<'a> {
     is_scheduled: Cell<bool>,
 
     /// Keep track of the last tick that this subgraph was run in
-    last_tick_run_in: Option<usize>,
+    last_tick_run_in: Option<TickInstant>,
 
     /// If this subgraph is marked as lazy, then sending data back to a lower stratum does not trigger a new tick to be run.
     is_lazy: bool,
@@ -796,9 +926,4 @@ impl<'a> SubgraphData<'a> {
             is_lazy: laziness,
         }
     }
-}
-
-/// Internal struct containing a pointer to [`Hydroflow`]-owned state.
-pub(crate) struct StateData {
-    pub state: Box<dyn Any>,
 }

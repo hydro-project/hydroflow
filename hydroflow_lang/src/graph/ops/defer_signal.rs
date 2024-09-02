@@ -2,10 +2,9 @@ use quote::quote_spanned;
 use syn::parse_quote;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1,
+    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::GraphEdgeType;
 
 /// > 2 input streams, 1 output stream, no arguments.
 ///
@@ -34,12 +33,10 @@ pub const DEFER_SIGNAL: OperatorConstraints = OperatorConstraints {
     soft_range_out: RANGE_1,
     num_args: 0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { input, signal })),
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    context,
                    hydroflow,

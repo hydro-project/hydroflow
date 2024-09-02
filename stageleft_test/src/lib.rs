@@ -1,11 +1,11 @@
 stageleft::stageleft_crate!(stageleft_test_macro);
 
-use stageleft::{q, IntoQuotedOnce, Quoted, RuntimeData};
+use stageleft::{q, BorrowBounds, IntoQuotedOnce, Quoted, RuntimeData};
 
 pub(crate) mod submodule;
 
 #[stageleft::entry]
-fn raise_to_power(_ctx: &(), value: RuntimeData<i32>, power: u32) -> impl Quoted<i32> {
+fn raise_to_power(_ctx: BorrowBounds<'_>, value: RuntimeData<i32>, power: u32) -> impl Quoted<i32> {
     if power == 1 {
         q!(value).boxed()
     } else if power % 2 == 0 {
@@ -27,10 +27,19 @@ fn raise_to_power(_ctx: &(), value: RuntimeData<i32>, power: u32) -> impl Quoted
 
 #[stageleft::entry(bool)]
 fn closure_capture_lifetime<'a, I: Copy + Into<u32> + 'a>(
-    _ctx: &'a (),
+    _ctx: BorrowBounds<'a>,
     v: RuntimeData<I>,
 ) -> impl Quoted<Box<dyn Fn() -> u32 + 'a>> {
     q!(Box::new(move || { v.into() }) as Box<dyn Fn() -> u32 + 'a>)
+}
+
+fn my_top_level_function() -> bool {
+    true
+}
+
+#[stageleft::entry]
+fn crate_paths<'a>(_ctx: BorrowBounds<'a>) -> impl Quoted<'a, bool> {
+    q!(crate::my_top_level_function())
 }
 
 #[stageleft::runtime]

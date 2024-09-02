@@ -7,21 +7,19 @@ use syn::token::Colon;
 use syn::{parse_quote_spanned, Expr, Ident, LitInt, LitStr, Pat, PatType};
 
 use super::{
-    OperatorCategory, OperatorConstraints, PortListSpec,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput, PortIndexValue,
+    PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::ops::OperatorWriteOutput;
-use crate::graph::{OperatorInstance, PortIndexValue, GraphEdgeType};
 use crate::pretty_span::PrettySpan;
 
 /// This operator takes the input pipeline and allows the user to determine which singular output
 /// pipeline each item should be delivered to.
 ///
 /// > Arguments: A Rust closure, the first argument is a reference to the item and the second
-/// argument corresponds to one of two modes, either named or indexed.
+/// > argument corresponds to one of two modes, either named or indexed.
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// # Named mode
 /// With named ports, the closure's second argument must be a Rust 'slice pattern' of names, such as
@@ -66,12 +64,10 @@ pub const PARTITION: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Variadic),
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    op_span,
@@ -79,12 +75,8 @@ pub const PARTITION: OperatorConstraints = OperatorConstraints {
                    outputs,
                    is_pull,
                    op_name,
-                   op_inst:
-                       OperatorInstance {
-                           output_ports,
-                           arguments,
-                           ..
-                       },
+                   op_inst: OperatorInstance { output_ports, .. },
+                   arguments,
                    ..
                },
                diagnostics| {
@@ -198,7 +190,10 @@ fn determine_indices_or_idents(
                 diagnostics.push(Diagnostic::spanned(
                     port_span.unwrap_or(op_span),
                     Level::Error,
-                    format!("Output ports from `{}` cannot be blank, must be named or indexed.", op_name),
+                    format!(
+                        "Output ports from `{}` cannot be blank, must be named or indexed.",
+                        op_name
+                    ),
                 ));
             }
             PortIndexValue::Int(port_idx) => {
@@ -277,12 +272,12 @@ fn extract_closure_idents(
         return Err(Diagnostic::spanned(
             func.span(),
             Level::Error,
-            "Argument must be a two-argument closure expression"),
-        );
+            "Argument must be a two-argument closure expression",
+        ));
     };
     if 2 != func.inputs.len() {
         return Err(Diagnostic::spanned(
-            func.span(),
+            func.inputs.span(),
             Level::Error,
             &*format!(
                 "Closure provided to `{}(..)` must have two arguments: \
@@ -334,8 +329,8 @@ fn extract_closure_idents(
         .iter()
         .map(|pat| {
             let Pat::Ident(pat_ident) = pat else {
-                    panic!("TODO(mingwei) expected ident pat");
-                };
+                panic!("TODO(mingwei) expected ident pat");
+            };
             pat_ident.ident.clone()
         })
         .collect();

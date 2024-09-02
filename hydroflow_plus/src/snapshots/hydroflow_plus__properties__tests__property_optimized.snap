@@ -1,0 +1,24 @@
+---
+source: hydroflow_plus/src/properties.rs
+expression: built.ir()
+---
+[
+    ForEach {
+        f: { use crate :: __staged :: properties :: tests :: * ; | (string , count) | println ! ("{}: {}" , string , count) },
+        input: FoldKeyed {
+            init: { use crate :: __staged :: properties :: tests :: * ; | | 0 },
+            acc: { use crate :: __staged :: properties :: tests :: * ; | count : & mut i32 , _ | * count += 1 },
+            input: Map {
+                f: { use crate :: __staged :: properties :: tests :: * ; | string : String | (string , ()) },
+                input: Source {
+                    source: Iter(
+                        { use crate :: __staged :: properties :: tests :: * ; vec ! [] },
+                    ),
+                    location_kind: Process(
+                        0,
+                    ),
+                },
+            },
+        },
+    },
+]

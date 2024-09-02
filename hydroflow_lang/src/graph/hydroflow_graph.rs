@@ -12,20 +12,23 @@ use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::spanned::Spanned;
 
 use super::graph_write::{Dot, GraphWrite, Mermaid};
-use super::ops::{find_op_op_constraints, OperatorWriteOutput, WriteContextArgs, OPERATORS};
+use super::ops::{
+    find_op_op_constraints, null_write_iterator_fn, DelayType, OperatorWriteOutput,
+    WriteContextArgs, OPERATORS,
+};
 use super::{
-    get_operator_generics, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphEdgeType, GraphNode,
-    GraphNodeId, GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT,
-    HANDOFF_NODE_STR, HYDROFLOW,
+    change_spans, get_operator_generics, Color, DiMulGraph, GraphEdgeId, GraphNode, GraphNodeId,
+    GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
+    HYDROFLOW, MODULE_BOUNDARY_NODE_STR,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::ops::null_write_iterator_fn;
-use crate::graph::MODULE_BOUNDARY_NODE_STR;
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
+use crate::process_singletons;
 
-/// A graph representing a Hydroflow dataflow graph (with or without subgraph partitioning,
-/// stratification, and handoff insertion). This is a "meta" graph used for generating Rust source
-/// code in macros from Hydroflow surface sytnax.
+/// An abstract "meta graph" representation of a Hydroflow graph.
+///
+/// Can be with or without subgraph partitioning, stratification, and handoff insertion. This is
+/// the meta graph used for generating Rust source code in macros from Hydroflow surface sytnax.
 ///
 /// This struct has a lot of methods for manipulating the graph, vaguely grouped together in
 /// separate `impl` blocks. You might notice a few particularly specific arbitray-seeming methods
@@ -35,8 +38,6 @@ use crate::pretty_span::{PrettyRowCol, PrettySpan};
 pub struct HydroflowGraph {
     /// Each node type (operator or handoff).
     nodes: SlotMap<GraphNodeId, GraphNode>,
-    /// Edge types
-    edge_types: SecondaryMap<GraphEdgeId, GraphEdgeType>,
 
     /// Instance data corresponding to each operator node.
     /// This field will be empty after deserialization.
@@ -54,12 +55,10 @@ pub struct HydroflowGraph {
     /// Which stratum each subgraph belongs to.
     subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
 
-    /// What variable name each graph node belongs to (if any).
+    /// Resolved singletons varnames references, per node.
+    node_singleton_references: SparseSecondaryMap<GraphNodeId, Vec<Option<GraphNodeId>>>,
+    /// What variable name each graph node belongs to (if any). For debugging (graph writing) purposes only.
     node_varnames: SparseSecondaryMap<GraphNodeId, Varname>,
-
-    // TODO(mingwei): #[serde(skip)] this and recompute as needed, to reduce codegen.
-    /// Stream properties.
-    flow_props: SecondaryMap<GraphEdgeId, FlowProps>,
 
     /// If this subgraph is 'lazy' then when it sends data to a lower stratum it does not cause a new tick to start
     /// This is to support lazy defers
@@ -175,7 +174,7 @@ impl HydroflowGraph {
         self.graph.successor_vertices(src)
     }
 
-    /// Predecessor edges, iterator of `GraphNodeId`.
+    /// Predecessor nodes, iterator of `GraphNodeId`.
     pub fn node_predecessor_nodes(
         &self,
         dst: GraphNodeId,
@@ -272,12 +271,19 @@ impl HydroflowGraph {
             let generics = get_operator_generics(diagnostics, operator);
             // Generic argument errors.
             {
+                // Span of `generic_args` (if it exists), otherwise span of the operator name.
+                let generics_span = generics
+                    .generic_args
+                    .as_ref()
+                    .map(Spanned::span)
+                    .unwrap_or_else(|| operator.path.span());
+
                 if !op_constraints
                     .persistence_args
                     .contains(&generics.persistence_args.len())
                 {
                     diagnostics.push(Diagnostic::spanned(
-                        generics.generic_args.span(),
+                        generics_span,
                         Level::Error,
                         format!(
                             "`{}` should have {} persistence lifetime arguments, actually has {}.",
@@ -289,7 +295,7 @@ impl HydroflowGraph {
                 }
                 if !op_constraints.type_args.contains(&generics.type_args.len()) {
                     diagnostics.push(Diagnostic::spanned(
-                        generics.generic_args.span(),
+                        generics_span,
                         Level::Error,
                         format!(
                             "`{}` should have {} generic type arguments, actually has {}.",
@@ -307,8 +313,10 @@ impl HydroflowGraph {
                     op_constraints,
                     input_ports,
                     output_ports,
+                    singletons_referenced: operator.singletons_referenced.clone(),
                     generics,
-                    arguments: operator.args.clone(),
+                    arguments_pre: operator.args.clone(),
+                    arguments_raw: operator.args_raw.clone(),
                 },
             ));
         }
@@ -353,8 +361,10 @@ impl HydroflowGraph {
                 op_constraints,
                 input_ports: vec![input_port],
                 output_ports: vec![output_port],
+                singletons_referenced: operator.singletons_referenced.clone(),
                 generics,
-                arguments: operator.args.clone(),
+                arguments_pre: operator.args.clone(),
+                arguments_raw: operator.args_raw.clone(),
             })
         };
 
@@ -376,12 +386,6 @@ impl HydroflowGraph {
             .insert(e0, (src_idx, PortIndexValue::Elided(span)));
         self.ports
             .insert(e1, (PortIndexValue::Elided(span), dst_idx));
-
-        // Duplicate edge types.
-        if let Some(edge_type) = self.edge_types.remove(edge_id) {
-            self.insert_edge_type(e0, edge_type);
-            self.insert_edge_type(e1, edge_type);
-        }
 
         (node_id, e1)
     }
@@ -413,16 +417,6 @@ impl HydroflowGraph {
         let (src_port, _) = self.ports.remove(pred_edge_id).unwrap();
         let (_, dst_port) = self.ports.remove(succ_edge_id).unwrap();
         self.ports.insert(new_edge_id, (src_port, dst_port));
-
-        let pred_edge_type = self.edge_types.remove(pred_edge_id);
-        let succ_edge_type = self.edge_types.remove(succ_edge_id);
-        assert_eq!(
-            pred_edge_type, succ_edge_type,
-            "Edge type should be the same before and after a union/tee."
-        );
-        if let Some(edge_type) = pred_edge_type {
-            self.insert_edge_type(new_edge_id, edge_type);
-        }
     }
 
     /// Helper method: determine the "color" (pull vs push) of a node based on its in and out degree,
@@ -435,23 +429,9 @@ impl HydroflowGraph {
             return Some(Color::Hoff);
         }
         // In-degree excluding ref-edges.
-        let inn_degree = self
-            .node_predecessor_edges(node_id)
-            .filter(|&edge_id| {
-                self.edge_type(edge_id)
-                    .expect("Edge type should be set, this is a Hydroflow bug.")
-                    .affects_in_out_graph_ownership()
-            })
-            .count();
+        let inn_degree = self.node_predecessor_edges(node_id).count();
         // Out-degree excluding ref-edges.
-        let out_degree = self
-            .node_successor_edges(node_id)
-            .filter(|&edge_id| {
-                self.edge_type(edge_id)
-                    .expect("Edge type should be set, this is a Hydroflow bug.")
-                    .affects_in_out_graph_ownership()
-            })
-            .count();
+        let out_degree = self.node_successor_edges(node_id).count();
 
         match (inn_degree, out_degree) {
             (0, 0) => None, // Generally should not happen, "Degenerate subgraph detected".
@@ -462,6 +442,29 @@ impl HydroflowGraph {
             (0 | 1, _many) => Some(Color::Push),
             (_many, _to_many) => Some(Color::Comp),
         }
+    }
+}
+
+/// Singleton references.
+impl HydroflowGraph {
+    /// Set the singletons referenced for the `node_id` operator. Each reference corresponds to the
+    /// same index in the [`crate::parse::Operator::singletons_referenced`] vec.
+    pub fn set_node_singleton_references(
+        &mut self,
+        node_id: GraphNodeId,
+        singletons_referenced: Vec<Option<GraphNodeId>>,
+    ) -> Option<Vec<Option<GraphNodeId>>> {
+        self.node_singleton_references
+            .insert(node_id, singletons_referenced)
+    }
+
+    /// Gets the singletons referenced by a node. Returns an empty iterator for non-operators and
+    /// operators that do not reference singletons.
+    pub fn node_singleton_references(&self, node_id: GraphNodeId) -> &[Option<GraphNodeId>] {
+        self.node_singleton_references
+            .get(node_id)
+            .map(std::ops::Deref::deref)
+            .unwrap_or_default()
     }
 }
 
@@ -546,15 +549,11 @@ impl HydroflowGraph {
 
             let (src, _) = self.edge(pred_edge);
             let (_, dst) = self.edge(succ_edge);
-            let edge_type = self.edge_type(pred_edge);
             self.remove_edge(pred_edge);
             self.remove_edge(succ_edge);
 
             let new_edge_id = self.graph.insert_edge(src, dst);
             self.ports.insert(new_edge_id, (pred_port, succ_port));
-            if let Some(edge_type) = edge_type {
-                self.edge_types.insert(new_edge_id, edge_type);
-            }
         }
 
         self.graph.remove_vertex(mod_bound_node);
@@ -570,11 +569,6 @@ impl HydroflowGraph {
     pub fn edge(&self, edge_id: GraphEdgeId) -> (GraphNodeId, GraphNodeId) {
         let (src, dst) = self.graph.edge(edge_id).expect("Edge not found.");
         (src, dst)
-    }
-
-    /// Gets the type of the edge.
-    pub fn edge_type(&self, edge_id: GraphEdgeId) -> Option<GraphEdgeType> {
-        self.edge_types.get(edge_id).copied()
     }
 
     /// Get the source and destination ports for an edge: `(src &PortIndexValue, dst &PortIndexValue)`.
@@ -612,20 +606,10 @@ impl HydroflowGraph {
         edge_id
     }
 
-    /// Set the edge type for an edge.
-    pub fn insert_edge_type(
-        &mut self,
-        edge: GraphEdgeId,
-        edge_type: GraphEdgeType,
-    ) -> Option<GraphEdgeType> {
-        self.edge_types.insert(edge, edge_type)
-    }
-
     /// Removes an edge and its corresponding ports and edge type info.
     pub fn remove_edge(&mut self, edge: GraphEdgeId) {
         let (_src, _dst) = self.graph.remove_edge(edge).unwrap();
         let (_src_port, _dst_port) = self.ports.remove(edge).unwrap();
-        let _edge_type = self.edge_types.remove(edge);
     }
 }
 
@@ -720,25 +704,6 @@ impl HydroflowGraph {
     }
 }
 
-/// Flow properties
-impl HydroflowGraph {
-    /// Gets the flow properties associated with the edge, if set.
-    pub fn edge_flow_props(&self, edge_id: GraphEdgeId) -> Option<FlowProps> {
-        self.flow_props.get(edge_id).copied()
-    }
-
-    /// Sets the flow properties associated with the given edge.
-    ///
-    /// Returns the old flow properties, if set.
-    pub fn set_edge_flow_props(
-        &mut self,
-        edge_id: GraphEdgeId,
-        flow_props: FlowProps,
-    ) -> Option<FlowProps> {
-        self.flow_props.insert(edge_id, flow_props)
-    }
-}
-
 /// Display/output methods.
 impl HydroflowGraph {
     /// Helper to generate a deterministic `Ident` for the given node.
@@ -761,9 +726,25 @@ impl HydroflowGraph {
         Ident::new(&*name, span)
     }
 
-    /// For reference edges. Helper to generate a deterministic `Ident` for the given [reference] edge.
-    fn edge_as_ident(&self, edge_id: GraphEdgeId, span: Span) -> Ident {
-        Ident::new(&*format!("edge_{:?}", edge_id.data()), span)
+    /// For per-node singleton references. Helper to generate a deterministic `Ident` for the given node.
+    fn node_as_singleton_ident(&self, node_id: GraphNodeId, span: Span) -> Ident {
+        Ident::new(&format!("singleton_op_{:?}", node_id.data()), span)
+    }
+
+    /// Resolve the singletons via [`Self::node_singleton_references`] for the given `node_id`.
+    fn helper_resolve_singletons(&self, node_id: GraphNodeId, span: Span) -> Vec<Ident> {
+        self.node_singleton_references(node_id)
+            .iter()
+            .map(|singleton_node_id| {
+                // TODO(mingwei): this `expect` should be caught in error checking
+                self.node_as_singleton_ident(
+                    singleton_node_id.expect(
+                        "Expected singleton to be resolved but was not, this is a Hydroflow bug.",
+                    ),
+                    span,
+                )
+            })
+            .collect::<Vec<_>>()
     }
 
     /// Returns each subgraph's receive and send handoffs.
@@ -891,6 +872,9 @@ impl HydroflowGraph {
 
                         let op_span = node.span();
                         let op_name = op_inst.op_constraints.name;
+                        // Use op's span for root. #root is expected to be correct, any errors should span back to the op gen.
+                        let root = change_spans(root.clone(), op_span);
+                        // TODO(mingwei): Just use `op_inst.op_constraints`?
                         let op_constraints = OPERATORS
                             .iter()
                             .find(|op| op_name == op.name)
@@ -911,21 +895,9 @@ impl HydroflowGraph {
 
                             let inputs = input_edges
                                 .iter()
-                                .map(|&(_port, edge_id)| match self.edge_type(edge_id).unwrap() {
-                                    GraphEdgeType::Value => {
-                                        let (pred, _) = self.edge(edge_id);
-                                        self.node_as_ident(pred, true)
-                                    }
-                                    GraphEdgeType::Reference => {
-                                        self.edge_as_ident(edge_id, op_span)
-                                    }
-                                })
-                                .collect::<Vec<_>>();
-                            let input_edgetypes = input_edges
-                                .iter()
                                 .map(|&(_port, edge_id)| {
-                                    self.edge_type(edge_id)
-                                        .expect("Unset edge_type, this is a bug.")
+                                    let (pred, _) = self.edge(edge_id);
+                                    self.node_as_ident(pred, true)
                                 })
                                 .collect::<Vec<_>>();
 
@@ -940,45 +912,49 @@ impl HydroflowGraph {
 
                             let outputs = output_edges
                                 .iter()
-                                .map(|&(_port, edge_id)| match self.edge_type(edge_id).unwrap() {
-                                    GraphEdgeType::Value => {
-                                        let (_, succ) = self.edge(edge_id);
-                                        self.node_as_ident(succ, false)
-                                    }
-                                    GraphEdgeType::Reference => {
-                                        self.edge_as_ident(edge_id, op_span)
-                                    }
-                                })
-                                .collect::<Vec<_>>();
-                            let output_edgetypes = output_edges
-                                .iter()
                                 .map(|&(_port, edge_id)| {
-                                    self.edge_type(edge_id)
-                                        .expect("Unset edge_type, this is a bug.")
+                                    let (_, succ) = self.edge(edge_id);
+                                    self.node_as_ident(succ, false)
                                 })
-                                .collect::<Vec<_>>();
-
-                            // Corresponds 1:1 to inputs.
-                            let flow_props_in = self
-                                .graph
-                                .predecessor_edges(node_id)
-                                .map(|edge_id| self.flow_props.get(edge_id).copied())
                                 .collect::<Vec<_>>();
 
                             let is_pull = idx < pull_to_push_idx;
 
+                            let singleton_output_ident = &if op_constraints.has_singleton_output {
+                                self.node_as_singleton_ident(node_id, op_span)
+                            } else {
+                                // This ident *should* go unused.
+                                Ident::new(&format!("{}_has_no_singleton_output", op_name), op_span)
+                            };
+
+                            // There's a bit of dark magic hidden in `Span`s... you'd think it's just a `file:line:column`,
+                            // but it has one extra bit of info for _name resolution_, used for `Ident`s. `Span::call_site()`
+                            // has the (unhygienic) resolution we want, an ident is just solely determined by its string name,
+                            // which is what you'd expect out of unhygienic proc macros like this. Meanwhile, declarative macros
+                            // use `Span::mixed_site()` which is weird and I don't understand it. It turns out that if you call
+                            // the hydroflow syntax proc macro from _within_ a declarative macro then `op_span` will have the
+                            // bad `Span::mixed_site()` name resolution and cause "Cannot find value `df/context`" errors. So
+                            // we call `.resolved_at()` to fix resolution back to `Span::call_site()`. -Mingwei
+                            let hydroflow = &Ident::new(HYDROFLOW, op_span.resolved_at(hf.span()));
+                            let context = &Ident::new(CONTEXT, op_span.resolved_at(context.span()));
+
+                            let singletons_resolved =
+                                self.helper_resolve_singletons(node_id, op_span);
+                            let arguments = &process_singletons::postprocess_singletons(
+                                op_inst.arguments_raw.clone(),
+                                singletons_resolved.clone(),
+                                context,
+                            );
+                            let arguments_handles =
+                                &process_singletons::postprocess_singletons_handles(
+                                    op_inst.arguments_raw.clone(),
+                                    singletons_resolved.clone(),
+                                );
+
                             let context_args = WriteContextArgs {
-                                root,
-                                // There's a bit of dark magic hidden in `Span`s... you'd think it's just a `file:line:column`,
-                                // but it has one extra bit of info for _name resolution_, used for `Ident`s. `Span::call_site()`
-                                // has the (unhygienic) resolution we want, an ident is just solely determined by its string name,
-                                // which is what you'd expect out of unhygienic proc macros like this. Meanwhile, declarative macros
-                                // use `Span::mixed_site()` which is weird and I don't understand it. It turns out that if you call
-                                // the hydroflow syntax proc macro from _within_ a declarative macro then `op_span` will have the
-                                // bad `Span::mixed_site()` name resolution and cause "Cannot find value `df/context`" errors. So
-                                // we call `.resolved_at()` to fix resolution back to `Span::call_site()`. -Mingwei
-                                hydroflow: &Ident::new(HYDROFLOW, op_span.resolved_at(hf.span())),
-                                context: &Ident::new(CONTEXT, op_span.resolved_at(context.span())),
+                                root: &root,
+                                hydroflow,
+                                context,
                                 subgraph_id,
                                 node_id,
                                 op_span,
@@ -986,11 +962,11 @@ impl HydroflowGraph {
                                 is_pull,
                                 inputs: &*inputs,
                                 outputs: &*outputs,
-                                input_edgetypes: &*input_edgetypes,
-                                output_edgetypes: &*output_edgetypes,
+                                singleton_output_ident,
                                 op_name,
                                 op_inst,
-                                flow_props_in: &*flow_props_in,
+                                arguments,
+                                arguments_handles,
                             };
 
                             let write_result =
@@ -1012,30 +988,39 @@ impl HydroflowGraph {
                             subgraph_op_iter_code.push(write_iterator);
 
                             if include_type_guards {
-                                let source_info = {
-                                    // TODO: This crashes when running tests from certain directories because of diagnostics flag being turned on when it should not be on.
-                                    // Not sure of the solution yet, but it is not too important because the file is usually obvious as there can only be one until module support is added.
-                                    // #[cfg(feature = "diagnostics")]
-                                    // let path = op_span.unwrap().source_file().path();
-                                    #[cfg(feature = "diagnostics")]
-                                    let location = "unknown"; // path.display();
+                                #[cfg(not(feature = "diagnostics"))]
+                                let source_info = Option::<String>::None;
 
-                                    #[cfg(not(feature = "diagnostics"))]
-                                    let location = "unknown";
+                                #[cfg(feature = "diagnostics")]
+                                let source_info = std::panic::catch_unwind(|| op_span.unwrap())
+                                    .map(|op_span| {
+                                        format!(
+                                            "loc_{}_{}_{}_{}_{}",
+                                            op_span
+                                                .source_file()
+                                                .path()
+                                                .display()
+                                                .to_string()
+                                                .replace(|x: char| !x.is_alphanumeric(), "_"),
+                                            op_span.start().line(),
+                                            op_span.start().column(),
+                                            op_span.end().line(),
+                                            op_span.end().column(),
+                                        )
+                                    })
+                                    .ok();
 
-                                    let location = location
-                                        .to_string()
-                                        .replace(|x: char| !x.is_alphanumeric(), "_");
-
+                                #[allow(clippy::unnecessary_literal_unwrap)]
+                                let source_info = source_info.unwrap_or_else(|| {
                                     format!(
-                                        "loc_{}_start_{}_{}_end_{}_{}",
-                                        location,
+                                        "loc_nopath_{}_{}_{}_{}",
                                         op_span.start().line,
                                         op_span.start().column,
                                         op_span.end().line,
                                         op_span.end().column
                                     )
-                                };
+                                });
+
                                 let fn_ident = format_ident!(
                                     "{}__{}__{}",
                                     ident,
@@ -1049,6 +1034,7 @@ impl HydroflowGraph {
                                             #[allow(non_snake_case)]
                                             #[inline(always)]
                                             pub fn #fn_ident<Item, Input: ::std::iter::Iterator<Item = Item>>(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                                                #[repr(transparent)]
                                                 struct Pull<Item, Input: ::std::iter::Iterator<Item = Item>> {
                                                     inner: Input
                                                 }
@@ -1080,6 +1066,7 @@ impl HydroflowGraph {
                                             #[allow(non_snake_case)]
                                             #[inline(always)]
                                             pub fn #fn_ident<Item, Input: #root::pusherator::Pusherator<Item = Item>>(input: Input) -> impl #root::pusherator::Pusherator<Item = Item> {
+                                                #[repr(transparent)]
                                                 struct Push<Item, Input: #root::pusherator::Pusherator<Item = Item>> {
                                                     inner: Input
                                                 }
@@ -1109,12 +1096,12 @@ impl HydroflowGraph {
 
                     {
                         // Determine pull and push halves of the `Pivot`.
-                        #[allow(unknown_lints)]
-                        // https://github.com/rust-lang/rust-clippy/issues/11290
-                        #[allow(clippy::redundant_locals)]
-                        let pull_to_push_idx = pull_to_push_idx;
-                        let pull_ident =
-                            self.node_as_ident(subgraph_nodes[pull_to_push_idx - 1], false);
+                        let pull_ident = if 0 < pull_to_push_idx {
+                            self.node_as_ident(subgraph_nodes[pull_to_push_idx - 1], false)
+                        } else {
+                            // Entire subgraph is push (with a single recv/pull handoff input).
+                            recv_ports[0].clone()
+                        };
 
                         #[rustfmt::skip]
                         let push_ident = if let Some(&node_id) =
@@ -1122,7 +1109,7 @@ impl HydroflowGraph {
                         {
                             self.node_as_ident(node_id, false)
                         } else if 1 == send_ports.len() {
-                            // Entire subgraph is pull, except for a single send/push handoff output.
+                            // Entire subgraph is pull (with a single send/push handoff output).
                             send_ports[0].clone()
                         } else {
                             diagnostics.push(Diagnostic::spanned(
@@ -1138,12 +1125,14 @@ impl HydroflowGraph {
                             .span()
                             .join(push_ident.span())
                             .unwrap_or_else(|| push_ident.span());
+                        let pivot_fn_ident =
+                            Ident::new(&format!("pivot_run_sg_{:?}", subgraph_id.0), pivot_span);
                         subgraph_op_iter_code.push(quote_spanned! {pivot_span=>
                             #[inline(always)]
-                            fn check_pivot_run<Pull: ::std::iter::Iterator<Item = Item>, Push: #root::pusherator::Pusherator<Item = Item>, Item>(pull: Pull, push: Push) {
+                            fn #pivot_fn_ident<Pull: ::std::iter::Iterator<Item = Item>, Push: #root::pusherator::Pusherator<Item = Item>, Item>(pull: Pull, push: Push) {
                                 #root::pusherator::pivot::Pivot::new(pull, push).run();
                             }
-                            check_pivot_run(#pull_ident, #push_ident);
+                            #pivot_fn_ident(#pull_ident, #push_ident);
                         });
                     }
                 };
@@ -1268,7 +1257,7 @@ impl HydroflowGraph {
     }
 
     /// Write out this `HydroflowGraph` using the given `GraphWrite`. E.g. `Mermaid` or `Dot.
-    pub fn write_graph<W>(
+    pub(crate) fn write_graph<W>(
         &self,
         mut graph_write: W,
         write_config: &WriteConfig,
@@ -1351,6 +1340,18 @@ impl HydroflowGraph {
                 node_id,
                 &*if write_config.op_short_text {
                     node.to_name_string()
+                } else if write_config.op_text_no_imports {
+                    // Remove any lines that start with "use" (imports)
+                    let full_text = node.to_pretty_string();
+                    let mut output = String::new();
+                    for sentence in full_text.split('\n') {
+                        if sentence.trim().starts_with("use") {
+                            continue;
+                        }
+                        output.push('\n');
+                        output.push_str(sentence);
+                    }
+                    output.into()
                 } else {
                     node.to_pretty_string()
                 },
@@ -1378,12 +1379,27 @@ impl HydroflowGraph {
                 dst_port = self.edge_ports(succ_edge).1;
             }
 
-            let flow_props = self.edge_flow_props(edge_id); // Should be the same both before & after handoffs.
             let label = helper_edge_label(src_port, dst_port);
             let delay_type = self
                 .node_op_inst(dst_id)
                 .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-            graph_write.write_edge(src_id, dst_id, delay_type, flow_props, label.as_deref())?;
+            graph_write.write_edge(src_id, dst_id, delay_type, label.as_deref(), false)?;
+        }
+
+        // Write reference edges.
+        if !write_config.no_references {
+            for dst_id in self.node_ids() {
+                for src_ref_id in self
+                    .node_singleton_references(dst_id)
+                    .iter()
+                    .copied()
+                    .flatten()
+                {
+                    let delay_type = Some(DelayType::Stratum);
+                    let label = None;
+                    graph_write.write_edge(src_ref_id, dst_id, delay_type, label, true)?;
+                }
+            }
         }
 
         // Write subgraphs.
@@ -1501,29 +1517,35 @@ impl HydroflowGraph {
 
 /// Configuration for writing graphs.
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "debugging", derive(clap::Args))]
+#[cfg_attr(feature = "clap-derive", derive(clap::Args))]
 pub struct WriteConfig {
     /// Subgraphs will not be rendered if set.
-    #[cfg_attr(feature = "debugging", arg(long))]
+    #[cfg_attr(feature = "clap-derive", arg(long))]
     pub no_subgraphs: bool,
     /// Variable names will not be rendered if set.
-    #[cfg_attr(feature = "debugging", arg(long))]
+    #[cfg_attr(feature = "clap-derive", arg(long))]
     pub no_varnames: bool,
     /// Will not render pull/push shapes if set.
-    #[cfg_attr(feature = "debugging", arg(long))]
+    #[cfg_attr(feature = "clap-derive", arg(long))]
     pub no_pull_push: bool,
     /// Will not render handoffs if set.
-    #[cfg_attr(feature = "debugging", arg(long))]
+    #[cfg_attr(feature = "clap-derive", arg(long))]
     pub no_handoffs: bool,
+    /// Will not render singleton references if set.
+    #[cfg_attr(feature = "clap-derive", arg(long))]
+    pub no_references: bool,
 
     /// Op text will only be their name instead of the whole source.
-    #[cfg_attr(feature = "debugging", arg(long))]
+    #[cfg_attr(feature = "clap-derive", arg(long))]
     pub op_short_text: bool,
+    /// Op text will exclude any line that starts with "use".
+    #[cfg_attr(feature = "clap-derive", arg(long))]
+    pub op_text_no_imports: bool,
 }
 
 /// Enum for choosing between mermaid and dot graph writing.
 #[derive(Copy, Clone, Debug)]
-#[cfg_attr(feature = "debugging", derive(clap::Parser, clap::ValueEnum))]
+#[cfg_attr(feature = "clap-derive", derive(clap::Parser, clap::ValueEnum))]
 pub enum WriteGraphType {
     /// Mermaid graphs.
     Mermaid,

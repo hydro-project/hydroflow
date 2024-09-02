@@ -15,3 +15,31 @@ note: required by a bound in `check_iter`
   |
 5 |         source_iter(5) -> for_each(std::mem::drop);
   |         ^^^^^^^^^^^^^^ required by this bound in `check_iter`
+
+error[E0277]: `{integer}` is not an iterator
+ --> tests/compile-fail/surface_source_iter_badtype.rs:5:9
+  |
+5 |         source_iter(5) -> for_each(std::mem::drop);
+  |         ^^^^^^^^^^^^^^ `{integer}` is not an iterator
+  |
+  = help: the trait `Iterator` is not implemented for `{integer}`, which is required by `{integer}: IntoIterator`
+  = note: required for `{integer}` to implement `IntoIterator`
+note: required by a bound in `check_iter`
+ --> tests/compile-fail/surface_source_iter_badtype.rs:5:9
+  |
+5 |         source_iter(5) -> for_each(std::mem::drop);
+  |         ^^^^^^^^^^^^^^ required by this bound in `check_iter`
+
+error[E0277]: `{integer}` is not an iterator
+ --> tests/compile-fail/surface_source_iter_badtype.rs:5:9
+  |
+5 |         source_iter(5) -> for_each(std::mem::drop);
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `{integer}` is not an iterator
+  |
+  = help: the trait `Iterator` is not implemented for `{integer}`, which is required by `{integer}: IntoIterator`
+  = note: required for `{integer}` to implement `IntoIterator`
+note: required by a bound in `check_iter`
+ --> tests/compile-fail/surface_source_iter_badtype.rs:5:9
+  |
+5 |         source_iter(5) -> for_each(std::mem::drop);
+  |         ^^^^^^^^^^^^^^ required by this bound in `check_iter`

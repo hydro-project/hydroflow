@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use hydroflow::scheduled::ticks::TickInstant;
 use hydroflow::util::collect_ready;
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
 use multiplatform_test::multiplatform_test;
@@ -16,13 +17,19 @@ pub fn test_fold_tick() {
     };
     assert_graphvis_snapshots!(df);
 
-    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+    assert_eq!(
+        (TickInstant::new(0), 0),
+        (df.current_tick(), df.current_stratum())
+    );
 
     items_send.send(vec![1, 2]).unwrap();
     items_send.send(vec![3, 4]).unwrap();
     df.run_tick();
 
-    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
+    assert_eq!(
+        (TickInstant::new(1), 0),
+        (df.current_tick(), df.current_stratum())
+    );
     assert_eq!(
         &[vec![1, 2, 3, 4]],
         &*collect_ready::<Vec<_>, _>(&mut result_recv)
@@ -32,7 +39,10 @@ pub fn test_fold_tick() {
     items_send.send(vec![7, 8]).unwrap();
     df.run_tick();
 
-    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
+    assert_eq!(
+        (TickInstant::new(2), 0),
+        (df.current_tick(), df.current_stratum())
+    );
     assert_eq!(
         &[vec![5, 6, 7, 8]],
         &*collect_ready::<Vec<_>, _>(&mut result_recv)
@@ -53,13 +63,19 @@ pub fn test_fold_static() {
     };
     assert_graphvis_snapshots!(df);
 
-    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+    assert_eq!(
+        (TickInstant::new(0), 0),
+        (df.current_tick(), df.current_stratum())
+    );
 
     items_send.send(vec![1, 2]).unwrap();
     items_send.send(vec![3, 4]).unwrap();
     df.run_tick();
 
-    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
+    assert_eq!(
+        (TickInstant::new(1), 0),
+        (df.current_tick(), df.current_stratum())
+    );
     assert_eq!(
         &[vec![1, 2, 3, 4]],
         &*collect_ready::<Vec<_>, _>(&mut result_recv)
@@ -69,13 +85,59 @@ pub fn test_fold_static() {
     items_send.send(vec![7, 8]).unwrap();
     df.run_tick();
 
-    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
+    assert_eq!(
+        (TickInstant::new(2), 0),
+        (df.current_tick(), df.current_stratum())
+    );
     assert_eq!(
         &[vec![1, 2, 3, 4, 5, 6, 7, 8]],
         &*collect_ready::<Vec<_>, _>(&mut result_recv)
     );
 
     df.run_available(); // Should return quickly and not hang
+}
+
+#[multiplatform_test]
+pub fn test_fold_static_join() {
+    let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let mut df = hydroflow::hydroflow_syntax! {
+        teed_fold = source_iter(Vec::<usize>::new())
+            -> fold::<'tick>(|| 0, |old: &mut usize, _: usize| { *old += 1; })
+            -> tee();
+        teed_fold -> for_each(|_| {});
+        teed_fold -> [1]join_node;
+
+        source_stream(items_recv) -> [0]join_node;
+
+        join_node = cross_join_multiset();
+        join_node -> for_each(|v| result_send.send(v).unwrap());
+    };
+    assert_graphvis_snapshots!(df);
+
+    assert_eq!(
+        (TickInstant::new(0), 0),
+        (df.current_tick(), df.current_stratum())
+    );
+
+    items_send.send(0).unwrap();
+    df.run_available();
+
+    assert_eq!(
+        (TickInstant::new(1), 0),
+        (df.current_tick(), df.current_stratum())
+    );
+    assert_eq!(&[(0, 0)], &*collect_ready::<Vec<_>, _>(&mut result_recv));
+
+    items_send.send(1).unwrap();
+    df.run_available();
+
+    assert_eq!(
+        (TickInstant::new(2), 0),
+        (df.current_tick(), df.current_stratum())
+    );
+    assert_eq!(&[(1, 0)], &*collect_ready::<Vec<_>, _>(&mut result_recv));
 }
 
 #[multiplatform_test]
@@ -92,9 +154,15 @@ pub fn test_fold_flatten() {
             -> for_each(|(k,v)| out_send.send((k,v)).unwrap());
     };
 
-    assert_eq!((0, 0), (df_pull.current_tick(), df_pull.current_stratum()));
+    assert_eq!(
+        (TickInstant::new(0), 0),
+        (df_pull.current_tick(), df_pull.current_stratum())
+    );
     df_pull.run_tick();
-    assert_eq!((1, 0), (df_pull.current_tick(), df_pull.current_stratum()));
+    assert_eq!(
+        (TickInstant::new(1), 0),
+        (df_pull.current_tick(), df_pull.current_stratum())
+    );
 
     let out: HashSet<_> = collect_ready(&mut out_recv);
     for pair in [(1, 3), (2, 7)] {
@@ -113,9 +181,15 @@ pub fn test_fold_flatten() {
             -> for_each(|(k,v)| out_send.send((k,v)).unwrap());
         datagen[1] -> null();
     };
-    assert_eq!((0, 0), (df_push.current_tick(), df_push.current_stratum()));
+    assert_eq!(
+        (TickInstant::new(0), 0),
+        (df_push.current_tick(), df_push.current_stratum())
+    );
     df_push.run_tick();
-    assert_eq!((1, 0), (df_push.current_tick(), df_push.current_stratum()));
+    assert_eq!(
+        (TickInstant::new(1), 0),
+        (df_push.current_tick(), df_push.current_stratum())
+    );
 
     let out: HashSet<_> = collect_ready(&mut out_recv);
     for pair in [(1, 4), (2, 8)] {
@@ -137,9 +211,15 @@ pub fn test_fold_sort() {
             -> for_each(|v| print!("{:?}, ", v));
     };
     assert_graphvis_snapshots!(df);
-    assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
+    assert_eq!(
+        (TickInstant::new(0), 0),
+        (df.current_tick(), df.current_stratum())
+    );
     df.run_tick();
-    assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
+    assert_eq!(
+        (TickInstant::new(1), 0),
+        (df.current_tick(), df.current_stratum())
+    );
 
     print!("\nA: ");
 
@@ -147,7 +227,10 @@ pub fn test_fold_sort() {
     items_send.send(2).unwrap();
     items_send.send(5).unwrap();
     df.run_tick();
-    assert_eq!((2, 0), (df.current_tick(), df.current_stratum()));
+    assert_eq!(
+        (TickInstant::new(2), 0),
+        (df.current_tick(), df.current_stratum())
+    );
 
     print!("\nB: ");
 
@@ -157,7 +240,10 @@ pub fn test_fold_sort() {
     items_send.send(0).unwrap();
     items_send.send(3).unwrap();
     df.run_tick();
-    assert_eq!((3, 0), (df.current_tick(), df.current_stratum()));
+    assert_eq!(
+        (TickInstant::new(3), 0),
+        (df.current_tick(), df.current_stratum())
+    );
 
     println!();
 

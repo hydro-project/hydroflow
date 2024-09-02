@@ -4,11 +4,10 @@ use syn::spanned::Spanned;
 use syn::{parse_quote, Expr, ExprCall};
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance};
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
 ///
@@ -67,14 +66,14 @@ use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance};
 /// by specifying `'static` in the type arguments of the operator.
 ///
 /// for `join_fused::<'static>`, the operator will replay all _keys_ that the join has ever seen each tick, and not only the new matches from that specific tick.
-/// This means that it behaves identically to if `persist()` were placed before the inputs and the persistence of
+/// This means that it behaves identically to if `persist::<'static>()` were placed before the inputs and the persistence of
 /// for example, the two following examples have identical behavior:
 ///
 /// ```hydroflow
-/// source_iter(vec![("key", 0), ("key", 1), ("key", 2)]) -> persist() -> [0]my_join;
+/// source_iter(vec![("key", 0), ("key", 1), ("key", 2)]) -> persist::<'static>() -> [0]my_join;
 /// source_iter(vec![("key", 2)]) -> my_union;
 /// source_iter(vec![("key", 3)]) -> defer_tick() -> my_union;
-/// my_union = union() -> persist() -> [1]my_join;
+/// my_union = union() -> persist::<'static>() -> [1]my_join;
 ///
 /// my_join = join_fused(Reduce(|x, y| *x += y), Fold(|| 1, |x, y| *x *= y))
 ///     -> assert_eq([("key", (3, 2)), ("key", (3, 6))]);
@@ -100,12 +99,10 @@ pub const JOIN_FUSED: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=2),
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    context,
                    op_span,
@@ -114,13 +111,13 @@ pub const JOIN_FUSED: OperatorConstraints = OperatorConstraints {
                    is_pull,
                    op_inst:
                        OperatorInstance {
-                           arguments,
                            generics:
                                OpInstGenerics {
                                    persistence_args, ..
                                },
                            ..
                        },
+                   arguments,
                    ..
                },
                diagnostics| {

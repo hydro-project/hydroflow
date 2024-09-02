@@ -2,11 +2,11 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, Persistence, PortIndexValue, WriteContextArgs, RANGE_0,
+    RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance, PortIndexValue};
 
 /// > 2 input streams the first of type (K, T), the second of type K,
 /// > with output type (K, T)
@@ -35,6 +35,10 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=2),
     type_args: RANGE_0,
     is_external_input: false,
+    // If this is set to true, the state will need to be cleared using `#context.set_state_tick_hook`
+    // to prevent reading uncleared data if this subgraph doesn't run.
+    // https://github.com/hydro-project/hydroflow/issues/1298
+    has_singleton_output: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { pos, neg })),
     ports_out: None,
     input_delaytype_fn: |idx| match idx {
@@ -43,9 +47,6 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
         }
         _else => None,
     },
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,
@@ -144,7 +145,7 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
                 #[allow(clippy::needless_borrow)]
                 #neg_borrow.extend(#input_neg);
 
-                let #ident = #input_pos.filter(|x| {
+                let #ident = #input_pos.filter(|x: &(_,_)| {
                     #[allow(clippy::needless_borrow)]
                     #[allow(clippy::unnecessary_mut_passed)]
                     !#neg_borrow.contains(&x.0)
@@ -170,7 +171,7 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
                         #pos_borrow_ident.extend(#input_pos);
                         #pos_borrow_ident[len..].iter()
                     }
-                    .filter(|x| {
+                    .filter(|x: &&(_,_)| {
                         #[allow(clippy::unnecessary_mut_passed)]
                         !#neg_borrow.contains(&x.0)
                     })

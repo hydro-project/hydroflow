@@ -1,10 +1,8 @@
 use quote::quote_spanned;
 
-use crate::graph::GraphEdgeType;
-
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 /// Takes a stream as input and produces a sorted version of the stream as output.
@@ -28,12 +26,10 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    op_span,
                    ident,
@@ -46,7 +42,7 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
 
         let input = &inputs[0];
         let write_iterator = quote_spanned! {op_span=>
-            // TODO(mingwei): unneccesary extra handoff into_iter() then collect().
+            // TODO(mingwei): unnecessary extra handoff into_iter() then collect().
             // Fix requires handoff specialization.
             let #ident = {
                 let mut v = #input.collect::<::std::vec::Vec<_>>();

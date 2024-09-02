@@ -2,18 +2,16 @@ use quote::quote_spanned;
 use syn::parse_quote_spanned;
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
-use crate::graph::{OperatorInstance, GraphEdgeType};
 
 /// > 0 input streams, 1 output stream
 ///
 /// > Arguments: A [`Duration`](https://doc.rust-lang.org/stable/std/time/struct.Duration.html) for this interval.
 ///
-/// Emits [Tokio time `Instant`s](https://docs.rs/tokio/1/tokio/time/struct.Instant.html) on a
-/// repeated interval. The first tick completes imediately. Missed ticks will be scheduled as soon
-/// as possible, and the `Instant` will be the missed time, not the late time.
+/// Emits units `()` on a repeated interval. The first tick completes immediately. Missed ticks will
+/// be scheduled as soon as possible.
 ///
 /// Note that this requires the hydroflow instance be run within a [Tokio `Runtime`](https://docs.rs/tokio/1/tokio/runtime/struct.Runtime.html).
 /// The easiest way to do this is with a [`#[hydroflow::main]`](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.hydroflow_main.html)
@@ -21,13 +19,14 @@ use crate::graph::{OperatorInstance, GraphEdgeType};
 ///
 /// ```rustbook
 /// use std::time::Duration;
-///
+/// use std::time::Instant;
 /// use hydroflow::hydroflow_syntax;
 ///
 /// #[hydroflow::main]
 /// async fn main() {
 ///     let mut hf = hydroflow_syntax! {
 ///         source_interval(Duration::from_secs(1))
+///             -> map(|_| { Instant::now() } )
 ///             -> for_each(|time| println!("This runs every second: {:?}", time));
 ///     };
 ///
@@ -54,29 +53,27 @@ pub const SOURCE_INTERVAL: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: true,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    op_span,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                diagnostics| {
         let ident_intervalstream = wc.make_ident("intervalstream");
         let mut write_prologue = quote_spanned! {op_span=>
             let #ident_intervalstream =
-                #root::tokio_stream::wrappers::IntervalStream::new(#root::tokio::time::interval(#arguments));
+                #root::tokio_stream::StreamExt::map(
+                    #root::tokio_stream::wrappers::IntervalStream::new(#root::tokio::time::interval(#arguments)),
+                    |_| {  }
+                );
         };
         let wc = WriteContextArgs {
-            op_inst: &OperatorInstance {
-                arguments: parse_quote_spanned!(op_span=> #ident_intervalstream),
-                ..wc.op_inst.clone()
-            },
+            arguments: &parse_quote_spanned!(op_span=> #ident_intervalstream),
             ..wc.clone()
         };
         let write_output = (super::source_stream::SOURCE_STREAM.write_fn)(&wc, diagnostics)?;

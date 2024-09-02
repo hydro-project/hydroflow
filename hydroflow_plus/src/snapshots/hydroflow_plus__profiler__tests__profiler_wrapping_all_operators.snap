@@ -1,0 +1,24 @@
+---
+source: hydroflow_plus/src/profiler.rs
+expression: "&built.ir()"
+---
+[
+    ForEach {
+        f: { use crate :: __staged :: profiler :: tests :: * ; | n | println ! ("{}" , n) },
+        input: Unpersist(
+            Map {
+                f: { use crate :: __staged :: profiler :: tests :: * ; | v | v + 1 },
+                input: Persist(
+                    Source {
+                        source: Iter(
+                            { use crate :: __staged :: profiler :: tests :: * ; 0 .. 10 },
+                        ),
+                        location_kind: Process(
+                            0,
+                        ),
+                    },
+                ),
+            },
+        ),
+    },
+]

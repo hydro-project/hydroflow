@@ -4,8 +4,9 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use hydroflow::hydroflow_syntax;
+use hydroflow::scheduled::ticks::TickInstant;
 use hydroflow::serde::{Deserialize, Serialize};
-use hydroflow::util::cli::{
+use hydroflow::util::deploy::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged,
 };
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
@@ -23,7 +24,7 @@ enum GossipOrIncrement {
 
 #[hydroflow::main]
 async fn main() {
-    let ports = hydroflow::util::cli::init::<()>().await;
+    let ports = hydroflow::util::deploy::init::<()>().await;
 
     let my_id: Vec<usize> = serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
     let my_id = my_id[0];
@@ -66,7 +67,7 @@ async fn main() {
 
     let df = hydroflow_syntax! {
         next_state = union()
-            -> fold::<'static>(|| (HashMap::<u64, Rc<RefCell<(Vec<u64>, Vec<u64>)>>>::new(), HashSet::new(), 0), |(cur_state, modified_tweets, last_tick): &mut (HashMap<_, _>, HashSet<_>, _), goi| {
+            -> fold::<'static>(|| (HashMap::<u64, Rc<RefCell<(Vec<u64>, Vec<u64>)>>>::new(), HashSet::new(), TickInstant::default()), |(cur_state, modified_tweets, last_tick): &mut (HashMap<_, _>, HashSet<_>, _), goi| {
                 if context.current_tick() != *last_tick {
                     modified_tweets.clear();
                 }
@@ -161,6 +162,6 @@ async fn main() {
     }
 
     let f1_handle = tokio::spawn(f1);
-    hydroflow::util::cli::launch_flow(df).await;
+    hydroflow::util::deploy::launch_flow(df).await;
     f1_handle.abort();
 }

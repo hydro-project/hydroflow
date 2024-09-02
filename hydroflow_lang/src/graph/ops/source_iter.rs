@@ -1,14 +1,14 @@
 use quote::quote_spanned;
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
-use crate::graph::{OperatorInstance, GraphEdgeType};
 
 /// > 0 input streams, 1 output stream
 ///
 /// > Arguments: An iterable Rust object.
+///
 /// Takes the iterable object and delivers its elements downstream
 /// one by one.
 ///
@@ -29,19 +29,18 @@ pub const SOURCE_ITER: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    op_span,
                    ident,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                _| {
+        let iter = &arguments[0];
         let iter_ident = wc.make_ident("iter");
         let write_prologue = quote_spanned! {op_span=>
             let mut #iter_ident = {
@@ -49,7 +48,7 @@ pub const SOURCE_ITER: OperatorConstraints = OperatorConstraints {
                 fn check_iter<IntoIter: ::std::iter::IntoIterator<Item = Item>, Item>(into_iter: IntoIter) -> impl ::std::iter::Iterator<Item = Item> {
                     ::std::iter::IntoIterator::into_iter(into_iter)
                 }
-                check_iter(#arguments)
+                check_iter(#iter)
             };
         };
         let write_iterator = quote_spanned! {op_span=>

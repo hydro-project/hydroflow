@@ -3,55 +3,45 @@ use syn::parse_quote;
 
 use super::{
     OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    JOIN_CROSS_JOIN_FLOW_PROP_FN, RANGE_0, RANGE_1,
+    RANGE_0, RANGE_1,
 };
-use crate::graph::{GraphEdgeType, OperatorInstance};
 
 // TODO(mingwei):
 pub const LATTICE_BIMORPHISM: OperatorConstraints = OperatorConstraints {
     name: "lattice_bimorphism",
     categories: &[OperatorCategory::MultiIn],
-    hard_range_inn: &(4..=4),
-    soft_range_inn: &(4..=4),
+    hard_range_inn: &(2..=2),
+    soft_range_inn: &(2..=2),
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
-    num_args: 1,
+    num_args: 3,
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
-    ports_inn: Some(|| {
-        super::PortListSpec::Fixed(parse_quote! { items_0, items_1, state_0, state_1 })
-    }),
+    has_singleton_output: false,
+    ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |port| match &*port.to_string() {
-        "items_0" => Some(GraphEdgeType::Value),
-        "items_1" => Some(GraphEdgeType::Value),
-        "state_0" => Some(GraphEdgeType::Reference),
-        "state_1" => Some(GraphEdgeType::Reference),
-        _ => None,
-    },
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: Some(JOIN_CROSS_JOIN_FLOW_PROP_FN),
-    write_fn: |wc @ &WriteContextArgs {
+    write_fn: |&WriteContextArgs {
                    root,
                    context,
                    op_span,
                    is_pull,
                    ident,
                    inputs,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
+                   arguments_handles,
                    ..
                },
                _| {
         assert!(is_pull);
 
-        let func = wc.wrap_check_func_arg(&arguments[0]);
+        let func = &arguments[0];
+        let lhs_state_handle = &arguments_handles[1];
+        let rhs_state_handle = &arguments_handles[2];
 
         let lhs_items = &inputs[0];
         let rhs_items = &inputs[1];
-        let lhs_state = &inputs[2];
-        let rhs_state = &inputs[3];
 
         let write_iterator = quote_spanned! {op_span=>
             let #ident = {
@@ -90,8 +80,8 @@ pub const LATTICE_BIMORPHISM: OperatorConstraints = OperatorConstraints {
                     #func,
                     #lhs_items,
                     #rhs_items,
-                    #lhs_state,
-                    #rhs_state,
+                    #lhs_state_handle,
+                    #rhs_state_handle,
                     &#context,
                 )
             };

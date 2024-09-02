@@ -74,17 +74,28 @@ pub mod datalog {
 
     #[derive(Debug, Clone)]
     pub enum Atom {
-        Relation(
-            #[rust_sitter::leaf(text = "!")] Option<()>,
+        NegRelation(
+            #[rust_sitter::leaf(text = "!")] (),
             Spanned<InputRelationExpr>,
         ),
+        PosRelation(Spanned<InputRelationExpr>),
         Predicate(Spanned<BoolExpr>),
     }
 
     #[derive(Debug, Clone)]
-    pub enum IdentOrUnderscore {
+    pub enum ExtractExpr {
         Ident(Spanned<Ident>),
         Underscore(#[rust_sitter::leaf(text = "_")] Spanned<()>),
+        Flatten(#[rust_sitter::leaf(text = "*")] (), Box<ExtractExpr>),
+        Untuple(
+            #[rust_sitter::leaf(text = "(")] (),
+            #[rust_sitter::delimited(
+                #[rust_sitter::leaf(text = ",")]
+                ()
+            )]
+            Vec<Spanned<ExtractExpr>>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
     }
 
     #[derive(Debug, Clone)]
@@ -98,7 +109,7 @@ pub mod datalog {
             #[rust_sitter::leaf(text = ",")]
             ()
         )]
-        pub fields: Vec<Spanned<IdentOrUnderscore>>,
+        pub fields: Vec<Spanned<ExtractExpr>>,
 
         #[rust_sitter::leaf(text = ")")]
         _r_paren: (),
@@ -148,9 +159,10 @@ pub mod datalog {
             match self {
                 TargetExpr::Expr(e) => e.idents(),
                 TargetExpr::Aggregation(Aggregation::Count(_)) => vec![],
-                TargetExpr::Aggregation(Aggregation::CountUnique(_, _, idents, _)) => {
-                    idents.iter().map(|i| &i.value).collect()
-                }
+                TargetExpr::Aggregation(
+                    Aggregation::CountUnique(_, _, idents, _)
+                    | Aggregation::CollectVec(_, _, idents, _),
+                ) => idents.iter().map(|i| &i.value).collect(),
                 TargetExpr::Aggregation(
                     Aggregation::Min(_, _, a, _)
                     | Aggregation::Max(_, _, a, _)
@@ -197,6 +209,16 @@ pub mod datalog {
             #[rust_sitter::leaf(text = "choose")] (),
             #[rust_sitter::leaf(text = "(")] (),
             Spanned<Ident>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
+        CollectVec(
+            #[rust_sitter::leaf(text = "collect_vec")] (),
+            #[rust_sitter::leaf(text = "(")] (),
+            #[rust_sitter::delimited(
+                #[rust_sitter::leaf(text = ",")]
+                ()
+            )]
+            Vec<Spanned<Ident>>,
             #[rust_sitter::leaf(text = ")")] (),
         ),
     }

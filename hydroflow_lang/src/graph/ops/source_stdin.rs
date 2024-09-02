@@ -1,10 +1,8 @@
 use quote::quote_spanned;
 
-use crate::graph::GraphEdgeType;
-
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
 
 /// > 0 input streams, 1 output stream
@@ -30,12 +28,10 @@ pub const SOURCE_STDIN: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: true,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,
@@ -46,6 +42,7 @@ pub const SOURCE_STDIN: OperatorConstraints = OperatorConstraints {
                _| {
         let stream_ident = wc.make_ident("stream");
         let write_prologue = quote_spanned! {op_span=>
+            #[allow(clippy::let_and_return)]
             let mut #stream_ident = {
                 use #root::tokio::io::AsyncBufReadExt;
                 let reader = #root::tokio::io::BufReader::new(#root::tokio::io::stdin());

@@ -12,28 +12,29 @@ use futures::{SinkExt, Stream};
 use hydroflow::bytes::{Bytes, BytesMut};
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow::util::cli::{
+use hydroflow::util::deploy::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged,
 };
 
 mod protocol;
+use hydroflow::scheduled::ticks::TickInstant;
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 use protocol::*;
 use tokio::time::Instant;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-struct NodeID(pub u32);
+struct NodeId(pub u32);
 
-impl Display for NodeID {
+impl Display for NodeId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Display::fmt(&self.0, f)
     }
 }
 
-type PostNeighborJoin = (((u64, Option<NodeID>), (i64, usize)), NodeID);
+type PostNeighborJoin = (((u64, Option<NodeId>), (i64, TickInstant)), NodeId);
 
 type ContributionAgg =
-    Rc<RefCell<HashMap<u64, HashMap<Option<NodeID>, (Timestamped<i64>, usize)>>>>;
+    Rc<RefCell<HashMap<u64, HashMap<Option<NodeId>, (Timestamped<i64>, TickInstant)>>>>;
 
 fn run_topolotree(
     neighbors: Vec<u32>,
@@ -60,7 +61,7 @@ fn run_topolotree(
     hydroflow_syntax! {
         parsed_input = source_stream(input_recv)
             -> map(Result::unwrap)
-            -> map(|(src, x)| (NodeID(src), deserialize_from_bytes::<TopolotreeMessage>(&x).unwrap()))
+            -> map(|(src, x)| (NodeId(src), deserialize_from_bytes::<TopolotreeMessage>(&x).unwrap()))
             -> demux(|(src, msg), var_args!(payload, ping, pong)| {
                 match msg {
                     TopolotreeMessage::Payload(p) => payload.give((src, p)),
@@ -97,7 +98,7 @@ fn run_topolotree(
             });
 
         from_neighbors
-            -> map(|(_, payload): (NodeID, Payload<i64>)| payload.key)
+            -> map(|(_, payload): (NodeId, Payload<i64>)| payload.key)
             -> touched_keys;
 
         operations
@@ -107,11 +108,11 @@ fn run_topolotree(
         touched_keys = union() -> unique() -> [0]from_neighbors_unfiltered;
 
         from_neighbors
-            -> map(|(src, payload): (NodeID, Payload<i64>)| (src, (payload.key, payload.contents)))
-            -> fold::<'static>(|| Rc::new(RefCell::new(HashMap::new())), |acc: &mut ContributionAgg, (source, (key, val)): (NodeID, (u64, Timestamped<i64>))| {
+            -> map(|(src, payload): (NodeId, Payload<i64>)| (src, (payload.key, payload.contents)))
+            -> fold::<'static>(|| Rc::new(RefCell::new(HashMap::new())), |acc: &mut ContributionAgg, (source, (key, val)): (NodeId, (u64, Timestamped<i64>))| {
                 let mut acc = acc.borrow_mut();
                 let key_entry = acc.entry(key).or_default();
-                let src_entry = key_entry.entry(Some(source)).or_insert((Timestamped { timestamp: -1, data: 0 }, 0));
+                let src_entry = key_entry.entry(Some(source)).or_insert((Timestamped { timestamp: -1, data: 0 }, TickInstant::default()));
                 if val.timestamp > src_entry.0.timestamp {
                     src_entry.0 = val;
                     *self_timestamp1.borrow_mut().entry(key).or_insert(0) += 1;
@@ -137,10 +138,10 @@ fn run_topolotree(
                 *self_timestamp2.borrow_mut().entry(change.key).or_insert(0) += 1;
             })
             -> map(|change_payload: OperationPayload| (change_payload.key, (change_payload.change, context.current_tick())))
-            -> fold::<'static>(|| Rc::new(RefCell::new(HashMap::new())), |agg: &mut ContributionAgg, change: (u64, (i64, usize))| {
+            -> fold::<'static>(|| Rc::new(RefCell::new(HashMap::new())), |agg: &mut ContributionAgg, change: (u64, (i64, TickInstant))| {
                 let mut agg = agg.borrow_mut();
                 let agg_key = agg.entry(change.0).or_default();
-                let agg_key = agg_key.entry(None).or_insert((Timestamped { timestamp: 0, data: 0 }, 0));
+                let agg_key = agg_key.entry(None).or_insert((Timestamped { timestamp: 0, data: 0 }, TickInstant::default()));
 
                 agg_key.0.data += change.1.0;
                 agg_key.1 = change.1.1;
@@ -152,11 +153,11 @@ fn run_topolotree(
         from_neighbors_or_local -> [0]all_neighbor_data;
 
         new_neighbors = source_iter(neighbors)
-            -> map(NodeID)
+            -> map(NodeId)
             -> tee();
 
         new_neighbors
-            -> persist()
+            -> persist::<'static>()
             -> [pos]neighbors;
         dead_neighbors -> [neg]neighbors;
         neighbors = difference()
@@ -165,10 +166,10 @@ fn run_topolotree(
         neighbors -> [1]all_neighbor_data;
 
         query_result = from_neighbors_or_local
-            -> map(|((key, _), payload): ((u64, _), (i64, usize))| {
+            -> map(|((key, _), payload): ((u64, _), (i64, TickInstant))| {
                 (key, payload)
             })
-            -> reduce_keyed(|acc: &mut (i64, usize), (data, change_tick): (i64, usize)| {
+            -> reduce_keyed(|acc: &mut (i64, TickInstant), (data, change_tick): (i64, TickInstant)| {
                 merge(&mut acc.0, data);
                 acc.1 = std::cmp::max(acc.1, change_tick);
             })
@@ -188,7 +189,7 @@ fn run_topolotree(
             -> map(|(((key, _), payload), target_neighbor)| {
                 ((key, target_neighbor), payload)
             })
-            -> reduce_keyed(|acc: &mut (i64, usize), (data, change_tick): (i64, usize)| {
+            -> reduce_keyed(|acc: &mut (i64, TickInstant), (data, change_tick): (i64, TickInstant)| {
                 merge(&mut acc.0, data);
                 acc.1 = std::cmp::max(acc.1, change_tick);
             })
@@ -203,7 +204,7 @@ fn run_topolotree(
             -> map(|(target_neighbor, payload)| (target_neighbor, TopolotreeMessage::Payload(payload)))
             -> output;
 
-        output = union() -> for_each(|(target_neighbor, output): (NodeID, TopolotreeMessage)| {
+        output = union() -> for_each(|(target_neighbor, output): (NodeId, TopolotreeMessage)| {
             let serialized = serialize_to_bytes(output);
             output_send.send((target_neighbor.0, serialized)).unwrap();
         });
@@ -216,7 +217,7 @@ async fn main() {
     let _self_id: u32 = args.next().unwrap().parse().unwrap();
     let neighbors: Vec<u32> = args.map(|x| x.parse().unwrap()).collect();
 
-    let ports = hydroflow::util::cli::init::<()>().await;
+    let ports = hydroflow::util::deploy::init::<()>().await;
 
     let input_recv = ports
         .port("from_peer")
@@ -275,7 +276,7 @@ async fn main() {
             let x = procinfo::pid::stat_self().unwrap();
             let bytes = x.rss * 1024 * 4;
             println!("memory,{}", bytes);
-            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(Duration::from_secs(1)).await;
         }
     };
 
@@ -288,6 +289,6 @@ async fn main() {
     }
 
     let f1_handle = tokio::spawn(f1);
-    hydroflow::util::cli::launch_flow(flow).await;
+    hydroflow::util::deploy::launch_flow(flow).await;
     f1_handle.abort();
 }

@@ -12,11 +12,44 @@ use super::{graph_algorithms, Color, GraphEdgeId, GraphNode, GraphNodeId, GraphS
 use crate::diagnostic::{Diagnostic, Level};
 use crate::union_find::UnionFind;
 
-/// Return a map containing all barrier crossers.
-fn find_barrier_crossers(
-    partitioned_graph: &HydroflowGraph,
-) -> SecondaryMap<GraphEdgeId, DelayType> {
-    partitioned_graph
+/// Helper struct for tracking barrier crossers, see [`find_barrier_crossers`].
+struct BarrierCrossers {
+    /// Edge barrier crossers, including what type.
+    pub edge_barrier_crossers: SecondaryMap<GraphEdgeId, DelayType>,
+    /// Singleton reference barrier crossers, considered to be [`DelayType::Stratum`].
+    pub singleton_barrier_crossers: Vec<(GraphNodeId, GraphNodeId)>,
+}
+impl BarrierCrossers {
+    /// Iterate pairs of nodes that are across a barrier.
+    fn iter_node_pairs<'a>(
+        &'a self,
+        partitioned_graph: &'a HydroflowGraph,
+    ) -> impl 'a + Iterator<Item = ((GraphNodeId, GraphNodeId), DelayType)> {
+        let edge_pairs_iter = self
+            .edge_barrier_crossers
+            .iter()
+            .map(|(edge_id, &delay_type)| {
+                let src_dst = partitioned_graph.edge(edge_id);
+                (src_dst, delay_type)
+            });
+        let singleton_pairs_iter = self
+            .singleton_barrier_crossers
+            .iter()
+            .map(|&src_dst| (src_dst, DelayType::Stratum));
+        edge_pairs_iter.chain(singleton_pairs_iter)
+    }
+
+    /// Insert/replace edge.
+    fn replace_edge(&mut self, old_edge_id: GraphEdgeId, new_edge_id: GraphEdgeId) {
+        if let Some(delay_type) = self.edge_barrier_crossers.remove(old_edge_id) {
+            self.edge_barrier_crossers.insert(new_edge_id, delay_type);
+        }
+    }
+}
+
+/// Find all the barrier crossers.
+fn find_barrier_crossers(partitioned_graph: &HydroflowGraph) -> BarrierCrossers {
+    let edge_barrier_crossers = partitioned_graph
         .edges()
         .filter_map(|(edge_id, (_src, dst))| {
             let (_src_port, dst_port) = partitioned_graph.edge_ports(edge_id);
@@ -24,12 +57,26 @@ fn find_barrier_crossers(
             let input_barrier = (op_constraints.input_delaytype_fn)(dst_port)?;
             Some((edge_id, input_barrier))
         })
-        .collect()
+        .collect();
+    let singleton_barrier_crossers = partitioned_graph
+        .node_ids()
+        .flat_map(|dst| {
+            partitioned_graph
+                .node_singleton_references(dst)
+                .iter()
+                .flatten()
+                .map(move |&src_ref| (src_ref, dst))
+        })
+        .collect();
+    BarrierCrossers {
+        edge_barrier_crossers,
+        singleton_barrier_crossers,
+    }
 }
 
 fn find_subgraph_unionfind(
     partitioned_graph: &HydroflowGraph,
-    barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
+    barrier_crossers: &BarrierCrossers,
 ) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
     // Modality (color) of nodes, push or pull.
     // TODO(mingwei)? This does NOT consider `DelayType` barriers (which generally imply `Pull`),
@@ -66,25 +113,19 @@ fn find_subgraph_unionfind(
             if subgraph_unionfind.same_set(src, dst) {
                 // Note that the _edge_ `edge_id` might not be in the subgraph even when both `src` and `dst` are. This prevents case 2.
                 // Handoffs will be inserted later for this self-loop.
-                if !partitioned_graph
-                    .edge_type(edge_id)
-                    .unwrap()
-                    .affects_in_out_graph_ownership()
-                {
-                    // However self-loops are ok in the case of reference edges.
-                    // (This may hit trigger times for the same reference edge).
-                    progress |= handoff_edges.remove(&edge_id);
-                }
                 continue;
             }
 
             // Ignore if would join stratum crossers (next edges).
-            if barrier_crossers.iter().any(|(edge_id, _)| {
-                let (x_src, x_dst) = partitioned_graph.edge(edge_id);
-                (subgraph_unionfind.same_set(x_src, src) && subgraph_unionfind.same_set(x_dst, dst))
-                    || (subgraph_unionfind.same_set(x_src, dst)
-                        && subgraph_unionfind.same_set(x_dst, src))
-            }) {
+            if barrier_crossers
+                .iter_node_pairs(partitioned_graph)
+                .any(|((x_src, x_dst), _)| {
+                    (subgraph_unionfind.same_set(x_src, src)
+                        && subgraph_unionfind.same_set(x_dst, dst))
+                        || (subgraph_unionfind.same_set(x_src, dst)
+                            && subgraph_unionfind.same_set(x_dst, src))
+                })
+            {
                 continue;
             }
 
@@ -93,7 +134,7 @@ fn find_subgraph_unionfind(
                 // within a single subgraph.
                 subgraph_unionfind.union(src, dst);
                 assert!(handoff_edges.remove(&edge_id));
-                progress |= true;
+                progress = true;
             }
         }
     }
@@ -140,10 +181,7 @@ fn make_subgraph_collect(
 /// Find subgraph and insert handoffs.
 /// Modifies barrier_crossers so that the edge OUT of an inserted handoff has
 /// the DelayType data.
-fn make_subgraphs(
-    partitioned_graph: &mut HydroflowGraph,
-    barrier_crossers: &mut SecondaryMap<GraphEdgeId, DelayType>,
-) {
+fn make_subgraphs(partitioned_graph: &mut HydroflowGraph, barrier_crossers: &mut BarrierCrossers) {
     // Algorithm:
     // 1. Each node begins as its own subgraph.
     // 2. Collect edges. (Future optimization: sort so edges which should not be split across a handoff come first).
@@ -175,9 +213,7 @@ fn make_subgraphs(
         let (_node_id, out_edge_id) = partitioned_graph.insert_intermediate_node(edge_id, hoff);
 
         // Update barrier_crossers for inserted node.
-        if let Some(delay_type) = barrier_crossers.remove(edge_id) {
-            barrier_crossers.insert(out_edge_id, delay_type);
-        }
+        barrier_crossers.replace_edge(edge_id, out_edge_id);
     }
 
     // Determine node's subgraph and subgraph's nodes.
@@ -253,7 +289,7 @@ fn can_connect_colorize(
 /// Returns an error if there is a cycle thru negation.
 fn find_subgraph_strata(
     partitioned_graph: &mut HydroflowGraph,
-    barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
+    barrier_crossers: &BarrierCrossers,
 ) -> Result<(), Diagnostic> {
     // Determine subgraphs's stratum number.
     // Find SCCs ignoring `defer_tick()` (`DelayType::Tick`) edges, then do TopoSort on the
@@ -264,20 +300,36 @@ fn find_subgraph_strata(
     // Generate a subgraph graph. I.e. each node is a subgraph.
     // Edges are connections between subgraphs, ignoring tick-crossers.
     // TODO: use DiMulGraph here?
-    let mut subgraph_preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
-    let mut subgraph_succs: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
+    #[derive(Default)]
+    struct SubgraphGraph {
+        preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>>,
+        succs: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>>,
+    }
+    impl SubgraphGraph {
+        fn insert_edge(&mut self, src: GraphSubgraphId, dst: GraphSubgraphId) {
+            self.preds.entry(dst).or_default().push(src);
+            self.succs.entry(src).or_default().push(dst);
+        }
+    }
+    let mut subgraph_graph = SubgraphGraph::default();
 
     // Negative (next stratum) connections between subgraphs. (Ignore `defer_tick()` connections).
-    let mut subgraph_negative_connections: BTreeSet<(GraphSubgraphId, GraphSubgraphId)> =
+    let mut subgraph_stratum_barriers: BTreeSet<(GraphSubgraphId, GraphSubgraphId)> =
         Default::default();
 
+    // Iterate handoffs between subgraphs, to build a subgraph meta-graph.
     for (node_id, node) in partitioned_graph.nodes() {
         if matches!(node, GraphNode::Handoff { .. }) {
             assert_eq!(1, partitioned_graph.node_successors(node_id).count());
             let (succ_edge, succ) = partitioned_graph.node_successors(node_id).next().unwrap();
 
+            // TODO(mingwei): Should we look at the singleton references too?
+            let succ_edge_delaytype = barrier_crossers
+                .edge_barrier_crossers
+                .get(succ_edge)
+                .copied();
             // Ignore tick edges.
-            if let Some(&DelayType::Tick | &DelayType::TickLazy) = barrier_crossers.get(succ_edge) {
+            if let Some(DelayType::Tick | DelayType::TickLazy) = succ_edge_delaytype {
                 continue;
             }
 
@@ -287,27 +339,37 @@ fn find_subgraph_strata(
             let pred_sg = partitioned_graph.node_subgraph(pred).unwrap();
             let succ_sg = partitioned_graph.node_subgraph(succ).unwrap();
 
-            subgraph_preds.entry(succ_sg).or_default().push(pred_sg);
-            subgraph_succs.entry(pred_sg).or_default().push(succ_sg);
+            subgraph_graph.insert_edge(pred_sg, succ_sg);
 
-            if Some(&DelayType::Stratum) == barrier_crossers.get(succ_edge) {
-                subgraph_negative_connections.insert((pred_sg, succ_sg));
+            if Some(DelayType::Stratum) == succ_edge_delaytype {
+                subgraph_stratum_barriers.insert((pred_sg, succ_sg));
             }
         }
+    }
+    // Include reference edges as well.
+    // TODO(mingwei): deduplicate graph building code.
+    for &(pred, succ) in barrier_crossers.singleton_barrier_crossers.iter() {
+        assert_ne!(pred, succ, "TODO(mingwei)");
+        let pred_sg = partitioned_graph.node_subgraph(pred).unwrap();
+        let succ_sg = partitioned_graph.node_subgraph(succ).unwrap();
+        assert_ne!(pred_sg, succ_sg);
+        subgraph_graph.insert_edge(pred_sg, succ_sg);
+        subgraph_stratum_barriers.insert((pred_sg, succ_sg));
     }
 
     // Topological sort (of strongly connected components) is how we find the (nondecreasing)
     // order of strata.
     let topo_sort_order = graph_algorithms::topo_sort_scc(
         || partitioned_graph.subgraph_ids(),
-        |v| subgraph_preds.get(&v).into_iter().flatten().cloned(),
-        |u| subgraph_succs.get(&u).into_iter().flatten().cloned(),
+        |v| subgraph_graph.preds.get(&v).into_iter().flatten().cloned(),
+        |u| subgraph_graph.succs.get(&u).into_iter().flatten().cloned(),
     );
 
     // Each subgraph's stratum number is the same as it's predecessors. Unless there is a negative
     // edge, then we increment.
     for sg_id in topo_sort_order {
-        let stratum = subgraph_preds
+        let stratum = subgraph_graph
+            .preds
             .get(&sg_id)
             .into_iter()
             .flatten()
@@ -316,8 +378,7 @@ fn find_subgraph_strata(
                     .subgraph_stratum(pred_sg_id)
                     .map(|stratum| {
                         stratum
-                            + (subgraph_negative_connections.contains(&(pred_sg_id, sg_id))
-                                as usize)
+                            + (subgraph_stratum_barriers.contains(&(pred_sg_id, sg_id)) as usize)
                     })
             })
             .max()
@@ -327,7 +388,7 @@ fn find_subgraph_strata(
 
     // Re-introduce the `defer_tick()` edges, ensuring they actually go to the next tick.
     let extra_stratum = partitioned_graph.max_stratum().unwrap_or(0) + 1; // Used for `defer_tick()` delayer subgraphs.
-    for (edge_id, &delay_type) in barrier_crossers.iter() {
+    for (edge_id, &delay_type) in barrier_crossers.edge_barrier_crossers.iter() {
         let (hoff, dst) = partitioned_graph.edge(edge_id);
         let (_hoff_port, dst_port) = partitioned_graph.edge_ports(edge_id);
 
@@ -343,9 +404,11 @@ fn find_subgraph_strata(
         let dst_stratum = partitioned_graph.subgraph_stratum(dst_sg);
         match delay_type {
             DelayType::Tick | DelayType::TickLazy => {
+                let is_lazy = matches!(delay_type, DelayType::TickLazy);
                 // If tick edge goes foreward in stratum, need to buffer.
                 // (TODO(mingwei): could use a different kind of handoff.)
-                if src_stratum <= dst_stratum {
+                // Or if lazy, need to create extra subgraph to mark as lazy.
+                if src_stratum <= dst_stratum || is_lazy {
                     // We inject a new subgraph between the src/dst which runs as the last stratum
                     // of the tick and therefore delays the data until the next tick.
 
@@ -375,15 +438,13 @@ fn find_subgraph_strata(
                     partitioned_graph.set_subgraph_stratum(new_subgraph_id, extra_stratum);
 
                     // Assign laziness.
-                    partitioned_graph.set_subgraph_laziness(
-                        new_subgraph_id,
-                        matches!(delay_type, DelayType::TickLazy),
-                    );
+                    partitioned_graph.set_subgraph_laziness(new_subgraph_id, is_lazy);
                 }
             }
             DelayType::Stratum => {
                 // Any negative edges which go onto the same or previous stratum are bad.
                 // Indicates an unbroken negative cycle.
+                // TODO(mingwei): This check is insufficient: https://github.com/hydro-project/hydroflow/issues/1115#issuecomment-2018385033
                 if dst_stratum <= src_stratum {
                     return Err(Diagnostic::spanned(dst_port.span(), Level::Error, "Negative edge creates a negative cycle which must be broken with a `defer_tick()` operator."));
                 }
@@ -443,26 +504,10 @@ fn separate_external_inputs(partitioned_graph: &mut HydroflowGraph) {
     }
 }
 
-/// Ensure edgetypes are set.
-pub fn assert_edgetypes_set(flat_graph: &HydroflowGraph) {
-    let missing_edgetypes = flat_graph
-        .edge_ids()
-        .filter(|&edge_id| flat_graph.edge_type(edge_id).is_none())
-        .count();
-    assert!(
-        0 == missing_edgetypes,
-        "`partition_graph` requires edge types to be set, but was unset for {} out of {} edges. This is a Hydroflow bug.",
-        missing_edgetypes,
-        flat_graph.edge_ids().len(),
-    );
-}
-
 /// Main method for this module. Partions a flat [`HydroflowGraph`] into one with subgraphs.
 ///
 /// Returns an error if a negative cycle exists in the graph. Negative cycles prevent partioning.
 pub fn partition_graph(flat_graph: HydroflowGraph) -> Result<HydroflowGraph, Diagnostic> {
-    assert_edgetypes_set(&flat_graph);
-
     // Pre-find barrier crossers (input edges with a `DelayType`).
     let mut barrier_crossers = find_barrier_crossers(&flat_graph);
     let mut partitioned_graph = flat_graph;

@@ -1,29 +1,41 @@
-use std::cell::RefCell;
 use std::marker::PhantomData;
 
-use crate::ir::HfPlusLeaf;
-use crate::location::Location;
-use crate::Stream;
+use crate::builder::FlowLeaves;
+use crate::location::{Location, LocationId};
+
+pub trait CycleComplete<'a> {
+    fn complete(self, ident: syn::Ident);
+}
+
+pub trait CycleCollection<'a>: CycleComplete<'a> {
+    type Location: Location;
+
+    fn create_source(ident: syn::Ident, ir_leaves: FlowLeaves<'a>, l: LocationId) -> Self;
+}
+
+pub trait CycleCollectionWithInitial<'a>: CycleComplete<'a> {
+    type Location: Location;
+
+    fn create_source(
+        ident: syn::Ident,
+        ir_leaves: FlowLeaves<'a>,
+        initial: Self,
+        l: LocationId,
+    ) -> Self;
+}
 
 /// Represents a fixpoint cycle in the graph that will be fulfilled
 /// by a stream that is not yet known.
 ///
-/// See [`Stream`] for an explainer on the type parameters.
-pub struct HfCycle<'a, T, W, N: Location<'a>> {
+/// See [`crate::FlowBuilder`] for an explainer on the type parameters.
+pub struct HfCycle<'a, S: CycleComplete<'a>> {
     pub(crate) ident: syn::Ident,
-    pub(crate) node: N,
-    pub(crate) ir_leaves: &'a RefCell<Vec<HfPlusLeaf>>,
-    pub(crate) _phantom: PhantomData<(T, W)>,
+    pub(crate) _phantom: PhantomData<(&'a mut &'a (), S)>,
 }
 
-impl<'a, T, W, N: Location<'a>> HfCycle<'a, T, W, N> {
-    pub fn complete(self, stream: Stream<'a, T, W, N>) {
+impl<'a, S: CycleComplete<'a>> HfCycle<'a, S> {
+    pub fn complete(self, stream: S) {
         let ident = self.ident;
-
-        self.ir_leaves.borrow_mut().push(HfPlusLeaf::CycleSink {
-            ident,
-            location_id: self.node.id(),
-            input: Box::new(stream.ir_node.into_inner()),
-        });
+        S::complete(stream, ident)
     }
 }

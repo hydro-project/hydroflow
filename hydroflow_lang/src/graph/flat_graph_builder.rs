@@ -5,13 +5,13 @@ use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
+use itertools::Itertools;
 use proc_macro2::Span;
 use quote::ToTokens;
 use syn::spanned::Spanned;
 use syn::{Error, Ident, ItemUse};
 
-use super::ops::find_op_op_constraints;
-use super::{GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
+use super::{GraphEdgeId, GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::{PortListSpec, RangeTrait};
 use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
@@ -29,6 +29,29 @@ enum GraphDet {
     Undetermined(Ident),
 }
 
+/// Variable name info for each ident, see [`FlatGraphBuilder::varname_ends`].
+#[derive(Debug)]
+struct VarnameInfo {
+    /// What the variable name resolves to.
+    pub ends: Ends,
+    /// Set to true if the varname reference creates an illegal self-referential cycle.
+    pub illegal_cycle: bool,
+    /// Set to true once the in port is used. Used to track unused ports.
+    pub inn_used: bool,
+    /// Set to true once the out port is used. Used to track unused ports.
+    pub out_used: bool,
+}
+impl VarnameInfo {
+    pub fn new(ends: Ends) -> Self {
+        Self {
+            ends,
+            illegal_cycle: false,
+            inn_used: false,
+            out_used: false,
+        }
+    }
+}
+
 /// Wraper around [`HydroflowGraph`] to build a flat graph from AST code.
 #[derive(Debug, Default)]
 pub struct FlatGraphBuilder {
@@ -38,8 +61,7 @@ pub struct FlatGraphBuilder {
     /// HydroflowGraph being built.
     flat_graph: HydroflowGraph,
     /// Variable names, used as [`HfStatement::Named`] are added.
-    /// Value will be set to `Err(())` if the name references an illegal self-referential cycle.
-    varname_ends: BTreeMap<Ident, Result<Ends, ()>>,
+    varname_ends: BTreeMap<Ident, VarnameInfo>,
     /// Each (out -> inn) link inputted.
     links: Vec<Ends>,
 
@@ -67,7 +89,6 @@ impl FlatGraphBuilder {
             ..Default::default()
         };
         builder.process_statements(input.statements);
-
         builder
     }
 
@@ -124,33 +145,35 @@ impl FlatGraphBuilder {
                 let ends = self.add_pipeline(named.pipeline, Some(&named.name));
                 match self.varname_ends.entry(named.name) {
                     Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(Ok(ends));
+                        vacant_entry.insert(VarnameInfo::new(ends));
                     }
                     Entry::Occupied(occupied_entry) => {
                         let prev_conflict = occupied_entry.key();
                         self.diagnostics.push(Diagnostic::spanned(
-                            stmt_span,
-                            Level::Error,
-                            format!(
-                                "Name assignment to `{}` conflicts with existing assignment: {} (1/2)",
-                                prev_conflict,
-                                PrettySpan(prev_conflict.span())
-                            ),
-                        ));
-                        self.diagnostics.push(Diagnostic::spanned(
                             prev_conflict.span(),
                             Level::Error,
                             format!(
-                                "Existing assignment to `{}` conflicts with later assignment: {} (2/2)",
+                                "Existing assignment to `{}` conflicts with later assignment: {} (1/2)",
                                 prev_conflict,
                                 PrettySpan(stmt_span),
+                            ),
+                        ));
+                        self.diagnostics.push(Diagnostic::spanned(
+                            stmt_span,
+                            Level::Error,
+                            format!(
+                                "Name assignment to `{}` conflicts with existing assignment: {} (2/2)",
+                                prev_conflict,
+                                PrettySpan(prev_conflict.span())
                             ),
                         ));
                     }
                 }
             }
             HfStatement::Pipeline(pipeline_stmt) => {
-                self.add_pipeline(pipeline_stmt.pipeline, None);
+                let ends = self.add_pipeline(pipeline_stmt.pipeline, None);
+                Self::helper_check_unused_port(&mut self.diagnostics, &ends, true);
+                Self::helper_check_unused_port(&mut self.diagnostics, &ends, false);
             }
         }
     }
@@ -167,8 +190,8 @@ impl FlatGraphBuilder {
             Pipeline::Name(pipeline_name) => {
                 let (inn_port, ident, out_port) = PortIndexValue::from_ported(pipeline_name);
 
-                // We could lookup non-forward references immediately, but easier to just have one
-                // consistent code path. -mingwei
+                // Mingwei: We could lookup non-forward references immediately, but easier to just
+                // have one consistent code path: `GraphDet::Undetermined`.
                 Ends {
                     inn: Some((inn_port, GraphDet::Undetermined(ident.clone()))),
                     out: Some((out_port, GraphDet::Undetermined(ident))),
@@ -326,17 +349,13 @@ impl FlatGraphBuilder {
 
         for (other_edge_id, (other_src, other_dst)) in other.edges() {
             let (src_port, dst_port) = other.edge_ports(other_edge_id);
-            let edge_type = other.edge_type(other_edge_id);
 
-            let new_edge_id = self.flat_graph.insert_edge(
+            let _new_edge_id = self.flat_graph.insert_edge(
                 *node_mapping.get(&other_src).unwrap(),
                 src_port.clone(),
                 *node_mapping.get(&other_dst).unwrap(),
                 dst_port.clone(),
             );
-            if let Some(edge_type) = edge_type {
-                self.flat_graph.insert_edge_type(new_edge_id, edge_type);
-            }
         }
 
         ends
@@ -345,19 +364,59 @@ impl FlatGraphBuilder {
     /// Connects operator links as a final building step. Processes all the links stored in
     /// `self.links` and actually puts them into the graph.
     fn connect_operator_links(&mut self) {
+        // `->` edges
         for Ends { out, inn } in std::mem::take(&mut self.links) {
             let out_opt = self.helper_resolve_name(out, false);
             let inn_opt = self.helper_resolve_name(inn, true);
             // `None` already have errors in `self.diagnostics`.
             if let (Some((out_port, out_node)), Some((inn_port, inn_node))) = (out_opt, inn_opt) {
-                self.connect_operators(out_port, out_node, inn_port, inn_node);
+                let _ = self.connect_operators(out_port, out_node, inn_port, inn_node);
+            }
+        }
+
+        // Resolve the singleton references for each node.
+        for node_id in self.flat_graph.node_ids().collect::<Vec<_>>() {
+            if let GraphNode::Operator(operator) = self.flat_graph.node(node_id) {
+                let singletons_referenced = operator
+                    .singletons_referenced
+                    .clone()
+                    .into_iter()
+                    .map(|singleton_ref| {
+                        let port_det = self
+                            .varname_ends
+                            .get(&singleton_ref)
+                            .filter(|varname_info| !varname_info.illegal_cycle)
+                            .map(|varname_info| &varname_info.ends)
+                            .and_then(|ends| ends.out.as_ref())
+                            .cloned();
+                        if let Some((_port, node_id)) = self.helper_resolve_name(port_det, false) {
+                            Some(node_id)
+                        } else {
+                            self.diagnostics.push(Diagnostic::spanned(
+                                singleton_ref.span(),
+                                Level::Error,
+                                format!(
+                                    "Cannot find referenced name `{}`; name was never assigned.",
+                                    singleton_ref
+                                ),
+                            ));
+                            None
+                        }
+                    })
+                    .collect();
+
+                self.flat_graph
+                    .set_node_singleton_references(node_id, singletons_referenced);
             }
         }
     }
+
     /// Recursively resolve a variable name. For handling forward (and backward) name references
     /// after all names have been assigned.
     /// Returns `None` if the name is not resolvable, either because it was never assigned or
     /// because it contains a self-referential cycle.
+    ///
+    /// `is_in` set to `true` means the _input_ side will be returned. `false` means the _output_ side will be returned.
     fn helper_resolve_name(
         &mut self,
         mut port_det: Option<(PortIndexValue, GraphDet)>,
@@ -372,7 +431,7 @@ impl FlatGraphBuilder {
                     return Some((port, node_id));
                 }
                 (port, GraphDet::Undetermined(ident)) => {
-                    let Some(name_ends_result) = self.varname_ends.get(&ident) else {
+                    let Some(varname_info) = self.varname_ends.get_mut(&ident) else {
                         self.diagnostics.push(Diagnostic::spanned(
                             ident.span(),
                             Level::Error,
@@ -385,7 +444,7 @@ impl FlatGraphBuilder {
                     if !cycle_found {
                         names.push(ident);
                     };
-                    if cycle_found || name_ends_result.is_err() {
+                    if cycle_found || varname_info.illegal_cycle {
                         let len = names.len();
                         for (i, name) in names.into_iter().enumerate() {
                             self.diagnostics.push(Diagnostic::spanned(
@@ -400,17 +459,18 @@ impl FlatGraphBuilder {
                             ));
                             // Set value as `Err(())` to trigger `name_ends_result.is_err()`
                             // diagnostics above if the name is referenced in the future.
-                            self.varname_ends.insert(name, Err(()));
+                            self.varname_ends.get_mut(&name).unwrap().illegal_cycle = true;
                         }
                         return None;
                     }
 
                     // No self-cycle.
-                    let name_ends = name_ends_result.as_ref().unwrap();
                     let prev = if is_in {
-                        &name_ends.inn
+                        varname_info.inn_used = true;
+                        &varname_info.ends.inn
                     } else {
-                        &name_ends.out
+                        varname_info.out_used = true;
+                        &varname_info.ends.out
                     };
                     port_det = Self::helper_combine_end(
                         &mut self.diagnostics,
@@ -432,6 +492,7 @@ impl FlatGraphBuilder {
         ));
         None
     }
+
     /// Connect two operators on the given port indexes.
     fn connect_operators(
         &mut self,
@@ -439,7 +500,7 @@ impl FlatGraphBuilder {
         src: GraphNodeId,
         dst_port: PortIndexValue,
         dst: GraphNodeId,
-    ) {
+    ) -> GraphEdgeId {
         {
             /// Helper to emit conflicts when a port is used twice.
             fn emit_conflict(
@@ -493,14 +554,14 @@ impl FlatGraphBuilder {
                 }
             }
         }
-        self.flat_graph.insert_edge(src, src_port, dst, dst_port);
+        self.flat_graph.insert_edge(src, src_port, dst, dst_port)
     }
 
     /// Process operators and emit operator errors.
     fn process_operator_errors(&mut self) {
         self.make_operator_instances();
-        self.insert_operator_edge_types();
         self.check_operator_errors();
+        self.warn_unused_port_indexing();
     }
 
     /// Make `OperatorInstance`s for each operator node.
@@ -509,45 +570,18 @@ impl FlatGraphBuilder {
             .insert_node_op_insts_all(&mut self.diagnostics);
     }
 
-    /// Find and insert operator [`GraphEdgeType`]s for edges.
-    fn insert_operator_edge_types(&mut self) {
-        for edge_id in self.flat_graph.edge_ids().collect::<Vec<_>>() {
-            let (src, _dst) = self.flat_graph.edge(edge_id);
-            match self.flat_graph.node(src) {
-                GraphNode::Operator(_) => {
-                    let Some(src_op_inst) = self.flat_graph.node_op_inst(src) else {
-                        continue;
-                    };
-                    let (src_port, _dst_port) = self.flat_graph.edge_ports(edge_id);
-                    let edge_type = (src_op_inst.op_constraints.output_edgetype_fn)(src_port);
-                    let _old_edge_type = self.flat_graph.insert_edge_type(edge_id, edge_type);
-                    // _old_edge_type should usually be `None`? Except from modules?
-                }
-                GraphNode::Handoff { .. } => {
-                    // TODO(mingwei)
-                    // // This is still a flat graph - there should generally not be handoffs.
-                    // // Handoffs can only handle value edges.
-                    // self.flat_graph
-                    //     .insert_edge_type(edge_id, GraphEdgeType::Value);
-                    unimplemented!();
-                }
-                GraphNode::ModuleBoundary { .. } => {
-                    // No-op. Handle when the module is connected.
-                }
-            }
-        }
-    }
-
     /// Validates that operators have valid number of inputs, outputs, & arguments.
     /// Adds errors (and warnings) to `self.diagnostics`.
     fn check_operator_errors(&mut self) {
         for (node_id, node) in self.flat_graph.nodes() {
             match node {
                 GraphNode::Operator(operator) => {
-                    let Some(op_constraints) = find_op_op_constraints(operator) else {
+                    let Some(op_inst) = self.flat_graph.node_op_inst(node_id) else {
                         // Error already emitted by `insert_node_op_insts_all`.
                         continue;
                     };
+                    let op_constraints = op_inst.op_constraints;
+
                     // Check number of args
                     if op_constraints.num_args != operator.args.len() {
                         self.diagnostics.push(Diagnostic::spanned(
@@ -663,7 +697,7 @@ impl FlatGraphBuilder {
                                             "Unexpected {} port: {}. Expected one of: `{}`",
                                             input_output,
                                             actual_port_iv.as_error_message_string(),
-                                            itertools::Itertools::intersperse(
+                                            Itertools::intersperse(
                                                 expected_ports
                                                     .iter()
                                                     .map(|port| Cow::Owned(
@@ -696,7 +730,7 @@ impl FlatGraphBuilder {
                                 format!(
                                     "Missing expected {} port(s): `{}`.",
                                     input_output,
-                                    itertools::Itertools::intersperse(
+                                    Itertools::intersperse(
                                         missing.into_iter().map(|port| Cow::Owned(
                                             port.to_token_stream().to_string()
                                         )),
@@ -727,46 +761,31 @@ impl FlatGraphBuilder {
                         &mut self.diagnostics,
                     );
 
-                    // Check edge types.
+                    // Check that singleton references actually reference *stateful* operators.
                     {
-                        for (edge_id, prev_node_id) in self.flat_graph.node_predecessors(node_id) {
-                            {
-                                // Module boundaries will not have an edge type.
-                                if matches!(
-                                    self.flat_graph.node(prev_node_id),
-                                    GraphNode::ModuleBoundary { .. }
-                                ) {
-                                    continue;
-                                }
-                                // Skip if previous node is unknown. // TODO(mingwei): handle explicit handoffs if we add them.
-                                if self.flat_graph.node_op_inst(prev_node_id).is_none() {
-                                    continue;
-                                }
-                            }
-
-                            let port_in = self.flat_graph.edge_ports(edge_id).0;
-                            let Some(edge_type_expected) =
-                                (op_constraints.input_edgetype_fn)(port_in)
+                        let singletons_resolved =
+                            self.flat_graph.node_singleton_references(node_id);
+                        for (singleton_node_id, singleton_ident) in singletons_resolved
+                            .iter()
+                            .zip_eq(&*operator.singletons_referenced)
+                        {
+                            let &Some(singleton_node_id) = singleton_node_id else {
+                                // Error already emitted by `connect_operator_links`, "Cannot find referenced name...".
+                                continue;
+                            };
+                            let Some(ref_op_inst) = self.flat_graph.node_op_inst(singleton_node_id)
                             else {
-                                // `None` means any edge type is allowed.
+                                // Error already emitted by `insert_node_op_insts_all`.
                                 continue;
                             };
-                            let Some(edge_type_actual) = self.flat_graph.edge_type(edge_id) else {
+                            let ref_op_constraints = ref_op_inst.op_constraints;
+                            if !ref_op_constraints.has_singleton_output {
                                 self.diagnostics.push(Diagnostic::spanned(
-                                    port_in.span(),
-                                    Level::Error,
-                                    "Operator input has no edge type, this is a Hydroflow bug.",
-                                ));
-                                continue;
-                            };
-                            if edge_type_expected != edge_type_actual {
-                                self.diagnostics.push(Diagnostic::spanned(
-                                    port_in.span(),
+                                    singleton_ident.span(),
                                     Level::Error,
                                     format!(
-                                        "Operator requires a {:?} edge type input, but received a {:?} edge type input.",
-                                        edge_type_expected,
-                                        edge_type_actual,
+                                        "Cannot reference operator `{}`. Only operators with singleton state can be referenced.",
+                                        ref_op_constraints.name,
                                     ),
                                 ));
                             }
@@ -777,6 +796,37 @@ impl FlatGraphBuilder {
                 GraphNode::ModuleBoundary { .. } => {
                     // Module boundaries don't require any checking.
                 }
+            }
+        }
+    }
+
+    /// Warns about unused port indexing referenced in [`Self::varname_ends`].
+    /// https://github.com/hydro-project/hydroflow/issues/1108
+    fn warn_unused_port_indexing(&mut self) {
+        for (_ident, varname_info) in self.varname_ends.iter() {
+            if !varname_info.inn_used {
+                Self::helper_check_unused_port(&mut self.diagnostics, &varname_info.ends, true);
+            }
+            if !varname_info.out_used {
+                Self::helper_check_unused_port(&mut self.diagnostics, &varname_info.ends, false);
+            }
+        }
+    }
+
+    /// Emit a warning to `diagnostics` for an unused port (i.e. if the port is specified for
+    /// reason).
+    fn helper_check_unused_port(diagnostics: &mut Vec<Diagnostic>, ends: &Ends, is_in: bool) {
+        let port = if is_in { &ends.inn } else { &ends.out };
+        if let Some((port, _)) = port {
+            if port.is_specified() {
+                diagnostics.push(Diagnostic::spanned(
+                    port.span(),
+                    Level::Error,
+                    format!(
+                        "{} port index is unused. (Is the port on the correct side?)",
+                        if is_in { "Input" } else { "Output" },
+                    ),
+                ));
             }
         }
     }

@@ -1,6 +1,6 @@
 ---
 source: hydroflow_datalog_core/src/lib.rs
-expression: "prettyplease::unparse(&wrapped)"
+expression: "prettyplease :: unparse(& wrapped)"
 ---
 fn main() {
     {
@@ -9,7 +9,7 @@ fn main() {
             use hydroflow::{var_expr, var_args};
             let mut df = hydroflow::scheduled::graph::Hydroflow::new();
             df.__assign_meta_graph(
-                "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":2},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"difference :: < 'tick , 'static > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"defer_tick ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"source_stream (ints2)\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | ((row . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : ((_ ,) , _) | (g . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | (() , ((row . 0) ,)))\"},\"version\":1},{\"value\":{\"Operator\":\"fold_keyed :: < 'static , () , (Option < _ > ,) > (| | (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 . take () { Some ({ let prev : (hydroflow :: rustc_hash :: FxHashSet < _ > , _) = prev ; let mut set : hydroflow :: rustc_hash :: FxHashSet < _ > = prev . 0 ; if set . insert (val . 0) { (set , prev . 1 + 1) } else { (set , prev . 1) } }) } else { Some ({ let mut set = hydroflow :: rustc_hash :: FxHashSet :: < _ > :: default () ; set . insert (val . 0) ; (set , 1) }) } ; })\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : (() , _) | (a . 0 . unwrap () . 1 ,))\"},\"version\":1}],\"edge_types\":[{\"value\":null,\"version\":0},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":5},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":null,\"version\":0},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1}],\"graph\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":15,\"version\":1},{\"idx\":2,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":5,\"version\":1},{\"idx\":11,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":8,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":12,\"version\":1},{\"idx\":6,\"version\":3}],\"version\":5},{\"value\":[{\"idx\":8,\"version\":3},{\"idx\":5,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":18,\"version\":1},{\"idx\":10,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":11,\"version\":3},{\"idx\":3,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":6,\"version\":3},{\"idx\":7,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":10,\"version\":1},{\"idx\":13,\"version\":1}],\"version\":3},{\"value\":null,\"version\":2},{\"value\":[{\"idx\":14,\"version\":1},{\"idx\":15,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":14,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":9,\"version\":3},{\"idx\":17,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":17,\"version\":1},{\"idx\":18,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":16,\"version\":1},{\"idx\":9,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":16,\"version\":1}],\"version\":1}],\"ports\":[{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Path\":\"pos\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":5},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Path\":\"neg\"}],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":1}],\"node_subgraph\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":5,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":17,\"version\":1},{\"idx\":18,\"version\":1},{\"idx\":10,\"version\":1},{\"idx\":13,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":14,\"version\":1},{\"idx\":15,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":16,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":12,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1},{\"value\":2,\"version\":1},{\"value\":1,\"version\":1},{\"value\":0,\"version\":1}],\"node_varnames\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"ints1_insert\",\"version\":1},{\"value\":\"ints1\",\"version\":1},{\"value\":\"ints1\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"ints2_insert\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"result_insert\",\"version\":1}],\"flow_props\":[{\"value\":null,\"version\":0}],\"subgraph_laziness\":[{\"value\":null,\"version\":0}]}",
+                "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":2},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"difference :: < 'tick , 'static > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"defer_tick ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"source_stream (ints2)\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | ((row . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : ((_ ,) , _) | (g . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | (() , ((row . 0) ,)))\"},\"version\":1},{\"value\":{\"Operator\":\"fold_keyed :: < 'static , () , (Option < _ > ,) > (| | (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 . take () { Some ({ let prev : (hydroflow :: rustc_hash :: FxHashSet < _ > , _) = prev ; let mut set : hydroflow :: rustc_hash :: FxHashSet < _ > = prev . 0 ; if set . insert (val . 0) { (set , prev . 1 + 1) } else { (set , prev . 1) } }) } else { Some ({ let mut set = hydroflow :: rustc_hash :: FxHashSet :: < _ > :: default () ; set . insert (val . 0) ; (set , 1) }) } ; })\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : (() , _) | (a . 0 . unwrap () . 1 ,))\"},\"version\":1}],\"graph\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":15,\"version\":1},{\"idx\":2,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":5,\"version\":1},{\"idx\":11,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":8,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":12,\"version\":1},{\"idx\":6,\"version\":3}],\"version\":5},{\"value\":[{\"idx\":8,\"version\":3},{\"idx\":5,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":18,\"version\":1},{\"idx\":10,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":11,\"version\":3},{\"idx\":3,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":6,\"version\":3},{\"idx\":7,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":10,\"version\":1},{\"idx\":13,\"version\":1}],\"version\":3},{\"value\":null,\"version\":2},{\"value\":[{\"idx\":14,\"version\":1},{\"idx\":15,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":14,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":9,\"version\":3},{\"idx\":17,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":17,\"version\":1},{\"idx\":18,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":16,\"version\":1},{\"idx\":9,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":16,\"version\":1}],\"version\":1}],\"ports\":[{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Path\":\"pos\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":5},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Path\":\"neg\"}],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":1}],\"node_subgraph\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":5,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":17,\"version\":1},{\"idx\":18,\"version\":1},{\"idx\":10,\"version\":1},{\"idx\":13,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":14,\"version\":1},{\"idx\":15,\"version\":1},{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":16,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":12,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1},{\"value\":2,\"version\":1},{\"value\":1,\"version\":1},{\"value\":0,\"version\":1}],\"node_singleton_references\":[{\"value\":null,\"version\":0},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1}],\"node_varnames\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"ints1_insert\",\"version\":1},{\"value\":\"ints1\",\"version\":1},{\"value\":\"ints1\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"ints2_insert\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"result_insert\",\"version\":1}],\"subgraph_laziness\":[{\"value\":null,\"version\":0}]}",
             );
             df.__assign_diagnostics("[]");
             let (hoff_6v3_send, hoff_6v3_recv) = df
@@ -117,10 +117,11 @@ fn main() {
                     let op_12v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_12v1__source_stream__loc_unknown_start_4_26_end_4_46<
+                        pub fn op_12v1__source_stream__loc_nopath_4_26_4_46<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -143,17 +144,17 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_12v1__source_stream__loc_unknown_start_4_26_end_4_46(op_12v1)
+                        op_12v1__source_stream__loc_nopath_4_26_4_46(op_12v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_4v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_12v1, hoff_6v3_send);
+                    pivot_run_sg_4v1(op_12v1, hoff_6v3_send);
                 },
             );
             df.add_subgraph_stratified(
@@ -181,10 +182,11 @@ fn main() {
                     let op_5v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_5v1__defer_tick__loc_unknown_start_2_21_end_2_26<
+                        pub fn op_5v1__defer_tick__loc_nopath_2_21_2_26<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -207,17 +209,17 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_5v1__defer_tick__loc_unknown_start_2_21_end_2_26(op_5v1)
+                        op_5v1__defer_tick__loc_nopath_2_21_2_26(op_5v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_1v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_5v1, hoff_11v3_send);
+                    pivot_run_sg_1v1(op_5v1, hoff_11v3_send);
                 },
             );
             df.add_subgraph_stratified(
@@ -232,9 +234,6 @@ fn main() {
                     let mut sg_2v1_node_17v1_hashtable = context
                         .state_ref(sg_2v1_node_17v1_groupbydata)
                         .borrow_mut();
-                    let mut sg_2v1_node_17v1_keyset = hydroflow::rustc_hash::FxHashSet::<
-                        (),
-                    >::default();
                     {
                         #[inline(always)]
                         fn check_input<Iter, A, B>(
@@ -259,10 +258,6 @@ fn main() {
                             (f)(a, t)
                         }
                         for kv in check_input(hoff_9v3_recv) {
-                            if context.is_first_run_this_tick() {
-                                sg_2v1_node_17v1_keyset
-                                    .insert(::std::clone::Clone::clone(&kv.0));
-                            }
                             #[allow(unknown_lints, clippy::unwrap_or_default)]
                             let entry = sg_2v1_node_17v1_hashtable
                                 .entry(kv.0)
@@ -272,8 +267,7 @@ fn main() {
                                 entry,
                                 kv.1,
                                 |old: &mut (Option<_>,), val: (_,)| {
-                                    old
-                                        .0 = if let Some(prev) = old.0.take() {
+                                    old.0 = if let Some(prev) = old.0.take() {
                                         Some({
                                             let prev: (hydroflow::rustc_hash::FxHashSet<_>, _) = prev;
                                             let mut set: hydroflow::rustc_hash::FxHashSet<_> = prev.0;
@@ -296,39 +290,30 @@ fn main() {
                             );
                         }
                     }
-                    let op_17v1 = if context.is_first_run_this_tick() {
-                        hydroflow::itertools::Either::Left(
-                            sg_2v1_node_17v1_hashtable
-                                .iter()
-                                .map(
-                                    #[allow(
-                                        unknown_lints,
-                                        suspicious_double_ref_op,
-                                        clippy::clone_on_copy
-                                    )]
-                                    |(k, v)| (
-                                        ::std::clone::Clone::clone(k),
-                                        ::std::clone::Clone::clone(v),
-                                    ),
-                                ),
-                        )
-                    } else {
-                        hydroflow::itertools::Either::Right(
-                            sg_2v1_node_17v1_keyset
-                                .into_iter()
-                                .map(|k| {
-                                    let v = sg_2v1_node_17v1_hashtable.get(&k).unwrap();
-                                    (k, ::std::clone::Clone::clone(v))
-                                }),
-                        )
-                    };
+                    let op_17v1 = context
+                        .is_first_run_this_tick()
+                        .then_some(sg_2v1_node_17v1_hashtable.iter())
+                        .into_iter()
+                        .flatten()
+                        .map(
+                            #[allow(
+                                unknown_lints,
+                                suspicious_double_ref_op,
+                                clippy::clone_on_copy
+                            )]
+                            |(k, v)| (
+                                ::std::clone::Clone::clone(k),
+                                ::std::clone::Clone::clone(v),
+                            ),
+                        );
                     let op_17v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_17v1__fold_keyed__loc_unknown_start_1_0_end_1_0<
+                        pub fn op_17v1__fold_keyed__loc_nopath_1_0_1_0<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -351,16 +336,17 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_17v1__fold_keyed__loc_unknown_start_1_0_end_1_0(op_17v1)
+                        op_17v1__fold_keyed__loc_nopath_1_0_1_0(op_17v1)
                     };
                     let op_18v1 = op_17v1.map(|(g, a): ((), _)| (a.0.unwrap().1,));
                     let op_18v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_18v1__map__loc_unknown_start_1_0_end_1_0<
+                        pub fn op_18v1__map__loc_nopath_1_0_1_0<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -383,7 +369,7 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_18v1__map__loc_unknown_start_1_0_end_1_0(op_18v1)
+                        op_18v1__map__loc_nopath_1_0_1_0(op_18v1)
                     };
                     let op_10v1 = op_18v1
                         .filter(|item| {
@@ -405,10 +391,11 @@ fn main() {
                     let op_10v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_10v1__unique__loc_unknown_start_8_20_end_8_26<
+                        pub fn op_10v1__unique__loc_nopath_8_20_8_26<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -431,7 +418,7 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_10v1__unique__loc_unknown_start_8_20_end_8_26(op_10v1)
+                        op_10v1__unique__loc_nopath_8_20_8_26(op_10v1)
                     };
                     let op_13v1 = hydroflow::pusherator::for_each::ForEach::new(|v| {
                         result.send(v).unwrap()
@@ -439,12 +426,13 @@ fn main() {
                     let op_13v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_13v1__for_each__loc_unknown_start_8_28_end_8_65<
+                        pub fn op_13v1__for_each__loc_nopath_8_28_8_65<
                             Item,
                             Input: hydroflow::pusherator::Pusherator<Item = Item>,
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -463,17 +451,17 @@ fn main() {
                             }
                             Push { inner: input }
                         }
-                        op_13v1__for_each__loc_unknown_start_8_28_end_8_65(op_13v1)
+                        op_13v1__for_each__loc_nopath_8_28_8_65(op_13v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_2v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_10v1, op_13v1);
+                    pivot_run_sg_2v1(op_10v1, op_13v1);
                     context.schedule_subgraph(context.current_subgraph(), false);
                 },
             );
@@ -522,10 +510,11 @@ fn main() {
                     let op_7v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_7v1__unique__loc_unknown_start_4_19_end_4_24<
+                        pub fn op_7v1__unique__loc_nopath_4_19_4_24<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -548,16 +537,17 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_7v1__unique__loc_unknown_start_4_19_end_4_24(op_7v1)
+                        op_7v1__unique__loc_nopath_4_19_4_24(op_7v1)
                     };
                     let op_14v1 = op_7v1.map(|row: (_,)| ((row.0,), ()));
                     let op_14v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_14v1__map__loc_unknown_start_1_0_end_1_0<
+                        pub fn op_14v1__map__loc_nopath_1_0_1_0<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -580,16 +570,17 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_14v1__map__loc_unknown_start_1_0_end_1_0(op_14v1)
+                        op_14v1__map__loc_nopath_1_0_1_0(op_14v1)
                     };
                     let op_15v1 = op_14v1.map(|(g, a): ((_,), _)| (g.0,));
                     let op_15v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_15v1__map__loc_unknown_start_1_0_end_1_0<
+                        pub fn op_15v1__map__loc_nopath_1_0_1_0<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -612,7 +603,7 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_15v1__map__loc_unknown_start_1_0_end_1_0(op_15v1)
+                        op_15v1__map__loc_nopath_1_0_1_0(op_15v1)
                     };
                     let op_2v1 = op_15v1
                         .filter(|item| {
@@ -634,10 +625,11 @@ fn main() {
                     let op_2v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_2v1__unique__loc_unknown_start_2_21_end_2_26<
+                        pub fn op_2v1__unique__loc_nopath_2_21_2_26<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -660,7 +652,7 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_2v1__unique__loc_unknown_start_2_21_end_2_26(op_2v1)
+                        op_2v1__unique__loc_nopath_2_21_2_26(op_2v1)
                     };
                     let op_2v1 = op_2v1.map(|k| (k, ()));
                     let mut sg_3v1_node_3v1_antijoindata_neg_borrow = context
@@ -706,10 +698,11 @@ fn main() {
                     let op_3v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_3v1__difference__loc_unknown_start_2_21_end_2_26<
+                        pub fn op_3v1__difference__loc_nopath_2_21_2_26<
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -732,7 +725,7 @@ fn main() {
                             }
                             Pull { inner: input }
                         }
-                        op_3v1__difference__loc_unknown_start_2_21_end_2_26(op_3v1)
+                        op_3v1__difference__loc_nopath_2_21_2_26(op_3v1)
                     };
                     let op_16v1 = hydroflow::pusherator::map::Map::new(
                         |row: (_,)| ((), ((row.0),)),
@@ -741,12 +734,13 @@ fn main() {
                     let op_16v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_16v1__map__loc_unknown_start_1_0_end_1_0<
+                        pub fn op_16v1__map__loc_nopath_1_0_1_0<
                             Item,
                             Input: hydroflow::pusherator::Pusherator<Item = Item>,
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -765,7 +759,7 @@ fn main() {
                             }
                             Push { inner: input }
                         }
-                        op_16v1__map__loc_unknown_start_1_0_end_1_0(op_16v1)
+                        op_16v1__map__loc_nopath_1_0_1_0(op_16v1)
                     };
                     let op_4v1 = hydroflow::pusherator::tee::Tee::new(
                         op_16v1,
@@ -774,12 +768,13 @@ fn main() {
                     let op_4v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
-                        pub fn op_4v1__tee__loc_unknown_start_2_21_end_2_26<
+                        pub fn op_4v1__tee__loc_nopath_2_21_2_26<
                             Item,
                             Input: hydroflow::pusherator::Pusherator<Item = Item>,
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -798,21 +793,20 @@ fn main() {
                             }
                             Push { inner: input }
                         }
-                        op_4v1__tee__loc_unknown_start_2_21_end_2_26(op_4v1)
+                        op_4v1__tee__loc_nopath_2_21_2_26(op_4v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_3v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_3v1, op_4v1);
+                    pivot_run_sg_3v1(op_3v1, op_4v1);
                 },
             );
             df
         }
     }
 }
-

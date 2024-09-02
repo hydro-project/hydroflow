@@ -1,10 +1,9 @@
 use quote::quote_spanned;
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput, WriteContextArgs,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
-use crate::graph::GraphEdgeType;
 
 /// > 1 input stream, 1 output stream
 ///
@@ -13,7 +12,7 @@ use crate::graph::GraphEdgeType;
 /// For each item `i` passed in, treat `i` as an iterator and map the closure to that
 /// iterator to produce items one by one. The type of the input items must be iterable.
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// ```hydroflow
 /// // should print out each character of each word on a separate line
@@ -32,12 +31,10 @@ pub const FLAT_MAP: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,
@@ -45,7 +42,7 @@ pub const FLAT_MAP: OperatorConstraints = OperatorConstraints {
                    inputs,
                    outputs,
                    is_pull,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                _| {

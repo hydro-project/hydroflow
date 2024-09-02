@@ -1,8 +1,9 @@
 use quote::quote_spanned;
 use syn::parse_quote_spanned;
 
-use super::{OperatorCategory, OperatorConstraints, WriteContextArgs, RANGE_0, RANGE_1};
-use crate::graph::{GraphEdgeType, OperatorInstance};
+use super::{
+    OperatorCategory, OperatorConstraints, WriteContextArgs, RANGE_0, RANGE_1,
+};
 
 /// > 1 input stream, 1 optional output stream
 /// > Arguments: A Vector, Slice, or Array containing objects that will be compared to the input stream.
@@ -35,23 +36,21 @@ pub const ASSERT_EQ: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    context,
                    hydroflow,
                    op_span,
-                   op_inst,
+                   arguments,
                    ..
                },
                diagnostics| {
         let assert_index_ident = wc.make_ident("assert_index");
 
-        let args = &op_inst.arguments[0];
+        let arg = &arguments[0];
 
         let inspect_fn = parse_quote_spanned! {op_span=>
             |__item| {
@@ -61,16 +60,13 @@ pub const ASSERT_EQ: OperatorConstraints = OperatorConstraints {
                 }
 
                 let __index = #context.state_ref(#assert_index_ident).get();
-                ::std::assert_eq!(__constrain_types(&#args, __index), __item, "Item (right) at index {} does not equal expected (left).", __index);
+                ::std::assert_eq!(__constrain_types(&#arg, __index), __item, "Item (right) at index {} does not equal expected (left).", __index);
                 #context.state_ref(#assert_index_ident).set(__index + 1);
             }
         };
 
         let wc = WriteContextArgs {
-            op_inst: &OperatorInstance {
-                arguments: inspect_fn,
-                ..op_inst.clone()
-            },
+            arguments: &inspect_fn,
             ..wc.clone()
         };
 

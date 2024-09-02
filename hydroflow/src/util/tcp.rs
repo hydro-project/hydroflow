@@ -138,8 +138,11 @@ pub async fn bind_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>
     Ok((tx_egress, rx_ingress, bound_endpoint))
 }
 
-/// This is the inverse of bind_tcp, when messages enqueued into the returned sender, tcp sockets will be created and connected as necessary to send out the requests.
-/// As the responses come back, they will be forwarded to the returned receiver.
+/// The inverse of [`bind_tcp`].
+///
+/// When messages enqueued into the returned sender, tcp sockets will be created and connected as
+/// necessary to send out the requests. As the responses come back, they will be forwarded to the
+/// returned receiver.
 pub fn connect_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>(
     codec: Codec,
 ) -> (TcpFramedSink<T>, TcpFramedStream<Codec>) {

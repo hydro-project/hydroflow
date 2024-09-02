@@ -1125,6 +1125,171 @@ fn test_wildcard_join_count() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result2_recv), &[(1,)]);
 }
 
+#[multiplatform_test]
+fn test_collect_vec() {
+    let (ints1_send, ints1) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (ints2_send, ints2) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(Vec<(i64, i64)>,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints1 `source_stream(ints1)` 
+        .input ints2 `source_stream(ints2)`
+        
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(collect_vec(a, b)) :- ints1(a), ints2(b)
+        "#
+    );
+
+    ints1_send.send((1,)).unwrap();
+    ints1_send.send((2,)).unwrap();
+    ints2_send.send((1,)).unwrap();
+    ints2_send.send((2,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv)
+            .into_iter()
+            .map(|(mut v,)| {
+                v.sort();
+                v
+            })
+            .collect::<Vec<_>>(),
+        &[vec![(1, 1), (1, 2), (2, 1), (2, 2)]]
+    );
+}
+
+#[multiplatform_test]
+fn test_flatten() {
+    let (ints1_send, ints1) = hydroflow::util::unbounded_channel::<(i64, Vec<i64>)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64, i64)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints1 `source_stream(ints1)`
+            
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(a, b) :- ints1(a, *b)
+        "#
+    );
+
+    ints1_send.send((3, vec![1, 2])).unwrap();
+    ints1_send.send((3, vec![2, 3])).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(3, 1), (3, 2), (3, 3),]
+    );
+}
+
+#[test]
+fn test_detuple() {
+    let (ints1_send, ints1) = hydroflow::util::unbounded_channel::<((i64, i64),)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64, i64)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints1 `source_stream(ints1)`
+        
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(a, b) :- ints1((a, b))
+        "#
+    );
+
+    ints1_send.send(((1, 2),)).unwrap();
+    ints1_send.send(((3, 4),)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(1, 2), (3, 4)]
+    );
+}
+
+#[test]
+fn test_multi_detuple() {
+    let (ints1_send, ints1) = hydroflow::util::unbounded_channel::<((i64, i64), (i64, i64))>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64, i64, i64, i64)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints1 `source_stream(ints1)`
+        
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(a, b, c, d) :- ints1((a, b), (c, d))
+        "#
+    );
+
+    ints1_send.send(((1, 2), (3, 4))).unwrap();
+    ints1_send.send(((5, 6), (7, 8))).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(1, 2, 3, 4), (5, 6, 7, 8)]
+    );
+}
+
+#[test]
+fn test_flat_then_detuple() {
+    let (ints1_send, ints1) = hydroflow::util::unbounded_channel::<(Vec<(i64, i64)>,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64, i64)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints1 `source_stream(ints1)`
+        
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(a, b) :- ints1(*(a, b))
+        "#
+    );
+
+    ints1_send.send((vec![(1, 2), (3, 4)],)).unwrap();
+    ints1_send.send((vec![(5, 6), (7, 8)],)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(1, 2), (3, 4), (5, 6), (7, 8)]
+    );
+}
+
+#[test]
+fn test_detuple_then_flat() {
+    let (ints1_send, ints1) = hydroflow::util::unbounded_channel::<((Vec<i64>, Vec<i64>),)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64, i64)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints1 `source_stream(ints1)`
+        
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(a, b) :- ints1((*a, *b))
+        "#
+    );
+
+    ints1_send.send(((vec![1, 2], vec![3, 4]),)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(1, 3), (1, 4), (2, 3), (2, 4)]
+    );
+}
+
 // #[ignore] doesn't seem to work for #[multiplatform_test]
 // #[ignore] // This test depends on the ordering of specific tuples which is undefined.
 // #[multiplatform_test]

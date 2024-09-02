@@ -4,12 +4,13 @@ on:
   push:
     branches:
       - main
+      - feature/**
     tags:
       - 'hydro_cli-v[0-9]+.[0-9]+.[0-9]+'
 
 env:
   PACKAGE_NAME: hydro_deploy
-  PYTHON_VERSION: "3.7" # to build abi3 wheels
+  PYTHON_VERSION: "3.10" # to build abi3 wheels
 
 # based on Ruff's CI
 jobs:
@@ -33,16 +34,17 @@ jobs:
           - universal2-apple-darwin
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          architecture: x64
       - name: "Build wheels"
         uses: PyO3/maturin-action@v1
         with:
           working-directory: hydro_deploy/hydro_cli
           target: ${{ matrix.target }}
           args: --release --out dist
+        env:
+          CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER: clang
       - name: "Install built wheel"
         run: |
           pip install hydro_deploy/hydro_cli/dist/${{ env.PACKAGE_NAME }}-*.whl --force-reinstall
@@ -63,7 +65,7 @@ jobs:
           - i686-unknown-linux-gnu
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           architecture: x64
@@ -108,7 +110,7 @@ jobs:
             arch: armv7
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: "Build wheels"
@@ -139,7 +141,7 @@ jobs:
             arch: x64
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           architecture: ${{ matrix.platform.arch }}
@@ -173,7 +175,7 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: wheels
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
       - name: "Publish to PyPi"
         env:
           TWINE_USERNAME: __token__

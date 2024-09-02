@@ -19,6 +19,8 @@ pub mod reactor;
 pub mod state;
 pub(crate) mod subgraph;
 
+pub mod ticks;
+
 /// A subgraph's ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
@@ -32,7 +34,7 @@ impl Display for SubgraphId {
 
 /// A handoff's ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[repr(transparent)]
 pub struct HandoffId(pub(crate) usize);
 impl Display for HandoffId {

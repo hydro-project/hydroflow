@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - feature/**
   pull_request:
   schedule:
     - cron: "35 03 * * *" # Daily at 8:35 PM PDT, 7:35 PM PST.
@@ -27,7 +29,7 @@ jobs:
   check:
     name: Lint and Check
     if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
-    timeout-minutes: 15
+    timeout-minutes: 20
     needs: pre_job
     runs-on: ${{ matrix.os }}
     strategy:
@@ -63,38 +65,28 @@ jobs:
 
       - name: Run sccache-cache
         if: matrix.rust_release == 'pinned-nightly'
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.4
 
       - name: Set Rust caching env vars
         if: matrix.rust_release == 'pinned-nightly'
-        run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+        uses: actions/github-script@v6
+        with:
+          script: |
+            core.exportVariable('SCCACHE_GHA_ENABLED', 'true');
+            core.exportVariable('RUSTC_WRAPPER', 'sccache');
 
       - name: Run cargo fmt
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all -- --check
 
       - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all-targets --features python -- -D warnings
+        run: cargo clippy --all-targets --features python -- -D warnings
 
       - name: Run cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --all-targets --features python
+        run: cargo check --all-targets --features python
 
       - name: Run cargo check (no default features)
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --all-targets --no-default-features
+        run: cargo check --all-targets --no-default-features
 
   check-wasm:
     name: Check WebAssembly
@@ -133,7 +125,7 @@ jobs:
   test:
     name: Test Suite
     if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
-    timeout-minutes: 25
+    timeout-minutes: 35
     needs: pre_job
     runs-on: ${{ matrix.os }}
     strategy:
@@ -169,13 +161,15 @@ jobs:
 
       - name: Run sccache-cache
         if: matrix.rust_release == 'pinned-nightly'
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.4
 
       - name: Set Rust caching env vars
         if: matrix.rust_release == 'pinned-nightly'
-        run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+        uses: actions/github-script@v6
+        with:
+          script: |
+            core.exportVariable('SCCACHE_GHA_ENABLED', 'true');
+            core.exportVariable('RUSTC_WRAPPER', 'sccache');
 
       - name: Install cargo-nextest (linux)
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -187,16 +181,10 @@ jobs:
         run: curl -LsSf https://get.nexte.st/latest/windows-tar | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
 
       - name: Run cargo nextest on all targets
-        uses: actions-rs/cargo@v1
-        with:
-          command: nextest
-          args: run --no-fail-fast --features python --all-targets
+        run: cargo nextest run --no-fail-fast --features python --all-targets
 
       - name: Run doctests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --no-fail-fast --features python --doc
+        run: cargo test --no-fail-fast --features python --doc
 
       - name: Install Python
         uses: actions/setup-python@v4

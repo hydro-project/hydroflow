@@ -21,11 +21,12 @@ impl<T> Default for ReaderHandoff<T> {
 }
 
 struct TeeingHandoffInternal<T> {
-    readers: Vec<ReaderHandoff<T>>,
+    /// (is alive, reader)
+    readers: Vec<(bool, ReaderHandoff<T>)>,
 }
 
-// A [Handoff] which is part of a "family" of handoffs. Writing to this handoff
-// will write to every reader. New readers can be created by calling `tee`.
+/// A [Handoff] which is part of a "family" of handoffs. Writing to this handoff
+/// will write to every reader. New readers can be created by calling `tee`.
 #[derive(Clone)]
 pub struct TeeingHandoff<T>
 where
@@ -40,7 +41,7 @@ impl<T> Default for TeeingHandoff<T> {
         TeeingHandoff {
             read_from: 0,
             internal: Rc::new(RefCell::new(TeeingHandoffInternal {
-                readers: vec![Default::default()],
+                readers: vec![(true, ReaderHandoff::<T>::default())],
             })),
         }
     }
@@ -50,17 +51,23 @@ impl<T> TeeingHandoff<T>
 where
     T: Clone,
 {
+    /// Tee the internal shared datastructure to create a new tee output.
     #[must_use]
-    pub fn tee(&self) -> Self {
+    pub(crate) fn tee(&self) -> Self {
         let id = (*self.internal).borrow().readers.len();
         (*self.internal)
             .borrow_mut()
             .readers
-            .push(ReaderHandoff::default());
+            .push((true, ReaderHandoff::default()));
         Self {
             read_from: id,
             internal: self.internal.clone(),
         }
+    }
+
+    /// Mark this particular teeing handoff output as dead, so no more data will be written to it.
+    pub(crate) fn drop(&self) {
+        self.internal.borrow_mut().readers[self.read_from].0 = false;
     }
 }
 
@@ -69,8 +76,13 @@ impl<T> HandoffMeta for TeeingHandoff<T> {
         self
     }
 
+    /// If this output's buffer is empty, return true.
     fn is_bottom(&self) -> bool {
-        true
+        self.internal.borrow().readers[self.read_from]
+            .1
+            .contents
+            .iter()
+            .all(Vec::is_empty)
     }
 }
 
@@ -78,7 +90,11 @@ impl<T> Handoff for TeeingHandoff<T> {
     type Inner = VecDeque<Vec<T>>;
 
     fn take_inner(&self) -> Self::Inner {
-        std::mem::take(&mut (*self.internal).borrow_mut().readers[self.read_from].contents)
+        std::mem::take(
+            &mut (*self.internal).borrow_mut().readers[self.read_from]
+                .1
+                .contents,
+        )
     }
 
     fn borrow_mut_swap(&self) -> std::cell::RefMut<Self::Inner> {
@@ -92,11 +108,16 @@ where
 {
     fn give(&self, vec: Vec<T>) -> Vec<T> {
         let readers = &mut (*self.internal).borrow_mut().readers;
-        for i in 0..(readers.len() - 1) {
-            readers[i].contents.push_back(vec.clone());
+        if let Some((last, rest)) = readers.split_last_mut() {
+            for reader in rest {
+                if reader.0 {
+                    reader.1.contents.push_back(vec.clone());
+                }
+            }
+            if last.0 {
+                last.1.contents.push_back(vec);
+            }
         }
-        let last = readers.len() - 1;
-        readers[last].contents.push_back(vec);
         Vec::new()
     }
 }

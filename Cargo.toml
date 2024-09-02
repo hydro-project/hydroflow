@@ -6,8 +6,8 @@ members = [
     "hydro_deploy/core",
     "hydro_deploy/hydro_cli",
     "hydro_deploy/hydro_cli_examples",
-    "hydro_deploy/hydroflow_cli_integration",
-    "hydro_deploy/hydroflow_plus_cli_integration",
+    "hydro_deploy/hydroflow_deploy_integration",
+    "hydro_deploy/hydroflow_plus_deploy",
     "hydroflow",
     "hydroflow_datalog",
     "hydroflow_datalog_core",
@@ -15,8 +15,10 @@ members = [
     "hydroflow_macro",
     "hydroflow_plus",
     "hydroflow_plus_test",
-    "hydroflow_plus_test_macro",
+    "hydroflow_plus_test_local",
+    "hydroflow_plus_test_local_macro",
     "lattices",
+    "lattices_macro",
     "multiplatform_test",
     "pusherator",
     "relalg",
@@ -43,6 +45,7 @@ lto = "fat"
 [profile.profile]
 inherits = "release"
 debug = 2
+lto = "off"
 strip = "none"
 
 [profile.dev.package.website_playground]

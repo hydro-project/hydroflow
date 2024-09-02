@@ -3,10 +3,9 @@ use syn::parse_quote;
 use syn::spanned::Spanned;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_1,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, WriteContextArgs, RANGE_1,
 };
-use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance};
 
 /// > 2 input streams of type `(K, V1)` and `(K, V2)`, 1 output stream of type `(K, (V1', V2'))` where `V1`, `V2`, `V1'`, `V2'` are lattice types
 ///
@@ -86,12 +85,10 @@ pub const _LATTICE_JOIN_FUSED_JOIN: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=2),
     type_args: &(2..=2),
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::MonotoneAccum),
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,
@@ -100,7 +97,7 @@ pub const _LATTICE_JOIN_FUSED_JOIN: OperatorConstraints = OperatorConstraints {
                    inputs,
                    is_pull,
                    op_inst:
-                       op_inst @ OperatorInstance {
+                       OperatorInstance {
                            generics:
                                OpInstGenerics {
                                    type_args,
@@ -116,12 +113,9 @@ pub const _LATTICE_JOIN_FUSED_JOIN: OperatorConstraints = OperatorConstraints {
         let rhs_type = &type_args[1];
 
         let wc = WriteContextArgs {
-            op_inst: &OperatorInstance {
-                arguments: parse_quote! {
-                    FoldFrom(<#lhs_type as #root::lattices::LatticeFrom::<_>>::lattice_from, #root::lattices::Merge::merge),
-                    FoldFrom(<#rhs_type as #root::lattices::LatticeFrom::<_>>::lattice_from, #root::lattices::Merge::merge)
-                },
-                ..op_inst.clone()
+            arguments: &parse_quote! {
+                FoldFrom(<#lhs_type as #root::lattices::LatticeFrom::<_>>::lattice_from, #root::lattices::Merge::merge),
+                FoldFrom(<#rhs_type as #root::lattices::LatticeFrom::<_>>::lattice_from, #root::lattices::Merge::merge)
             },
             ..wc.clone()
         };
@@ -136,9 +130,9 @@ pub const _LATTICE_JOIN_FUSED_JOIN: OperatorConstraints = OperatorConstraints {
         assert!(is_pull);
         let persistences = super::join_fused::parse_persistences(persistence_args);
 
-        let lhs_join_options = super::join_fused::parse_argument(&wc.op_inst.arguments[0])
+        let lhs_join_options = super::join_fused::parse_argument(&wc.arguments[0])
             .map_err(|err| diagnostics.push(err))?;
-        let rhs_join_options = super::join_fused::parse_argument(&wc.op_inst.arguments[1])
+        let rhs_join_options = super::join_fused::parse_argument(&wc.arguments[1])
             .map_err(|err| diagnostics.push(err))?;
         let (lhs_joindata_ident, lhs_borrow_ident, _lhs_prologue, lhs_borrow) =
             super::join_fused::make_joindata(&wc, persistences[0], &lhs_join_options, "lhs")
@@ -151,8 +145,8 @@ pub const _LATTICE_JOIN_FUSED_JOIN: OperatorConstraints = OperatorConstraints {
         let lhs = &inputs[0];
         let rhs = &inputs[1];
 
-        let arg0_span = wc.op_inst.arguments[0].span();
-        let arg1_span = wc.op_inst.arguments[1].span();
+        let arg0_span = wc.arguments[0].span();
+        let arg1_span = wc.arguments[1].span();
 
         let lhs_tokens = quote_spanned! {arg0_span=>
             #lhs_borrow.fold_into(#lhs, #root::lattices::Merge::merge,

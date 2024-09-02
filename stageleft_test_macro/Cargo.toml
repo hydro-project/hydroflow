@@ -6,14 +6,10 @@ edition = "2021"
 
 [lib]
 proc-macro = true
-path = "src/lib.rs"
-
-[features]
-default = ["macro"]
-macro = []
+path = "../stageleft_test/src/lib.rs"
 
 [dependencies]
-stageleft = { path = "../stageleft", version = "^0.2.0" }
+stageleft = { path = "../stageleft", version = "^0.4.0" }
 
 [build-dependencies]
-stageleft_tool = { path = "../stageleft_tool", version = "^0.1.0" }
+stageleft_tool = { path = "../stageleft_tool", version = "^0.3.0" }

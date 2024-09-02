@@ -1,7 +1,6 @@
-use crate::graph::GraphEdgeType;
-
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0, RANGE_1,
+    DelayType, OperatorCategory, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0,
+    RANGE_1,
 };
 
 /// See `defer_tick`
@@ -17,11 +16,9 @@ pub const DEFER_TICK_LAZY: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::TickLazy),
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: IDENTITY_WRITE_FN,
 };

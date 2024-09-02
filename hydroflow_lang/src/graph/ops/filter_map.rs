@@ -1,16 +1,15 @@
 use quote::quote_spanned;
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput, WriteContextArgs,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
-use crate::graph::GraphEdgeType;
 
 /// > 1 input stream, 1 output stream
 ///
 /// An operator that both filters and maps. It yields only the items for which the supplied closure returns `Some(value)`.
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// ```hydroflow
 /// source_iter(vec!["1", "hello", "world", "2"])
@@ -28,12 +27,10 @@ pub const FILTER_MAP: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,
@@ -41,7 +38,7 @@ pub const FILTER_MAP: OperatorConstraints = OperatorConstraints {
                    inputs,
                    outputs,
                    is_pull,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                _| {

@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use hydroflow::scheduled::graph::Hydroflow;
+use hydroflow::scheduled::ticks::TickInstant;
 use hydroflow::util::collect_ready;
 use hydroflow::util::multiset::HashMultiSet;
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
@@ -92,6 +93,22 @@ pub fn test_basic_inspect_null() {
 
     let mut df = hydroflow_syntax! {
         source_iter([1, 2, 3, 4]) -> inspect(|&x| seen_inner.borrow_mut().push(x)) -> null();
+    };
+    df.run_available();
+
+    assert_eq!(&[1, 2, 3, 4], &**seen.borrow());
+}
+
+#[multiplatform_test]
+pub fn test_basic_inspect_no_null() {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    let seen = Rc::new(RefCell::new(Vec::new()));
+    let seen_inner = Rc::clone(&seen);
+
+    let mut df = hydroflow_syntax! {
+        source_iter([1, 2, 3, 4]) -> inspect(|&x| seen_inner.borrow_mut().push(x));
     };
     df.run_available();
 
@@ -554,19 +571,27 @@ fn test_sort_by_owned() {
 pub fn test_channel_minimal() {
     let (send, recv) = hydroflow::util::unbounded_channel::<usize>();
 
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
+
     let mut df1 = hydroflow_syntax! {
         source_iter([1, 2, 3]) -> for_each(|x| { send.send(x).unwrap(); });
     };
 
     let mut df2 = hydroflow_syntax! {
-        source_stream(recv) -> for_each(|x| println!("{}", x));
+        source_stream(recv) -> for_each(|x| out_send.send(x).unwrap());
     };
 
     df2.run_available();
-    println!("A");
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([] as [usize; 0], *results);
+
     df1.run_available();
-    println!("B");
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([] as [usize; 0], *results);
+
     df2.run_available();
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([1, 2, 3], *results);
 }
 
 #[multiplatform_test]
@@ -574,47 +599,61 @@ pub fn test_surface_syntax_reachability_generated() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
+
     let mut df: Hydroflow = hydroflow_syntax! {
         reached_vertices = union() -> map(|v| (v, ()));
         source_iter(vec![0]) -> [0]reached_vertices;
 
-        my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> tee();
+        my_join_tee = join::<'static>()
+            -> map(|(_src, ((), dst))| dst)
+            -> unique::<'static>()
+            -> tee();
         reached_vertices -> [0]my_join_tee;
         source_stream(pairs_recv) -> [1]my_join_tee;
 
         my_join_tee[0] -> [1]reached_vertices;
-        my_join_tee[1] -> for_each(|x| println!("Reached: {}", x));
+        my_join_tee[1] -> for_each(|x| out_send.send(x).unwrap());
     };
     assert_graphvis_snapshots!(df);
+
     df.run_available();
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([] as [usize; 0], *results);
 
     pairs_send.send((0, 1)).unwrap();
     df.run_available();
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([1], *results);
 
     pairs_send.send((2, 4)).unwrap();
     pairs_send.send((3, 4)).unwrap();
     df.run_available();
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([] as [usize; 0], *results);
 
     pairs_send.send((1, 2)).unwrap();
     df.run_available();
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([2, 4], *results);
 
     pairs_send.send((0, 3)).unwrap();
     df.run_available();
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([3], *results);
 
     pairs_send.send((0, 3)).unwrap();
     df.run_available();
-
-    // Reached: 1
-    // Reached: 2
-    // Reached: 4
-    // Reached: 3
-    // Reached: 4
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([] as [usize; 0], *results);
 }
 
 #[multiplatform_test]
 pub fn test_transitive_closure() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut df = hydroflow_syntax! {
         // edge(x,y) :- link(x,y)
@@ -624,41 +663,43 @@ pub fn test_transitive_closure() {
         link_tee[0] -> [0]edge_union_tee;
 
         // edge(a,b) :- edge(a,k), link(k,b)
-        the_join = join();
+        the_join = join::<'static>() -> unique::<'static>();
         edge_union_tee[0] -> map(|(a, k)| (k, a)) -> [0]the_join;
         link_tee[1] -> [1]the_join;
         the_join -> map(|(_k, (a, b))| (a, b)) -> [1]edge_union_tee;
-        edge_union_tee[1] -> for_each(|(a, b)| println!("transitive closure: ({},{})", a, b));
+        edge_union_tee[1] -> for_each(|(a, b)| out_send.send((a, b)).unwrap());
     };
     assert_graphvis_snapshots!(df);
+
     df.run_available();
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([] as [(usize, usize); 0], *results);
 
     pairs_send.send((0, 1)).unwrap();
     df.run_available();
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([(0, 1)], *results);
 
     pairs_send.send((2, 4)).unwrap();
     pairs_send.send((3, 4)).unwrap();
     df.run_available();
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([(2, 4), (3, 4)], *results);
 
     pairs_send.send((1, 2)).unwrap();
     df.run_available();
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([(1, 2), (0, 2), (1, 4), (0, 4)], *results);
 
     pairs_send.send((0, 3)).unwrap();
     df.run_available();
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([(0, 3), (0, 4)], *results);
 
     pairs_send.send((0, 3)).unwrap();
     df.run_available();
-
-    // transitive closure: (0,1)
-    // transitive closure: (2,4)
-    // transitive closure: (3,4)
-    // transitive closure: (1,2)
-    // transitive closure: (0,2)
-    // transitive closure: (1,4)
-    // transitive closure: (0,4)
-    // transitive closure: (0,3)
-    // transitive closure: (0,4)
-    // transitive closure: (0,3)
+    let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+    assert_eq!([(0, 3)], *results);
 }
 
 #[multiplatform_test]
@@ -676,33 +717,35 @@ pub fn test_covid_tracing() {
     let (diagnosed_send, diagnosed_recv) = unbounded_channel::<(Pid, (DateTime, DateTime))>();
     let (people_send, people_recv) = unbounded_channel::<(Pid, (Name, Phone))>();
 
+    let (out_send, mut out_recv) = unbounded_channel::<String>();
+
     let mut hydroflow = hydroflow_syntax! {
         contacts = source_stream(contacts_recv) -> flat_map(|(pid_a, pid_b, time)| [(pid_a, (pid_b, time)), (pid_b, (pid_a, time))]);
 
         exposed = union();
         source_stream(diagnosed_recv) -> [0]exposed;
 
-        new_exposed = (
-            join() ->
-            filter(|(_pid_a, ((_pid_b, t_contact), (t_from, t_to)))| {
+        new_exposed = join::<'static>()
+            -> filter(|(_pid_a, ((_pid_b, t_contact), (t_from, t_to)))| {
                 (t_from..=t_to).contains(&t_contact)
-            }) ->
-            map(|(_pid_a, (pid_b_t_contact, _t_from_to))| pid_b_t_contact) ->
-            tee()
-        );
+            })
+            -> map(|(_pid_a, (pid_b_t_contact, _t_from_to))| pid_b_t_contact)
+            -> tee();
         contacts -> [0]new_exposed;
         exposed -> [1]new_exposed;
         new_exposed[0] -> map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION))) -> [1]exposed;
 
-        notifs = (
-            join() ->
-            for_each(|(_pid, ((name, phone), exposure))| {
-                println!(
+        notifs = join::<'static>()
+            -> map(|(_pid, ((name, phone), exposure))| {
+                format!(
                     "[{}] To {}: Possible Exposure at t = {}",
-                    name, phone, exposure
-                );
+                    name, phone, exposure,
+                )
             })
-        );
+            -> tee();
+        notifs -> for_each(|msg| println!("{}", msg));
+        notifs -> for_each(|msg| out_send.send(msg).unwrap());
+
         source_stream(people_recv) -> [0]notifs;
         new_exposed[1] -> [1]notifs;
     };
@@ -735,6 +778,8 @@ pub fn test_covid_tracing() {
             .unwrap();
 
         hydroflow.run_available();
+        let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+        assert_eq!([] as [String; 0], *results);
         println!("A");
 
         contacts_send
@@ -742,6 +787,16 @@ pub fn test_covid_tracing() {
             .unwrap(); // Mingwei + Mae
 
         hydroflow.run_available();
+        let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+        assert_eq!(
+            [
+                "[Mingwei S] To +1 650 555 7283: Possible Exposure at t = 1028",
+                "[Justin J] To +1 519 555 3458: Possible Exposure at t = 1031",
+                "[Mae M] To +1 912 555 9129: Possible Exposure at t = 1028",
+                "[Mingwei S] To +1 650 555 7283: Possible Exposure at t = 1031",
+            ],
+            *results
+        );
         println!("B");
 
         people_send
@@ -749,6 +804,17 @@ pub fn test_covid_tracing() {
             .unwrap();
 
         hydroflow.run_available();
+        let results = collect_ready::<Vec<_>, _>(&mut out_recv);
+        assert_eq!(
+            [
+                "[Mingwei S] To +1 650 555 7283: Possible Exposure at t = 1028",
+                "[Mingwei S] To +1 650 555 7283: Possible Exposure at t = 1031",
+                "[Justin J] To +1 519 555 3458: Possible Exposure at t = 1031",
+                "[Mae M] To +1 912 555 9129: Possible Exposure at t = 1028",
+                "[Joe H] To +1 510 555 9999: Possible Exposure at t = 1028"
+            ],
+            *results
+        );
     }
 }
 
@@ -791,7 +857,9 @@ pub fn test_iter_stream_batches() {
     let stream = hydroflow::util::iter_batches_stream(0..ITEMS, BATCH);
 
     // expect 5 items per tick.
-    let expected: Vec<_> = (0..ITEMS).map(|n| (n / BATCH, n)).collect();
+    let expected: Vec<_> = (0..ITEMS)
+        .map(|n| (TickInstant::new((n / BATCH).try_into().unwrap()), n))
+        .collect();
 
     let mut df = hydroflow_syntax! {
         source_stream(stream)

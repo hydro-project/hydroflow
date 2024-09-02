@@ -1,10 +1,8 @@
 use quote::{quote_spanned, ToTokens};
 
-use crate::graph::GraphEdgeType;
-
 use super::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
 };
 
 /// > 1 input stream, *n* output streams
@@ -29,14 +27,10 @@ pub const TEE: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value, // TODO(mingwei): pass-through value types?
-    flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
-        Ok(vec![flow_props_in[0]])
-    }),
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,

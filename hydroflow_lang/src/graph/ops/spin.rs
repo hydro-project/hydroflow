@@ -1,10 +1,8 @@
 use quote::quote_spanned;
 
-use crate::graph::GraphEdgeType;
-
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
 
 /// This operator emits Unit, and triggers the start of a new tick at the end of each tick,
@@ -30,12 +28,10 @@ pub const SPIN: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    context,
                    op_span,
