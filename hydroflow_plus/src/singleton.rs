@@ -136,6 +136,18 @@ impl<'a, T, W, C, N: Location> Singleton<'a, T, W, C, N> {
     }
 }
 
+impl<'a, T, C, N: Location> From<Singleton<'a, T, Bounded, C, N>>
+    for Singleton<'a, T, Unbounded, C, N>
+{
+    fn from(singleton: Singleton<'a, T, Bounded, C, N>) -> Self {
+        Singleton::new(
+            singleton.location_kind,
+            singleton.ir_leaves,
+            singleton.ir_node.into_inner(),
+        )
+    }
+}
+
 impl<'a, T, N: Location> CycleComplete<'a, Tick> for Singleton<'a, T, Bounded, Tick, N> {
     fn complete(self, ident: syn::Ident) {
         self.ir_leaves.borrow_mut().as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
@@ -298,8 +310,8 @@ impl<'a, T, N: Location> Singleton<'a, T, Bounded, Tick, N> {
         )
     }
 
-    pub fn latest(self) -> Optional<'a, T, Unbounded, NoTick, N> {
-        Optional::new(
+    pub fn latest(self) -> Singleton<'a, T, Unbounded, NoTick, N> {
+        Singleton::new(
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
@@ -598,7 +610,7 @@ impl<'a, T, N: Location> Optional<'a, T, Bounded, Tick, N> {
         )
     }
 
-    pub fn or_else(
+    pub fn unwrap_or(
         self,
         other: Singleton<'a, T, Bounded, Tick, N>,
     ) -> Singleton<'a, T, Bounded, Tick, N> {
@@ -691,6 +703,18 @@ impl<'a, T, B, N: Location> Optional<'a, T, B, NoTick, N> {
             .continue_if(samples.first())
             .latest()
             .tick_samples()
+    }
+
+    pub fn unwrap_or(
+        self,
+        other: impl Into<Singleton<'a, T, Unbounded, NoTick, N>>,
+    ) -> Singleton<'a, T, Unbounded, NoTick, N> {
+        let other = other.into();
+        if self.location_kind != other.location_kind {
+            panic!("or_else must be called on streams on the same node");
+        }
+
+        self.latest_tick().unwrap_or(other.latest_tick()).latest()
     }
 }
 
