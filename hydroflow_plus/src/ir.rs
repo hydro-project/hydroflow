@@ -487,6 +487,18 @@ impl<'a> HfPlusNode<'a> {
         }
     }
 
+    pub fn transform_bottom_up<C>(
+        &mut self,
+        mut transform: impl FnMut(&mut HfPlusNode<'a>, &mut C) + Copy,
+        seen_tees: &mut SeenTees<'a>,
+        ctx: &mut C,
+    ) {
+        self.transform_children(|n, s| n.transform_bottom_up(transform, s, ctx), seen_tees);
+
+        transform(self, ctx)
+    }
+
+    #[inline(always)]
     pub fn transform_children(
         &mut self,
         mut transform: impl FnMut(&mut HfPlusNode<'a>, &mut SeenTees<'a>),
