@@ -6,14 +6,8 @@ use crate::ir::*;
 
 fn persist_pullup_node<'a>(
     node: &mut HfPlusNode<'a>,
-    seen_tees: &mut SeenTees<'a>,
     persist_pulled_tees: &mut HashSet<*const RefCell<HfPlusNode<'a>>>,
 ) {
-    node.transform_children(
-        |n, s| persist_pullup_node(n, s, persist_pulled_tees),
-        seen_tees,
-    );
-
     match node {
         HfPlusNode::Unpersist(box HfPlusNode::Persist(_)) => {
             if let HfPlusNode::Unpersist(box HfPlusNode::Persist(box behind_persist)) =
@@ -183,6 +177,18 @@ fn persist_pullup_node<'a>(
             }
         }
 
+        HfPlusNode::Unique(box HfPlusNode::Persist(_)) => {
+            if let HfPlusNode::Unique(box HfPlusNode::Persist(inner)) =
+                std::mem::replace(node, HfPlusNode::Placeholder)
+            {
+                *node = HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(
+                    HfPlusNode::Unique(Box::new(HfPlusNode::Persist(inner))),
+                ))));
+            } else {
+                unreachable!()
+            }
+        }
+
         _ => {}
     }
 }
@@ -193,7 +199,7 @@ pub fn persist_pullup(ir: Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf> {
     ir.into_iter()
         .map(|l| {
             l.transform_children(
-                |n, s| persist_pullup_node(n, s, &mut persist_pulled_tees),
+                |n, s| n.transform_bottom_up(persist_pullup_node, s, &mut persist_pulled_tees),
                 &mut seen_tees,
             )
         })
