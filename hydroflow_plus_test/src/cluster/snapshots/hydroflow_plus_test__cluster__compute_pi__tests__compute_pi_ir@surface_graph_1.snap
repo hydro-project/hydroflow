@@ -2,7 +2,7 @@
 source: hydroflow_plus_test/src/cluster/compute_pi.rs
 expression: ir.surface_syntax_string()
 ---
-1v1 = source_stream ({ use hydroflow_plus_deploy :: __staged :: runtime :: * ; let env = FAKE ; let port = "port_0" ; { env . port (port) . connect_local_blocking :: < ConnectedTagged < ConnectedDirect > > () . into_source () } });
+1v1 = source_stream ({ use hydroflow_plus_deploy :: __staged :: deploy_runtime :: * ; let env = FAKE ; let p2_port = "port_0" ; { env . port (p2_port) . connect_local_blocking :: < ConnectedTagged < ConnectedDirect > > () . into_source () } });
 2v1 = map (| res | { let (id , b) = res . unwrap () ; (id , hydroflow_plus :: runtime_support :: bincode :: deserialize :: < (u64 , u64) > (& b) . unwrap ()) });
 3v1 = map (stageleft :: runtime_support :: fn1_type_hint :: < (u32 , (u64 , u64)) , (u64 , u64) > ({ use hydroflow_plus :: __staged :: stream :: * ; | (_ , b) | b }));
 4v1 = reduce :: < 'static > (stageleft :: runtime_support :: fn2_borrow_mut_type_hint :: < (u64 , u64) , (u64 , u64) , () > ({ use crate :: __staged :: cluster :: compute_pi :: * ; | (inside , total) , (inside_batch , total_batch) | { * inside += inside_batch ; * total += total_batch ; } }));
