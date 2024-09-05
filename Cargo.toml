@@ -53,3 +53,13 @@ debug-assertions = false
 
 [profile.release.package.website_playground]
 opt-level = "s"
+
+[workspace.lints.rust]
+unused_qualifications = "warn"
+
+[workspace.lints.clippy]
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+explicit_into_iter_loop = "warn"
+let_and_return = "allow"
+upper_case_acronyms = "warn"

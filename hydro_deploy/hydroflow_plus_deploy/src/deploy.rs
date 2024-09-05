@@ -227,7 +227,7 @@ impl<'a> Deploy<'a> for HydroDeploy {
 pub trait DeployCrateWrapper {
     fn underlying(&self) -> Arc<RwLock<HydroflowCrateService>>;
 
-    #[allow(async_fn_in_trait)]
+    #[expect(async_fn_in_trait, reason = "no auto trait bounds needed")]
     async fn create_sender(
         &self,
         port: &str,
@@ -246,12 +246,12 @@ pub trait DeployCrateWrapper {
         sender_port
     }
 
-    #[allow(async_fn_in_trait)]
+    #[expect(async_fn_in_trait, reason = "no auto trait bounds needed")]
     async fn stdout(&self) -> tokio::sync::mpsc::UnboundedReceiver<String> {
         self.underlying().read().await.stdout()
     }
 
-    #[allow(async_fn_in_trait)]
+    #[expect(async_fn_in_trait, reason = "no auto trait bounds needed")]
     async fn stderr(&self) -> tokio::sync::mpsc::UnboundedReceiver<String> {
         self.underlying().read().await.stderr()
     }

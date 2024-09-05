@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/hydro_cli/"
 description = "Hydro Deploy Command Line Interface"
 
+[lints]
+workspace = true
+
 [lib]
 name = "hydro_cli"
 # "cdylib" is necessary to produce a shared library for Python to import from.

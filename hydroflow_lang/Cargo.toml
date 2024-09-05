@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/hydroflow_lang/"
 description = "Hydroflow's Surface Syntax implementation"
 
+[lints]
+workspace = true
+
 [features]
 default = []
 diagnostics = []

@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/stageleft_macro/"
 description = "Helper macros for the stageleft crate"
 
+[lints]
+workspace = true
+
 [lib]
 proc-macro = true
 path = "src/lib.rs"

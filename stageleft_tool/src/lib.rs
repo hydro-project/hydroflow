@@ -72,7 +72,7 @@ pub fn gen_macro(staged_path: &Path, crate_name: &str) {
 
         let proc_macro_wrapper: syn::ItemFn = parse_quote!(
             #[proc_macro]
-            #[allow(non_snake_case, unused_qualifications)]
+            #[expect(unused_qualifications, reason = "generated code")]
             pub fn #underscored_path(input: ::proc_macro::TokenStream) -> ::proc_macro::TokenStream {
                 let input = ::stageleft::internal::TokenStream::from(input);
                 let out = #exported_from_parsed::#underscored_path_impl(input);

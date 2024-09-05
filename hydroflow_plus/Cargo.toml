@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/hydroflow_plus/"
 description = "Functional programming API for hydroflow"
 
+[lints]
+workspace = true
+
 [lib]
 path = "src/lib.rs"
 

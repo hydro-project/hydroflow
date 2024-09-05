@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/pusherator/"
 description = "Push-based version of Rust iterators"
 
+[lints]
+workspace = true
+
 [features]
 default = [ "demux" ]
 demux = [ "dep:variadics" ]

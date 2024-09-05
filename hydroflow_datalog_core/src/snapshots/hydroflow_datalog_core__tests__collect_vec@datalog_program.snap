@@ -292,6 +292,10 @@ fn main() {
                         }
                         op_5v1__unique__loc_nopath_3_19_3_24(op_5v1)
                     };
+                    #[allow(
+                        clippy::map_clone,
+                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                    )]
                     let op_15v1 = op_2v1.map(|_v: (_,)| ((), (_v.0,)));
                     let op_15v1 = {
                         #[allow(non_snake_case)]
@@ -325,6 +329,10 @@ fn main() {
                         }
                         op_15v1__map__loc_nopath_7_41_7_49(op_15v1)
                     };
+                    #[allow(
+                        clippy::map_clone,
+                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                    )]
                     let op_16v1 = op_5v1.map(|_v: (_,)| ((), (_v.0,)));
                     let op_16v1 = {
                         #[allow(non_snake_case)]
@@ -436,6 +444,10 @@ fn main() {
                         }
                         op_13v1__join__loc_nopath_7_12_7_59(op_13v1)
                     };
+                    #[allow(
+                        clippy::map_clone,
+                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                    )]
                     let op_14v1 = op_13v1
                         .map(|kv: ((), ((_,), (_,)))| (kv.1.0.0, kv.1.1.0));
                     let op_14v1 = {
@@ -470,6 +482,10 @@ fn main() {
                         }
                         op_14v1__map__loc_nopath_7_12_7_59(op_14v1)
                     };
+                    #[allow(
+                        clippy::map_clone,
+                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                    )]
                     let op_17v1 = op_14v1.map(|row: (_, _)| ((), ((row.0, row.1),)));
                     let op_17v1 = {
                         #[allow(non_snake_case)]
@@ -611,6 +627,10 @@ fn main() {
                         }
                         op_18v1__fold_keyed__loc_nopath_1_0_1_0(op_18v1)
                     };
+                    #[allow(
+                        clippy::map_clone,
+                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                    )]
                     let op_19v1 = op_18v1
                         .map(|(g, a): ((), _)| (
                             a.0.unwrap().into_iter().collect::<Vec<_>>(),

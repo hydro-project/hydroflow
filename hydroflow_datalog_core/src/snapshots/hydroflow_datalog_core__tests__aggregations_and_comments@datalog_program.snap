@@ -468,6 +468,10 @@ fn main() {
                         }
                         op_14v1__fold_keyed__loc_nopath_1_0_1_0(op_14v1)
                     };
+                    #[allow(
+                        clippy::map_clone,
+                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                    )]
                     let op_15v1 = op_14v1.map(|(g, a): ((_,), _)| (a.0.unwrap().1, g.0));
                     let op_15v1 = {
                         #[allow(non_snake_case)]
@@ -765,6 +769,10 @@ fn main() {
                         }
                         op_21v1__fold_keyed__loc_nopath_1_0_1_0(op_21v1)
                     };
+                    #[allow(
+                        clippy::map_clone,
+                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                    )]
                     let op_22v1 = op_21v1.map(|(g, a): ((_,), _)| (a.0.unwrap(), g.0));
                     let op_22v1 = {
                         #[allow(non_snake_case)]
@@ -1008,6 +1016,10 @@ fn main() {
                     {
                         hoff_6v3_send.give(Some(v));
                     });
+                    #[allow(
+                        clippy::map_clone,
+                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                    )]
                     let op_18v1 = hoff_7v3_recv
                         .map(|(g, a): ((_,), _)| (a.0.unwrap(), g.0));
                     let op_18v1 = {
