@@ -896,7 +896,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Map {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -910,7 +910,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::FlatMap {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -924,7 +924,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Filter {
-                f: f.splice().into(),
+                f: f.splice_fn1_borrow().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -938,7 +938,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::FilterMap {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1174,7 +1174,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Map {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1188,7 +1188,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::FlatMap {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1202,7 +1202,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Filter {
-                f: f.splice().into(),
+                f: f.splice_fn1_borrow().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1216,7 +1216,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::FilterMap {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1348,9 +1348,9 @@
         <span class="self">self</span>,
         duration: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, std::time::Duration&gt; + Copy + <span class="lifetime">'a</span>,
     ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Unbounded, NoTick, N&gt; {
-        <span class="kw">let </span>interval = duration.splice();
+        <span class="kw">let </span>interval = duration.splice_typed();
 
-        <span class="kw">let </span>samples = Stream::&lt;<span class="lifetime">'a</span>, hydroflow::tokio::time::Instant, Bounded, Tick, N&gt;::new(
+        <span class="kw">let </span>samples = Stream::&lt;<span class="lifetime">'a</span>, (), Bounded, Tick, N&gt;::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves.clone(),
             HfPlusNode::Source {

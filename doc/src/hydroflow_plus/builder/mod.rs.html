@@ -598,7 +598,7 @@
         on: <span class="kw-2">&amp;</span>L,
         e: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, E&gt;,
     ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Unbounded, NoTick, L&gt; {
-        <span class="kw">let </span>e = e.splice();
+        <span class="kw">let </span>e = e.splice_untyped();
 
         Stream::new(
             on.id(),
@@ -615,7 +615,7 @@
         on: <span class="kw-2">&amp;</span>L,
         e: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, E&gt;,
     ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Bounded, NoTick, L&gt; {
-        <span class="kw">let </span>e = e.splice();
+        <span class="kw">let </span>e = e.splice_untyped();
 
         Stream::new(
             on.id(),
@@ -633,7 +633,7 @@
         e: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, T&gt;,
     ) -&gt; Singleton&lt;<span class="lifetime">'a</span>, T, Bounded, NoTick, L&gt; {
         <span class="kw">let </span>e_arr = <span class="macro">q!</span>([e]);
-        <span class="kw">let </span>e = e_arr.splice();
+        <span class="kw">let </span>e = e_arr.splice_untyped();
 
         <span class="comment">// we do a double persist here because if the singleton shows up on every tick,
         // we first persist the source so that we store that value and then persist again
@@ -656,7 +656,7 @@
         e: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, T&gt;,
     ) -&gt; Optional&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, L&gt; {
         <span class="kw">let </span>e_arr = <span class="macro">q!</span>([e]);
-        <span class="kw">let </span>e = e_arr.splice();
+        <span class="kw">let </span>e = e_arr.splice_untyped();
 
         Optional::new(
             on.id(),
@@ -673,7 +673,7 @@
         on: <span class="kw-2">&amp;</span>L,
         interval: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Duration&gt; + Copy + <span class="lifetime">'a</span>,
     ) -&gt; Optional&lt;<span class="lifetime">'a</span>, (), Unbounded, NoTick, L&gt; {
-        <span class="kw">let </span>interval = interval.splice();
+        <span class="kw">let </span>interval = interval.splice_untyped();
 
         Optional::new(
             on.id(),

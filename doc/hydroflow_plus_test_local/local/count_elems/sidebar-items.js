@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["count_elems"]};
+window.SIDEBAR_ITEMS = {"fn":["count_elems_generic"],"macro":["count_elems"]};

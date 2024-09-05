@@ -278,7 +278,7 @@
         }
 
         <span class="kw">let </span>conditioned_tokens: TokenStream = conditioned_tokens.unwrap();
-        <span class="kw">let </span>id = id.splice();
+        <span class="kw">let </span>id = id.splice_untyped();
         HfBuiltWithId {
             tokens: <span class="macro">syn::parse_quote!</span>({
                 <span class="kw">let </span>__given_id = #id;

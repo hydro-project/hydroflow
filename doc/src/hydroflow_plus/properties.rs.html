@@ -168,7 +168,7 @@
         expr: Q,
     ) -&gt; Q {
         <span class="kw">let </span>expr_clone = expr.clone();
-        <span class="self">self</span>.commutative.insert(expr_clone.splice());
+        <span class="self">self</span>.commutative.insert(expr_clone.splice_untyped());
         expr
     }
 
@@ -222,11 +222,11 @@
     </span><span class="kw">fn </span>test_property_database() {
         <span class="kw">let </span><span class="kw-2">mut </span>db = PropertyDatabase::default();
 
-        <span class="macro">assert!</span>(!db.is_tagged_commutative(<span class="kw-2">&amp;</span>(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b).splice())));
+        <span class="macro">assert!</span>(!db.is_tagged_commutative(<span class="kw-2">&amp;</span>(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b).splice_untyped())));
 
         <span class="kw">let _ </span>= db.add_commutative_tag(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b));
 
-        <span class="macro">assert!</span>(db.is_tagged_commutative(<span class="kw-2">&amp;</span>(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b).splice())));
+        <span class="macro">assert!</span>(db.is_tagged_commutative(<span class="kw-2">&amp;</span>(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b).splice_untyped())));
     }
 
     <span class="attr">#[test]

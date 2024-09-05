@@ -263,7 +263,7 @@
                 <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"__hydroflow_plus_cluster_self_id_{}"</span>, c_id),
                 Span::call_site(),
             );
-            <span class="kw">let </span>self_id_expr = D::cluster_self_id(env).splice();
+            <span class="kw">let </span>self_id_expr = D::cluster_self_id(env).splice_untyped();
             extra_stmts
                 .entry(c_id)
                 .or_default()
@@ -276,7 +276,7 @@
                     <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"__hydroflow_plus_cluster_ids_{}"</span>, c_id),
                     Span::call_site(),
                 );
-                <span class="kw">let </span>other_id_expr = D::cluster_ids(env, c_id).splice();
+                <span class="kw">let </span>other_id_expr = D::cluster_ids(env, c_id).splice_untyped();
                 extra_stmts
                     .entry(other_location)
                     .or_default()

@@ -143,7 +143,7 @@
                     .connect_local_blocking::&lt;ConnectedDirect&gt;()
                     .into_sink()
             })
-            .splice()
+            .splice_untyped()
         },
         {
             <span class="macro">q!</span>({
@@ -151,7 +151,7 @@
                     .connect_local_blocking::&lt;ConnectedDirect&gt;()
                     .into_source()
             })
-            .splice()
+            .splice_untyped()
         },
     )
 }
@@ -166,7 +166,7 @@
                     .connect_local_blocking::&lt;ConnectedDemux&lt;ConnectedDirect&gt;&gt;()
                     .into_sink()
             })
-            .splice()
+            .splice_untyped()
         },
         {
             <span class="macro">q!</span>({
@@ -174,7 +174,7 @@
                     .connect_local_blocking::&lt;ConnectedDirect&gt;()
                     .into_source()
             })
-            .splice()
+            .splice_untyped()
         },
     )
 }
@@ -189,7 +189,7 @@
                     .connect_local_blocking::&lt;ConnectedDirect&gt;()
                     .into_sink()
             })
-            .splice()
+            .splice_untyped()
         },
         {
             <span class="macro">q!</span>({
@@ -197,7 +197,7 @@
                     .connect_local_blocking::&lt;ConnectedTagged&lt;ConnectedDirect&gt;&gt;()
                     .into_source()
             })
-            .splice()
+            .splice_untyped()
         },
     )
 }
@@ -212,7 +212,7 @@
                     .connect_local_blocking::&lt;ConnectedDemux&lt;ConnectedDirect&gt;&gt;()
                     .into_sink()
             })
-            .splice()
+            .splice_untyped()
         },
         {
             <span class="macro">q!</span>({
@@ -220,7 +220,7 @@
                     .connect_local_blocking::&lt;ConnectedTagged&lt;ConnectedDirect&gt;&gt;()
                     .into_source()
             })
-            .splice()
+            .splice_untyped()
         },
     )
 }

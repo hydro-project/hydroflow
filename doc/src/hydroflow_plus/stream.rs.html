@@ -940,7 +940,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Map {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -954,7 +954,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::FlatMap {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -968,7 +968,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Filter {
-                f: f.splice().into(),
+                f: f.splice_fn1_borrow().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -982,7 +982,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::FilterMap {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1047,7 +1047,7 @@
 
     <span class="kw">pub fn </span>dest_sink&lt;S: Unpin + Sink&lt;T&gt; + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, sink: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, S&gt;) {
         <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::DestSink {
-            sink: sink.splice().into(),
+            sink: sink.splice_typed().into(),
             input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
         });
     }
@@ -1089,7 +1089,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Inspect {
-                f: f.splice().into(),
+                f: f.splice_fn1_borrow().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1137,8 +1137,8 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Fold {
-                init: init.splice().into(),
-                acc: comb.splice().into(),
+                init: init.splice_fn0().into(),
+                acc: comb.splice_fn2_borrow_mut().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1152,7 +1152,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Reduce {
-                f: comb.splice().into(),
+                f: comb.splice_fn2_borrow_mut().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1217,7 +1217,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Persist(Box::new(HfPlusNode::Inspect {
-                f: f.splice().into(),
+                f: f.splice_fn1_borrow().into(),
                 input: Box::new(HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner()))),
             })),
         )
@@ -1228,7 +1228,7 @@
     <span class="kw">pub fn </span>for_each&lt;F: Fn(T) + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) {
         <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::ForEach {
             input: Box::new(HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner()))),
-            f: f.splice().into(),
+            f: f.splice_fn1().into(),
         });
     }
 }
@@ -1238,7 +1238,7 @@
         <span class="self">self</span>,
         duration: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, std::time::Duration&gt; + Copy + <span class="lifetime">'a</span>,
     ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Unbounded, NoTick, N&gt; {
-        <span class="kw">let </span>interval = duration.splice();
+        <span class="kw">let </span>interval = duration.splice_typed();
 
         <span class="kw">let </span>samples = Stream::&lt;<span class="lifetime">'a</span>, hydroflow::tokio::time::Instant, Bounded, Tick, N&gt;::new(
             <span class="self">self</span>.location_kind,
@@ -1264,8 +1264,8 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Persist(Box::new(HfPlusNode::Fold {
-                init: init.splice().into(),
-                acc: comb.splice().into(),
+                init: init.splice_fn0().into(),
+                acc: comb.splice_fn2_borrow_mut().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             })),
         )
@@ -1279,7 +1279,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Persist(Box::new(HfPlusNode::Reduce {
-                f: comb.splice().into(),
+                f: comb.splice_fn2_borrow_mut().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             })),
         )
@@ -1364,8 +1364,8 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::FoldKeyed {
-                init: init.splice().into(),
-                acc: comb.splice().into(),
+                init: init.splice_fn0().into(),
+                acc: comb.splice_fn2_borrow_mut().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1379,7 +1379,7 @@
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::ReduceKeyed {
-                f: comb.splice().into(),
+                f: comb.splice_fn2_borrow_mut().into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )

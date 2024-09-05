@@ -50,14 +50,21 @@
 <a href="#50" id="50">50</a>
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
+<a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
 <span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
 
-<span class="attr">#[stageleft::entry(String)]
-</span><span class="kw">pub fn </span>count_elems&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt;(
+<span class="kw">pub fn </span>count_elems_generic&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt;(
     flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
     input_stream: RuntimeData&lt;UnboundedReceiverStream&lt;T&gt;&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
@@ -77,6 +84,15 @@
 
     flow.with_default_optimize()
         .compile_no_network::&lt;SingleProcessGraph&gt;()
+}
+
+<span class="attr">#[stageleft::entry]
+</span><span class="kw">pub fn </span>count_elems&lt;<span class="lifetime">'a</span>&gt;(
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
+    input_stream: RuntimeData&lt;UnboundedReceiverStream&lt;usize&gt;&gt;,
+    output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
+    count_elems_generic(flow, input_stream, output)
 }
 
 <span class="attr">#[stageleft::runtime]
