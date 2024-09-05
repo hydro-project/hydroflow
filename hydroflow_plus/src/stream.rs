@@ -382,6 +382,28 @@ impl<'a, T, N: Location> Stream<'a, T, Bounded, Tick, N> {
         )
     }
 
+    pub fn max(self) -> Optional<'a, T, Bounded, Tick, N>
+    where
+        T: Ord,
+    {
+        self.reduce(q!(|curr, new| {
+            if new > *curr {
+                *curr = new;
+            }
+        }))
+    }
+
+    pub fn min(self) -> Optional<'a, T, Bounded, Tick, N>
+    where
+        T: Ord,
+    {
+        self.reduce(q!(|curr, new| {
+            if new < *curr {
+                *curr = new;
+            }
+        }))
+    }
+
     pub fn sort(self) -> Stream<'a, T, Bounded, Tick, N>
     where
         T: Ord,
@@ -496,6 +518,28 @@ impl<'a, T, N: Location> Stream<'a, T, Unbounded, NoTick, N> {
                 input: Box::new(self.ir_node.into_inner()),
             })),
         )
+    }
+
+    pub fn max(self) -> Optional<'a, T, Unbounded, NoTick, N>
+    where
+        T: Ord,
+    {
+        self.reduce(q!(|curr, new| {
+            if new > *curr {
+                *curr = new;
+            }
+        }))
+    }
+
+    pub fn min(self) -> Optional<'a, T, Unbounded, NoTick, N>
+    where
+        T: Ord,
+    {
+        self.reduce(q!(|curr, new| {
+            if new < *curr {
+                *curr = new;
+            }
+        }))
     }
 }
 
