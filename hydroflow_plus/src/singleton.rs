@@ -203,7 +203,7 @@ impl<'a, T, W, C, N: Location> Singleton<'a, T, W, C, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Map {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -217,7 +217,7 @@ impl<'a, T, W, C, N: Location> Singleton<'a, T, W, C, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::FlatMap {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -231,7 +231,7 @@ impl<'a, T, W, C, N: Location> Singleton<'a, T, W, C, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Filter {
-                f: f.splice().into(),
+                f: f.splice_fn1_borrow().into(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -245,7 +245,7 @@ impl<'a, T, W, C, N: Location> Singleton<'a, T, W, C, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::FilterMap {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -481,7 +481,7 @@ impl<'a, T, W, C, N: Location> Optional<'a, T, W, C, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Map {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -495,7 +495,7 @@ impl<'a, T, W, C, N: Location> Optional<'a, T, W, C, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::FlatMap {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -509,7 +509,7 @@ impl<'a, T, W, C, N: Location> Optional<'a, T, W, C, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::Filter {
-                f: f.splice().into(),
+                f: f.splice_fn1_borrow().into(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -523,7 +523,7 @@ impl<'a, T, W, C, N: Location> Optional<'a, T, W, C, N> {
             self.location_kind,
             self.ir_leaves,
             HfPlusNode::FilterMap {
-                f: f.splice().into(),
+                f: f.splice_fn1().into(),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -655,9 +655,9 @@ impl<'a, T, B, N: Location> Optional<'a, T, B, NoTick, N> {
         self,
         duration: impl Quoted<'a, std::time::Duration> + Copy + 'a,
     ) -> Stream<'a, T, Unbounded, NoTick, N> {
-        let interval = duration.splice();
+        let interval = duration.splice_typed();
 
-        let samples = Stream::<'a, hydroflow::tokio::time::Instant, Bounded, Tick, N>::new(
+        let samples = Stream::<'a, (), Bounded, Tick, N>::new(
             self.location_kind,
             self.ir_leaves.clone(),
             HfPlusNode::Source {

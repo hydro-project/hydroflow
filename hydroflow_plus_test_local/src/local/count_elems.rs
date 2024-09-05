@@ -4,8 +4,7 @@ use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::*;
 use stageleft::{q, Quoted, RuntimeData};
 
-#[stageleft::entry(String)]
-pub fn count_elems<'a, T: 'a>(
+pub fn count_elems_generic<'a, T: 'a>(
     flow: FlowBuilder<'a>,
     input_stream: RuntimeData<UnboundedReceiverStream<T>>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
@@ -25,6 +24,15 @@ pub fn count_elems<'a, T: 'a>(
 
     flow.with_default_optimize()
         .compile_no_network::<SingleProcessGraph>()
+}
+
+#[stageleft::entry]
+pub fn count_elems<'a>(
+    flow: FlowBuilder<'a>,
+    input_stream: RuntimeData<UnboundedReceiverStream<usize>>,
+    output: RuntimeData<&'a UnboundedSender<u32>>,
+) -> impl Quoted<'a, Hydroflow<'a>> {
+    count_elems_generic(flow, input_stream, output)
 }
 
 #[stageleft::runtime]
