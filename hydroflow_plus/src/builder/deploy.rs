@@ -71,7 +71,7 @@ impl<'a, D: Deploy<'a>> DeployFlow<'a, D> {
                 &format!("__hydroflow_plus_cluster_self_id_{}", c_id),
                 Span::call_site(),
             );
-            let self_id_expr = D::cluster_self_id(env).splice();
+            let self_id_expr = D::cluster_self_id(env).splice_untyped();
             extra_stmts
                 .entry(c_id)
                 .or_default()
@@ -84,7 +84,7 @@ impl<'a, D: Deploy<'a>> DeployFlow<'a, D> {
                     &format!("__hydroflow_plus_cluster_ids_{}", c_id),
                     Span::call_site(),
                 );
-                let other_id_expr = D::cluster_ids(env, c_id).splice();
+                let other_id_expr = D::cluster_ids(env, c_id).splice_untyped();
                 extra_stmts
                     .entry(other_location)
                     .or_default()

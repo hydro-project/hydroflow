@@ -39,7 +39,7 @@ impl PropertyDatabase {
         expr: Q,
     ) -> Q {
         let expr_clone = expr.clone();
-        self.commutative.insert(expr_clone.splice());
+        self.commutative.insert(expr_clone.splice_untyped());
         expr
     }
 
@@ -93,11 +93,11 @@ mod tests {
     fn test_property_database() {
         let mut db = PropertyDatabase::default();
 
-        assert!(!db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice())));
+        assert!(!db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice_untyped())));
 
         let _ = db.add_commutative_tag(q!(|a: &mut i32, b: i32| *a += b));
 
-        assert!(db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice())));
+        assert!(db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice_untyped())));
     }
 
     #[test]
