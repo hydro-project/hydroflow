@@ -898,10 +898,8 @@ fn client<'a, B: Address + Ord + std::fmt::Debug + Clone>(
         )| {
             let mut latencies_mut = latencies.borrow_mut();
             let median_latency = if has_any_value {
-                // let (lesser, median, greater) = latencies.borrow_mut().select_nth_unstable(*median_latency_window_size / 2);
-                // TODO: Replace below with above once HF+ supports tuples
-                let out = latencies_mut.select_nth_unstable(median_latency_window_size / 2);
-                *out.1
+                let (_, median, _) = latencies_mut.select_nth_unstable(median_latency_window_size / 2);
+                *median
             } else {
                 0
             };
