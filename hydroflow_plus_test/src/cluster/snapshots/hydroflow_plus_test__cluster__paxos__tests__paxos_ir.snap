@@ -197,7 +197,7 @@ expression: built.ir()
         ),
     },
     ForEach {
-        f: stageleft :: runtime_support :: fn1_type_hint :: < ((() , (std :: rc :: Rc < core :: cell :: RefCell < std :: vec :: Vec < u128 > > > , usize , bool)) , (u32 , i32)) , () > ({ use crate :: __staged :: cluster :: paxos :: * ; let median_latency_window_size = 1usize ; move | ((_ , (latencies , _write_index , has_any_value)) , (throughput , num_ticks) ,) | { let mut latencies_mut = latencies . borrow_mut () ; let median_latency = if has_any_value { let out = latencies_mut . select_nth_unstable (median_latency_window_size / 2) ; * out . 1 } else { 0 } ; println ! ("Median latency: {}ms" , median_latency as f64 / 1000.0) ; println ! ("Throughput: {} requests/s" , throughput) ; println ! ("Num ticks per second: {}" , num_ticks) ; } }),
+        f: stageleft :: runtime_support :: fn1_type_hint :: < ((() , (std :: rc :: Rc < core :: cell :: RefCell < std :: vec :: Vec < u128 > > > , usize , bool)) , (u32 , i32)) , () > ({ use crate :: __staged :: cluster :: paxos :: * ; let median_latency_window_size = 1usize ; move | ((_ , (latencies , _write_index , has_any_value)) , (throughput , num_ticks) ,) | { let mut latencies_mut = latencies . borrow_mut () ; let median_latency = if has_any_value { let (_ , median , _) = latencies_mut . select_nth_unstable (median_latency_window_size / 2) ; * median } else { 0 } ; println ! ("Median latency: {}ms" , median_latency as f64 / 1000.0) ; println ! ("Throughput: {} requests/s" , throughput) ; println ! ("Num ticks per second: {}" , num_ticks) ; } }),
         input: CrossSingleton(
             CrossSingleton(
                 Tee {
