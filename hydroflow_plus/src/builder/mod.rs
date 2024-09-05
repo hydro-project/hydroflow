@@ -322,7 +322,10 @@ impl<'a> FlowBuilder<'a> {
         .latest()
     }
 
-    pub fn cycle<S: CycleCollection<'a>>(&self, on: &S::Location) -> (HfCycle<'a, S>, S) {
+    pub fn tick_cycle<S: CycleCollection<'a, Tick>>(
+        &self,
+        on: &S::Location,
+    ) -> (HfCycle<'a, Tick, S>, S) {
         let next_id = {
             let on_id = match on.id() {
                 LocationId::Process(id) => id,
@@ -348,11 +351,40 @@ impl<'a> FlowBuilder<'a> {
         )
     }
 
-    pub fn cycle_with_initial<S: CycleCollectionWithInitial<'a>>(
+    pub fn cycle<S: CycleCollection<'a, NoTick>>(
+        &self,
+        on: &S::Location,
+    ) -> (HfCycle<'a, NoTick, S>, S) {
+        let next_id = {
+            let on_id = match on.id() {
+                LocationId::Process(id) => id,
+                LocationId::Cluster(id) => id,
+            };
+
+            let mut cycle_ids = self.cycle_ids.borrow_mut();
+            let next_id_entry = cycle_ids.entry(on_id).or_default();
+
+            let id = *next_id_entry;
+            *next_id_entry += 1;
+            id
+        };
+
+        let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
+
+        (
+            HfCycle {
+                ident: ident.clone(),
+                _phantom: PhantomData,
+            },
+            S::create_source(ident, self.ir_leaves.clone(), on.id()),
+        )
+    }
+
+    pub fn tick_cycle_with_initial<S: CycleCollectionWithInitial<'a, Tick>>(
         &self,
         on: &S::Location,
         initial: S,
-    ) -> (HfCycle<'a, S>, S) {
+    ) -> (HfCycle<'a, Tick, S>, S) {
         let next_id = {
             let on_id = match on.id() {
                 LocationId::Process(id) => id,

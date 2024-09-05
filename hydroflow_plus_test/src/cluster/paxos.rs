@@ -118,8 +118,6 @@ pub fn paxos(
     flow.source_iter(&proposers, q!(["Proposers say hello"]))
         .for_each(q!(|s| println!("{}", s)));
     let p_id = flow.cluster_self_id(&proposers);
-    let (p_is_leader_complete_cycle, p_is_leader) =
-        flow.cycle::<Optional<bool, Unbounded, NoTick, _>>(&proposers);
 
     let (p_to_proposers_i_am_leader_complete_cycle, p_to_proposers_i_am_leader) =
         flow.cycle::<Stream<Ballot, Unbounded, NoTick, Cluster<Proposer>>>(&proposers);
@@ -140,7 +138,17 @@ pub fn paxos(
         p_to_proposers_i_am_leader.clone(),
     );
     let (p_ballot_num, p_has_largest_ballot) =
-        p_ballot_calc(flow, &proposers, p_received_max_ballot);
+        p_ballot_calc(flow, &proposers, p_received_max_ballot.latest_tick());
+
+    let (p_is_leader, p_log_to_try_commit, p_max_slot, p_log_holes) = p_p1b(
+        flow,
+        &proposers,
+        a_to_proposers_p1b,
+        p_ballot_num.clone(),
+        p_has_largest_ballot,
+        f,
+    );
+
     let (p_to_proposers_i_am_leader_from_others, p_to_acceptors_p1a) = p_p1a(
         p_ballot_num.clone(),
         p_is_leader.clone(),
@@ -153,16 +161,6 @@ pub fn paxos(
         i_am_leader_check_timeout_delay_multiplier,
     );
     p_to_proposers_i_am_leader_complete_cycle.complete(p_to_proposers_i_am_leader_from_others);
-
-    let (p_is_leader_new, p_log_to_try_commit, p_max_slot, p_log_holes) = p_p1b(
-        flow,
-        &proposers,
-        a_to_proposers_p1b,
-        p_ballot_num.clone(),
-        p_has_largest_ballot,
-        f,
-    );
-    p_is_leader_complete_cycle.complete(p_is_leader_new);
 
     let (p_next_slot, p_to_acceptors_p2a) = p_p2a(
         flow,
@@ -178,9 +176,8 @@ pub fn paxos(
 
     // Tell clients that leader election has completed and they can begin sending messages
     let p_to_clients_new_leader_elected = p_is_leader.clone()
-        .latest_tick()
-        .continue_unless(p_next_slot.latest_tick())
-        .cross_singleton(p_ballot_num.latest_tick())
+        .continue_unless(p_next_slot)
+        .cross_singleton(p_ballot_num)
         .map(q!(move |(_is_leader, ballot_num)| Ballot { num: ballot_num, id: p_id})) // Only tell the clients once when leader election concludes
         .all_ticks()
         .broadcast_bincode_interleaved(&clients);
@@ -369,8 +366,9 @@ fn p_p2b<'a>(
     replicas: &Cluster<Replica>,
     f: usize,
 ) -> Stream<'a, ReplicaPayload, Unbounded, NoTick, Cluster<Replica>> {
-    let (p_broadcasted_p2b_slots_complete_cycle, p_broadcasted_p2b_slots) = flow.cycle(proposers);
-    let (p_persisted_p2bs_complete_cycle, p_persisted_p2bs) = flow.cycle(proposers);
+    let (p_broadcasted_p2b_slots_complete_cycle, p_broadcasted_p2b_slots) =
+        flow.tick_cycle(proposers);
+    let (p_persisted_p2bs_complete_cycle, p_persisted_p2bs) = flow.tick_cycle(proposers);
     let p_p2b = a_to_proposers_p2b
         .clone()
         .tick_batch()
@@ -423,18 +421,16 @@ fn p_p2b<'a>(
     let p_broadcasted_p2b_slots_new = p_p2b_quorum_reached
         .clone()
         .map(q!(|(slot, (_count, _p2b))| slot))
-        .filter_not_in(p_p2b_all_commit_slots.clone())
-        .defer_tick();
+        .filter_not_in(p_p2b_all_commit_slots.clone());
     // p_broadcasted_p2b_slots_new.inspect(q!(|slot: i32| println!("Proposer slot broadcasted: {:?}", slot)));
-    p_broadcasted_p2b_slots_complete_cycle.complete(p_broadcasted_p2b_slots_new);
+    p_broadcasted_p2b_slots_complete_cycle.complete_next_tick(p_broadcasted_p2b_slots_new);
     let p_persisted_p2bs_new = p_p2b
         .clone()
         .map(q!(|(sender, p2b)| (p2b.slot, (sender, p2b))))
         .anti_join(p_p2b_all_commit_slots.clone())
-        .map(q!(|(_slot, (sender, p2b))| (sender, p2b)))
-        .defer_tick();
+        .map(q!(|(_slot, (sender, p2b))| (sender, p2b)));
     // p_persisted_p2bs_new.inspect(q!(|(sender, p2b): (u32, P2b)| println!("Proposer persisting p2b: {:?}", p2b)));
-    p_persisted_p2bs_complete_cycle.complete(p_persisted_p2bs_new);
+    p_persisted_p2bs_complete_cycle.complete_next_tick(p_persisted_p2bs_new);
     p_to_replicas
 }
 
@@ -445,17 +441,18 @@ fn p_p2a<'a>(
     proposers: &Cluster<Proposer>,
     p_max_slot: Singleton<'a, i32, Bounded, Tick, Cluster<Proposer>>,
     c_to_proposers: Stream<'a, ClientPayload, Unbounded, NoTick, Cluster<Proposer>>,
-    p_ballot_num: Optional<'a, u32, Unbounded, NoTick, Cluster<Proposer>>,
+    p_ballot_num: Singleton<'a, u32, Bounded, Tick, Cluster<Proposer>>,
     p_log_to_try_commit: Stream<'a, P2a, Bounded, Tick, Cluster<Proposer>>,
     p_log_holes: Stream<'a, P2a, Bounded, Tick, Cluster<Proposer>>,
-    p_is_leader: Optional<'a, bool, Unbounded, NoTick, Cluster<Proposer>>,
+    p_is_leader: Optional<'a, bool, Bounded, Tick, Cluster<Proposer>>,
     acceptors: &Cluster<Acceptor>,
 ) -> (
-    Optional<'a, i32, Unbounded, NoTick, Cluster<Proposer>>,
+    Optional<'a, i32, Bounded, Tick, Cluster<Proposer>>,
     Stream<'a, P2a, Unbounded, NoTick, Cluster<Acceptor>>,
 ) {
     let p_id = flow.cluster_self_id(proposers);
-    let (p_next_slot_complete_cycle, p_next_slot) = flow.cycle::<Optional<i32, _, _, _>>(proposers);
+    let (p_next_slot_complete_cycle, p_next_slot) =
+        flow.tick_cycle::<Optional<i32, _, _, _>>(proposers);
     let p_next_slot_after_reconciling_p1bs = p_max_slot
         // .inspect(q!(|max_slot| println!("{} p_max_slot: {:?}", context.current_tick(), max_slot)))
         .continue_unless(p_next_slot.clone())
@@ -468,7 +465,7 @@ fn p_p2a<'a>(
         .enumerate()
         .cross_singleton(p_next_slot.clone())
         // .inspect(q!(|next| println!("{} p_indexed_payloads next slot: {}", context.current_tick(), next))))
-        .cross_singleton(p_ballot_num.clone().latest_tick())
+        .cross_singleton(p_ballot_num.clone())
         // .inspect(q!(|ballot_num| println!("{} p_indexed_payloads ballot_num: {}", context.current_tick(), ballot_num))))
         .map(q!(move |(((index, payload), next_slot), ballot_num)| P2a { ballot: Ballot { num: ballot_num, id: p_id }, slot: next_slot + index as i32, value: payload }));
     // .inspect(q!(|p2a: &P2a| println!("{} p_indexed_payloads P2a: {:?}", context.current_tick(), p2a)));
@@ -476,7 +473,7 @@ fn p_p2a<'a>(
         .union(p_log_holes)
         .continue_unless(p_next_slot.clone()) // Only resend p1b stuff once. Once it's resent, next_slot will exist.
         .union(p_indexed_payloads)
-        .continue_if(p_is_leader.clone().latest_tick())
+        .continue_if(p_is_leader.clone())
         .all_ticks()
         .broadcast_bincode_interleaved(acceptors);
 
@@ -498,18 +495,15 @@ fn p_p2a<'a>(
         // .inspect(q!(|slot| println!("{} p_next_slot_after_sending_payloads: {:?}", context.current_tick(), slot))))
         .union(p_next_slot_if_no_payloads)
         // .inspect(q!(|slot| println!("{} p_next_slot_if_no_payloads: {:?}", context.current_tick(), slot))))
-        .continue_if(p_is_leader.clone().latest_tick());
+        .continue_if(p_is_leader.clone());
     let p_new_next_slot_default = p_is_leader // Default next slot to 0 if there haven't been any payloads at all
         .clone()
-        .latest_tick()
         .continue_unless(p_new_next_slot_calculated.clone())
         .map(q!(|_| 0));
     // .inspect(q!(|slot| println!("{} p_new_next_slot_default: {:?}", context.current_tick(), slot)));
-    let p_new_next_slot = p_new_next_slot_calculated
-        .union(p_new_next_slot_default)
-        .defer_tick();
-    p_next_slot_complete_cycle.complete(p_new_next_slot);
-    (p_next_slot.latest(), p_to_acceptors_p2a)
+    let p_new_next_slot = p_new_next_slot_calculated.union(p_new_next_slot_default);
+    p_next_slot_complete_cycle.complete_next_tick(p_new_next_slot);
+    (p_next_slot, p_to_acceptors_p2a)
 }
 
 // Proposer logic for processing p1bs, determining if the proposer is now the leader, which uncommitted messages to commit, what the maximum slot is in the p1bs, and which no-ops to commit to fill log holes.
@@ -518,11 +512,11 @@ fn p_p1b<'a>(
     flow: &FlowBuilder<'a>,
     proposers: &Cluster<Proposer>,
     a_to_proposers_p1b: Stream<'a, (u32, P1b), Unbounded, NoTick, Cluster<Proposer>>,
-    p_ballot_num: Optional<'a, u32, Unbounded, NoTick, Cluster<Proposer>>,
-    p_has_largest_ballot: Optional<'a, (Ballot, u32), Unbounded, NoTick, Cluster<Proposer>>,
+    p_ballot_num: Singleton<'a, u32, Bounded, Tick, Cluster<Proposer>>,
+    p_has_largest_ballot: Optional<'a, (Ballot, u32), Bounded, Tick, Cluster<Proposer>>,
     f: usize,
 ) -> (
-    Optional<'a, bool, Unbounded, NoTick, Cluster<Proposer>>,
+    Optional<'a, bool, Bounded, Tick, Cluster<Proposer>>,
     Stream<'a, P2a, Bounded, Tick, Cluster<Proposer>>,
     Singleton<'a, i32, Bounded, Tick, Cluster<Proposer>>,
     Stream<'a, P2a, Bounded, Tick, Cluster<Proposer>>,
@@ -531,7 +525,7 @@ fn p_p1b<'a>(
     let p_relevant_p1bs = a_to_proposers_p1b
         .clone()
         .tick_prefix()
-        .cross_singleton(p_ballot_num.clone().latest_tick())
+        .cross_singleton(p_ballot_num.clone())
         .filter(q!(move |((_sender, p1b), ballot_num)| p1b.ballot
             == Ballot {
                 num: *ballot_num,
@@ -547,9 +541,7 @@ fn p_p1b<'a>(
         } else {
             None
         }));
-    let p_is_leader_new = p_received_quorum_of_p1bs
-        .continue_if(p_has_largest_ballot.clone().latest_tick())
-        .latest();
+    let p_is_leader = p_received_quorum_of_p1bs.continue_if(p_has_largest_ballot.clone());
 
     let p_p1b_highest_entries_and_count = p_relevant_p1bs
         .clone()
@@ -573,7 +565,7 @@ fn p_p1b<'a>(
         }));
     let p_log_to_try_commit = p_p1b_highest_entries_and_count
         .clone()
-        .cross_singleton(p_ballot_num.clone().latest_tick())
+        .cross_singleton(p_ballot_num.clone())
         .filter_map(q!(
             move |((slot, (count, entry)), ballot_num)| if count <= f as u32 {
                 Some(P2a {
@@ -603,7 +595,7 @@ fn p_p1b<'a>(
         .clone()
         .flat_map(q!(|max_slot| 0..max_slot))
         .filter_not_in(p_proposed_slots)
-        .cross_singleton(p_ballot_num.clone().latest_tick())
+        .cross_singleton(p_ballot_num.clone())
         .map(q!(move |(slot, ballot_num)| P2a {
             ballot: Ballot {
                 num: ballot_num,
@@ -615,12 +607,7 @@ fn p_p1b<'a>(
                 value: "0".to_string()
             }
         }));
-    (
-        p_is_leader_new,
-        p_log_to_try_commit,
-        p_max_slot,
-        p_log_holes,
-    )
+    (p_is_leader, p_log_to_try_commit, p_max_slot, p_log_holes)
 }
 
 // Replicas. All relations for replicas will be prefixed with r. Expects ReplicaPayload on p_to_replicas, outputs a stream of (client address, ReplicaPayload) after processing.
@@ -634,7 +621,7 @@ fn replica<'a>(
     Stream<'a, i32, Unbounded, NoTick, Cluster<Replica>>,
     Stream<'a, (u32, ReplicaPayload), Unbounded, NoTick, Cluster<Replica>>,
 ) {
-    let (r_buffered_payloads_complete_cycle, r_buffered_payloads) = flow.cycle(replicas);
+    let (r_buffered_payloads_complete_cycle, r_buffered_payloads) = flow.tick_cycle(replicas);
     // p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
     let r_sorted_payloads = p_to_replicas
         .clone()
@@ -643,7 +630,7 @@ fn replica<'a>(
         .sort();
     // Create a cycle since we'll use this seq before we define it
     let (r_highest_seq_complete_cycle, r_highest_seq) =
-        flow.cycle::<Optional<'a, i32, _, _, _>>(replicas);
+        flow.tick_cycle::<Optional<'a, i32, _, _, _>>(replicas);
     let empty_slot = flow.singleton_first_tick(replicas, q!(-1));
     // Either the max sequence number executed so far or -1. Need to union otherwise r_highest_seq is empty and joins with it will fail
     let r_highest_seq_with_default = r_highest_seq.union(empty_slot);
@@ -678,10 +665,9 @@ fn replica<'a>(
         .filter(q!(
             |(sorted_payload, highest_seq)| sorted_payload.seq > *highest_seq
         ))
-        .map(q!(|(sorted_payload, _)| { sorted_payload }))
-        .defer_tick();
+        .map(q!(|(sorted_payload, _)| { sorted_payload }));
     // Save these, we can process them once the hole has been filled
-    r_buffered_payloads_complete_cycle.complete(r_new_non_processable_payloads);
+    r_buffered_payloads_complete_cycle.complete_next_tick(r_new_non_processable_payloads);
 
     let r_kv_store = r_processable_payloads
         .clone()
@@ -695,14 +681,12 @@ fn replica<'a>(
             // println!("Replica kv store: {:?}", kv_store);
         }));
     // Update the highest seq for the next tick
-    let r_new_highest_seq = r_kv_store
-        .map(q!(|(_kv_store, highest_seq)| highest_seq))
-        .defer_tick();
-    r_highest_seq_complete_cycle.complete(r_new_highest_seq.clone().into());
+    let r_new_highest_seq = r_kv_store.map(q!(|(_kv_store, highest_seq)| highest_seq));
+    r_highest_seq_complete_cycle.complete_next_tick(r_new_highest_seq.clone().into());
 
     // Send checkpoints to the acceptors when we've processed enough payloads
     let (r_checkpointed_seqs_complete_cycle, r_checkpointed_seqs) =
-        flow.cycle::<Optional<'a, i32, _, _, _>>(replicas);
+        flow.tick_cycle::<Optional<'a, i32, _, _, _>>(replicas);
     let r_max_checkpointed_seq = r_checkpointed_seqs.persist().fold(
         q!(|| -1),
         q!(|max_seq, seq| {
@@ -721,9 +705,8 @@ fn replica<'a>(
             } else {
                 None
             }
-        ))
-        .defer_tick();
-    r_checkpointed_seqs_complete_cycle.complete(r_checkpoint_seq_new.clone());
+        ));
+    r_checkpointed_seqs_complete_cycle.complete_next_tick(r_checkpoint_seq_new.clone());
 
     // Tell clients that the payload has been committed. All ReplicaPayloads contain the client's machine ID (to string) as value.
     let r_to_clients = p_to_replicas.map(q!(|payload| (
@@ -779,7 +762,8 @@ fn client<'a>(
                 )
             )));
     // Whenever replicas confirm that a payload was committed, collected it and wait for a quorum
-    let (c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) = flow.cycle(clients);
+    let (c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) =
+        flow.tick_cycle(clients);
     let c_received_payloads = r_to_clients_payload_applied
         .tick_batch()
         .map(q!(|(sender, replica_payload)| (
@@ -802,10 +786,9 @@ fn client<'a>(
                 None
             }
         }));
-    let c_new_pending_quorum_payloads = c_received_payloads
-        .anti_join(c_received_quorum_payloads.clone())
-        .defer_tick();
-    c_pending_quorum_payloads_complete_cycle.complete(c_new_pending_quorum_payloads);
+    let c_new_pending_quorum_payloads =
+        c_received_payloads.anti_join(c_received_quorum_payloads.clone());
+    c_pending_quorum_payloads_complete_cycle.complete_next_tick(c_new_pending_quorum_payloads);
     // Whenever all replicas confirm that a payload was committed, send another payload
     let c_new_payloads_when_committed = c_received_quorum_payloads
         .clone()
@@ -823,7 +806,7 @@ fn client<'a>(
 
     // Track statistics
     let (c_timers_complete_cycle, c_timers) =
-        flow.cycle::<Stream<'a, (usize, SystemTime), _, _, _>>(clients);
+        flow.tick_cycle::<Stream<'a, (usize, SystemTime), _, _, _>>(clients);
     let c_new_timers_when_leader_elected = c_new_leader_ballot
         .map(q!(|_| SystemTime::now()))
         .flat_map(q!(
@@ -840,9 +823,8 @@ fn client<'a>(
             if new_time > *curr_time {
                 *curr_time = new_time;
             }
-        }))
-        .defer_tick();
-    c_timers_complete_cycle.complete(c_new_timers);
+        }));
+    c_timers_complete_cycle.complete_next_tick(c_new_timers);
 
     let c_stats_output_timer = flow.source_interval(clients, q!(Duration::from_secs(1)));
 
@@ -976,18 +958,17 @@ fn p_max_ballot<'a>(
 fn p_ballot_calc<'a>(
     flow: &FlowBuilder<'a>,
     proposers: &Cluster<Proposer>,
-    p_received_max_ballot: Singleton<'a, Ballot, Unbounded, NoTick, Cluster<Proposer>>,
+    p_received_max_ballot: Singleton<'a, Ballot, Bounded, Tick, Cluster<Proposer>>,
 ) -> (
-    Optional<'a, u32, Unbounded, NoTick, Cluster<Proposer>>,
-    Optional<'a, (Ballot, u32), Unbounded, NoTick, Cluster<Proposer>>,
+    Singleton<'a, u32, Bounded, Tick, Cluster<Proposer>>,
+    Optional<'a, (Ballot, u32), Bounded, Tick, Cluster<Proposer>>,
 ) {
     let p_id = flow.cluster_self_id(proposers);
     let (p_ballot_num_complete_cycle, p_ballot_num) =
-        flow.cycle_with_initial(proposers, flow.singleton(proposers, q!(0)).latest_tick());
+        flow.tick_cycle_with_initial(proposers, flow.singleton(proposers, q!(0)).latest_tick());
 
     let p_new_ballot_num = p_received_max_ballot
         .clone()
-        .latest_tick()
         .cross_singleton(p_ballot_num.clone())
         .map(q!(move |(received_max_ballot, ballot_num)| {
             if received_max_ballot
@@ -1000,11 +981,8 @@ fn p_ballot_calc<'a>(
             } else {
                 ballot_num
             }
-        }))
-        .defer_tick();
-    p_ballot_num_complete_cycle.complete(p_new_ballot_num);
-
-    let p_ballot_num = p_ballot_num.latest();
+        }));
+    p_ballot_num_complete_cycle.complete_next_tick(p_new_ballot_num);
 
     let p_has_largest_ballot = p_received_max_ballot
         .clone()
@@ -1024,8 +1002,8 @@ fn p_ballot_calc<'a>(
 // Proposer logic to send "I am leader" messages periodically to other proposers, or send p1a to acceptors if other leaders expired.
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
 fn p_p1a<'a>(
-    p_ballot_num: Optional<'a, u32, Unbounded, NoTick, Cluster<Proposer>>,
-    p_is_leader: Optional<'a, bool, Unbounded, NoTick, Cluster<Proposer>>,
+    p_ballot_num: Singleton<'a, u32, Bounded, Tick, Cluster<Proposer>>,
+    p_is_leader: Optional<'a, bool, Bounded, Tick, Cluster<Proposer>>,
     proposers: &Cluster<Proposer>,
     p_to_proposers_i_am_leader: Stream<'a, Ballot, Unbounded, NoTick, Cluster<Proposer>>,
     flow: &FlowBuilder<'a>,
@@ -1040,9 +1018,10 @@ fn p_p1a<'a>(
     let p_id = flow.cluster_self_id(proposers);
     let p_to_proposers_i_am_leader_new = p_ballot_num
         .clone()
+        .latest()
         .sample_every(q!(Duration::from_secs(i_am_leader_send_timeout)))
         .tick_batch()
-        .continue_if(p_is_leader.clone().latest_tick())
+        .continue_if(p_is_leader.clone())
         .map(q!(move |ballot_num| Ballot {
             num: ballot_num,
             id: p_id
@@ -1063,7 +1042,7 @@ fn p_p1a<'a>(
         .latest_tick()
         // .inspect(q!(|v| println!("Proposer checking if leader expired")))
         // .continue_if(p_is_leader.clone().count().filter(q!(|c| *c == 0)).inspect(q!(|c| println!("Proposer is_leader count: {}", c))))
-        .continue_unless(p_is_leader.latest_tick())
+        .continue_unless(p_is_leader)
         .filter(q!(move |(_, latest_received_i_am_leader)| {
             if let Some(latest_received_i_am_leader) = latest_received_i_am_leader {
                 (Instant::now().duration_since(*latest_received_i_am_leader)) > Duration::from_secs(i_am_leader_check_timeout)
@@ -1077,7 +1056,6 @@ fn p_p1a<'a>(
         .for_each(q!(|_| println!("Proposer leader expired")));
 
     let p_to_acceptors_p1a = p_ballot_num
-        .latest_tick()
         .continue_if(p_leader_expired)
         .map(q!(move |ballot_num| P1a {
             ballot: Ballot {
