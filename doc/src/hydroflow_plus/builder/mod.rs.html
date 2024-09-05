@@ -378,6 +378,38 @@
 <a href="#378" id="378">378</a>
 <a href="#379" id="379">379</a>
 <a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -702,7 +734,10 @@
         .latest()
     }
 
-    <span class="kw">pub fn </span>cycle&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, on: <span class="kw-2">&amp;</span>S::Location) -&gt; (HfCycle&lt;<span class="lifetime">'a</span>, S&gt;, S) {
+    <span class="kw">pub fn </span>tick_cycle&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, Tick&gt;&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        on: <span class="kw-2">&amp;</span>S::Location,
+    ) -&gt; (HfCycle&lt;<span class="lifetime">'a</span>, Tick, S&gt;, S) {
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span>on_id = <span class="kw">match </span>on.id() {
                 LocationId::Process(id) =&gt; id,
@@ -728,11 +763,40 @@
         )
     }
 
-    <span class="kw">pub fn </span>cycle_with_initial&lt;S: CycleCollectionWithInitial&lt;<span class="lifetime">'a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>cycle&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, NoTick&gt;&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        on: <span class="kw-2">&amp;</span>S::Location,
+    ) -&gt; (HfCycle&lt;<span class="lifetime">'a</span>, NoTick, S&gt;, S) {
+        <span class="kw">let </span>next_id = {
+            <span class="kw">let </span>on_id = <span class="kw">match </span>on.id() {
+                LocationId::Process(id) =&gt; id,
+                LocationId::Cluster(id) =&gt; id,
+            };
+
+            <span class="kw">let </span><span class="kw-2">mut </span>cycle_ids = <span class="self">self</span>.cycle_ids.borrow_mut();
+            <span class="kw">let </span>next_id_entry = cycle_ids.entry(on_id).or_default();
+
+            <span class="kw">let </span>id = <span class="kw-2">*</span>next_id_entry;
+            <span class="kw-2">*</span>next_id_entry += <span class="number">1</span>;
+            id
+        };
+
+        <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"cycle_{}"</span>, next_id), Span::call_site());
+
+        (
+            HfCycle {
+                ident: ident.clone(),
+                _phantom: PhantomData,
+            },
+            S::create_source(ident, <span class="self">self</span>.ir_leaves.clone(), on.id()),
+        )
+    }
+
+    <span class="kw">pub fn </span>tick_cycle_with_initial&lt;S: CycleCollectionWithInitial&lt;<span class="lifetime">'a</span>, Tick&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         on: <span class="kw-2">&amp;</span>S::Location,
         initial: S,
-    ) -&gt; (HfCycle&lt;<span class="lifetime">'a</span>, S&gt;, S) {
+    ) -&gt; (HfCycle&lt;<span class="lifetime">'a</span>, Tick, S&gt;, S) {
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span>on_id = <span class="kw">match </span>on.id() {
                 LocationId::Process(id) =&gt; id,

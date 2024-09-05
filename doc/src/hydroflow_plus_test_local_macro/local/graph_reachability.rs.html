@@ -80,7 +80,7 @@
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
-    <span class="kw">let </span>roots = flow.source_stream(<span class="kw-2">&amp;</span>process, roots).tick_batch();
+    <span class="kw">let </span>roots = flow.source_stream(<span class="kw-2">&amp;</span>process, roots);
     <span class="kw">let </span>edges = flow.source_stream(<span class="kw-2">&amp;</span>process, edges);
 
     <span class="kw">let </span>(set_reached_cycle, reached_cycle) = flow.cycle(<span class="kw-2">&amp;</span>process);
@@ -89,11 +89,11 @@
     <span class="kw">let </span>reachable = reached
         .clone()
         .map(<span class="macro">q!</span>(|r| (r, ())))
-        .join(edges.tick_batch().persist())
+        .join(edges)
         .map(<span class="macro">q!</span>(|(_from, (<span class="kw">_</span>, to))| to));
     set_reached_cycle.complete(reachable);
 
-    reached.unique().all_ticks().for_each(<span class="macro">q!</span>(|v| {
+    reached.unique().for_each(<span class="macro">q!</span>(|v| {
         reached_out.send(v).unwrap();
     }));
 

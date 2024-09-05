@@ -691,6 +691,27 @@
 <a href="#691" id="691">691</a>
 <a href="#692" id="692">692</a>
 <a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::ops::Deref;
@@ -829,7 +850,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&gt; CycleComplete&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>Singleton&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&gt; CycleComplete&lt;<span class="lifetime">'a</span>, Tick&gt; <span class="kw">for </span>Singleton&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
         <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
             ident,
@@ -839,7 +860,9 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&gt; CycleCollectionWithInitial&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>Singleton&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&gt; CycleCollectionWithInitial&lt;<span class="lifetime">'a</span>, Tick&gt;
+    <span class="kw">for </span>Singleton&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt;
+{
     <span class="kw">type </span>Location = N;
 
     <span class="kw">fn </span>create_source(
@@ -1084,17 +1107,18 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; CycleComplete&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>Optional&lt;<span class="lifetime">'a</span>, T, W, Tick, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&gt; CycleComplete&lt;<span class="lifetime">'a</span>, Tick&gt; <span class="kw">for </span>Optional&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
-        <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
+        <span class="kw">let </span>me = <span class="self">self</span>.defer_tick();
+        me.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
             ident,
-            location_kind: <span class="self">self</span>.location_kind,
-            input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            location_kind: me.location_kind,
+            input: Box::new(me.ir_node.into_inner()),
         });
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; CycleCollection&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>Optional&lt;<span class="lifetime">'a</span>, T, W, Tick, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&gt; CycleCollection&lt;<span class="lifetime">'a</span>, Tick&gt; <span class="kw">for </span>Optional&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
     <span class="kw">type </span>Location = N;
 
     <span class="kw">fn </span>create_source(ident: syn::Ident, ir_leaves: FlowLeaves&lt;<span class="lifetime">'a</span>&gt;, l: LocationId) -&gt; <span class="self">Self </span>{
@@ -1109,7 +1133,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; CycleComplete&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>Optional&lt;<span class="lifetime">'a</span>, T, W, NoTick, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; CycleComplete&lt;<span class="lifetime">'a</span>, NoTick&gt; <span class="kw">for </span>Optional&lt;<span class="lifetime">'a</span>, T, W, NoTick, N&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
         <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
             ident,
@@ -1119,7 +1143,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; CycleCollection&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>Optional&lt;<span class="lifetime">'a</span>, T, W, NoTick, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; CycleCollection&lt;<span class="lifetime">'a</span>, NoTick&gt; <span class="kw">for </span>Optional&lt;<span class="lifetime">'a</span>, T, W, NoTick, N&gt; {
     <span class="kw">type </span>Location = N;
 
     <span class="kw">fn </span>create_source(ident: syn::Ident, ir_leaves: FlowLeaves&lt;<span class="lifetime">'a</span>&gt;, l: LocationId) -&gt; <span class="self">Self </span>{
@@ -1279,6 +1303,24 @@
         }
 
         Optional::new(
+            <span class="self">self</span>.location_kind,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::Union(
+                Box::new(<span class="self">self</span>.ir_node.into_inner()),
+                Box::new(other.ir_node.into_inner()),
+            ),
+        )
+    }
+
+    <span class="kw">pub fn </span>or_else(
+        <span class="self">self</span>,
+        other: Singleton&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt;,
+    ) -&gt; Singleton&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
+        <span class="kw">if </span><span class="self">self</span>.location_kind != other.location_kind {
+            <span class="macro">panic!</span>(<span class="string">"or_else must be called on streams on the same node"</span>);
+        }
+
+        Singleton::new(
             <span class="self">self</span>.location_kind,
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Union(
