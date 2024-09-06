@@ -14,7 +14,7 @@ use hydroflow_plus::deploy::{ClusterSpec, Deploy, Node, ProcessSpec};
 use hydroflow_plus::lang::graph::HydroflowGraph;
 use nameof::name_of;
 use sha2::{Digest, Sha256};
-use stageleft::Quoted;
+use stageleft::{Quoted, RuntimeData};
 use tokio::sync::RwLock;
 
 use super::HydroflowPlusMeta;
@@ -50,7 +50,11 @@ impl<'a> Deploy<'a> for HydroDeploy {
     ) -> (syn::Expr, syn::Expr) {
         let p1_port = p1_port.port.as_str();
         let p2_port = p2_port.port.as_str();
-        deploy_o2o(p1_port, p2_port)
+        deploy_o2o(
+            RuntimeData::new("__hydroflow_plus_trybuild_cli"),
+            p1_port,
+            p2_port,
+        )
     }
 
     fn o2o_connect(
@@ -85,7 +89,11 @@ impl<'a> Deploy<'a> for HydroDeploy {
     ) -> (syn::Expr, syn::Expr) {
         let p1_port = p1_port.port.as_str();
         let c2_port = c2_port.port.as_str();
-        deploy_o2m(p1_port, c2_port)
+        deploy_o2m(
+            RuntimeData::new("__hydroflow_plus_trybuild_cli"),
+            p1_port,
+            c2_port,
+        )
     }
 
     fn o2m_connect(
@@ -130,7 +138,11 @@ impl<'a> Deploy<'a> for HydroDeploy {
     ) -> (syn::Expr, syn::Expr) {
         let c1_port = c1_port.port.as_str();
         let p2_port = p2_port.port.as_str();
-        deploy_m2o(c1_port, p2_port)
+        deploy_m2o(
+            RuntimeData::new("__hydroflow_plus_trybuild_cli"),
+            c1_port,
+            p2_port,
+        )
     }
 
     fn m2o_connect(
@@ -171,7 +183,11 @@ impl<'a> Deploy<'a> for HydroDeploy {
     ) -> (syn::Expr, syn::Expr) {
         let c1_port = c1_port.port.as_str();
         let c2_port = c2_port.port.as_str();
-        deploy_m2m(c1_port, c2_port)
+        deploy_m2m(
+            RuntimeData::new("__hydroflow_plus_trybuild_cli"),
+            c1_port,
+            c2_port,
+        )
     }
 
     fn m2m_connect(
@@ -216,11 +232,14 @@ impl<'a> Deploy<'a> for HydroDeploy {
         _env: &Self::CompileEnv,
         of_cluster: usize,
     ) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
-        cluster_members(of_cluster)
+        cluster_members(
+            RuntimeData::new("__hydroflow_plus_trybuild_cli"),
+            of_cluster,
+        )
     }
 
     fn cluster_self_id(_env: &Self::CompileEnv) -> impl Quoted<'a, u32> + Copy + 'a {
-        cluster_self_id()
+        cluster_self_id(RuntimeData::new("__hydroflow_plus_trybuild_cli"))
     }
 }
 
