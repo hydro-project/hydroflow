@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/hydroflow_plus_deploy/"
 description = "Library for working with hydro_deploy and hydroflow_plus"
 
+[lints]
+workspace = true
+
 [features]
 deploy = [ "hydro_deploy", "trybuild-internals-api", "toml", "prettyplease" ]
 stageleft_devel = []

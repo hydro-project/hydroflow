@@ -79,7 +79,7 @@ struct P2b {
 
 // Important: By convention, all relations that represent booleans either have a single "true" value or nothing.
 // This allows us to use the continue_if_exists() and continue_if_empty() operators as if they were if (true) and if (false) statements.
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments, reason = "internal paxos code // TODO")]
 pub fn paxos(
     flow: &FlowBuilder<'_>,
     f: usize,
@@ -218,7 +218,7 @@ pub fn paxos(
     (proposers, acceptors, clients, replicas)
 }
 
-#[allow(clippy::type_complexity)]
+#[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 fn acceptor<'a>(
     flow: &FlowBuilder<'a>,
     p_to_acceptors_p1a: Stream<'a, P1a, Unbounded, NoTick, Cluster<Acceptor>>,
@@ -433,7 +433,11 @@ fn p_p2b<'a>(
 }
 
 // Proposer logic to send p2as, outputting the next slot and the p2as to send to acceptors.
-#[allow(clippy::type_complexity, clippy::too_many_arguments)]
+#[expect(
+    clippy::type_complexity,
+    clippy::too_many_arguments,
+    reason = "internal paxos code // TODO"
+)]
 fn p_p2a<'a>(
     flow: &FlowBuilder<'a>,
     proposers: &Cluster<Proposer>,
@@ -506,7 +510,7 @@ fn p_p2a<'a>(
 }
 
 // Proposer logic for processing p1bs, determining if the proposer is now the leader, which uncommitted messages to commit, what the maximum slot is in the p1bs, and which no-ops to commit to fill log holes.
-#[allow(clippy::type_complexity)]
+#[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 fn p_p1b<'a>(
     flow: &FlowBuilder<'a>,
     proposers: &Cluster<Proposer>,
@@ -606,7 +610,7 @@ fn p_p1b<'a>(
 }
 
 // Replicas. All relations for replicas will be prefixed with r. Expects ReplicaPayload on p_to_replicas, outputs a stream of (client address, ReplicaPayload) after processing.
-#[allow(clippy::type_complexity)]
+#[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 fn replica<'a>(
     flow: &FlowBuilder<'a>,
     replicas: &Cluster<Replica>,
@@ -887,7 +891,6 @@ fn client<'a, B: Address + Ord + std::fmt::Debug + Clone>(
                 }
             }),
         );
-
     c_stats_output_timer
         .cross_singleton(c_latencies)
         .cross_singleton(c_throughput)
@@ -934,7 +937,7 @@ fn p_max_ballot<'a>(
 }
 
 // Proposer logic to calculate the next ballot number. Expects p_received_max_ballot, the largest ballot received so far. Outputs streams: ballot_num, and has_largest_ballot, which only contains a value if we have the largest ballot.
-#[allow(clippy::type_complexity)]
+#[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 fn p_ballot_calc<'a>(
     flow: &FlowBuilder<'a>,
     proposers: &Cluster<Proposer>,
@@ -980,7 +983,11 @@ fn p_ballot_calc<'a>(
 }
 
 // Proposer logic to send "I am leader" messages periodically to other proposers, or send p1a to acceptors if other leaders expired.
-#[allow(clippy::too_many_arguments, clippy::type_complexity)]
+#[expect(
+    clippy::too_many_arguments,
+    clippy::type_complexity,
+    reason = "internal paxos code // TODO"
+)]
 fn p_p1a<'a>(
     p_ballot_num: Singleton<'a, u32, Bounded, Tick, Cluster<Proposer>>,
     p_is_leader: Optional<'a, bool, Bounded, Tick, Cluster<Proposer>>,

@@ -84,7 +84,7 @@ pub const PY_UDF: OperatorConstraints = OperatorConstraints {
 
         let py_func_ident = wc.make_ident("py_func");
 
-        let err_lit = Literal::string(&*format!(
+        let err_lit = Literal::string(&format!(
             "Hydroflow 'python' feature must be enabled to use `{}`",
             op_name
         ));

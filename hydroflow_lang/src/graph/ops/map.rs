@@ -50,6 +50,7 @@ pub const MAP: OperatorConstraints = OperatorConstraints {
         let write_iterator = if is_pull {
             let input = &inputs[0];
             quote_spanned! {op_span=>
+                #[allow(clippy::map_clone, reason = "hydroflow has no explicit `cloned`/`copied` operator")]
                 let #ident = #input.map(#func);
             }
         } else {

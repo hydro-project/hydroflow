@@ -628,13 +628,12 @@ mod test {
     type MyList = var_type!(u8, u16, u32, u64);
     type MyPrefix = var_type!(u8, u16);
 
+    #[expect(dead_code, reason = "compilation test code")]
     type MySuffix = <MyList as Split<MyPrefix>>::Suffix;
 
-    #[allow(dead_code)]
     const _: MySuffix = var_expr!(0_u32, 0_u64);
 
     #[test]
-    #[allow(clippy::let_unit_value)]
     fn test_basic_expr() {
         let _ = var_expr!();
         let _ = var_expr!(1);
@@ -645,7 +644,7 @@ mod test {
 
     variadic_trait! {
         /// Variaidic list of futures.
-        #[allow(dead_code)]
+        #[allow(clippy::allow_attributes, dead_code, reason = "compilation test code")]
         pub variadic<F> FuturesList where F: std::future::Future {}
     }
 

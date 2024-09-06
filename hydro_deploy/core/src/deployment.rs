@@ -45,12 +45,12 @@ impl Deployment {
         ret
     }
 
-    #[allow(non_snake_case)]
+    #[expect(non_snake_case, reason = "constructor-esque")]
     pub fn Localhost(&self) -> Arc<LocalhostHost> {
         self.localhost_host.clone().unwrap()
     }
 
-    #[allow(non_snake_case)]
+    #[expect(non_snake_case, reason = "constructor-esque")]
     pub fn CustomService(
         &mut self,
         on: Arc<dyn Host>,
@@ -201,7 +201,6 @@ impl Deployment {
 /// Buildstructor methods.
 #[buildstructor::buildstructor]
 impl Deployment {
-    #[allow(clippy::too_many_arguments)]
     #[builder(entry = "GcpComputeEngineHost", exit = "add")]
     pub fn add_gcp_compute_engine_host(
         &mut self,
@@ -227,7 +226,6 @@ impl Deployment {
         })
     }
 
-    #[allow(clippy::too_many_arguments)]
     #[builder(entry = "AzureHost", exit = "add")]
     pub fn add_azure_host(
         &mut self,

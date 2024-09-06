@@ -81,7 +81,7 @@ pub trait FreeVariable<O> {
         Self: Sized;
 
     fn uninitialized(&self) -> O {
-        #[allow(clippy::uninit_assumed_init)]
+        #[expect(clippy::uninit_assumed_init, reason = "this code should never run")]
         unsafe {
             MaybeUninit::uninit().assume_init()
         }

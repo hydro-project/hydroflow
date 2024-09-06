@@ -12,7 +12,7 @@ type RowVal = Max<String>;
 macro_rules! test_derive_all {
     ( $( $m:ident => $i:ident, )* ) => {
         $(
-            #[allow(dead_code)]
+            #[allow(clippy::allow_attributes, dead_code, reason = "compilation test code")]
             mod $m {
                 use super::*;
 

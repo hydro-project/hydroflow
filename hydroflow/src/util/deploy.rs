@@ -1,4 +1,4 @@
-#![allow(missing_docs)] // TODO(mingwei)
+#![allow(clippy::allow_attributes, missing_docs, reason = "// TODO(mingwei)")]
 
 use std::cell::RefCell;
 use std::collections::HashMap;

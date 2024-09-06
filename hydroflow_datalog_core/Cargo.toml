@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/hydroflow_datalog_core/"
 description = "Datalog implementation for Hydroflow"
 
+[lints]
+workspace = true
+
 [lib]
 path = "src/lib.rs"
 

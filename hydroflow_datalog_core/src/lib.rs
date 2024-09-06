@@ -339,7 +339,7 @@ pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream)
     code_tokens
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments, reason = "internal code")]
 fn generate_rule(
     plan: JoinPlan<'_>,
     rule: &rust_sitter::Spanned<Rule>,

@@ -70,6 +70,7 @@ pub fn tcp_lines(
 /// A framed TCP `Sink` (sending).
 pub type TcpFramedSink<T> = Sender<(T, SocketAddr)>;
 /// A framed TCP `Stream` (receiving).
+#[expect(type_alias_bounds, reason = "code readability")]
 pub type TcpFramedStream<Codec: Decoder> =
     Receiver<Result<(<Codec as Decoder>::Item, SocketAddr), <Codec as Decoder>::Error>>;
 

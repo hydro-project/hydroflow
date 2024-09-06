@@ -379,7 +379,7 @@ impl WriteContextArgs<'_> {
     /// This will always return the same identifier for a given `suffix`.
     pub fn make_ident(&self, suffix: impl AsRef<str>) -> Ident {
         Ident::new(
-            &*format!(
+            &format!(
                 "sg_{:?}_node_{:?}_{}",
                 self.subgraph_id.data(),
                 self.node_id.data(),
@@ -468,13 +468,17 @@ pub enum Persistence {
 
 /// Helper which creates a error message string literal for when the Tokio runtime is not found.
 fn make_missing_runtime_msg(op_name: &str) -> Literal {
-    Literal::string(&*format!("`{}()` must be used within a Tokio runtime. For example, use `#[hydroflow::main]` on your main method.", op_name))
+    Literal::string(&format!("`{}()` must be used within a Tokio runtime. For example, use `#[hydroflow::main]` on your main method.", op_name))
 }
 
 /// Operator categories, for docs.
 ///
 /// See source of [`Self::description`] for description of variants.
-#[allow(missing_docs)]
+#[allow(
+    clippy::allow_attributes,
+    missing_docs,
+    reason = "see `Self::description`"
+)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum OperatorCategory {
     Map,

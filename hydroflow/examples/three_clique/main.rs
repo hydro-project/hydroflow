@@ -18,7 +18,7 @@ pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (edges_send, edges_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
-    #[allow(clippy::map_identity)]
+    #[expect(clippy::map_identity, reason = "code symmetry")]
     let mut df = hydroflow_syntax! {
         edges = source_stream(edges_recv) -> tee();
 

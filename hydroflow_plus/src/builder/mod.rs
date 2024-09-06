@@ -102,7 +102,10 @@ impl<'a> QuotedContext for FlowBuilder<'a> {
 }
 
 impl<'a> FlowBuilder<'a> {
-    #[allow(clippy::new_without_default)]
+    #[expect(
+        clippy::new_without_default,
+        reason = "call `new` explicitly, not `default`"
+    )]
     pub fn new() -> FlowBuilder<'a> {
         FlowBuilder {
             ir_leaves: Rc::new(RefCell::new(Some(Vec::new()))),

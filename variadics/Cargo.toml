@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/variadics/"
 description = "Variadic generics on stable Rust using tuple lists"
 
+[lints]
+workspace = true
+
 [dependencies]
 sealed = "0.5.0"
 
