@@ -11,7 +11,7 @@ use nanoid::nanoid;
 use tokio::sync::OnceCell;
 
 use crate::progress::ProgressTracker;
-use crate::HostTargetType;
+use crate::{HostTargetType, LinuxArchitecture};
 
 /// Build parameters for [`build_crate_memoized`].
 #[derive(PartialEq, Eq, Hash, Clone)]
@@ -91,6 +91,11 @@ pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildO
                 tokio::task::spawn_blocking(move || {
                     let mut command = Command::new("cargo");
                     command.args(["build"]);
+                    // command.args([
+                    //     "zigbuild".to_string(),
+                    //     "--profile".to_string(),
+                    //     profile.unwrap_or("release".to_string()),
+                    // ]);
 
                     if let Some(profile) = params.profile.as_ref() {
                         command.args(["--profile", profile]);
@@ -106,8 +111,11 @@ pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildO
 
                     match params.target_type {
                         HostTargetType::Local => {}
-                        HostTargetType::Linux => {
+                        HostTargetType::Linux(LinuxArchitecture::X86_64) => {
                             command.args(["--target", "x86_64-unknown-linux-musl"]);
+                        }
+                        HostTargetType::Linux(LinuxArchitecture::AARCH64) => {
+                            command.args(["--target", "aarch64-unknown-linux-musl"]);
                         }
                     }
 

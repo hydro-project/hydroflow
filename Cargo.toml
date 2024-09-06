@@ -47,9 +47,3 @@ inherits = "release"
 debug = 2
 lto = "off"
 strip = "none"
-
-[profile.dev.package.website_playground]
-debug-assertions = false
-
-[profile.release.package.website_playground]
-opt-level = "s"

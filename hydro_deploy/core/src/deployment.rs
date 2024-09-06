@@ -8,8 +8,8 @@ use tokio::sync::RwLock;
 
 use super::gcp::GcpNetwork;
 use super::{
-    progress, CustomService, GcpComputeEngineHost, Host, LocalhostHost, ResourcePool,
-    ResourceResult, Service,
+    progress, CustomService, GCPComputeEngineHost, Host, LocalhostHost, ResourcePool,
+    ResourceResult, Service, PodHost
 };
 use crate::{AzureHost, ServiceBuilder};
 
@@ -46,8 +46,28 @@ impl Deployment {
     }
 
     #[allow(non_snake_case)]
-    pub fn Localhost(&self) -> Arc<LocalhostHost> {
-        self.localhost_host.clone().unwrap()
+    pub fn Localhost(&mut self) -> Arc<RwLock<LocalhostHost>> {
+        self.add_host(LocalhostHost::new)
+    }
+
+    #[allow(non_snake_case)]
+    pub fn PodHost(&mut self) -> Arc<RwLock<PodHost>> {
+        self.add_host(PodHost::new)
+    }
+
+    #[allow(non_snake_case)]
+    pub fn GCPComputeEngineHost(
+        &mut self,
+        project: impl Into<String>,
+        machine_type: impl Into<String>,
+        image: impl Into<String>,
+        region: impl Into<String>,
+        network: Arc<RwLock<GCPNetwork>>,
+        user: Option<String>,
+    ) -> Arc<RwLock<GCPComputeEngineHost>> {
+        self.add_host(|id| {
+            GCPComputeEngineHost::new(id, project, machine_type, image, region, network, user)
+        })
     }
 
     #[allow(non_snake_case)]

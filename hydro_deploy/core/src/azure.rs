@@ -84,7 +84,7 @@ impl AzureHost {
 #[async_trait]
 impl Host for AzureHost {
     fn target_type(&self) -> HostTargetType {
-        HostTargetType::Linux
+        HostTargetType::Linux(crate::LinuxArchitecture::AARCH64)
     }
 
     fn request_port(&self, bind_type: &ServerStrategy) {

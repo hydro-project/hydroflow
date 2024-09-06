@@ -17,6 +17,9 @@ pub mod progress;
 pub mod localhost;
 pub use localhost::LocalhostHost;
 
+pub mod kubernetes;
+pub use kubernetes::PodHost;
+
 pub mod ssh;
 
 pub mod gcp;
@@ -142,10 +145,17 @@ pub enum ClientStrategy<'a> {
     ),
 }
 
+// Architecture for binary
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum LinuxArchitecture {
+    X86_64,
+    AARCH64,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum HostTargetType {
     Local,
-    Linux,
+    Linux(LinuxArchitecture),
 }
 
 pub type HostStrategyGetter = Box<dyn FnOnce(&dyn std::any::Any) -> ServerStrategy>;
