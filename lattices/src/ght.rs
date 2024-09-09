@@ -84,14 +84,6 @@ pub trait GeneralizedHashTrieNode: Default {
     ) -> Option<&'_ GhtLeaf<Self::Schema, Self::ValType>>;
 }
 
-/// A trait for internal nodes of a GHT
-pub trait GhtHasChildren: GeneralizedHashTrieNode + GhtGet {
-    /// The child node's type
-    type Node: GeneralizedHashTrieNode;
-    /// return the hash map of children, mutable
-    fn children(&mut self) -> &mut HashMap<Self::Head, Self::Node>;
-}
-
 pub trait GhtKeyTrait<Head, Schema> {
     fn head(self) -> Option<Head>;
     fn schema(self) -> Option<Schema>;
@@ -283,18 +275,6 @@ where
     }
 }
 
-impl<Head, Node> GhtHasChildren for GhtInner<Head, Node>
-where
-    Head: 'static + Hash + Eq + Clone,
-    Node: 'static + GeneralizedHashTrieNode + Clone,
-    Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
-{
-    type Node = Node;
-    fn children(&mut self) -> &mut HashMap<Head, Node> {
-        &mut self.children
-    }
-}
-
 /// leaf node of a HashTrie
 #[derive(Debug, PartialEq, Eq, Clone)]
 // #[repr(transparent)]
@@ -319,6 +299,7 @@ where
         }
     }
 }
+
 #[sealed]
 impl<Schema, ValHead, ValRest> GeneralizedHashTrieNode
     for GhtLeaf<Schema, var_type!(ValHead, ...ValRest)>
