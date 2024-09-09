@@ -111,6 +111,23 @@ impl VisitMut for RewriteAlloc {
                     .chain(i.segments.iter().skip(3).cloned()),
                 ),
             };
+        } else if i.segments.iter().take(2).collect::<Vec<_>>()
+            == vec![
+                &syn::PathSegment::from(syn::Ident::new("bytes", Span::call_site())),
+                &syn::PathSegment::from(syn::Ident::new("bytes", Span::call_site())),
+            ]
+        {
+            *i = syn::Path {
+                leading_colon: i.leading_colon,
+                segments: syn::punctuated::Punctuated::from_iter(
+                    vec![syn::PathSegment::from(syn::Ident::new(
+                        "bytes",
+                        Span::call_site(),
+                    ))]
+                    .into_iter()
+                    .chain(i.segments.iter().skip(2).cloned()),
+                ),
+            };
         } else if let Some((macro_name, final_name)) = &self.mapping {
             if i.segments.first().unwrap().ident == macro_name {
                 *i.segments.first_mut().unwrap() =

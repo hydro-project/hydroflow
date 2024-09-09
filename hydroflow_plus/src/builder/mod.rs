@@ -4,17 +4,22 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 use std::time::Duration;
 
+use hydroflow::bytes::Bytes;
 use hydroflow::futures::stream::Stream as FuturesStream;
 use hydroflow::{tokio, tokio_stream};
 use internal::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use runtime_support::FreeVariable;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use stageleft::*;
 
 use crate::cycle::{CycleCollection, CycleCollectionWithInitial};
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
-use crate::location::{Cluster, Location, LocationId, Process};
+use crate::location::{
+    Cluster, ExternalBincodePort, ExternalBytesPort, ExternalProcess, Location, LocationId, Process,
+};
 use crate::stream::{Bounded, NoTick, Tick, Unbounded};
 use crate::{HfCycle, Optional, RuntimeContext, Singleton, Stream};
 
@@ -75,6 +80,7 @@ pub struct FlowBuilder<'a> {
     cycle_ids: RefCell<HashMap<usize, usize>>,
 
     next_node_id: RefCell<usize>,
+    next_external_port_id: RefCell<usize>,
 
     /// Tracks whether this flow has been finalized; it is an error to
     /// drop without finalizing.
@@ -113,6 +119,7 @@ impl<'a> FlowBuilder<'a> {
             clusters: RefCell::new(vec![]),
             cycle_ids: RefCell::new(HashMap::new()),
             next_node_id: RefCell::new(0),
+            next_external_port_id: RefCell::new(0),
             finalized: false,
             _phantom: PhantomData,
         }
@@ -153,6 +160,19 @@ impl<'a> FlowBuilder<'a> {
         self.nodes.borrow_mut().push(id);
 
         Process {
+            id,
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn external_process<P>(&self) -> ExternalProcess<P> {
+        let mut next_node_id = self.next_node_id.borrow_mut();
+        let id = *next_node_id;
+        *next_node_id += 1;
+
+        self.nodes.borrow_mut().push(id);
+
+        ExternalProcess {
             id,
             _phantom: PhantomData,
         }
@@ -214,6 +234,81 @@ impl<'a> FlowBuilder<'a> {
             .flat_map(q!(move |_| 0..batch_size))
             .map(q!(|_| ()))
             .tick_batch()
+    }
+
+    pub fn source_external_bytes<P, L: Location>(
+        &self,
+        from: &ExternalProcess<P>,
+        to: &L,
+    ) -> (ExternalBytesPort, Stream<'a, Bytes, Unbounded, NoTick, L>) {
+        let next_external_port_id = {
+            let mut next_external_port_id = self.next_external_port_id.borrow_mut();
+            let id = *next_external_port_id;
+            *next_external_port_id += 1;
+            id
+        };
+
+        (
+            ExternalBytesPort {
+                process_id: from.id,
+                port_id: next_external_port_id,
+            },
+            Stream::new(
+                to.id(),
+                self.ir_leaves().clone(),
+                HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+                    from_location: LocationId::ExternalProcess(from.id),
+                    from_key: Some(next_external_port_id),
+                    to_location: to.id(),
+                    to_key: None,
+                    serialize_pipeline: None,
+                    instantiate_fn: crate::ir::DebugInstantiate::Building(),
+                    deserialize_pipeline: Some(syn::parse_quote!(map(|b| b.unwrap().freeze()))),
+                    input: Box::new(HfPlusNode::Source {
+                        source: HfPlusSource::ExternalNetwork(),
+                        location_kind: LocationId::ExternalProcess(from.id),
+                    }),
+                })),
+            ),
+        )
+    }
+
+    pub fn source_external_bincode<P, L: Location, T: Serialize + DeserializeOwned>(
+        &self,
+        from: &ExternalProcess<P>,
+        to: &L,
+    ) -> (ExternalBincodePort<T>, Stream<'a, T, Unbounded, NoTick, L>) {
+        let next_external_port_id = {
+            let mut next_external_port_id = self.next_external_port_id.borrow_mut();
+            let id = *next_external_port_id;
+            *next_external_port_id += 1;
+            id
+        };
+
+        (
+            ExternalBincodePort {
+                process_id: from.id,
+                port_id: next_external_port_id,
+                _phantom: PhantomData,
+            },
+            Stream::new(
+                to.id(),
+                self.ir_leaves().clone(),
+                HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+                    from_location: LocationId::ExternalProcess(from.id),
+                    from_key: Some(next_external_port_id),
+                    to_location: to.id(),
+                    to_key: None,
+                    serialize_pipeline: None,
+                    instantiate_fn: crate::ir::DebugInstantiate::Building(),
+                    deserialize_pipeline: Some(crate::stream::deserialize_bincode::<T>(false)),
+                    input: Box::new(HfPlusNode::Source {
+                        source: HfPlusSource::ExternalNetwork(),
+                        location_kind: LocationId::ExternalProcess(from.id),
+                    }),
+                })),
+            ),
+        )
     }
 
     pub fn source_stream<T, E: FuturesStream<Item = T> + Unpin, L: Location>(
@@ -333,6 +428,7 @@ impl<'a> FlowBuilder<'a> {
             let on_id = match on.id() {
                 LocationId::Process(id) => id,
                 LocationId::Cluster(id) => id,
+                LocationId::ExternalProcess(_) => panic!(),
             };
 
             let mut cycle_ids = self.cycle_ids.borrow_mut();
@@ -362,6 +458,7 @@ impl<'a> FlowBuilder<'a> {
             let on_id = match on.id() {
                 LocationId::Process(id) => id,
                 LocationId::Cluster(id) => id,
+                LocationId::ExternalProcess(_) => panic!(),
             };
 
             let mut cycle_ids = self.cycle_ids.borrow_mut();
@@ -392,6 +489,7 @@ impl<'a> FlowBuilder<'a> {
             let on_id = match on.id() {
                 LocationId::Process(id) => id,
                 LocationId::Cluster(id) => id,
+                LocationId::ExternalProcess(_) => panic!(),
             };
 
             let mut cycle_ids = self.cycle_ids.borrow_mut();
