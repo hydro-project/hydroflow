@@ -4,6 +4,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use stageleft::{q, IntoQuotedMut, Quoted};
+use syn::parse_quote;
 
 use crate::builder::FlowLeaves;
 use crate::cycle::{CycleCollection, CycleCollectionWithInitial, CycleComplete};
@@ -627,6 +628,19 @@ impl<'a, T, N: Location> Optional<'a, T, Bounded, Tick, N> {
             ),
         )
     }
+
+    pub fn into_option(self) -> Singleton<'a, Option<T>, Bounded, Tick, N> {
+        let none_expr: syn::Expr = parse_quote!(None);
+        let alt = Singleton::new(
+            self.location_kind,
+            self.ir_leaves.clone(),
+            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
+                source: HfPlusSource::Iter(none_expr.into()),
+                location_kind: self.location_kind,
+            })),
+        );
+        self.map(q!(|x| Some(x))).unwrap_or(alt)
+    }
 }
 
 impl<'a, T, N: Location> Optional<'a, T, Bounded, Tick, N> {
@@ -715,6 +729,21 @@ impl<'a, T, B, N: Location> Optional<'a, T, B, NoTick, N> {
         }
 
         self.latest_tick().unwrap_or(other.latest_tick()).latest()
+    }
+
+    pub fn into_option(self) -> Singleton<'a, Option<T>, Unbounded, NoTick, N> {
+        let none_expr: syn::Expr = parse_quote!(None);
+        let alt: Singleton<_, Unbounded, NoTick, _> = Singleton::new(
+            self.location_kind,
+            self.ir_leaves.clone(),
+            HfPlusNode::Persist(Box::new(HfPlusNode::Persist(Box::new(
+                HfPlusNode::Source {
+                    source: HfPlusSource::Iter(none_expr.into()),
+                    location_kind: self.location_kind,
+                },
+            )))),
+        );
+        self.map(q!(|x| Some(x))).unwrap_or(alt)
     }
 }
 

@@ -675,7 +675,7 @@ fn serialize_bincode<T: Serialize>(is_demux: bool) -> Pipeline {
     }
 }
 
-fn deserialize_bincode<T: DeserializeOwned>(tagged: bool) -> Pipeline {
+pub(super) fn deserialize_bincode<T: DeserializeOwned>(tagged: bool) -> Pipeline {
     let root = get_this_crate();
 
     let t_type: syn::Type = stageleft::quote_type::<T>();
@@ -714,7 +714,9 @@ impl<'a, T, W, N: Location> Stream<'a, T, W, NoTick, N> {
             self.ir_leaves,
             HfPlusNode::Network {
                 from_location: self.location_kind,
+                from_key: None,
                 to_location: other.id(),
+                to_key: None,
                 serialize_pipeline,
                 instantiate_fn: DebugInstantiate::Building(),
                 deserialize_pipeline,
@@ -735,7 +737,9 @@ impl<'a, T, W, N: Location> Stream<'a, T, W, NoTick, N> {
             self.ir_leaves,
             HfPlusNode::Network {
                 from_location: self.location_kind,
+                from_key: None,
                 to_location: other.id(),
+                to_key: None,
                 serialize_pipeline: None,
                 instantiate_fn: DebugInstantiate::Building(),
                 deserialize_pipeline: if N::is_tagged() {
