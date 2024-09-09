@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use futures::SinkExt;
 use hydro_deploy::gcp::GcpNetwork;
 use hydro_deploy::{Deployment, Host};
 use hydroflow_plus_deploy::TrybuildHost;
@@ -39,8 +40,9 @@ async fn main() {
     };
 
     let builder = hydroflow_plus::FlowBuilder::new();
-    let (p1, p2) = hydroflow_plus_test::distributed::first_ten::first_ten_distributed(&builder);
-    let _nodes = builder
+    let (external_process, external_port, p1, p2) =
+        hydroflow_plus_test::distributed::first_ten::first_ten_distributed(&builder);
+    let nodes = builder
         .with_default_optimize()
         .with_process(
             &p1,
@@ -50,7 +52,24 @@ async fn main() {
             &p2,
             TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags),
         )
+        .with_external(&external_process, deployment.Localhost() as Arc<dyn Host>)
         .deploy(&mut deployment);
 
-    deployment.run_ctrl_c().await.unwrap();
+    deployment.deploy().await.unwrap();
+
+    let mut external_port = nodes.connect_sink_bincode(external_port).await;
+
+    deployment.start().await.unwrap();
+
+    println!("Enter characters and press enter to send them over the network (ctrl-d to stop):");
+    loop {
+        let mut in_line = String::new();
+        if std::io::stdin().read_line(&mut in_line).unwrap() == 0 {
+            break;
+        }
+
+        external_port.send(in_line).await.unwrap();
+    }
+
+    deployment.stop().await.unwrap();
 }
