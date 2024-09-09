@@ -303,25 +303,6 @@ pub trait DeployCrateWrapper {
     fn underlying(&self) -> Arc<RwLock<HydroflowCrateService>>;
 
     #[expect(async_fn_in_trait, reason = "no auto trait bounds needed")]
-    async fn create_sender(
-        &self,
-        port: &str,
-        deployment: &mut Deployment,
-        on: &Arc<impl Host + 'static>,
-    ) -> CustomClientPort {
-        let sender_service = deployment.CustomService(on.clone(), vec![]);
-        let sender_port = sender_service.read().await.declare_client(&sender_service);
-        let recipient = self
-            .underlying()
-            .read()
-            .await
-            .get_port(port.to_string(), &self.underlying());
-
-        sender_port.send_to(&recipient);
-        sender_port
-    }
-
-    #[expect(async_fn_in_trait, reason = "no auto trait bounds needed")]
     async fn stdout(&self) -> tokio::sync::mpsc::UnboundedReceiver<String> {
         self.underlying().read().await.stdout()
     }
@@ -533,31 +514,6 @@ impl DeployCrateWrapper for DeployNode {
 pub struct DeployPort<N> {
     node: N,
     port: String,
-}
-
-impl DeployPort<DeployNode> {
-    pub async fn create_sender(
-        &self,
-        deployment: &mut Deployment,
-        on: &Arc<impl Host + 'static>,
-    ) -> CustomClientPort {
-        self.node.create_sender(&self.port, deployment, on).await
-    }
-}
-
-impl DeployPort<DeployCluster> {
-    pub async fn create_senders(
-        &self,
-        deployment: &mut Deployment,
-        on: &Arc<impl Host + 'static>,
-    ) -> Vec<CustomClientPort> {
-        let mut out = vec![];
-        for member in self.node.members() {
-            out.push(member.create_sender(&self.port, deployment, on).await);
-        }
-
-        out
-    }
 }
 
 impl Node for DeployNode {
