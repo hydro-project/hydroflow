@@ -4,9 +4,9 @@ use std::marker::PhantomData;
 use hydroflow_lang::graph::{eliminate_extra_unions_tees, HydroflowGraph};
 
 use super::deploy::{DeployFlow, DeployResult};
-use crate::deploy::{ClusterSpec, Deploy, LocalDeploy, ProcessSpec};
+use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, LocalDeploy, ProcessSpec};
 use crate::ir::HfPlusLeaf;
-use crate::location::{Cluster, Process};
+use crate::location::{Cluster, ExternalProcess, Process};
 use crate::HfCompiled;
 
 pub struct BuiltFlow<'a> {
@@ -103,6 +103,7 @@ impl<'a> BuiltFlow<'a> {
             ir: std::mem::take(&mut self.ir),
             nodes: processes,
             clusters,
+            externals: HashMap::new(),
             used: false,
             _phantom: PhantomData,
         }
@@ -114,6 +115,14 @@ impl<'a> BuiltFlow<'a> {
         spec: impl ProcessSpec<'a, D>,
     ) -> DeployFlow<'a, D> {
         self.into_deploy().with_process(process, spec)
+    }
+
+    pub fn with_external<P, D: LocalDeploy<'a>>(
+        self,
+        process: &ExternalProcess<P>,
+        spec: impl ExternalSpec<'a, D>,
+    ) -> DeployFlow<'a, D> {
+        self.into_deploy().with_external(process, spec)
     }
 
     pub fn with_cluster<C, D: LocalDeploy<'a>>(

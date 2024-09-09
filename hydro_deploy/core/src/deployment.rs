@@ -69,9 +69,22 @@ impl Deployment {
         Ok(())
     }
 
+    pub async fn start_until(&mut self, trigger: impl Future<Output = ()>) -> Result<()> {
+        // TODO(mingwei): should `trigger` interrupt `deploy()` and `start()`? If so make sure shutdown works as expected.
+        self.start().await?;
+        trigger.await;
+        self.stop().await?;
+        Ok(())
+    }
+
     /// Runs `deploy()`, and `start()`, waits for CTRL+C, then runs `stop()`.
     pub async fn run_ctrl_c(&mut self) -> Result<()> {
         self.run_until(tokio::signal::ctrl_c().map(|_| ())).await
+    }
+
+    /// Runs `start()`, waits for CTRL+C, then runs `stop()`.
+    pub async fn start_ctrl_c(&mut self) -> Result<()> {
+        self.start_until(tokio::signal::ctrl_c().map(|_| ())).await
     }
 
     pub async fn deploy(&mut self) -> Result<()> {
