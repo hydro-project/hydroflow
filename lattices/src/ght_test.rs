@@ -1086,22 +1086,10 @@ mod test {
         // println!("Forest after forcing (1, 1, 1, 1): {:?}", forest);
 
         let get_result = ColtNode::get(&forest.as_ref_var().as_option(), &GhtKey::Head(1));
-        assert_eq!(get_result.len(), forest.len());
-        assert!(get_result.0.is_none());
+        assert_eq!(get_result.len(), forest.len() - 1);
         let get_result2 = ColtNode::get(&get_result, &GhtKey::Head(1));
-        assert_eq!(get_result2.len(), forest.len());
-        assert!(get_result2.0.is_none());
-        assert!(get_result2.1 .0.is_none());
-        // // fix up get_result2. Eventually this should be automated
-        // let (_head2, rest2) = get_result2;
-        // let (rest_head2, _rest_tail2) = rest2;
-        // let mut new_head2 = rest_head2;
-        // new_head2 = None;
-        // let get_result2 = var_expr!(new_head2, ...rest2);
+        assert_eq!(get_result2.len(), forest.len() - 2);
         let get_result3 = ColtNode::get(&get_result2, &GhtKey::Head(1));
-        assert_eq!(get_result3.len(), forest.len());
-        assert!(get_result3.0.is_none());
-        assert!(get_result3.1 .0.is_none());
-        assert!(get_result3.1 .1 .0.is_none());
+        assert_eq!(get_result3.len(), forest.len() - 3);
     }
 }

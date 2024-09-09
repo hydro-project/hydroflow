@@ -399,21 +399,24 @@ where
 }
 
 #[sealed]
-impl<'a, Head, Rest, Node> ColtNode for var_type!(Option<&'a GhtInner<Head, Node>>, ...Rest)
+impl<'a, Head, Head2, Rest, Node> ColtNode for var_type!(Option<&'a GhtInner<Head, GhtInner<Head2, Node>>>, ...Rest)
 where
     Rest: ColtNode<Head = Head>,
     Head: Eq + Hash + Clone,
+    Head2: Eq + Hash + Clone,
     Node: GeneralizedHashTrieNode,
-    GhtInner<Head, Node>: GeneralizedHashTrieNode<
+    GhtInner<Head, GhtInner<Head2, Node>>: GeneralizedHashTrieNode<
             Head = Rest::Head,
             SuffixSchema = Rest::SuffixSchema,
             Schema = Rest::Schema,
         > + GhtGet,
+    GhtInner<Head2, Node>: GeneralizedHashTrieNode<Schema = Rest::Schema> + GhtGet,
 {
     type Schema = Rest::Schema;
     type Head = Rest::Head;
     type SuffixSchema = Rest::SuffixSchema;
-    type Get = var_type!(Option<&'a <GhtInner<Head, Node> as GhtGet>::Get>, ...Rest::Get);
+    type Get =
+        var_type!(Option<&'a <GhtInner<Head, GhtInner<Head2, Node>> as GhtGet>::Get>, ...Rest::Get);
 
     fn get(&self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
         let (_first, rest) = self;
@@ -422,6 +425,39 @@ where
         } else {
             var_expr!(None, ...Rest::get(rest, head))
         }
+    }
+}
+#[sealed]
+impl<'a, Head, Rest, Schema, ValType> ColtNode for var_type!(Option<&'a GhtInner<Head, GhtLeaf<Schema, ValType>>>, ...Rest)
+where
+    Rest: ColtNode<Head = Head>,
+    Head: Eq + Hash + Clone,
+    // GhtInner<Head, GhtInner<Head2, Node>>: GeneralizedHashTrieNode<
+    //         Head = Rest::Head,
+    //         SuffixSchema = Rest::SuffixSchema,
+    //         Schema = Rest::Schema,
+    //     > + GhtGet,
+    // GhtInner<Head2, Node>: GeneralizedHashTrieNode<Schema = Rest::Schema> + GhtGet,
+    Schema: Eq + Hash + Clone + PartialEqVariadic,
+    ValType: Eq + Hash + Clone + PartialEqVariadic,
+    GhtLeaf<Schema, ValType>: GeneralizedHashTrieNode,
+    Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<ValType> + PartialEqVariadic,
+    <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
+{
+    type Schema = Rest::Schema;
+    type Head = Rest::Head;
+    type SuffixSchema = Rest::SuffixSchema;
+    type Get = Rest::Get; // Option<&'a <GhtLeaf<Schema, ValType> as GhtGet>::Get>,
+
+    fn get(&self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
+        let (_first, rest) = self;
+        Rest::get(rest, head)
+        // let (_first, rest) = self;
+        // if let Some(first) = self.0 {
+        //     var_expr!(first.get(head), ...Rest::get(rest, head))
+        // } else {
+        //     var_expr!(None, ...Rest::get(rest, head))
+        // }
     }
 }
 
