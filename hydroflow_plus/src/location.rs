@@ -1,13 +1,42 @@
 use std::marker::PhantomData;
 
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum LocationId {
     Process(usize),
     Cluster(usize),
+    ExternalProcess(usize),
 }
 
 pub trait Location {
     fn id(&self) -> LocationId;
+}
+
+pub struct ExternalBytesPort {
+    pub(crate) process_id: usize,
+    pub(crate) port_id: usize,
+}
+
+pub struct ExternalBincodePort<T: Serialize + DeserializeOwned> {
+    pub(crate) process_id: usize,
+    pub(crate) port_id: usize,
+    pub(crate) _phantom: PhantomData<T>,
+}
+
+pub struct ExternalProcess<P> {
+    pub(crate) id: usize,
+    pub(crate) _phantom: PhantomData<P>,
+}
+
+impl<P> Clone for ExternalProcess<P> {
+    fn clone(&self) -> Self {
+        ExternalProcess {
+            id: self.id,
+            _phantom: PhantomData,
+        }
+    }
 }
 
 pub struct Process<P> {
