@@ -342,7 +342,7 @@ pub trait ColtNode {
 // 4. Somehow cast the prefix of Nones on each call to have Head = Rest::Head
 //        Problem: How?
 
-#[sealed]
+// #[sealed]
 // impl<'a, First, Rest> ColtNode for var_type!(Option<&'a First>, ...Rest)
 // where
 //     First: GeneralizedHashTrieNode<
@@ -381,6 +381,7 @@ pub trait ColtNode {
 //         }
 //     }
 // }
+#[sealed]
 impl<'a, Head, Rest> ColtNode for var_type!(Option<&'a GhtLeaf<Rest::Schema, Rest::SuffixSchema>>, ...Rest)
 where
     Rest: ColtNode<Head = Head>,
@@ -432,7 +433,7 @@ where
     Node: GeneralizedHashTrieNode,
 {
     type Schema = <GhtInner<Head, Node> as GeneralizedHashTrieNode>::Schema;
-    type SuffixSchema = Node::SuffixSchema;
+    type SuffixSchema = <GhtInner<Head, Node> as GeneralizedHashTrieNode>::SuffixSchema;
     type Head = <GhtInner<Head, Node> as GeneralizedHashTrieNode>::Head;
     type Get = var_type!(Option<&'a <GhtInner<Head, Node> as GhtGet>::Get>);
 
