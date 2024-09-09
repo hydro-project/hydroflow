@@ -114,7 +114,9 @@ fn persist_pullup_node<'a>(
         } => {
             if let HfPlusNode::Network {
                 from_location,
+                from_key,
                 to_location,
+                to_key,
                 serialize_pipeline,
                 instantiate_fn,
                 deserialize_pipeline,
@@ -123,7 +125,9 @@ fn persist_pullup_node<'a>(
             {
                 *node = HfPlusNode::Persist(Box::new(HfPlusNode::Network {
                     from_location,
+                    from_key,
                     to_location,
+                    to_key,
                     serialize_pipeline,
                     instantiate_fn,
                     deserialize_pipeline,
