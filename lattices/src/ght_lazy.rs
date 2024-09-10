@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use sealed::sealed;
 use variadics::{var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt};
 
-use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtKey, GhtLeaf, GhtTakeLeaf};
+use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf, GhtTakeLeaf};
 
 // Remaining Questions
 // 1. Should the first element in the forest be a single GhtLeaf?
@@ -299,7 +299,7 @@ pub trait ColtNode {
     /// On an Inner node, retrieves the value (child) associated with the given "head" key.
     /// returns an `Option` containing a reference to the value if found, or `None` if not found.
     /// On a Leaf node, returns None.
-    fn get(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get;
+    fn get(self, head: &Self::Head) -> Self::Get;
 }
 
 /// `ColtNode` without the first (head) trie.
@@ -326,7 +326,7 @@ where
     type SuffixSchema = SuffixSchema;
     type Get = Rest::Get;
 
-    fn get(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
+    fn get(self, head: &Self::Head) -> Self::Get {
         let (first, mut rest) = self;
         let forced = first.force_drain().unwrap();
         ColtNodeTail::merge(&mut rest, forced);
@@ -370,14 +370,11 @@ where
     type SuffixSchema = Rest::SuffixSchema;
     type Get = var_type!(&'a mut GhtInner<Head2, Node>, ...Rest::Get);
 
-    fn get(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
+    fn get(self, head: &Self::Head) -> Self::Get {
         let (first, rest) = self;
-        let GhtKey::Head(the_head) = head else {
-            panic!();
-        };
         // create a child entry here for this get, to absorb future forces
         // TODO(mingwei): extra clone here if entry already exists.
-        let child = first.children.entry(the_head.clone()).or_default();
+        let child = first.children.entry(head.clone()).or_default();
         var_expr!(child, ...Rest::get(rest, head))
     }
 }
@@ -428,12 +425,9 @@ where
     // type Get = Rest::Get; // Option<&'a <GhtLeaf<Schema, ValType> as GhtGet>::Get>,
     type Get = var_type!(&'a mut GhtLeaf<Schema, ValType>, ...Rest::Get);
 
-    fn get(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
+    fn get(self, head: &Self::Head) -> Self::Get {
         let (first, rest) = self;
-        let GhtKey::Head(the_head) = head else {
-            panic!();
-        };
-        let child = first.children.entry(the_head.clone()).or_default();
+        let child = first.children.entry(head.clone()).or_default();
         var_expr!(child, ...Rest::get(rest, head))
     }
 }
@@ -470,12 +464,8 @@ where
     type Head = Head;
     type Get = var_type!(&'a mut Node);
 
-    fn get(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
-        // var_expr!(self.0.unwrap().get_mut(head))
-        let GhtKey::Head(the_head) = head else {
-            panic!();
-        };
-        let child = self.0.children.entry(the_head.clone()).or_default();
+    fn get(self, head: &Self::Head) -> Self::Get {
+        let child = self.0.children.entry(head.clone()).or_default();
         var_expr!(child)
     }
 }

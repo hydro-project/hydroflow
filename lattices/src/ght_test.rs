@@ -5,9 +5,7 @@ mod test {
 
     use variadics::{var_expr, var_type, VariadicExt};
 
-    use crate::ght::{
-        GeneralizedHashTrieNode, GhtGet, GhtKey, GhtKeyTrait, GhtLeaf, GhtPrefixIter,
-    };
+    use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtLeaf, GhtPrefixIter};
     use crate::ght_lattice::{
         //     DeepJoinLatticeBimorphism, GhtBimorphism,
         GhtCartesianProductBimorphism,
@@ -131,11 +129,11 @@ mod test {
         type MyGht = GhtType!(u32, u32 => u32);
         let ht_root = MyGht::new_from(vec![var_expr!(42, 314, 43770)]);
 
-        let inner = ht_root.get(&GhtKey::Head(42)).unwrap();
+        let inner = ht_root.get(&42).unwrap();
         let t = inner.recursive_iter().next().unwrap();
         assert_eq!(t, var_expr!(&42, &314, &43770));
 
-        let leaf = inner.get(&GhtKey::Head(314)).unwrap();
+        let leaf = inner.get(&314).unwrap();
         let t = leaf.recursive_iter().next().unwrap();
         assert_eq!(t, var_expr!(42, 314, 43770).as_ref_var());
     }
@@ -800,22 +798,8 @@ mod test {
                 for a in r.iter() {
                     for b in s.iter() {
                         for c in t.iter() {
-                            println!(
-                                "clover output: ({:?}, {}, {}, {})",
-                                x.clone().head().unwrap(),
-                                a.clone().schema().unwrap().0,
-                                b.clone().schema().unwrap().0,
-                                c.clone().schema().unwrap().0
-                            );
-                            assert_eq!(
-                                (
-                                    x.clone().head().unwrap(),
-                                    a.clone().schema().unwrap().0,
-                                    b.clone().schema().unwrap().0,
-                                    c.clone().schema().unwrap().0
-                                ),
-                                (0, 0, 0, 0)
-                            );
+                            println!("clover output: ({:?}, {}, {}, {})", x, a, b, c);
+                            assert_eq!((x, a, b, c), (0, 0, 0, 0));
                         }
                     }
                 }
@@ -843,28 +827,12 @@ mod test {
 
         for t in rx_ght.recursive_iter() {
             let (x, (a, ())): (&u32, (&u32, _)) = t;
-            if let (Some(s), Some(t)) =
-                (sx_ght.get(&GhtKey::Head(*x)), tx_ght.get(&GhtKey::Head(*x)))
-            {
+            if let (Some(s), Some(t)) = (sx_ght.get(&*x), tx_ght.get(&*x)) {
                 // All unwraps succeeded, use `s`, `t` here
                 for b in s.iter() {
                     for c in t.iter() {
-                        println!(
-                            "clover output: ({}, {}, {}, {})",
-                            x,
-                            a,
-                            b.clone().schema().unwrap().0,
-                            c.clone().schema().unwrap().0
-                        );
-                        assert_eq!(
-                            (
-                                x,
-                                a,
-                                b.clone().schema().unwrap().0,
-                                c.clone().schema().unwrap().0
-                            ),
-                            (&0, &0, 0, 0)
-                        );
+                        println!("clover output: ({}, {}, {}, {})", x, a, b, c);
+                        assert_eq!((x, a, b, c), (&0, &0, 0, 0));
                     }
                 }
             } else {
@@ -978,10 +946,10 @@ mod test {
                 var_expr!(1_u8, 1_u16, 1_u32, 1_u64).as_ref_var()
             )
             .unwrap()
-            .iter()
+            .iter_tuples()
             .next()
             .unwrap(),
-            GhtKey::Schema(var_expr!(1, 1, 1, 1))
+            var_expr!(1, 1, 1, 1)
         );
         assert_eq!(
             // println!(
@@ -991,10 +959,10 @@ mod test {
                 var_expr!(2, 2, 2, 2).as_ref_var()
             )
             .unwrap()
-            .iter()
+            .iter_tuples()
             .next()
             .unwrap(),
-            GhtKey::Schema(var_expr!(2, 2, 2, 2))
+            var_expr!(2, 2, 2, 2)
         );
         assert_eq!(
             // println!(
@@ -1004,10 +972,10 @@ mod test {
                 var_expr!(3, 3, 3, 3).as_ref_var()
             )
             .unwrap()
-            .iter()
+            .iter_tuples()
             .next()
             .unwrap(),
-            GhtKey::Schema(var_expr!(3, 3, 3, 3))
+            var_expr!(3, 3, 3, 3)
         );
         assert!(
             // println!(
@@ -1086,13 +1054,13 @@ mod test {
         let len = forest.len();
         // println!("Forest after forcing (1, 1, 1, 1): {:?}", forest);
 
-        let get_result = ColtNode::get(forest.as_mut_var(), &GhtKey::Head(1));
+        let get_result = ColtNode::get(forest.as_mut_var(), &1);
         assert_eq!(get_result.len(), len);
         assert_eq!(get_result.0.height(), 0);
-        let get_result2 = ColtNode::get(get_result, &GhtKey::Head(1));
+        let get_result2 = ColtNode::get(get_result, &1);
         assert_eq!(get_result2.len(), len - 1);
         // assert!(get_result2.0.is_none());
-        let get_result3 = ColtNode::get(get_result2, &GhtKey::Head(1));
+        let get_result3 = ColtNode::get(get_result2, &1);
         // assert!(get_result3.1 .0.is_none());
         assert_eq!(get_result3.len(), len - 2);
         println!("final result: {:?}", get_result3);

@@ -5,7 +5,7 @@ use std::hash::Hash;
 
 use variadics::{var_expr, var_type, CloneVariadic, SplitBySuffix, VariadicExt};
 
-use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtKey, GhtLeaf};
+use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
 use crate::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
 
 //////////////////////////
@@ -83,18 +83,16 @@ where
         }
 
         for head in self.iter() {
-            if let GhtKey::Head(_the_head) = head.clone() {
-                let other_node = other.get(&head);
-                if other_node.is_none() {
-                    return false;
-                }
-                let this_node = self.get(&head);
-                if this_node.is_none() {
-                    return false;
-                }
-                if this_node.unwrap() != other_node.unwrap() {
-                    return false;
-                }
+            let other_node = other.get(&head);
+            if other_node.is_none() {
+                return false;
+            }
+            let this_node = self.get(&head);
+            if this_node.is_none() {
+                return false;
+            }
+            if this_node.unwrap() != other_node.unwrap() {
+                return false;
             }
         }
         true
@@ -460,12 +458,10 @@ where
     fn call(&mut self, ght_a: &'a GhtA, ght_b: &'b GhtB) -> Self::Output {
         let mut children = HashMap::<Head, ValFunc::Output>::new();
         for head in ght_b.iter() {
-            if let GhtKey::Head(the_head) = head.clone() {
-                if let Some(get_a) = ght_a.get(&head) {
-                    let get_b = ght_b.get(&head).unwrap();
-                    let val = self.bimorphism.call(get_a, get_b);
-                    children.insert(the_head.clone(), val);
-                }
+            if let Some(get_a) = ght_a.get(&head) {
+                let get_b = ght_b.get(&head).unwrap();
+                let val = self.bimorphism.call(get_a, get_b);
+                children.insert(head.clone(), val);
             }
         }
         GhtInner { children }

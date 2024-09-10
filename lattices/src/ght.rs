@@ -84,68 +84,6 @@ pub trait GeneralizedHashTrieNode: Default {
     ) -> Option<&'_ GhtLeaf<Self::Schema, Self::ValType>>;
 }
 
-pub trait GhtKeyTrait<Head, Schema> {
-    fn head(self) -> Option<Head>;
-    fn schema(self) -> Option<Schema>;
-}
-
-impl<Head, Schema> GhtKeyTrait<Head, Schema> for GhtKey<Head, Schema> {
-    fn head(self) -> Option<Head> {
-        if let GhtKey::Head(head) = self {
-            Some(head)
-        } else {
-            None
-        }
-    }
-    fn schema(self) -> Option<Schema> {
-        if let GhtKey::Schema(head) = self {
-            Some(head)
-        } else {
-            None
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum GhtKey<Head, Schema> {
-    Head(Head),
-    Schema(Schema),
-}
-
-impl<Head, Schema> PartialEq for GhtKey<Head, Schema>
-where
-    Head: Eq,
-    Schema: Eq,
-{
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (GhtKey::Head(x), GhtKey::Head(y)) => x == y,
-            (GhtKey::Schema(x), GhtKey::Schema(y)) => x == y,
-            _ => false,
-        }
-    }
-}
-
-impl<Head, Schema> Eq for GhtKey<Head, Schema>
-where
-    Head: Eq,
-    Schema: Eq,
-{
-}
-
-impl<Head, Schema> Hash for GhtKey<Head, Schema>
-where
-    Head: Hash,
-    Schema: Hash,
-{
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        match self {
-            GhtKey::Head(x) => x.hash(state),
-            GhtKey::Schema(x) => x.hash(state),
-        }
-    }
-}
-
 /// internal node of a HashTrie
 #[derive(Debug, Clone)]
 pub struct GhtInner<Head, Node>
@@ -454,17 +392,15 @@ pub trait GhtGet: GeneralizedHashTrieNode {
     /// On an Inner node, retrieves the value (child) associated with the given "head" key.
     /// returns an `Option` containing a reference to the value if found, or `None` if not found.
     /// On a Leaf node, returns None.
-    fn get<'a>(&'a self, head: &GhtKey<Self::Head, Self::Schema>) -> Option<&'a Self::Get>;
+    fn get<'a>(&'a self, head: &Self::Head) -> Option<&'a Self::Get>;
 
-    fn get_mut<'a>(
-        &'a mut self,
-        head: &GhtKey<Self::Head, Self::Schema>,
-    ) -> Option<&'a mut Self::Get>;
+    fn get_mut<'a>(&'a mut self, head: &Self::Head) -> Option<&'a mut Self::Get>;
 
-    // /// The type of items returned by iter
-    // type IterKey: Eq + Hash;
-    /// Iterator for the "head" keys (from inner nodes) or elements (from leaf nodes).
-    fn iter(&self) -> impl Iterator<Item = GhtKey<Self::Head, Self::Schema>>;
+    /// Iterator for the "head" keys (from inner nodes) or nothing (from leaf nodes).
+    fn iter(&self) -> impl Iterator<Item = Self::Head>;
+
+    /// Iterator for the tuples (from leaf nodes) or nothing (from inner nodes).
+    fn iter_tuples(&self) -> impl Iterator<Item = Self::Schema>;
 }
 
 impl<Head, Node> GhtGet for GhtInner<Head, Node>
@@ -479,29 +415,22 @@ where
     /// On an Inner node, retrieves the value (child) associated with the given "head" key.
     /// returns an `Option` containing a reference to the value if found, or `None` if not found.
     /// On a Leaf node, returns None.
-    fn get<'a>(&'a self, head: &GhtKey<Self::Head, Self::Schema>) -> Option<&'a Self::Get> {
-        if let GhtKey::Head(the_head) = head {
-            self.children.get(the_head)
-        } else {
-            None
-        }
+    fn get<'a>(&'a self, head: &Self::Head) -> Option<&'a Self::Get> {
+        self.children.get(head)
     }
 
-    fn get_mut<'a>(
-        &'a mut self,
-        head: &GhtKey<Self::Head, Self::Schema>,
-    ) -> Option<&'a mut Self::Get> {
-        if let GhtKey::Head(the_head) = head {
-            self.children.get_mut(the_head)
-        } else {
-            None
-        }
+    fn get_mut<'a>(&'a mut self, head: &Self::Head) -> Option<&'a mut Self::Get> {
+        self.children.get_mut(head)
     }
 
     // /// The type of items returned by iter
     // type IterKey = Self::Head;
-    fn iter(&self) -> impl Iterator<Item = GhtKey<Self::Head, Self::Schema>> {
-        self.children.keys().map(|k| GhtKey::Head(k.clone()))
+    fn iter(&self) -> impl Iterator<Item = Self::Head> {
+        self.children.keys().map(|k| k.clone())
+    }
+
+    fn iter_tuples(&self) -> impl Iterator<Item = Self::Schema> {
+        std::iter::empty()
     }
 }
 impl<Schema, ValType> GhtGet for GhtLeaf<Schema, ValType>
@@ -517,20 +446,21 @@ where
     /// On an Inner node, retrieves the value (child) associated with the given "head" key.
     /// returns an `Option` containing a reference to the value if found, or `None` if not found.
     /// On a Leaf node, returns None.
-    fn get<'a>(&'a self, _head: &GhtKey<Self::Head, Self::Schema>) -> Option<&'a Self::Get> {
+    fn get<'a>(&'a self, _head: &Self::Head) -> Option<&'a Self::Get> {
         None
     }
-    fn get_mut<'a>(
-        &'a mut self,
-        _head: &GhtKey<Self::Head, Self::Schema>,
-    ) -> Option<&'a mut Self::Get> {
+    fn get_mut<'a>(&'a mut self, _head: &Self::Head) -> Option<&'a mut Self::Get> {
         None
     }
 
     // /// The type of items returned by iter
     // type IterKey = Self::Schema;
-    fn iter(&self) -> impl Iterator<Item = GhtKey<Self::Head, Self::Schema>> {
-        self.elements.iter().map(|e| GhtKey::Schema(e.clone()))
+    fn iter(&self) -> impl Iterator<Item = Self::Head> {
+        std::iter::empty()
+    }
+
+    fn iter_tuples(&self) -> impl Iterator<Item = Self::Schema> {
+        self.elements.iter().map(|e| e.clone())
     }
 }
 
