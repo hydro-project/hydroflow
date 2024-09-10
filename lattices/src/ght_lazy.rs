@@ -299,11 +299,6 @@ pub trait ColtNode {
     /// On an Inner node, retrieves the value (child) associated with the given "head" key.
     /// returns an `Option` containing a reference to the value if found, or `None` if not found.
     /// On a Leaf node, returns None.
-    fn get_broken(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get;
-
-    /// On an Inner node, retrieves the value (child) associated with the given "head" key.
-    /// returns an `Option` containing a reference to the value if found, or `None` if not found.
-    /// On a Leaf node, returns None.
     fn get(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get;
 }
 
@@ -314,7 +309,7 @@ pub trait ColtNodeTail<InnerToMerge>: ColtNode {
 }
 
 #[sealed]
-impl<'a, Rest, Schema, SuffixSchema> ColtNode for var_type!(Option<&'a mut GhtLeaf<Schema, SuffixSchema>>, ...Rest)
+impl<'a, Rest, Schema, SuffixSchema> ColtNode for var_type!(&'a mut GhtLeaf<Schema, SuffixSchema>, ...Rest)
 where
     Rest: ColtNodeTail<
         <GhtLeaf<Schema, SuffixSchema> as ColumnLazyTrieNode>::Force,
@@ -329,24 +324,17 @@ where
     type Schema = Schema;
     type Head = Rest::Head;
     type SuffixSchema = SuffixSchema;
-    type Get = var_type!(Option<&'a mut GhtLeaf<Self::Schema, Rest::SuffixSchema>>, ...Rest::Get);
-
-    fn get_broken(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
-        let (_first, rest) = self;
-        var_expr!(None, ...Rest::get_broken(rest, head))
-    }
+    type Get = Rest::Get;
 
     fn get(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
         let (first, mut rest) = self;
-        if let Some(first) = first {
-            let forced = first.force_drain().unwrap();
-            ColtNodeTail::merge(&mut rest, forced);
-        }
-        var_expr!(None, ...Rest::get(rest, head))
+        let forced = first.force_drain().unwrap();
+        ColtNodeTail::merge(&mut rest, forced);
+        Rest::get(rest, head)
     }
 }
 #[sealed]
-impl<'a, Rest, Schema, SuffixSchema, T> ColtNodeTail<T> for var_type!(Option<&'a mut GhtLeaf<Schema, SuffixSchema>>, ...Rest)
+impl<'a, Rest, Schema, SuffixSchema, T> ColtNodeTail<T> for var_type!(&'a mut GhtLeaf<Schema, SuffixSchema>, ...Rest)
 where
     Rest: ColtNodeTail<
         <GhtLeaf<Schema, SuffixSchema> as ColumnLazyTrieNode>::Force,
@@ -364,50 +352,37 @@ where
 }
 
 #[sealed]
-impl<'a, Head, Head2, Rest, Node> ColtNode for var_type!(Option<&'a mut GhtInner<Head, GhtInner<Head2, Node>>>, ...Rest)
+impl<'a, Head, Head2, Rest, Node> ColtNode for var_type!(&'a mut GhtInner<Head, GhtInner<Head2, Node>>, ...Rest)
 where
     Rest: ColtNode<Head = Head>,
     Head: Eq + Hash + Clone,
     Head2: Eq + Hash + Clone,
     Node: GeneralizedHashTrieNode,
     GhtInner<Head, GhtInner<Head2, Node>>: GeneralizedHashTrieNode<
-            Head = Rest::Head,
-            SuffixSchema = Rest::SuffixSchema,
-            Schema = Rest::Schema,
-        > + GhtGet<Get = GhtInner<Head2, Node>>,
-    GhtInner<Head2, Node>: GeneralizedHashTrieNode<Schema = Rest::Schema> + GhtGet,
+        Head = Rest::Head,
+        SuffixSchema = Rest::SuffixSchema,
+        Schema = Rest::Schema,
+    >,
+    GhtInner<Head2, Node>: GeneralizedHashTrieNode<Schema = Rest::Schema>,
 {
     type Schema = Rest::Schema;
     type Head = Rest::Head;
     type SuffixSchema = Rest::SuffixSchema;
-    type Get = var_type!(Option<&'a mut GhtInner<Head2, Node>>, ...Rest::Get);
-
-    fn get_broken(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
-        let (first, rest) = self;
-        if let Some(first) = first {
-            var_expr!(first.get_mut(head), ...Rest::get_broken(rest, head))
-        } else {
-            var_expr!(None, ...Rest::get_broken(rest, head))
-        }
-    }
+    type Get = var_type!(&'a mut GhtInner<Head2, Node>, ...Rest::Get);
 
     fn get(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
         let (first, rest) = self;
-        if let Some(first) = first {
-            let GhtKey::Head(the_head) = head else {
-                panic!();
-            };
-            // create a child entry here for this get, to absorb future forces
-            // TODO(mingwei): extra clone here if entry already exists.
-            let child = first.children.entry(the_head.clone()).or_default();
-            var_expr!(Some(child), ...Rest::get(rest, head))
-        } else {
-            var_expr!(None, ...Rest::get(rest, head))
-        }
+        let GhtKey::Head(the_head) = head else {
+            panic!();
+        };
+        // create a child entry here for this get, to absorb future forces
+        // TODO(mingwei): extra clone here if entry already exists.
+        let child = first.children.entry(the_head.clone()).or_default();
+        var_expr!(child, ...Rest::get(rest, head))
     }
 }
 #[sealed]
-impl<'a, Head, Head2, Rest, Node, T> ColtNodeTail<T> for var_type!(Option<&'a mut GhtInner<Head, GhtInner<Head2, Node>>>, ...Rest)
+impl<'a, Head, Head2, Rest, Node, T> ColtNodeTail<T> for var_type!(&'a mut GhtInner<Head, GhtInner<Head2, Node>>, ...Rest)
 where
     Rest: ColtNode<Head = Head>,
     Head: Eq + Hash + Clone,
@@ -426,7 +401,7 @@ where
 }
 
 #[sealed]
-impl<'a, Head, Rest, Schema, ValType> ColtNode for var_type!(Option<&'a mut GhtInner<Head, GhtLeaf<Schema, ValType>>>, ...Rest)
+impl<'a, Head, Rest, Schema, ValType> ColtNode for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType>>, ...Rest)
 where
     Rest: ColtNode<Head = Head>,
     Head: Eq + Hash + Clone,
@@ -441,42 +416,29 @@ where
     // Head2: Eq + Hash + Clone,
     // Node: GeneralizedHashTrieNode,
     GhtInner<Head, GhtLeaf<Schema, ValType>>: GeneralizedHashTrieNode<
-            Head = Rest::Head,
-            // SuffixSchema = Rest::SuffixSchema,
-            Schema = Rest::Schema,
-        > + GhtGet,
+        Head = Rest::Head,
+        // SuffixSchema = Rest::SuffixSchema,
+        Schema = Rest::Schema,
+    >,
     GhtLeaf<Schema, ValType>: GeneralizedHashTrieNode<Schema = Rest::Schema> + GhtGet,
 {
     type Schema = Rest::Schema;
     type Head = Rest::Head;
     type SuffixSchema = Rest::SuffixSchema;
     // type Get = Rest::Get; // Option<&'a <GhtLeaf<Schema, ValType> as GhtGet>::Get>,
-    type Get = var_type!(Option<&'a mut <GhtInner<Head, GhtLeaf<Schema, ValType>> as GhtGet>::Get>, ...Rest::Get);
-
-    fn get_broken(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
-        // let (_first, rest) = self;
-        // Rest::get_broken(rest, head)
-        let (first, rest) = self;
-        if let Some(first) = first {
-            var_expr!(first.get_mut(head), ...Rest::get_broken(rest, head))
-        } else {
-            var_expr!(None, ...Rest::get_broken(rest, head))
-        }
-    }
+    type Get = var_type!(&'a mut GhtLeaf<Schema, ValType>, ...Rest::Get);
 
     fn get(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
-        // let (_first, rest) = self;
-        // Rest::get(rest, head)
         let (first, rest) = self;
-        if let Some(first) = first {
-            var_expr!(first.get_mut(head), ...Rest::get(rest, head))
-        } else {
-            var_expr!(None, ...Rest::get(rest, head))
-        }
+        let GhtKey::Head(the_head) = head else {
+            panic!();
+        };
+        let child = first.children.entry(the_head.clone()).or_default();
+        var_expr!(child, ...Rest::get(rest, head))
     }
 }
 #[sealed]
-impl<'a, Head, Rest, Schema, ValType> ColtNodeTail<GhtInner<Head, GhtLeaf<Schema, ValType>>> for var_type!(Option<&'a mut GhtInner<Head, GhtLeaf<Schema, ValType>>>, ...Rest)
+impl<'a, Head, Rest, Schema, ValType> ColtNodeTail<GhtInner<Head, GhtLeaf<Schema, ValType>>> for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType>>, ...Rest)
 where
     Rest: ColtNode<Head = Head, Schema = Schema>,
     Head: Eq + Hash + Clone,
@@ -492,34 +454,33 @@ where
     fn merge(&mut self, inner_to_merge: GhtInner<Head, GhtLeaf<Schema, ValType>>) {
         // This shouldn't be none? IDK
         let (head, _rest) = self;
-        let head = head.as_mut().unwrap();
         crate::Merge::merge(*head, inner_to_merge);
     }
 }
 
 #[sealed]
-impl<'a, Head, Node> ColtNode for var_type!(Option<&'a mut GhtInner<Head, Node>>)
+impl<'a, Head, Node> ColtNode for var_type!(&'a mut GhtInner<Head, Node>)
 where
-    GhtInner<Head, Node>: GeneralizedHashTrieNode + GhtGet,
+    GhtInner<Head, Node>: GeneralizedHashTrieNode,
     Head: Clone + Eq + Hash,
     Node: GeneralizedHashTrieNode,
 {
     type Schema = <GhtInner<Head, Node> as GeneralizedHashTrieNode>::Schema;
     type SuffixSchema = <GhtInner<Head, Node> as GeneralizedHashTrieNode>::SuffixSchema;
-    type Head = <GhtInner<Head, Node> as GeneralizedHashTrieNode>::Head;
-    type Get = var_type!(Option<&'a mut <GhtInner<Head, Node> as GhtGet>::Get>);
-
-    fn get_broken(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
-        var_expr!(self.0.unwrap().get_mut(head))
-    }
+    type Head = Head;
+    type Get = var_type!(&'a mut Node);
 
     fn get(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
         // var_expr!(self.0.unwrap().get_mut(head))
-        var_expr!(self.0.and_then(|x| x.get_mut(head)))
+        let GhtKey::Head(the_head) = head else {
+            panic!();
+        };
+        let child = self.0.children.entry(the_head.clone()).or_default();
+        var_expr!(child)
     }
 }
 #[sealed]
-impl<'a, Head, Node, T> ColtNodeTail<T> for var_type!(Option<&'a mut GhtInner<Head, Node>>)
+impl<'a, Head, Node, T> ColtNodeTail<T> for var_type!(&'a mut GhtInner<Head, Node>)
 where
     GhtInner<Head, Node>: GeneralizedHashTrieNode + GhtGet,
     Head: Clone + Eq + Hash,
