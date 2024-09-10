@@ -460,15 +460,12 @@ where
     fn call(&mut self, ght_a: &'a GhtA, ght_b: &'b GhtB) -> Self::Output {
         let mut children = HashMap::<Head, ValFunc::Output>::new();
         for head in ght_b.iter() {
-            match head.clone() {
-                GhtKey::Head(the_head) => {
-                    if let Some(get_a) = ght_a.get(&head) {
-                        let get_b = ght_b.get(&head).unwrap();
-                        let val = self.bimorphism.call(get_a, get_b);
-                        children.insert(the_head.clone(), val);
-                    }
+            if let GhtKey::Head(the_head) = head.clone() {
+                if let Some(get_a) = ght_a.get(&head) {
+                    let get_b = ght_b.get(&head).unwrap();
+                    let val = self.bimorphism.call(get_a, get_b);
+                    children.insert(the_head.clone(), val);
                 }
-                _ => {}
             }
         }
         GhtInner { children }

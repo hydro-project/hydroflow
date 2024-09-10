@@ -2,9 +2,7 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use sealed::sealed;
-use variadics::{
-    var_args, var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, Variadic, VariadicExt,
-};
+use variadics::{var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt};
 
 use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtKey, GhtLeaf, GhtTakeLeaf};
 
