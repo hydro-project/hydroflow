@@ -1075,7 +1075,7 @@ mod test {
     }
 
     #[test]
-    fn test_colt_get() {
+    fn test_colt_get_broken() {
         type MyForest = GhtForestType!(u8, u16, u32, u64);
         let mut forest = MyForest::default();
         forest.0.insert(var_expr!(1, 1, 1, 1));
@@ -1083,13 +1083,36 @@ mod test {
         forest.0.insert(var_expr!(3, 3, 3, 3));
 
         GhtForest::<var_type!(u8, u16, u32, u64)>::force(&mut forest, var_expr!(1, 1, 1, 1));
+        let len = forest.len();
         // println!("Forest after forcing (1, 1, 1, 1): {:?}", forest);
 
-        let get_result = ColtNode::get(&forest.as_ref_var().as_option(), &GhtKey::Head(1));
-        assert_eq!(get_result.len(), forest.len() - 1);
-        let get_result2 = ColtNode::get(&get_result, &GhtKey::Head(1));
-        assert_eq!(get_result2.len(), forest.len() - 2);
-        let get_result3 = ColtNode::get(&get_result2, &GhtKey::Head(1));
-        assert_eq!(get_result3.len(), forest.len() - 3);
+        let get_result = ColtNode::get_broken(forest.as_mut_var().as_option(), &GhtKey::Head(1));
+        assert_eq!(get_result.len(), len - 1);
+        let get_result2 = ColtNode::get_broken(get_result, &GhtKey::Head(1));
+        assert_eq!(get_result2.len(), len - 2);
+        let get_result3 = ColtNode::get_broken(get_result2, &GhtKey::Head(1));
+        assert_eq!(get_result3.len(), len - 3);
+    }
+
+    #[test]
+    fn test_colt_get() {
+        type MyForest = GhtForestType!(u8, u16, u32, u64);
+        let mut forest = MyForest::default();
+        forest.0.insert(var_expr!(1, 1, 1, 1));
+        forest.0.insert(var_expr!(2, 2, 2, 2));
+        forest.0.insert(var_expr!(3, 3, 3, 3));
+
+        // GhtForest::<var_type!(u8, u16, u32, u64)>::force(&mut forest, var_expr!(1, 1, 1, 1));
+        let len = forest.len();
+        // println!("Forest after forcing (1, 1, 1, 1): {:?}", forest);
+
+        let get_result = ColtNode::get(forest.as_mut_var().as_option(), &GhtKey::Head(1));
+        assert_eq!(get_result.len(), len - 1);
+        let get_result2 = ColtNode::get(get_result, &GhtKey::Head(1));
+        assert_eq!(get_result2.len(), len - 2);
+        let get_result3 = ColtNode::get(get_result2, &GhtKey::Head(1));
+        assert_eq!(get_result3.len(), len - 3);
+        println!("final result: {:?}", get_result3);
+        println!("final forest: {:#?}", forest);
     }
 }

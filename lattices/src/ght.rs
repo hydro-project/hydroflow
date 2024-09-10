@@ -454,7 +454,12 @@ pub trait GhtGet: GeneralizedHashTrieNode {
     /// On an Inner node, retrieves the value (child) associated with the given "head" key.
     /// returns an `Option` containing a reference to the value if found, or `None` if not found.
     /// On a Leaf node, returns None.
-    fn get(&self, head: &GhtKey<Self::Head, Self::Schema>) -> Option<&'_ Self::Get>;
+    fn get<'a>(&'a self, head: &GhtKey<Self::Head, Self::Schema>) -> Option<&'a Self::Get>;
+
+    fn get_mut<'a>(
+        &'a mut self,
+        head: &GhtKey<Self::Head, Self::Schema>,
+    ) -> Option<&'a mut Self::Get>;
 
     // /// The type of items returned by iter
     // type IterKey: Eq + Hash;
@@ -474,9 +479,20 @@ where
     /// On an Inner node, retrieves the value (child) associated with the given "head" key.
     /// returns an `Option` containing a reference to the value if found, or `None` if not found.
     /// On a Leaf node, returns None.
-    fn get(&self, head: &GhtKey<Self::Head, Self::Schema>) -> Option<&'_ Self::Get> {
+    fn get<'a>(&'a self, head: &GhtKey<Self::Head, Self::Schema>) -> Option<&'a Self::Get> {
         if let GhtKey::Head(the_head) = head {
             self.children.get(the_head)
+        } else {
+            None
+        }
+    }
+
+    fn get_mut<'a>(
+        &'a mut self,
+        head: &GhtKey<Self::Head, Self::Schema>,
+    ) -> Option<&'a mut Self::Get> {
+        if let GhtKey::Head(the_head) = head {
+            self.children.get_mut(the_head)
         } else {
             None
         }
@@ -501,7 +517,13 @@ where
     /// On an Inner node, retrieves the value (child) associated with the given "head" key.
     /// returns an `Option` containing a reference to the value if found, or `None` if not found.
     /// On a Leaf node, returns None.
-    fn get(&self, _head: &GhtKey<Self::Head, Self::Schema>) -> Option<&'_ Self::Get> {
+    fn get<'a>(&'a self, _head: &GhtKey<Self::Head, Self::Schema>) -> Option<&'a Self::Get> {
+        None
+    }
+    fn get_mut<'a>(
+        &'a mut self,
+        _head: &GhtKey<Self::Head, Self::Schema>,
+    ) -> Option<&'a mut Self::Get> {
         None
     }
 
