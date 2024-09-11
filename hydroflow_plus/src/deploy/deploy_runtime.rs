@@ -1,9 +1,9 @@
-use hydroflow_plus::util::deploy::{
-    ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, DeployPorts,
-};
 use stageleft::{q, Quoted, RuntimeData};
 
-use crate::HydroflowPlusMeta;
+use super::HydroflowPlusMeta;
+use crate::util::deploy::{
+    ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, DeployPorts,
+};
 
 pub fn cluster_members(
     cli: RuntimeData<&DeployPorts<HydroflowPlusMeta>>,
