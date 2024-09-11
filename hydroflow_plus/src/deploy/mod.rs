@@ -1,8 +1,26 @@
 use hydroflow_lang::graph::HydroflowGraph;
 use stageleft::Quoted;
 
-pub mod graphs;
-pub use graphs::*;
+pub mod macro_runtime;
+
+#[cfg(feature = "deploy")]
+pub(crate) mod trybuild;
+
+pub use macro_runtime::*;
+#[cfg(feature = "deploy")]
+pub use trybuild::init_test;
+
+#[allow(clippy::allow_attributes, unused, reason = "stageleft")]
+pub(crate) mod deploy_runtime;
+
+#[cfg(feature = "deploy")]
+pub mod deploy_graph;
+
+#[cfg(feature = "deploy")]
+pub use deploy_graph::*;
+
+pub mod in_memory_graph;
+pub use in_memory_graph::*;
 
 pub trait LocalDeploy<'a> {
     type Process: Node<Meta = Self::Meta>;
