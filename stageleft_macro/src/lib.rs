@@ -67,7 +67,7 @@ fn gen_use_paths(
                     #[allow(non_upper_case_globals, non_snake_case)]
                     let #name_ident_unspanned = #root::runtime_support::create_import(
                         #full_path,
-                        env!("STAGELEFT_FINAL_CRATE_NAME"),
+                        option_env!("STAGELEFT_FINAL_CRATE_NAME").unwrap_or(env!("CARGO_PKG_NAME")),
                         {
                             let __quse_local = ();
                             {
@@ -366,7 +366,7 @@ pub fn entry(
             #(#param_parsing)*
 
             let macro_crate_name = env!("CARGO_PKG_NAME");
-            let final_crate_name = env!("STAGELEFT_FINAL_CRATE_NAME");
+            let final_crate_name = option_env!("STAGELEFT_FINAL_CRATE_NAME").unwrap_or(macro_crate_name);
             #root::runtime_support::set_macro_to_crate(macro_crate_name, final_crate_name);
 
             let output_core = {

@@ -3,9 +3,8 @@ use std::cell::RefCell;
 use hydroflow::futures::channel::mpsc::UnboundedSender;
 use stageleft::*;
 
-use crate as hydroflow_plus;
 use crate::ir::*;
-use crate::RuntimeContext;
+use crate::{profiler as myself, RuntimeContext};
 
 pub fn increment_counter(count: &mut u64) {
     *count += 1;
@@ -43,9 +42,7 @@ fn add_profiling_node<'a>(
                 .unwrap();
             counters.borrow_mut()[my_id as usize] = 0;
             move |_| {
-                hydroflow_plus::profiler::increment_counter(
-                    &mut counters.borrow_mut()[my_id as usize],
-                );
+                myself::increment_counter(&mut counters.borrow_mut()[my_id as usize]);
             }
         }))
         .splice_untyped()
