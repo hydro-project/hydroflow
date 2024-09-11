@@ -10,16 +10,25 @@ use hydro_deploy::hydroflow_crate::ports::{
 use hydro_deploy::hydroflow_crate::tracing_options::TracingOptions;
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{Deployment, Host, HydroflowCrate};
-use hydroflow_plus::deploy::{ClusterSpec, Deploy, Node, ProcessSpec};
-use hydroflow_plus::lang::graph::HydroflowGraph;
 use nameof::name_of;
+use quote::ToTokens;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use stageleft::{Quoted, RuntimeData};
 use tokio::sync::RwLock;
+use trybuild_internals_api::path;
 
-use super::HydroflowPlusMeta;
-use crate::deploy_runtime::*;
-use crate::trybuild::{compile_graph_trybuild, create_trybuild};
+use super::deploy_runtime::*;
+use super::trybuild::{compile_graph_trybuild, create_trybuild};
+use crate::deploy::{ClusterSpec, Deploy, Node, ProcessSpec};
+use crate::lang::graph::HydroflowGraph;
+
+#[derive(Default, Serialize, Deserialize)]
+pub struct HydroflowPlusMeta {
+    pub clusters: HashMap<usize, Vec<u32>>,
+    pub cluster_id: Option<u32>,
+    pub subgraph_id: usize,
+}
 
 pub struct HydroDeploy {}
 
@@ -635,15 +644,51 @@ fn create_graph_trybuild(
     String,
     (std::path::PathBuf, std::path::PathBuf, Option<Vec<String>>),
 ) {
-    let source_ast = compile_graph_trybuild(graph, extra_stmts);
-
     let source_dir = trybuild_internals_api::cargo::manifest_dir().unwrap();
     let source_manifest = trybuild_internals_api::dependencies::get_manifest(&source_dir).unwrap();
     let crate_name = &source_manifest.package.name.to_string().replace("-", "_");
-    let source = prettyplease::unparse(&source_ast)
-        .to_string()
-        .replace(crate_name, &format!("{crate_name}::__staged"))
-        .replace("crate::__staged", &format!("{crate_name}::__staged"));
+
+    let is_test = super::trybuild::IS_TEST.load(std::sync::atomic::Ordering::Relaxed);
+    let inlined_staged = stageleft_tool::gen_staged_trybuild(
+        &path!(source_dir / "src" / "lib.rs"),
+        crate_name.clone(),
+        is_test,
+    );
+    let source_ast = compile_graph_trybuild(graph, extra_stmts);
+
+    let generated_code: syn::File = syn::parse_str(
+        &(source_ast
+            .to_token_stream()
+            .to_string()
+            .replace(&format!(" {} ::", crate_name), " crate :: __staged ::")),
+    )
+    .unwrap();
+
+    let inlined_staged: syn::File = syn::parse_quote! {
+        #[allow(
+            unused,
+            ambiguous_glob_reexports,
+            clippy::suspicious_else_formatting,
+            unexpected_cfgs,
+            reason = "generated code"
+        )]
+        pub mod __staged {
+            #inlined_staged
+        }
+    };
+
+    let inlined_staged: syn::File = syn::parse_str(
+        &(inlined_staged
+            .to_token_stream()
+            .to_string()
+            .replace(" crate ::", &format!(" {} ::", crate_name))),
+    )
+    .unwrap();
+
+    let source = prettyplease::unparse(&syn::parse_quote! {
+        #generated_code
+        #inlined_staged
+    });
 
     let mut hasher = Sha256::new();
     hasher.update(&source);
@@ -658,7 +703,7 @@ fn create_graph_trybuild(
         hash
     };
 
-    let trybuild_created = create_trybuild(&source, &bin_name).unwrap();
+    let trybuild_created = create_trybuild(&source, &bin_name, is_test).unwrap();
     (bin_name, trybuild_created)
 }
 
