@@ -9,9 +9,11 @@ expression: built.ir()
             from_location: Cluster(
                 1,
             ),
+            from_key: None,
             to_location: Process(
                 0,
             ),
+            to_key: None,
             serialize_pipeline: Some(
                 Operator(
                     Operator {
@@ -39,9 +41,11 @@ expression: built.ir()
                     from_location: Process(
                         0,
                     ),
+                    from_key: None,
                     to_location: Cluster(
                         1,
                     ),
+                    to_key: None,
                     serialize_pipeline: Some(
                         Operator(
                             Operator {

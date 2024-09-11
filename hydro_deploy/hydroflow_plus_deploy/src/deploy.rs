@@ -1,5 +1,8 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::future::Future;
+use std::io::Error;
+use std::pin::Pin;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -9,10 +12,13 @@ use hydro_deploy::hydroflow_crate::ports::{
 };
 use hydro_deploy::hydroflow_crate::tracing_options::TracingOptions;
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
-use hydro_deploy::{Deployment, Host, HydroflowCrate};
-use hydroflow_plus::deploy::{ClusterSpec, Deploy, Node, ProcessSpec};
+use hydro_deploy::{CustomService, Deployment, Host, HydroflowCrate};
+use hydroflow_plus::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
+use hydroflow_plus::futures::SinkExt;
 use hydroflow_plus::lang::graph::HydroflowGraph;
+use hydroflow_plus::util::deploy::ConnectedSink;
 use nameof::name_of;
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 use stageleft::{Quoted, RuntimeData};
 use tokio::sync::RwLock;
@@ -28,28 +34,33 @@ impl<'a> Deploy<'a> for HydroDeploy {
     type CompileEnv = ();
     type Process = DeployNode;
     type Cluster = DeployCluster;
+    type ExternalProcess = DeployExternal;
     type Meta = HashMap<usize, Vec<u32>>;
     type GraphId = ();
-    type ProcessPort = DeployPort<DeployNode>;
-    type ClusterPort = DeployPort<DeployCluster>;
+    type Port = String;
+    type ExternalRawPort = CustomClientPort;
 
-    fn allocate_process_port(process: &Self::Process) -> Self::ProcessPort {
+    fn allocate_process_port(process: &Self::Process) -> Self::Port {
         process.next_port()
     }
 
-    fn allocate_cluster_port(cluster: &Self::Cluster) -> Self::ClusterPort {
+    fn allocate_cluster_port(cluster: &Self::Cluster) -> Self::Port {
         cluster.next_port()
+    }
+
+    fn allocate_external_port(external: &Self::ExternalProcess) -> Self::Port {
+        external.next_port()
     }
 
     fn o2o_sink_source(
         _env: &(),
         _p1: &Self::Process,
-        p1_port: &Self::ProcessPort,
+        p1_port: &Self::Port,
         _p2: &Self::Process,
-        p2_port: &Self::ProcessPort,
+        p2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr) {
-        let p1_port = p1_port.port.as_str();
-        let p2_port = p2_port.port.as_str();
+        let p1_port = p1_port.as_str();
+        let p2_port = p2_port.as_str();
         deploy_o2o(
             RuntimeData::new("__hydroflow_plus_trybuild_cli"),
             p1_port,
@@ -59,23 +70,23 @@ impl<'a> Deploy<'a> for HydroDeploy {
 
     fn o2o_connect(
         p1: &Self::Process,
-        p1_port: &Self::ProcessPort,
+        p1_port: &Self::Port,
         p2: &Self::Process,
-        p2_port: &Self::ProcessPort,
+        p2_port: &Self::Port,
     ) {
         let self_underlying_borrow = p1.underlying.borrow();
         let self_underlying = self_underlying_borrow.as_ref().unwrap();
         let source_port = self_underlying
             .try_read()
             .unwrap()
-            .get_port(p1_port.port.clone(), self_underlying);
+            .get_port(p1_port.clone(), self_underlying);
 
         let other_underlying_borrow = p2.underlying.borrow();
         let other_underlying = other_underlying_borrow.as_ref().unwrap();
         let recipient_port = other_underlying
             .try_read()
             .unwrap()
-            .get_port(p2_port.port.clone(), other_underlying);
+            .get_port(p2_port.clone(), other_underlying);
 
         source_port.send_to(&recipient_port);
     }
@@ -83,12 +94,12 @@ impl<'a> Deploy<'a> for HydroDeploy {
     fn o2m_sink_source(
         _env: &(),
         _p1: &Self::Process,
-        p1_port: &Self::ProcessPort,
+        p1_port: &Self::Port,
         _c2: &Self::Cluster,
-        c2_port: &Self::ClusterPort,
+        c2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr) {
-        let p1_port = p1_port.port.as_str();
-        let c2_port = c2_port.port.as_str();
+        let p1_port = p1_port.as_str();
+        let c2_port = c2_port.as_str();
         deploy_o2m(
             RuntimeData::new("__hydroflow_plus_trybuild_cli"),
             p1_port,
@@ -98,16 +109,16 @@ impl<'a> Deploy<'a> for HydroDeploy {
 
     fn o2m_connect(
         p1: &Self::Process,
-        p1_port: &Self::ProcessPort,
+        p1_port: &Self::Port,
         c2: &Self::Cluster,
-        c2_port: &Self::ClusterPort,
+        c2_port: &Self::Port,
     ) {
         let self_underlying_borrow = p1.underlying.borrow();
         let self_underlying = self_underlying_borrow.as_ref().unwrap();
         let source_port = self_underlying
             .try_read()
             .unwrap()
-            .get_port(p1_port.port.clone(), self_underlying);
+            .get_port(p1_port.clone(), self_underlying);
 
         let recipient_port = DemuxSink {
             demux: c2
@@ -119,7 +130,7 @@ impl<'a> Deploy<'a> for HydroDeploy {
                     let n = c.underlying.try_read().unwrap();
                     (
                         id as u32,
-                        Arc::new(n.get_port(c2_port.port.clone(), &c.underlying))
+                        Arc::new(n.get_port(c2_port.clone(), &c.underlying))
                             as Arc<dyn HydroflowSink + 'static>,
                     )
                 })
@@ -132,12 +143,12 @@ impl<'a> Deploy<'a> for HydroDeploy {
     fn m2o_sink_source(
         _env: &(),
         _c1: &Self::Cluster,
-        c1_port: &Self::ClusterPort,
+        c1_port: &Self::Port,
         _p2: &Self::Process,
-        p2_port: &Self::ProcessPort,
+        p2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr) {
-        let c1_port = c1_port.port.as_str();
-        let p2_port = p2_port.port.as_str();
+        let c1_port = c1_port.as_str();
+        let p2_port = p2_port.as_str();
         deploy_m2o(
             RuntimeData::new("__hydroflow_plus_trybuild_cli"),
             c1_port,
@@ -147,16 +158,16 @@ impl<'a> Deploy<'a> for HydroDeploy {
 
     fn m2o_connect(
         c1: &Self::Cluster,
-        c1_port: &Self::ClusterPort,
+        c1_port: &Self::Port,
         p2: &Self::Process,
-        p2_port: &Self::ProcessPort,
+        p2_port: &Self::Port,
     ) {
         let other_underlying_borrow = p2.underlying.borrow();
         let other_underlying = other_underlying_borrow.as_ref().unwrap();
         let recipient_port = other_underlying
             .try_read()
             .unwrap()
-            .get_port(p2_port.port.clone(), other_underlying)
+            .get_port(p2_port.clone(), other_underlying)
             .merge();
 
         for (i, node) in c1.members.borrow().iter().enumerate() {
@@ -164,7 +175,7 @@ impl<'a> Deploy<'a> for HydroDeploy {
                 .underlying
                 .try_read()
                 .unwrap()
-                .get_port(c1_port.port.clone(), &node.underlying);
+                .get_port(c1_port.clone(), &node.underlying);
 
             TaggedSource {
                 source: Arc::new(source_port),
@@ -177,12 +188,12 @@ impl<'a> Deploy<'a> for HydroDeploy {
     fn m2m_sink_source(
         _env: &(),
         _c1: &Self::Cluster,
-        c1_port: &Self::ClusterPort,
+        c1_port: &Self::Port,
         _c2: &Self::Cluster,
-        c2_port: &Self::ClusterPort,
+        c2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr) {
-        let c1_port = c1_port.port.as_str();
-        let c2_port = c2_port.port.as_str();
+        let c1_port = c1_port.as_str();
+        let c2_port = c2_port.as_str();
         deploy_m2m(
             RuntimeData::new("__hydroflow_plus_trybuild_cli"),
             c1_port,
@@ -192,16 +203,16 @@ impl<'a> Deploy<'a> for HydroDeploy {
 
     fn m2m_connect(
         c1: &Self::Cluster,
-        c1_port: &Self::ClusterPort,
+        c1_port: &Self::Port,
         c2: &Self::Cluster,
-        c2_port: &Self::ClusterPort,
+        c2_port: &Self::Port,
     ) {
         for (i, sender) in c1.members.borrow().iter().enumerate() {
             let source_port = sender
                 .underlying
                 .try_read()
                 .unwrap()
-                .get_port(c1_port.port.clone(), &sender.underlying);
+                .get_port(c1_port.clone(), &sender.underlying);
 
             let recipient_port = DemuxSink {
                 demux: c2
@@ -213,7 +224,7 @@ impl<'a> Deploy<'a> for HydroDeploy {
                         let n = c.underlying.try_read().unwrap();
                         (
                             id as u32,
-                            Arc::new(n.get_port(c2_port.port.clone(), &c.underlying).merge())
+                            Arc::new(n.get_port(c2_port.clone(), &c.underlying).merge())
                                 as Arc<dyn HydroflowSink + 'static>,
                         )
                     })
@@ -226,6 +237,49 @@ impl<'a> Deploy<'a> for HydroDeploy {
             }
             .send_to(&recipient_port);
         }
+    }
+
+    fn e2o_source(
+        _compile_env: &Self::CompileEnv,
+        _p1: &Self::ExternalProcess,
+        p1_port: &Self::Port,
+        _p2: &Self::Process,
+        p2_port: &Self::Port,
+    ) -> syn::Expr {
+        let p1_port = p1_port.as_str();
+        let p2_port = p2_port.as_str();
+        deploy_e2o(
+            RuntimeData::new("__hydroflow_plus_trybuild_cli"),
+            p1_port,
+            p2_port,
+        )
+    }
+
+    fn e2o_connect(
+        p1: &Self::ExternalProcess,
+        p1_port: &Self::Port,
+        p2: &Self::Process,
+        p2_port: &Self::Port,
+    ) {
+        let self_underlying_borrow = p1.underlying.borrow();
+        let self_underlying = self_underlying_borrow.as_ref().unwrap();
+        let source_port = self_underlying
+            .try_read()
+            .unwrap()
+            .declare_client(self_underlying);
+
+        let other_underlying_borrow = p2.underlying.borrow();
+        let other_underlying = other_underlying_borrow.as_ref().unwrap();
+        let recipient_port = other_underlying
+            .try_read()
+            .unwrap()
+            .get_port(p2_port.clone(), other_underlying);
+
+        source_port.send_to(&recipient_port);
+
+        p1.client_ports
+            .borrow_mut()
+            .insert(p1_port.clone(), source_port);
     }
 
     fn cluster_ids(
@@ -245,25 +299,6 @@ impl<'a> Deploy<'a> for HydroDeploy {
 
 pub trait DeployCrateWrapper {
     fn underlying(&self) -> Arc<RwLock<HydroflowCrateService>>;
-
-    #[expect(async_fn_in_trait, reason = "no auto trait bounds needed")]
-    async fn create_sender(
-        &self,
-        port: &str,
-        deployment: &mut Deployment,
-        on: &Arc<impl Host + 'static>,
-    ) -> CustomClientPort {
-        let sender_service = deployment.CustomService(on.clone(), vec![]);
-        let sender_port = sender_service.read().await.declare_client(&sender_service);
-        let recipient = self
-            .underlying()
-            .read()
-            .await
-            .get_port(port.to_string(), &self.underlying());
-
-        sender_port.send_to(&recipient);
-        sender_port
-    }
 
     #[expect(async_fn_in_trait, reason = "no auto trait bounds needed")]
     async fn stdout(&self) -> tokio::sync::mpsc::UnboundedReceiver<String> {
@@ -345,6 +380,112 @@ impl From<Arc<dyn Host>> for TrybuildHost {
     }
 }
 
+#[derive(Clone)]
+pub struct DeployExternal {
+    next_port: Rc<RefCell<usize>>,
+    host: Arc<dyn Host>,
+    underlying: Rc<RefCell<Option<Arc<RwLock<CustomService>>>>>,
+    client_ports: Rc<RefCell<HashMap<String, CustomClientPort>>>,
+    allocated_ports: Rc<RefCell<HashMap<usize, String>>>,
+}
+
+impl DeployExternal {
+    pub fn take_port(&self, key: usize) -> CustomClientPort {
+        self.client_ports
+            .borrow_mut()
+            .remove(self.allocated_ports.borrow().get(&key).unwrap())
+            .unwrap()
+    }
+}
+
+impl<'a> RegisterPort<'a, HydroDeploy> for DeployExternal {
+    fn register(&self, key: usize, port: <HydroDeploy as Deploy>::Port) {
+        self.allocated_ports.borrow_mut().insert(key, port);
+    }
+
+    fn raw_port(&self, key: usize) -> <HydroDeploy as Deploy>::ExternalRawPort {
+        self.client_ports
+            .borrow_mut()
+            .remove(self.allocated_ports.borrow().get(&key).unwrap())
+            .unwrap()
+    }
+
+    fn as_bytes_sink(
+        &self,
+        key: usize,
+    ) -> impl Future<
+        Output = Pin<
+            Box<dyn hydroflow_plus::futures::Sink<hydroflow_plus::bytes::Bytes, Error = Error>>,
+        >,
+    > + 'a {
+        let port = self.raw_port(key);
+        async move {
+            let sink = port.connect().await.into_sink();
+            Box::pin(sink)
+                as Pin<
+                    Box<
+                        dyn hydroflow_plus::futures::Sink<
+                            hydroflow_plus::bytes::Bytes,
+                            Error = Error,
+                        >,
+                    >,
+                >
+        }
+    }
+
+    fn as_bincode_sink<T: Serialize + 'static>(
+        &self,
+        key: usize,
+    ) -> impl Future<Output = Pin<Box<dyn hydroflow_plus::futures::Sink<T, Error = Error>>>> + 'a
+    {
+        let port = self.raw_port(key);
+        async move {
+            let sink = port.connect().await.into_sink();
+            Box::pin(sink.with(|item| async move {
+                Ok(hydroflow_plus::bincode::serialize(&item).unwrap().into())
+            })) as Pin<Box<dyn hydroflow_plus::futures::Sink<T, Error = Error>>>
+        }
+    }
+}
+
+impl Node for DeployExternal {
+    type Port = String;
+    type Meta = HashMap<usize, Vec<u32>>;
+    type InstantiateEnv = Deployment;
+
+    fn next_port(&self) -> Self::Port {
+        let next_port = *self.next_port.borrow();
+        *self.next_port.borrow_mut() += 1;
+
+        format!("port_{}", next_port)
+    }
+
+    fn instantiate(
+        &self,
+        env: &mut Self::InstantiateEnv,
+        _meta: &mut Self::Meta,
+        _graph: HydroflowGraph,
+        _extra_stmts: Vec<syn::Stmt>,
+    ) {
+        let service = env.CustomService(self.host.clone(), vec![]);
+        *self.underlying.borrow_mut() = Some(service);
+    }
+
+    fn update_meta(&mut self, _meta: &Self::Meta) {}
+}
+
+impl<'a> ExternalSpec<'a, HydroDeploy> for Arc<dyn Host> {
+    fn build(self, _id: usize, _name_hint: &str) -> DeployExternal {
+        DeployExternal {
+            next_port: Rc::new(RefCell::new(0)),
+            host: self,
+            underlying: Rc::new(RefCell::new(None)),
+            allocated_ports: Rc::new(RefCell::new(HashMap::new())),
+            client_ports: Rc::new(RefCell::new(HashMap::new())),
+        }
+    }
+}
+
 pub enum CrateOrTrybuild {
     Crate(HydroflowCrate),
     Trybuild(TrybuildHost),
@@ -364,49 +505,16 @@ impl DeployCrateWrapper for DeployNode {
     }
 }
 
-pub struct DeployPort<N> {
-    node: N,
-    port: String,
-}
-
-impl DeployPort<DeployNode> {
-    pub async fn create_sender(
-        &self,
-        deployment: &mut Deployment,
-        on: &Arc<impl Host + 'static>,
-    ) -> CustomClientPort {
-        self.node.create_sender(&self.port, deployment, on).await
-    }
-}
-
-impl DeployPort<DeployCluster> {
-    pub async fn create_senders(
-        &self,
-        deployment: &mut Deployment,
-        on: &Arc<impl Host + 'static>,
-    ) -> Vec<CustomClientPort> {
-        let mut out = vec![];
-        for member in self.node.members() {
-            out.push(member.create_sender(&self.port, deployment, on).await);
-        }
-
-        out
-    }
-}
-
 impl Node for DeployNode {
-    type Port = DeployPort<Self>;
+    type Port = String;
     type Meta = HashMap<usize, Vec<u32>>;
     type InstantiateEnv = Deployment;
 
-    fn next_port(&self) -> DeployPort<Self> {
+    fn next_port(&self) -> String {
         let next_port = *self.next_port.borrow();
         *self.next_port.borrow_mut() += 1;
 
-        DeployPort {
-            node: self.clone(),
-            port: format!("port_{}", next_port),
-        }
+        format!("port_{}", next_port)
     }
 
     fn update_meta(&mut self, meta: &Self::Meta) {
@@ -466,18 +574,15 @@ impl DeployCluster {
 }
 
 impl Node for DeployCluster {
-    type Port = DeployPort<Self>;
+    type Port = String;
     type Meta = HashMap<usize, Vec<u32>>;
     type InstantiateEnv = Deployment;
 
-    fn next_port(&self) -> DeployPort<Self> {
+    fn next_port(&self) -> String {
         let next_port = *self.next_port.borrow();
         *self.next_port.borrow_mut() += 1;
 
-        DeployPort {
-            node: self.clone(),
-            port: format!("port_{}", next_port),
-        }
+        format!("port_{}", next_port)
     }
 
     fn instantiate(
