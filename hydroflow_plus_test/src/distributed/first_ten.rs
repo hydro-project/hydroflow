@@ -18,7 +18,7 @@ pub fn first_ten_distributed(flow: &FlowBuilder) -> (Process<P1>, Process<P2>) {
     numbers
         .map(q!(|n| SendOverNetwork { n }))
         .send_bincode(&second_process)
-        .for_each(q!(|n: SendOverNetwork| println!("{}", n.n))); // TODO(shadaj): why is the explicit type required here?
+        .for_each(q!(|n| println!("{}", n.n)));
 
     (process, second_process)
 }
@@ -26,7 +26,7 @@ pub fn first_ten_distributed(flow: &FlowBuilder) -> (Process<P1>, Process<P2>) {
 #[cfg(test)]
 mod tests {
     use hydro_deploy::Deployment;
-    use hydroflow_plus_deploy::{DeployCrateWrapper, TrybuildHost};
+    use hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
 
     #[tokio::test]
     async fn first_ten_distributed() {
@@ -39,7 +39,6 @@ mod tests {
 
         insta::assert_debug_snapshot!(built.ir());
 
-        // if we drop this, we drop the references to the deployment nodes
         let nodes = built
             .with_process(&first_node, TrybuildHost::new(deployment.Localhost()))
             .with_process(&second_node, TrybuildHost::new(deployment.Localhost()))

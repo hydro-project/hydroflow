@@ -52,11 +52,10 @@ pub fn test_anti_join<'a>(
         source2 = source2.persist();
     }
 
-    // TODO(shadaj): inference fails without a for_each type annotation here
     source
         .anti_join(source2)
         .all_ticks()
-        .for_each(q!(|v: (u32, u32)| {
+        .for_each(q!(|v| {
             output.send(v.0).unwrap();
         }));
 

@@ -454,7 +454,7 @@ fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
 
 #[cfg(test)]
 mod tests {
-    use hydroflow_plus_deploy::DeployRuntime;
+    use hydroflow_plus::deploy::DeployRuntime;
     use stageleft::RuntimeData;
 
     #[test]
