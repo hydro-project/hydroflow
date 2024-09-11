@@ -293,11 +293,6 @@ pub fn gen_final_helper() {
 #[macro_export]
 macro_rules! gen_final {
     () => {
-        println!(
-            "cargo::rustc-env=STAGELEFT_FINAL_CRATE_NAME={}",
-            env!("CARGO_PKG_NAME")
-        );
-
         #[cfg(not(feature = "stageleft_devel"))]
         $crate::gen_final_helper()
     };
