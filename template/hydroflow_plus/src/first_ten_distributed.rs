@@ -20,7 +20,7 @@ pub fn first_ten_distributed(flow: &FlowBuilder) -> (Process<P1>, Process<P2>) {
 mod tests {
     use hydro_deploy::Deployment;
     use hydroflow_plus::futures::StreamExt;
-    use hydroflow_plus_deploy::{DeployCrateWrapper, TrybuildHost};
+    use hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
     use tokio_stream::wrappers::UnboundedReceiverStream;
 
     #[tokio::test]
