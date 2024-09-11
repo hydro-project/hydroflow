@@ -9,7 +9,7 @@ expression: ir.surface_syntax_string()
 5v1 = map (stageleft :: runtime_support :: fn1_type_hint :: < (f64 , f64) , bool > ({ use crate :: __staged :: cluster :: compute_pi :: * ; | (x , y) | x * x + y * y < 1.0 }));
 6v1 = fold :: < 'tick > (stageleft :: runtime_support :: fn0_type_hint :: < (u64 , u64) > ({ use crate :: __staged :: cluster :: compute_pi :: * ; | | (0u64 , 0u64) }) , stageleft :: runtime_support :: fn2_borrow_mut_type_hint :: < (u64 , u64) , bool , () > ({ use crate :: __staged :: cluster :: compute_pi :: * ; | (inside , total) , sample_inside | { if sample_inside { * inside += 1 ; } * total += 1 ; } }));
 7v1 = map (| data | { hydroflow_plus :: runtime_support :: bincode :: serialize :: < (u64 , u64) > (& data) . unwrap () . into () });
-8v1 = dest_sink ({ use hydroflow_plus_deploy :: __staged :: deploy_runtime :: * ; let c1_port = "port_0" ; let env = FAKE ; { env . port (c1_port) . connect_local_blocking :: < ConnectedDirect > () . into_sink () } });
+8v1 = dest_sink ({ use hydroflow_plus :: __staged :: deploy :: deploy_runtime :: * ; let c1_port = "port_0" ; let env = FAKE ; { env . port (c1_port) . connect_local_blocking :: < ConnectedDirect > () . into_sink () } });
 
 1v1 -> 2v1;
 2v1 -> 3v1;
