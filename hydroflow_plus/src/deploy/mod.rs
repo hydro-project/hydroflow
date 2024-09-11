@@ -1,6 +1,36 @@
 use hydroflow_lang::graph::HydroflowGraph;
 use stageleft::Quoted;
 
+pub mod runtime;
+use std::collections::HashMap;
+
+#[cfg(feature = "deploy")]
+pub(crate) mod trybuild;
+
+#[cfg(feature = "deploy")]
+pub fn init_test() {
+    trybuild::IS_TEST.store(true, std::sync::atomic::Ordering::Relaxed);
+}
+
+pub use runtime::*;
+
+#[allow(clippy::allow_attributes, unused, reason = "stageleft")]
+pub(crate) mod deploy_runtime;
+
+#[cfg(feature = "deploy")]
+pub mod deploy;
+
+#[cfg(feature = "deploy")]
+pub use deploy::*;
+use serde::{Deserialize, Serialize};
+
+#[derive(Default, Serialize, Deserialize)]
+pub struct HydroflowPlusMeta {
+    pub clusters: HashMap<usize, Vec<u32>>,
+    pub cluster_id: Option<u32>,
+    pub subgraph_id: usize,
+}
+
 pub mod graphs;
 pub use graphs::*;
 
