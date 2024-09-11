@@ -13,7 +13,7 @@ pub fn many_to_many(flow: &FlowBuilder) -> Cluster<()> {
 #[cfg(test)]
 mod tests {
     use hydro_deploy::Deployment;
-    use hydroflow_plus_deploy::{DeployCrateWrapper, TrybuildHost};
+    use hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
 
     #[tokio::test]
     async fn many_to_many() {
