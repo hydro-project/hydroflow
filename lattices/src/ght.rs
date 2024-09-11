@@ -426,7 +426,7 @@ where
     // /// The type of items returned by iter
     // type IterKey = Self::Head;
     fn iter(&self) -> impl Iterator<Item = Self::Head> {
-        self.children.keys().map(|k| k.clone())
+        self.children.keys().cloned()
     }
 
     fn iter_tuples(&self) -> impl Iterator<Item = Self::Schema> {
@@ -580,6 +580,29 @@ where
         } else {
             true
         }
+    }
+}
+
+#[sealed]
+impl<Schema, ValType> GhtTakeLeaf for GhtLeaf<Schema, ValType>
+where
+    Schema: 'static + Hash + Clone + Eq + PartialEqVariadic + SplitBySuffix<ValType>,
+    ValType: 'static + Hash + Clone + Eq + VariadicExt + PartialEqVariadic,
+    GhtLeaf<Schema, ValType>: GeneralizedHashTrieNode,
+{
+    fn take_containing_leaf(
+        &mut self,
+        _row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
+    ) -> Option<GhtLeaf<Self::Schema, Self::ValType>> {
+        None
+    }
+
+    fn merge_leaf(
+        &mut self,
+        _row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
+        _leaf: GhtLeaf<Self::Schema, Self::ValType>,
+    ) -> bool {
+        false
     }
 }
 

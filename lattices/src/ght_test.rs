@@ -895,16 +895,15 @@ mod test {
         // set up S forest
         type SForest = GhtForestType!(u16, u32, u64);
         let mut s_forest = SForest::default();
-        // car(forest) is forced once
-        s_forest.0 = table_s.force().unwrap();
-        assert!(s_forest.0.height() == 1);
-        assert!(s_forest.1 .0.height() == 2);
+        s_forest.0 = table_s;
+        assert!(s_forest.0.height() == 0);
+        assert!(s_forest.1 .0.height() == 1);
+        assert!(s_forest.1 .1 .0.height() == 2);
 
         // set up T forest
         type TForest = GhtForestType!(u16, u32, u64);
         let mut t_forest = TForest::default();
-        // car(forest) is forced once
-        t_forest.0 = table_t.force().unwrap();
+        t_forest.0 = table_t;
 
         // remainder of original test
         for r in table_r.elements {
@@ -1053,17 +1052,67 @@ mod test {
         // GhtForest::<var_type!(u8, u16, u32, u64)>::force(&mut forest, var_expr!(1, 1, 1, 1));
         let len = forest.len();
         // println!("Forest after forcing (1, 1, 1, 1): {:?}", forest);
-
-        let get_result = ColtNode::get(forest.as_mut_var(), &1);
-        assert_eq!(get_result.len(), len);
-        assert_eq!(get_result.0.height(), 0);
-        let get_result2 = ColtNode::get(get_result, &1);
-        assert_eq!(get_result2.len(), len - 1);
-        // assert!(get_result2.0.is_none());
-        let get_result3 = ColtNode::get(get_result2, &1);
-        // assert!(get_result3.1 .0.is_none());
-        assert_eq!(get_result3.len(), len - 2);
-        println!("final result: {:?}", get_result3);
+        {
+            let get_result = ColtNode::get(forest.as_mut_var(), &1);
+            assert_eq!(get_result.len(), len - 1);
+            assert_eq!(get_result.0.height(), 0);
+            let get_result2 = ColtNode::get(get_result, &1);
+            assert_eq!(get_result2.len(), len - 2);
+            // assert!(get_result2.0.is_none());
+            let get_result3 = ColtNode::get(get_result2, &1);
+            // assert!(get_result3.1 .0.is_none());
+            assert_eq!(get_result3.len(), len - 3);
+            println!("initial result: {:?}", get_result3);
+        }
+        {
+            let get_result = ColtNode::get(forest.as_mut_var(), &3);
+            assert_eq!(get_result.len(), len - 1);
+            let get_result2 = ColtNode::get(get_result, &3);
+            println!("secondary result: {:?}", get_result2);
+        }
         println!("final forest: {:#?}", forest);
+    }
+
+    #[test]
+    fn test_colt_scale() {
+        type MyColt = crate::GhtForestType!(i32, bool, usize, &'static str);
+        let mut forest = MyColt::default();
+        for i in 1..100000 {
+            forest.0.insert(var_expr!(i, true, 1, "hello"));
+        }
+        {
+            let result = forest.as_mut_var().get(&3);
+            println!("result: {:?}", result);
+        }
+        // check: first Leaf trie is forced
+        assert!(forest.0.forced);
+        assert_eq!(forest.0.elements.len(), 0);
+        {
+            let result = forest.as_mut_var().get(&3);
+            let result2 = result.get(&true);
+            println!("result2: {:?}", result2);
+        }
+        {
+            // check: leaf below 3 in first non-empty trie is forced
+            let result = forest.as_mut_var().get(&3);
+            assert!(result.0.forced);
+            assert_eq!(result.0.elements.len(), 0);
+        }
+        // check: prefix (3, true) is now found in the third trie: forest.1.1.0
+        assert!(forest
+            .1
+             .1
+             .0
+            .prefix_iter(var_expr!(3, true).as_ref_var())
+            .next()
+            .is_some());
+        println!("forest.0: {:?}", forest.0);
+        {
+            let result = forest.as_mut_var().get(&3);
+            let result2 = result.get(&true);
+            let result3 = result2.get(&1);
+            let result4 = result3.get(&"hello");
+            println!("result4: {:?}", result4);
+        }
     }
 }

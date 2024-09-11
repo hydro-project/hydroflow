@@ -137,7 +137,7 @@ macro_rules! GhtForestType {
     };
 
     ($a:ty, $( $b:ty ),* ) => {
-        GhtForestType!($a => $( $b ),*)
+        (GhtType!(() => $a, $( $b ),*), GhtForestType!($a => $( $b ),*))
     };
 }
 
@@ -470,14 +470,19 @@ where
     }
 }
 #[sealed]
-impl<'a, Head, Node, T> ColtNodeTail<T> for var_type!(&'a mut GhtInner<Head, Node>)
+impl<'a, Head, Schema, ValType> ColtNodeTail<GhtInner<Head, GhtLeaf<Schema, ValType>>>
+    for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType>>)
 where
-    GhtInner<Head, Node>: GeneralizedHashTrieNode + GhtGet,
+    GhtInner<Head, GhtLeaf<Schema, ValType>>: GeneralizedHashTrieNode<Head = Head>
+        + GhtGet
+        + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType>>>
+        + GhtGet,
+    GhtLeaf<Schema, ValType>: GeneralizedHashTrieNode<Schema = Schema>,
     Head: Clone + Eq + Hash,
-    Node: GeneralizedHashTrieNode,
+    Schema: Clone + Eq + Hash + VariadicExt,
 {
-    fn merge(&mut self, _inner_to_merge: T) {
-        panic!();
+    fn merge(&mut self, inner_to_merge: GhtInner<Head, GhtLeaf<Schema, ValType>>) {
+        crate::Merge::merge(self.0, inner_to_merge);
     }
 }
 
