@@ -46,7 +46,7 @@ pub fn compute_pi(flow: &FlowBuilder, batch_size: usize) -> (Cluster<Worker>, Pr
 
 #[cfg(test)]
 mod tests {
-    use hydroflow_plus_deploy::DeployRuntime;
+    use hydroflow_plus::deploy::DeployRuntime;
     use stageleft::RuntimeData;
 
     #[test]
