@@ -13,19 +13,27 @@ use hydro_deploy::hydroflow_crate::ports::{
 use hydro_deploy::hydroflow_crate::tracing_options::TracingOptions;
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{CustomService, Deployment, Host, HydroflowCrate};
-use hydroflow_plus::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
-use hydroflow_plus::futures::SinkExt;
-use hydroflow_plus::lang::graph::HydroflowGraph;
-use hydroflow_plus::util::deploy::ConnectedSink;
 use nameof::name_of;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use stageleft::{Quoted, RuntimeData};
+use syn::visit_mut::VisitMut;
 use tokio::sync::RwLock;
+use trybuild_internals_api::path;
 
-use super::HydroflowPlusMeta;
-use crate::deploy_runtime::*;
-use crate::trybuild::{compile_graph_trybuild, create_trybuild};
+use super::deploy_runtime::*;
+use super::trybuild::{compile_graph_trybuild, create_trybuild};
+use super::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
+use crate::futures::SinkExt;
+use crate::lang::graph::HydroflowGraph;
+use crate::util::deploy::ConnectedSink;
+
+#[derive(Default, Serialize, Deserialize)]
+pub struct HydroflowPlusMeta {
+    pub clusters: HashMap<usize, Vec<u32>>,
+    pub cluster_id: Option<u32>,
+    pub subgraph_id: usize,
+}
 
 pub struct HydroDeploy {}
 
@@ -413,37 +421,24 @@ impl<'a> RegisterPort<'a, HydroDeploy> for DeployExternal {
     fn as_bytes_sink(
         &self,
         key: usize,
-    ) -> impl Future<
-        Output = Pin<
-            Box<dyn hydroflow_plus::futures::Sink<hydroflow_plus::bytes::Bytes, Error = Error>>,
-        >,
-    > + 'a {
+    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Sink<crate::bytes::Bytes, Error = Error>>>> + 'a
+    {
         let port = self.raw_port(key);
         async move {
             let sink = port.connect().await.into_sink();
-            Box::pin(sink)
-                as Pin<
-                    Box<
-                        dyn hydroflow_plus::futures::Sink<
-                            hydroflow_plus::bytes::Bytes,
-                            Error = Error,
-                        >,
-                    >,
-                >
+            Box::pin(sink) as Pin<Box<dyn crate::futures::Sink<crate::bytes::Bytes, Error = Error>>>
         }
     }
 
     fn as_bincode_sink<T: Serialize + 'static>(
         &self,
         key: usize,
-    ) -> impl Future<Output = Pin<Box<dyn hydroflow_plus::futures::Sink<T, Error = Error>>>> + 'a
-    {
+    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Sink<T, Error = Error>>>> + 'a {
         let port = self.raw_port(key);
         async move {
             let sink = port.connect().await.into_sink();
-            Box::pin(sink.with(|item| async move {
-                Ok(hydroflow_plus::bincode::serialize(&item).unwrap().into())
-            })) as Pin<Box<dyn hydroflow_plus::futures::Sink<T, Error = Error>>>
+            Box::pin(sink.with(|item| async move { Ok(bincode::serialize(&item).unwrap().into()) }))
+                as Pin<Box<dyn crate::futures::Sink<T, Error = Error>>>
         }
     }
 }
@@ -732,6 +727,44 @@ fn clean_name_hint(name_hint: &str) -> String {
         .replace(")", "")
 }
 
+// TODO(shadaj): has to be public due to stageleft limitations
+#[doc(hidden)]
+pub struct ReplaceCrateNameWithStaged {
+    pub crate_name: String,
+}
+
+impl VisitMut for ReplaceCrateNameWithStaged {
+    fn visit_type_path_mut(&mut self, i: &mut syn::TypePath) {
+        if let Some(first) = i.path.segments.first() {
+            if first.ident == self.crate_name {
+                let tail = i.path.segments.iter().skip(1).collect::<Vec<_>>();
+                *i = syn::parse_quote!(crate::__staged #(::#tail)*);
+            }
+        }
+
+        syn::visit_mut::visit_type_path_mut(self, i);
+    }
+}
+
+// TODO(shadaj): has to be public due to stageleft limitations
+#[doc(hidden)]
+pub struct ReplaceCrateWithOrig {
+    pub crate_name: String,
+}
+
+impl VisitMut for ReplaceCrateWithOrig {
+    fn visit_item_use_mut(&mut self, i: &mut syn::ItemUse) {
+        if let syn::UseTree::Path(p) = &mut i.tree {
+            if p.ident == "crate" {
+                p.ident = syn::Ident::new(&self.crate_name, p.ident.span());
+                i.leading_colon = Some(Default::default());
+            }
+        }
+
+        syn::visit_mut::visit_item_use_mut(self, i);
+    }
+}
+
 fn create_graph_trybuild(
     graph: HydroflowGraph,
     extra_stmts: Vec<syn::Stmt>,
@@ -740,15 +773,44 @@ fn create_graph_trybuild(
     String,
     (std::path::PathBuf, std::path::PathBuf, Option<Vec<String>>),
 ) {
-    let source_ast = compile_graph_trybuild(graph, extra_stmts);
-
     let source_dir = trybuild_internals_api::cargo::manifest_dir().unwrap();
     let source_manifest = trybuild_internals_api::dependencies::get_manifest(&source_dir).unwrap();
     let crate_name = &source_manifest.package.name.to_string().replace("-", "_");
-    let source = prettyplease::unparse(&source_ast)
-        .to_string()
-        .replace(crate_name, &format!("{crate_name}::__staged"))
-        .replace("crate::__staged", &format!("{crate_name}::__staged"));
+
+    let is_test = super::trybuild::IS_TEST.load(std::sync::atomic::Ordering::Relaxed);
+
+    let mut generated_code = compile_graph_trybuild(graph, extra_stmts);
+
+    ReplaceCrateNameWithStaged {
+        crate_name: crate_name.clone(),
+    }
+    .visit_file_mut(&mut generated_code);
+
+    let mut inlined_staged = stageleft_tool::gen_staged_trybuild(
+        &path!(source_dir / "src" / "lib.rs"),
+        crate_name.clone(),
+        is_test,
+    );
+
+    ReplaceCrateWithOrig {
+        crate_name: crate_name.clone(),
+    }
+    .visit_file_mut(&mut inlined_staged);
+
+    let source = prettyplease::unparse(&syn::parse_quote! {
+        #generated_code
+
+        #[allow(
+            unused,
+            ambiguous_glob_reexports,
+            clippy::suspicious_else_formatting,
+            unexpected_cfgs,
+            reason = "generated code"
+        )]
+        pub mod __staged {
+            #inlined_staged
+        }
+    });
 
     let mut hasher = Sha256::new();
     hasher.update(&source);
@@ -763,7 +825,7 @@ fn create_graph_trybuild(
         hash
     };
 
-    let trybuild_created = create_trybuild(&source, &bin_name).unwrap();
+    let trybuild_created = create_trybuild(&source, &bin_name, is_test).unwrap();
     (bin_name, trybuild_created)
 }
 
