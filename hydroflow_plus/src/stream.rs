@@ -17,7 +17,9 @@ use syn::parse_quote;
 use crate::builder::{ClusterIds, FlowLeaves};
 use crate::cycle::{CycleCollection, CycleComplete};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource};
-use crate::location::{CanSend, Location, LocationId};
+use crate::location::{
+    CanSend, ExternalBincodeStream, ExternalBytesPort, ExternalProcess, Location, LocationId,
+};
 use crate::{Cluster, Optional, Singleton};
 
 /// Marks the stream as being unbounded, which means that it is not
@@ -725,6 +727,45 @@ impl<'a, T, W, N: Location> Stream<'a, T, W, NoTick, N> {
         )
     }
 
+    pub fn send_bincode_external<N2, CoreType>(
+        self,
+        other: &ExternalProcess<N2>,
+    ) -> ExternalBincodeStream<N::Out<CoreType>>
+    where
+        N: CanSend<ExternalProcess<N2>, In<CoreType> = T, Out<CoreType> = CoreType>,
+        CoreType: Serialize + DeserializeOwned,
+        // for now, we restirct Out<CoreType> to be CoreType, which means no tagged cluster -> external
+    {
+        let serialize_pipeline = Some(serialize_bincode::<CoreType>(N::is_demux()));
+
+        let mut leaves_borrow = self.ir_leaves.borrow_mut();
+        let leaves = leaves_borrow.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled()");
+
+        let external_key = 0; // TODO!!!!!!!!!!!!
+
+        let dummy_f: syn::Expr = syn::parse_quote!(());
+
+        leaves.push(HfPlusLeaf::ForEach {
+            f: dummy_f.into(),
+            input: Box::new(HfPlusNode::Network {
+                from_location: self.location_kind,
+                from_key: None,
+                to_location: other.id(),
+                to_key: Some(external_key),
+                serialize_pipeline,
+                instantiate_fn: DebugInstantiate::Building(),
+                deserialize_pipeline: None,
+                input: Box::new(self.ir_node.into_inner()),
+            }),
+        });
+
+        ExternalBincodeStream {
+            process_id: other.id,
+            port_id: external_key,
+            _phantom: PhantomData,
+        }
+    }
+
     pub fn send_bytes<N2: Location>(
         self,
         other: &N2,
@@ -750,6 +791,37 @@ impl<'a, T, W, N: Location> Stream<'a, T, W, NoTick, N> {
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
+    }
+
+    pub fn send_bytes_external<N2>(self, other: &ExternalProcess<N2>) -> ExternalBytesPort
+    where
+        N: CanSend<ExternalProcess<N2>, In<Bytes> = T, Out<Bytes> = Bytes>,
+    {
+        let mut leaves_borrow = self.ir_leaves.borrow_mut();
+        let leaves = leaves_borrow.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled()");
+
+        let external_key = 0; // TODO!!!!!!!!!!!!
+
+        let dummy_f: syn::Expr = syn::parse_quote!(());
+
+        leaves.push(HfPlusLeaf::ForEach {
+            f: dummy_f.into(),
+            input: Box::new(HfPlusNode::Network {
+                from_location: self.location_kind,
+                from_key: None,
+                to_location: other.id(),
+                to_key: Some(external_key),
+                serialize_pipeline: None,
+                instantiate_fn: DebugInstantiate::Building(),
+                deserialize_pipeline: None,
+                input: Box::new(self.ir_node.into_inner()),
+            }),
+        });
+
+        ExternalBytesPort {
+            process_id: other.id,
+            port_id: external_key,
+        }
     }
 
     pub fn send_bincode_interleaved<N2: Location, Tag, CoreType>(
@@ -838,11 +910,14 @@ impl<'a, T, W, N: Location> Stream<'a, T, W, NoTick, N> {
 
 #[cfg(test)]
 mod tests {
-    use hydro_deploy::Deployment;
+    use std::sync::Arc;
+
+    use hydro_deploy::{Deployment, Host};
+    use hydroflow::futures::StreamExt;
     use serde::{Deserialize, Serialize};
     use stageleft::q;
 
-    use crate::deploy::{DeployCrateWrapper, TrybuildHost};
+    use crate::deploy::TrybuildHost;
     use crate::FlowBuilder;
 
     struct P1 {}
@@ -861,27 +936,29 @@ mod tests {
         let flow = FlowBuilder::new();
         let first_node = flow.process::<P1>();
         let second_node = flow.process::<P2>();
+        let external = flow.external_process::<P2>();
 
         let numbers = flow.source_iter(&first_node, q!(0..10));
-        numbers
+        let out_port = numbers
             .map(q!(|n| SendOverNetwork { n }))
             .send_bincode(&second_node)
-            .for_each(q!(|n| println!("{}", n.n)));
+            .send_bincode_external(&external);
 
         let nodes = flow
             .with_default_optimize()
             .with_process(&first_node, TrybuildHost::new(deployment.Localhost()))
             .with_process(&second_node, TrybuildHost::new(deployment.Localhost()))
+            .with_external(&external, deployment.Localhost() as Arc<dyn Host>)
             .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
 
-        let mut second_node_stdout = nodes.get_process(&second_node).stdout().await;
+        let mut external_out = nodes.connect_source_bincode(out_port).await;
 
         deployment.start().await.unwrap();
 
         for i in 0..10 {
-            assert_eq!(second_node_stdout.recv().await.unwrap(), i.to_string());
+            assert_eq!(external_out.next().await.unwrap().n, i);
         }
     }
 }

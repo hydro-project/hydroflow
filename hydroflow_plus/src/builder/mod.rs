@@ -18,7 +18,7 @@ use stageleft::*;
 use crate::cycle::{CycleCollection, CycleCollectionWithInitial};
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{
-    Cluster, ExternalBincodePort, ExternalBytesPort, ExternalProcess, Location, LocationId, Process,
+    Cluster, ExternalBincodeSink, ExternalBytesPort, ExternalProcess, Location, LocationId, Process,
 };
 use crate::stream::{Bounded, NoTick, Tick, Unbounded};
 use crate::{HfCycle, Optional, RuntimeContext, Singleton, Stream};
@@ -277,7 +277,7 @@ impl<'a> FlowBuilder<'a> {
         &self,
         from: &ExternalProcess<P>,
         to: &L,
-    ) -> (ExternalBincodePort<T>, Stream<'a, T, Unbounded, NoTick, L>) {
+    ) -> (ExternalBincodeSink<T>, Stream<'a, T, Unbounded, NoTick, L>) {
         let next_external_port_id = {
             let mut next_external_port_id = self.next_external_port_id.borrow_mut();
             let id = *next_external_port_id;
@@ -286,7 +286,7 @@ impl<'a> FlowBuilder<'a> {
         };
 
         (
-            ExternalBincodePort {
+            ExternalBincodeSink {
                 process_id: from.id,
                 port_id: next_external_port_id,
                 _phantom: PhantomData,

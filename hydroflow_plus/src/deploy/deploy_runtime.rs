@@ -123,13 +123,26 @@ pub fn deploy_m2m(
 
 pub fn deploy_e2o(
     env: RuntimeData<&DeployPorts<HydroflowPlusMeta>>,
-    c1_port: &str,
+    e1_port: &str,
     p2_port: &str,
 ) -> syn::Expr {
     q!({
         env.port(p2_port)
             .connect_local_blocking::<ConnectedDirect>()
             .into_source()
+    })
+    .splice_untyped()
+}
+
+pub fn deploy_o2e(
+    env: RuntimeData<&DeployPorts<HydroflowPlusMeta>>,
+    p1_port: &str,
+    e2_port: &str,
+) -> syn::Expr {
+    q!({
+        env.port(p1_port)
+            .connect_local_blocking::<ConnectedDirect>()
+            .into_sink()
     })
     .splice_untyped()
 }
