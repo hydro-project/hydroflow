@@ -831,6 +831,10 @@
 <a href="#831" id="831">831</a>
 <a href="#832" id="832">832</a>
 <a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -1508,7 +1512,7 @@
     }
 }
 
-<span class="kw">fn </span>deserialize_bincode&lt;T: DeserializeOwned&gt;(tagged: bool) -&gt; Pipeline {
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>deserialize_bincode&lt;T: DeserializeOwned&gt;(tagged: bool) -&gt; Pipeline {
     <span class="kw">let </span>root = get_this_crate();
 
     <span class="kw">let </span>t_type: syn::Type = stageleft::quote_type::&lt;T&gt;();
@@ -1547,7 +1551,9 @@
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Network {
                 from_location: <span class="self">self</span>.location_kind,
+                from_key: <span class="prelude-val">None</span>,
                 to_location: other.id(),
+                to_key: <span class="prelude-val">None</span>,
                 serialize_pipeline,
                 instantiate_fn: DebugInstantiate::Building(),
                 deserialize_pipeline,
@@ -1568,7 +1574,9 @@
             <span class="self">self</span>.ir_leaves,
             HfPlusNode::Network {
                 from_location: <span class="self">self</span>.location_kind,
+                from_key: <span class="prelude-val">None</span>,
                 to_location: other.id(),
+                to_key: <span class="prelude-val">None</span>,
                 serialize_pipeline: <span class="prelude-val">None</span>,
                 instantiate_fn: DebugInstantiate::Building(),
                 deserialize_pipeline: <span class="kw">if </span>N::is_tagged() {

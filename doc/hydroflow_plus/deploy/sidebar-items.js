@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["graphs"],"trait":["ClusterSpec","Deploy","LocalDeploy","Node","ProcessSpec"]};
+window.SIDEBAR_ITEMS = {"mod":["graphs"],"trait":["ClusterSpec","Deploy","ExternalSpec","LocalDeploy","Node","ProcessSpec","RegisterPort"]};

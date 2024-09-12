@@ -166,7 +166,59 @@
 <a href="#166" id="166">166</a>
 <a href="#167" id="167">167</a>
 <a href="#168" id="168">168</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::future::Future;
+<span class="kw">use </span>std::io::Error;
+<span class="kw">use </span>std::pin::Pin;
+
+<span class="kw">use </span>hydroflow::bytes::Bytes;
+<span class="kw">use </span>hydroflow::futures::Sink;
+<span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
+<span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>stageleft::Quoted;
 
 <span class="kw">pub mod </span>graphs;
@@ -175,6 +227,7 @@
 <span class="kw">pub trait </span>LocalDeploy&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">type </span>Process: Node&lt;Meta = <span class="self">Self</span>::Meta&gt;;
     <span class="kw">type </span>Cluster: Node&lt;Meta = <span class="self">Self</span>::Meta&gt;;
+    <span class="kw">type </span>ExternalProcess: Node&lt;Meta = <span class="self">Self</span>::Meta&gt;;
     <span class="kw">type </span>Meta: Default;
     <span class="kw">type </span>GraphId;
 
@@ -197,8 +250,10 @@
 
     <span class="kw">type </span>Process: Node&lt;Meta = <span class="self">Self</span>::Meta, InstantiateEnv = <span class="self">Self</span>::InstantiateEnv&gt; + Clone;
     <span class="kw">type </span>Cluster: Node&lt;Meta = <span class="self">Self</span>::Meta, InstantiateEnv = <span class="self">Self</span>::InstantiateEnv&gt; + Clone;
-    <span class="kw">type </span>ProcessPort;
-    <span class="kw">type </span>ClusterPort;
+    <span class="kw">type </span>ExternalProcess: Node&lt;Meta = <span class="self">Self</span>::Meta, InstantiateEnv = <span class="self">Self</span>::InstantiateEnv&gt;
+        + RegisterPort&lt;<span class="lifetime">'a</span>, <span class="self">Self</span>&gt;;
+    <span class="kw">type </span>Port: Clone;
+    <span class="kw">type </span>ExternalRawPort;
     <span class="kw">type </span>Meta: Default;
 
     <span class="doccomment">/// Type of ID used to switch between different subgraphs at runtime.
@@ -216,63 +271,79 @@
         <span class="macro">panic!</span>(<span class="string">"No trivial cluster"</span>)
     }
 
-    <span class="kw">fn </span>allocate_process_port(process: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process) -&gt; <span class="self">Self</span>::ProcessPort;
-    <span class="kw">fn </span>allocate_cluster_port(cluster: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster) -&gt; <span class="self">Self</span>::ClusterPort;
+    <span class="kw">fn </span>allocate_process_port(process: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process) -&gt; <span class="self">Self</span>::Port;
+    <span class="kw">fn </span>allocate_cluster_port(cluster: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster) -&gt; <span class="self">Self</span>::Port;
+    <span class="kw">fn </span>allocate_external_port(external: <span class="kw-2">&amp;</span><span class="self">Self</span>::ExternalProcess) -&gt; <span class="self">Self</span>::Port;
 
     <span class="kw">fn </span>o2o_sink_source(
         compile_env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv,
         p1: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
-        p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ProcessPort,
+        p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
-        p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ProcessPort,
+        p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
     ) -&gt; (syn::Expr, syn::Expr);
     <span class="kw">fn </span>o2o_connect(
         p1: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
-        p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ProcessPort,
+        p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
-        p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ProcessPort,
+        p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
     );
 
     <span class="kw">fn </span>o2m_sink_source(
         compile_env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv,
         p1: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
-        p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ProcessPort,
+        p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         c2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster,
-        c2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ClusterPort,
+        c2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
     ) -&gt; (syn::Expr, syn::Expr);
     <span class="kw">fn </span>o2m_connect(
         p1: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
-        p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ProcessPort,
+        p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         c2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster,
-        c2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ClusterPort,
+        c2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
     );
 
     <span class="kw">fn </span>m2o_sink_source(
         compile_env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv,
         c1: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster,
-        c1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ClusterPort,
+        c1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
-        p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ProcessPort,
+        p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
     ) -&gt; (syn::Expr, syn::Expr);
     <span class="kw">fn </span>m2o_connect(
         c1: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster,
-        c1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ClusterPort,
+        c1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
-        p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ProcessPort,
+        p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
     );
 
     <span class="kw">fn </span>m2m_sink_source(
         compile_env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv,
         c1: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster,
-        c1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ClusterPort,
+        c1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         c2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster,
-        c2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ClusterPort,
+        c2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
     ) -&gt; (syn::Expr, syn::Expr);
     <span class="kw">fn </span>m2m_connect(
         c1: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster,
-        c1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ClusterPort,
+        c1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         c2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster,
-        c2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::ClusterPort,
+        c2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
+    );
+
+    <span class="kw">fn </span>e2o_source(
+        compile_env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv,
+        p1: <span class="kw-2">&amp;</span><span class="self">Self</span>::ExternalProcess,
+        p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
+        p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
+        p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
+    ) -&gt; syn::Expr;
+
+    <span class="kw">fn </span>e2o_connect(
+        p1: <span class="kw-2">&amp;</span><span class="self">Self</span>::ExternalProcess,
+        p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
+        p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
+        p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
     );
 
     <span class="kw">fn </span>cluster_ids(
@@ -284,15 +355,17 @@
 
 <span class="kw">impl</span>&lt;
         <span class="lifetime">'a</span>,
-        T: Deploy&lt;<span class="lifetime">'a</span>, Process = N, Cluster = C, Meta = M, GraphId = R&gt;,
+        T: Deploy&lt;<span class="lifetime">'a</span>, Process = N, Cluster = C, ExternalProcess = E, Meta = M, GraphId = R&gt;,
         N: Node&lt;Meta = M&gt;,
         C: Node&lt;Meta = M&gt;,
+        E: Node&lt;Meta = M&gt;,
         M: Default,
         R,
     &gt; LocalDeploy&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>T
 {
     <span class="kw">type </span>Process = N;
     <span class="kw">type </span>Cluster = C;
+    <span class="kw">type </span>ExternalProcess = E;
     <span class="kw">type </span>Meta = M;
     <span class="kw">type </span>GraphId = R;
 
@@ -317,6 +390,10 @@
     <span class="kw">fn </span>build(<span class="self">self</span>, id: usize, name_hint: <span class="kw-2">&amp;</span>str) -&gt; D::Cluster;
 }
 
+<span class="kw">pub trait </span>ExternalSpec&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt; + <span class="question-mark">?</span>Sized&gt; {
+    <span class="kw">fn </span>build(<span class="self">self</span>, id: usize, name_hint: <span class="kw-2">&amp;</span>str) -&gt; D::ExternalProcess;
+}
+
 <span class="kw">pub trait </span>Node {
     <span class="kw">type </span>Port;
     <span class="kw">type </span>Meta;
@@ -333,5 +410,18 @@
         graph: HydroflowGraph,
         extra_stmts: Vec&lt;syn::Stmt&gt;,
     );
+}
+
+<span class="kw">pub trait </span>RegisterPort&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt; + <span class="question-mark">?</span>Sized&gt;: Clone {
+    <span class="kw">fn </span>register(<span class="kw-2">&amp;</span><span class="self">self</span>, key: usize, port: D::Port);
+    <span class="kw">fn </span>raw_port(<span class="kw-2">&amp;</span><span class="self">self</span>, key: usize) -&gt; D::ExternalRawPort;
+    <span class="kw">fn </span>as_bytes_sink(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        key: usize,
+    ) -&gt; <span class="kw">impl </span>Future&lt;Output = Pin&lt;Box&lt;<span class="kw">dyn </span>Sink&lt;Bytes, Error = Error&gt;&gt;&gt;&gt; + <span class="lifetime">'a</span>;
+    <span class="kw">fn </span>as_bincode_sink&lt;T: Serialize + <span class="lifetime">'static</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        key: usize,
+    ) -&gt; <span class="kw">impl </span>Future&lt;Output = Pin&lt;Box&lt;<span class="kw">dyn </span>Sink&lt;T, Error = Error&gt;&gt;&gt;&gt; + <span class="lifetime">'a</span>;
 }
 </code></pre></div></section></main></body></html>

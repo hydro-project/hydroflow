@@ -269,6 +269,10 @@
 <a href="#269" id="269">269</a>
 <a href="#270" id="270">270</a>
 <a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashSet;
 <span class="kw">use </span>std::ops::Deref;
@@ -385,7 +389,9 @@
         } =&gt; {
             <span class="kw">if let </span>HfPlusNode::Network {
                 from_location,
+                from_key,
                 to_location,
+                to_key,
                 serialize_pipeline,
                 instantiate_fn,
                 deserialize_pipeline,
@@ -394,7 +400,9 @@
             {
                 <span class="kw-2">*</span>node = HfPlusNode::Persist(Box::new(HfPlusNode::Network {
                     from_location,
+                    from_key,
                     to_location,
+                    to_key,
                     serialize_pipeline,
                     instantiate_fn,
                     deserialize_pipeline,

@@ -413,23 +413,126 @@
 <a href="#413" id="413">413</a>
 <a href="#414" id="414">414</a>
 <a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a>
+<a href="#440" id="440">440</a>
+<a href="#441" id="441">441</a>
+<a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a>
+<a href="#456" id="456">456</a>
+<a href="#457" id="457">457</a>
+<a href="#458" id="458">458</a>
+<a href="#459" id="459">459</a>
+<a href="#460" id="460">460</a>
+<a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a>
+<a href="#464" id="464">464</a>
+<a href="#465" id="465">465</a>
+<a href="#466" id="466">466</a>
+<a href="#467" id="467">467</a>
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
+<a href="#471" id="471">471</a>
+<a href="#472" id="472">472</a>
+<a href="#473" id="473">473</a>
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
+<a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a>
+<a href="#479" id="479">479</a>
+<a href="#480" id="480">480</a>
+<a href="#481" id="481">481</a>
+<a href="#482" id="482">482</a>
+<a href="#483" id="483">483</a>
+<a href="#484" id="484">484</a>
+<a href="#485" id="485">485</a>
+<a href="#486" id="486">486</a>
+<a href="#487" id="487">487</a>
+<a href="#488" id="488">488</a>
+<a href="#489" id="489">489</a>
+<a href="#490" id="490">490</a>
+<a href="#491" id="491">491</a>
+<a href="#492" id="492">492</a>
+<a href="#493" id="493">493</a>
+<a href="#494" id="494">494</a>
+<a href="#495" id="495">495</a>
+<a href="#496" id="496">496</a>
+<a href="#497" id="497">497</a>
+<a href="#498" id="498">498</a>
+<a href="#499" id="499">499</a>
+<a href="#500" id="500">500</a>
+<a href="#501" id="501">501</a>
+<a href="#502" id="502">502</a>
+<a href="#503" id="503">503</a>
+<a href="#504" id="504">504</a>
+<a href="#505" id="505">505</a>
+<a href="#506" id="506">506</a>
+<a href="#507" id="507">507</a>
+<a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::rc::Rc;
 <span class="kw">use </span>std::time::Duration;
 
+<span class="kw">use </span>hydroflow::bytes::Bytes;
 <span class="kw">use </span>hydroflow::futures::stream::Stream <span class="kw">as </span>FuturesStream;
 <span class="kw">use </span>hydroflow::{tokio, tokio_stream};
 <span class="kw">use </span>internal::TokenStream;
 <span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>quote::quote;
 <span class="kw">use </span>runtime_support::FreeVariable;
+<span class="kw">use </span>serde::de::DeserializeOwned;
+<span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
 <span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleCollectionWithInitial};
 <span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
-<span class="kw">use </span><span class="kw">crate</span>::location::{Cluster, Location, LocationId, Process};
+<span class="kw">use </span><span class="kw">crate</span>::location::{
+    Cluster, ExternalBincodePort, ExternalBytesPort, ExternalProcess, Location, LocationId, Process,
+};
 <span class="kw">use </span><span class="kw">crate</span>::stream::{Bounded, NoTick, Tick, Unbounded};
 <span class="kw">use crate</span>::{HfCycle, Optional, RuntimeContext, Singleton, Stream};
 
@@ -490,6 +593,7 @@
     cycle_ids: RefCell&lt;HashMap&lt;usize, usize&gt;&gt;,
 
     next_node_id: RefCell&lt;usize&gt;,
+    next_external_port_id: RefCell&lt;usize&gt;,
 
     <span class="doccomment">/// Tracks whether this flow has been finalized; it is an error to
     /// drop without finalizing.
@@ -528,6 +632,7 @@
             clusters: RefCell::new(<span class="macro">vec!</span>[]),
             cycle_ids: RefCell::new(HashMap::new()),
             next_node_id: RefCell::new(<span class="number">0</span>),
+            next_external_port_id: RefCell::new(<span class="number">0</span>),
             finalized: <span class="bool-val">false</span>,
             _phantom: PhantomData,
         }
@@ -568,6 +673,19 @@
         <span class="self">self</span>.nodes.borrow_mut().push(id);
 
         Process {
+            id,
+            _phantom: PhantomData,
+        }
+    }
+
+    <span class="kw">pub fn </span>external_process&lt;P&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ExternalProcess&lt;P&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>next_node_id = <span class="self">self</span>.next_node_id.borrow_mut();
+        <span class="kw">let </span>id = <span class="kw-2">*</span>next_node_id;
+        <span class="kw-2">*</span>next_node_id += <span class="number">1</span>;
+
+        <span class="self">self</span>.nodes.borrow_mut().push(id);
+
+        ExternalProcess {
             id,
             _phantom: PhantomData,
         }
@@ -629,6 +747,81 @@
             .flat_map(<span class="macro">q!</span>(<span class="kw">move </span>|<span class="kw">_</span>| <span class="number">0</span>..batch_size))
             .map(<span class="macro">q!</span>(|<span class="kw">_</span>| ()))
             .tick_batch()
+    }
+
+    <span class="kw">pub fn </span>source_external_bytes&lt;P, L: Location&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        from: <span class="kw-2">&amp;</span>ExternalProcess&lt;P&gt;,
+        to: <span class="kw-2">&amp;</span>L,
+    ) -&gt; (ExternalBytesPort, Stream&lt;<span class="lifetime">'a</span>, Bytes, Unbounded, NoTick, L&gt;) {
+        <span class="kw">let </span>next_external_port_id = {
+            <span class="kw">let </span><span class="kw-2">mut </span>next_external_port_id = <span class="self">self</span>.next_external_port_id.borrow_mut();
+            <span class="kw">let </span>id = <span class="kw-2">*</span>next_external_port_id;
+            <span class="kw-2">*</span>next_external_port_id += <span class="number">1</span>;
+            id
+        };
+
+        (
+            ExternalBytesPort {
+                process_id: from.id,
+                port_id: next_external_port_id,
+            },
+            Stream::new(
+                to.id(),
+                <span class="self">self</span>.ir_leaves().clone(),
+                HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+                    from_location: LocationId::ExternalProcess(from.id),
+                    from_key: <span class="prelude-val">Some</span>(next_external_port_id),
+                    to_location: to.id(),
+                    to_key: <span class="prelude-val">None</span>,
+                    serialize_pipeline: <span class="prelude-val">None</span>,
+                    instantiate_fn: <span class="kw">crate</span>::ir::DebugInstantiate::Building(),
+                    deserialize_pipeline: <span class="prelude-val">Some</span>(<span class="macro">syn::parse_quote!</span>(map(|b| b.unwrap().freeze()))),
+                    input: Box::new(HfPlusNode::Source {
+                        source: HfPlusSource::ExternalNetwork(),
+                        location_kind: LocationId::ExternalProcess(from.id),
+                    }),
+                })),
+            ),
+        )
+    }
+
+    <span class="kw">pub fn </span>source_external_bincode&lt;P, L: Location, T: Serialize + DeserializeOwned&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        from: <span class="kw-2">&amp;</span>ExternalProcess&lt;P&gt;,
+        to: <span class="kw-2">&amp;</span>L,
+    ) -&gt; (ExternalBincodePort&lt;T&gt;, Stream&lt;<span class="lifetime">'a</span>, T, Unbounded, NoTick, L&gt;) {
+        <span class="kw">let </span>next_external_port_id = {
+            <span class="kw">let </span><span class="kw-2">mut </span>next_external_port_id = <span class="self">self</span>.next_external_port_id.borrow_mut();
+            <span class="kw">let </span>id = <span class="kw-2">*</span>next_external_port_id;
+            <span class="kw-2">*</span>next_external_port_id += <span class="number">1</span>;
+            id
+        };
+
+        (
+            ExternalBincodePort {
+                process_id: from.id,
+                port_id: next_external_port_id,
+                _phantom: PhantomData,
+            },
+            Stream::new(
+                to.id(),
+                <span class="self">self</span>.ir_leaves().clone(),
+                HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+                    from_location: LocationId::ExternalProcess(from.id),
+                    from_key: <span class="prelude-val">Some</span>(next_external_port_id),
+                    to_location: to.id(),
+                    to_key: <span class="prelude-val">None</span>,
+                    serialize_pipeline: <span class="prelude-val">None</span>,
+                    instantiate_fn: <span class="kw">crate</span>::ir::DebugInstantiate::Building(),
+                    deserialize_pipeline: <span class="prelude-val">Some</span>(<span class="kw">crate</span>::stream::deserialize_bincode::&lt;T&gt;(<span class="bool-val">false</span>)),
+                    input: Box::new(HfPlusNode::Source {
+                        source: HfPlusSource::ExternalNetwork(),
+                        location_kind: LocationId::ExternalProcess(from.id),
+                    }),
+                })),
+            ),
+        )
     }
 
     <span class="kw">pub fn </span>source_stream&lt;T, E: FuturesStream&lt;Item = T&gt; + Unpin, L: Location&gt;(
@@ -748,6 +941,7 @@
             <span class="kw">let </span>on_id = <span class="kw">match </span>on.id() {
                 LocationId::Process(id) =&gt; id,
                 LocationId::Cluster(id) =&gt; id,
+                LocationId::ExternalProcess(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(),
             };
 
             <span class="kw">let </span><span class="kw-2">mut </span>cycle_ids = <span class="self">self</span>.cycle_ids.borrow_mut();
@@ -777,6 +971,7 @@
             <span class="kw">let </span>on_id = <span class="kw">match </span>on.id() {
                 LocationId::Process(id) =&gt; id,
                 LocationId::Cluster(id) =&gt; id,
+                LocationId::ExternalProcess(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(),
             };
 
             <span class="kw">let </span><span class="kw-2">mut </span>cycle_ids = <span class="self">self</span>.cycle_ids.borrow_mut();
@@ -807,6 +1002,7 @@
             <span class="kw">let </span>on_id = <span class="kw">match </span>on.id() {
                 LocationId::Process(id) =&gt; id,
                 LocationId::Cluster(id) =&gt; id,
+                LocationId::ExternalProcess(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(),
             };
 
             <span class="kw">let </span><span class="kw-2">mut </span>cycle_ids = <span class="self">self</span>.cycle_ids.borrow_mut();

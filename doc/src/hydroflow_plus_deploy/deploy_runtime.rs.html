@@ -120,6 +120,19 @@
 <a href="#120" id="120">120</a>
 <a href="#121" id="121">121</a>
 <a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::util::deploy::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, DeployPorts,
 };
@@ -241,5 +254,18 @@
             .splice_untyped()
         },
     )
+}
+
+<span class="kw">pub fn </span>deploy_e2o(
+    env: RuntimeData&lt;<span class="kw-2">&amp;</span>DeployPorts&lt;HydroflowPlusMeta&gt;&gt;,
+    c1_port: <span class="kw-2">&amp;</span>str,
+    p2_port: <span class="kw-2">&amp;</span>str,
+) -&gt; syn::Expr {
+    <span class="macro">q!</span>({
+        env.port(p2_port)
+            .connect_local_blocking::&lt;ConnectedDirect&gt;()
+            .into_source()
+    })
+    .splice_untyped()
 }
 </code></pre></div></section></main></body></html>

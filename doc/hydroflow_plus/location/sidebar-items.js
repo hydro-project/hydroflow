@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["LocationId"],"struct":["Cluster","Process"],"trait":["CanSend","Location"]};
+window.SIDEBAR_ITEMS = {"enum":["LocationId"],"struct":["Cluster","ExternalBincodePort","ExternalBytesPort","ExternalProcess","Process"],"trait":["CanSend","Location"]};
