@@ -13,7 +13,10 @@ use hydro_deploy::hydroflow_crate::ports::{
 use hydro_deploy::hydroflow_crate::tracing_options::TracingOptions;
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{CustomService, Deployment, Host, HydroflowCrate};
+use hydroflow::futures::StreamExt;
+use hydroflow::util::deploy::ConnectedSource;
 use nameof::name_of;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use stageleft::{Quoted, RuntimeData};
@@ -290,6 +293,49 @@ impl<'a> Deploy<'a> for HydroDeploy {
             .insert(p1_port.clone(), source_port);
     }
 
+    fn o2e_sink(
+        _compile_env: &Self::CompileEnv,
+        _p1: &Self::Process,
+        p1_port: &Self::Port,
+        _p2: &Self::ExternalProcess,
+        p2_port: &Self::Port,
+    ) -> syn::Expr {
+        let p1_port = p1_port.as_str();
+        let p2_port = p2_port.as_str();
+        deploy_o2e(
+            RuntimeData::new("__hydroflow_plus_trybuild_cli"),
+            p1_port,
+            p2_port,
+        )
+    }
+
+    fn o2e_connect(
+        p1: &Self::Process,
+        p1_port: &Self::Port,
+        p2: &Self::ExternalProcess,
+        p2_port: &Self::Port,
+    ) {
+        let self_underlying_borrow = p1.underlying.borrow();
+        let self_underlying = self_underlying_borrow.as_ref().unwrap();
+        let source_port = self_underlying
+            .try_read()
+            .unwrap()
+            .get_port(p1_port.clone(), self_underlying);
+
+        let other_underlying_borrow = p2.underlying.borrow();
+        let other_underlying = other_underlying_borrow.as_ref().unwrap();
+        let recipient_port = other_underlying
+            .try_read()
+            .unwrap()
+            .declare_client(other_underlying);
+
+        source_port.send_to(&recipient_port);
+
+        p2.client_ports
+            .borrow_mut()
+            .insert(p2_port.clone(), recipient_port);
+    }
+
     fn cluster_ids(
         _env: &Self::CompileEnv,
         of_cluster: usize,
@@ -426,7 +472,7 @@ impl<'a> RegisterPort<'a, HydroDeploy> for DeployExternal {
         let port = self.raw_port(key);
         async move {
             let sink = port.connect().await.into_sink();
-            Box::pin(sink) as Pin<Box<dyn crate::futures::Sink<crate::bytes::Bytes, Error = Error>>>
+            sink as Pin<Box<dyn crate::futures::Sink<crate::bytes::Bytes, Error = Error>>>
         }
     }
 
@@ -439,6 +485,30 @@ impl<'a> RegisterPort<'a, HydroDeploy> for DeployExternal {
             let sink = port.connect().await.into_sink();
             Box::pin(sink.with(|item| async move { Ok(bincode::serialize(&item).unwrap().into()) }))
                 as Pin<Box<dyn crate::futures::Sink<T, Error = Error>>>
+        }
+    }
+
+    fn as_bytes_source(
+        &self,
+        key: usize,
+    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Stream<Item = crate::bytes::Bytes>>>> + 'a {
+        let port = self.raw_port(key);
+        async move {
+            let source = port.connect().await.into_source();
+            Box::pin(source.map(|r| r.unwrap().freeze())) as Pin<Box<dyn crate::futures::Stream<Item = crate::bytes::Bytes>>>
+        }
+    }
+
+    fn as_bincode_source<T: DeserializeOwned + 'static>(
+        &self,
+        key: usize,
+    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Stream<Item = T>>>> + 'a {
+        let port = self.raw_port(key);
+        async move {
+            let source = port.connect().await.into_source();
+            Box::pin(source.map(|item| {
+                bincode::deserialize(&item.unwrap()).unwrap()
+            })) as Pin<Box<dyn crate::futures::Stream<Item = T>>>
         }
     }
 }
