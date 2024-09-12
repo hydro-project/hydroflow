@@ -145,6 +145,25 @@ impl<'a> Deploy<'a> for DeployRuntime {
         panic!()
     }
 
+    fn o2e_sink(
+        _compile_env: &Self::CompileEnv,
+        _p1: &Self::Process,
+        _p1_port: &Self::Port,
+        _p2: &Self::ExternalProcess,
+        _p2_port: &Self::Port,
+    ) -> syn::Expr {
+        panic!()
+    }
+
+    fn o2e_connect(
+        _p1: &Self::Process,
+        _p1_port: &Self::Port,
+        _p2: &Self::ExternalProcess,
+        _p2_port: &Self::Port,
+    ) {
+        panic!()
+    }
+
     fn cluster_ids(
         env: &Self::CompileEnv,
         of_cluster: usize,
@@ -194,6 +213,28 @@ impl<'a> RegisterPort<'a, DeployRuntime> for DeployRuntimeNode {
     ) -> impl std::future::Future<
         Output = Pin<Box<dyn crate::futures::Sink<T, Error = std::io::Error>>>,
     > + 'a {
+        async { panic!() }
+    }
+
+    #[expect(
+        clippy::manual_async_fn,
+        reason = "buggy Clippy lint for lifetime bounds"
+    )]
+    fn as_bytes_source(
+        &self,
+        _key: usize,
+    ) -> impl std::future::Future<Output = Pin<Box<dyn hydroflow::futures::Stream<Item = hydroflow::bytes::Bytes>>>> + 'a {
+        async { panic!() }
+    }
+
+    #[expect(
+        clippy::manual_async_fn,
+        reason = "buggy Clippy lint for lifetime bounds"
+    )]
+    fn as_bincode_source<T: serde::de::DeserializeOwned + 'static>(
+        &self,
+        _key: usize,
+    ) -> impl std::future::Future<Output = Pin<Box<dyn hydroflow::futures::Stream<Item = T>>>> + 'a {
         async { panic!() }
     }
 }
