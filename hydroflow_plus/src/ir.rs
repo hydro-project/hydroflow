@@ -1112,7 +1112,7 @@ impl<'a> HfPlusNode<'a> {
                 let to_id = match to_location {
                     LocationId::Process(id) => id,
                     LocationId::Cluster(id) => id,
-                    LocationId::ExternalProcess(_) => panic!(),
+                    LocationId::ExternalProcess(id) => id,
                 };
 
                 let receiver_builder = graph_builders.entry(*to_id).or_default();
@@ -1143,7 +1143,7 @@ fn instantiate_network<'a, D: Deploy<'a> + 'a>(
     from_location: &mut LocationId,
     from_key: Option<usize>,
     to_location: &mut LocationId,
-    _to_key: Option<usize>,
+    to_key: Option<usize>,
     nodes: &HashMap<usize, D::Process>,
     clusters: &HashMap<usize, D::Cluster>,
     externals: &HashMap<usize, D::ExternalProcess>,
@@ -1280,8 +1280,34 @@ fn instantiate_network<'a, D: Deploy<'a> + 'a>(
         (LocationId::ExternalProcess(_), LocationId::ExternalProcess(_)) => {
             panic!("Cannot send from external to external")
         }
-        (LocationId::Process(_from), LocationId::ExternalProcess(_to)) => {
-            todo!("NYI")
+        (LocationId::Process(from), LocationId::ExternalProcess(to)) => {
+            let from_node = nodes
+                .get(from)
+                .unwrap_or_else(|| {
+                    panic!("A process used in the graph was not instantiated: {}", from)
+                })
+                .clone();
+
+            let to_node = externals
+                .get(to)
+                .unwrap_or_else(|| {
+                    panic!("A external used in the graph was not instantiated: {}", to)
+                })
+                .clone();
+
+            let sink_port = D::allocate_process_port(&from_node);
+            let source_port = D::allocate_external_port(&to_node);
+
+            to_node.register(to_key.unwrap(), source_port.clone());
+
+            (
+                (
+                    D::o2e_sink(compile_env, &from_node, &sink_port, &to_node, &source_port),
+                    parse_quote!(DUMMY),
+                ),
+                Box::new(move || D::o2e_connect(&from_node, &sink_port, &to_node, &source_port))
+                    as Box<dyn Fn() + 'a>,
+            )
         }
         (LocationId::Cluster(_from), LocationId::ExternalProcess(_to)) => {
             todo!("NYI")

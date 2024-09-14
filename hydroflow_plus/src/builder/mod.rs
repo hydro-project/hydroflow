@@ -18,7 +18,7 @@ use stageleft::*;
 use crate::cycle::{CycleCollection, CycleCollectionWithInitial};
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{
-    Cluster, ExternalBincodePort, ExternalBytesPort, ExternalProcess, Location, LocationId, Process,
+    Cluster, ExternalBincodeSink, ExternalBytesPort, ExternalProcess, Location, LocationId, Process,
 };
 use crate::stream::{Bounded, NoTick, Tick, Unbounded};
 use crate::{HfCycle, Optional, RuntimeContext, Singleton, Stream};
@@ -29,7 +29,9 @@ pub mod deploy;
 /// Tracks the leaves of the dataflow IR. This is referenced by
 /// `Stream` and `HfCycle` to build the IR. The inner option will
 /// be set to `None` when this builder is finalized.
-pub type FlowLeaves<'a> = Rc<RefCell<Option<Vec<HfPlusLeaf<'a>>>>>;
+pub type FlowLeaves<'a> = Rc<RefCell<(Option<Vec<HfPlusLeaf<'a>>>, usize)>>;
+
+pub type ExternalPortCounter = Rc<RefCell<usize>>;
 
 #[derive(Copy, Clone)]
 pub struct ClusterIds<'a> {
@@ -80,7 +82,6 @@ pub struct FlowBuilder<'a> {
     cycle_ids: RefCell<HashMap<usize, usize>>,
 
     next_node_id: RefCell<usize>,
-    next_external_port_id: RefCell<usize>,
 
     /// Tracks whether this flow has been finalized; it is an error to
     /// drop without finalizing.
@@ -114,12 +115,11 @@ impl<'a> FlowBuilder<'a> {
     )]
     pub fn new() -> FlowBuilder<'a> {
         FlowBuilder {
-            ir_leaves: Rc::new(RefCell::new(Some(Vec::new()))),
+            ir_leaves: Rc::new(RefCell::new((Some(Vec::new()), 0))),
             nodes: RefCell::new(vec![]),
             clusters: RefCell::new(vec![]),
             cycle_ids: RefCell::new(HashMap::new()),
             next_node_id: RefCell::new(0),
-            next_external_port_id: RefCell::new(0),
             finalized: false,
             _phantom: PhantomData,
         }
@@ -129,7 +129,7 @@ impl<'a> FlowBuilder<'a> {
         self.finalized = true;
 
         built::BuiltFlow {
-            ir: self.ir_leaves.borrow_mut().take().unwrap(),
+            ir: self.ir_leaves.borrow_mut().0.take().unwrap(),
             processes: self.nodes.replace(vec![]),
             clusters: self.clusters.replace(vec![]),
             used: false,
@@ -242,9 +242,9 @@ impl<'a> FlowBuilder<'a> {
         to: &L,
     ) -> (ExternalBytesPort, Stream<'a, Bytes, Unbounded, NoTick, L>) {
         let next_external_port_id = {
-            let mut next_external_port_id = self.next_external_port_id.borrow_mut();
-            let id = *next_external_port_id;
-            *next_external_port_id += 1;
+            let mut ir_leaves = self.ir_leaves.borrow_mut();
+            let id = ir_leaves.1;
+            ir_leaves.1 += 1;
             id
         };
 
@@ -277,16 +277,16 @@ impl<'a> FlowBuilder<'a> {
         &self,
         from: &ExternalProcess<P>,
         to: &L,
-    ) -> (ExternalBincodePort<T>, Stream<'a, T, Unbounded, NoTick, L>) {
+    ) -> (ExternalBincodeSink<T>, Stream<'a, T, Unbounded, NoTick, L>) {
         let next_external_port_id = {
-            let mut next_external_port_id = self.next_external_port_id.borrow_mut();
-            let id = *next_external_port_id;
-            *next_external_port_id += 1;
+            let mut ir_leaves = self.ir_leaves.borrow_mut();
+            let id = ir_leaves.1;
+            ir_leaves.1 += 1;
             id
         };
 
         (
-            ExternalBincodePort {
+            ExternalBincodeSink {
                 process_id: from.id,
                 port_id: next_external_port_id,
                 _phantom: PhantomData,
