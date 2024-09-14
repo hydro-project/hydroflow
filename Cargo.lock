@@ -779,6 +779,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ctor"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "edb49164822f3ee45b17acd4a208cfc1251410cf0cad9a833234c9890774dd9f"
+dependencies = [
+ "quote",
+ "syn 2.0.75",
+]
+
+[[package]]
 name = "ctrlc"
 version = "3.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1433,27 +1443,18 @@ dependencies = [
 name = "hydroflow_plus"
 version = "0.9.0"
 dependencies = [
+ "async-ssh2-lite",
  "bincode",
+ "ctor",
+ "hydro_deploy",
  "hydroflow",
  "hydroflow_lang",
  "insta",
+ "nameof",
+ "prettyplease",
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "serde",
- "stageleft",
- "stageleft_tool",
- "syn 2.0.75",
-]
-
-[[package]]
-name = "hydroflow_plus_deploy"
-version = "0.9.0"
-dependencies = [
- "hydro_deploy",
- "hydroflow_plus",
- "nameof",
- "prettyplease",
  "serde",
  "sha2",
  "stageleft",
@@ -1471,7 +1472,6 @@ dependencies = [
  "futures",
  "hydro_deploy",
  "hydroflow_plus",
- "hydroflow_plus_deploy",
  "insta",
  "rand",
  "serde",

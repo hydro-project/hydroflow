@@ -2,12 +2,12 @@ use std::cell::RefCell;
 use std::pin::Pin;
 use std::rc::Rc;
 
-use hydroflow_plus::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
-use hydroflow_plus::lang::graph::HydroflowGraph;
-use hydroflow_plus::util::deploy::DeployPorts;
 use stageleft::{Quoted, RuntimeData};
 
 use super::HydroflowPlusMeta;
+use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
+use crate::lang::graph::HydroflowGraph;
+use crate::util::deploy::DeployPorts;
 
 pub struct DeployRuntime {}
 
@@ -57,7 +57,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p2: &Self::Process,
         p2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr) {
-        crate::deploy_runtime::deploy_o2o(*env, p1_port.as_str(), p2_port.as_str())
+        super::deploy_runtime::deploy_o2o(*env, p1_port.as_str(), p2_port.as_str())
     }
 
     fn o2o_connect(
@@ -76,7 +76,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _c2: &Self::Cluster,
         c2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr) {
-        crate::deploy_runtime::deploy_o2m(*env, p1_port.as_str(), c2_port.as_str())
+        super::deploy_runtime::deploy_o2m(*env, p1_port.as_str(), c2_port.as_str())
     }
 
     fn o2m_connect(
@@ -95,7 +95,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p2: &Self::Process,
         p2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr) {
-        crate::deploy_runtime::deploy_m2o(*env, c1_port.as_str(), p2_port.as_str())
+        super::deploy_runtime::deploy_m2o(*env, c1_port.as_str(), p2_port.as_str())
     }
 
     fn m2o_connect(
@@ -114,7 +114,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _c2: &Self::Cluster,
         c2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr) {
-        crate::deploy_runtime::deploy_m2m(*env, c1_port.as_str(), c2_port.as_str())
+        super::deploy_runtime::deploy_m2m(*env, c1_port.as_str(), c2_port.as_str())
     }
 
     fn m2m_connect(
@@ -149,11 +149,11 @@ impl<'a> Deploy<'a> for DeployRuntime {
         env: &Self::CompileEnv,
         of_cluster: usize,
     ) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
-        crate::deploy_runtime::cluster_members(*env, of_cluster)
+        super::deploy_runtime::cluster_members(*env, of_cluster)
     }
 
     fn cluster_self_id(env: &Self::CompileEnv) -> impl Quoted<'a, u32> + Copy + 'a {
-        crate::deploy_runtime::cluster_self_id(*env)
+        super::deploy_runtime::cluster_self_id(*env)
     }
 }
 
@@ -179,14 +179,7 @@ impl<'a> RegisterPort<'a, DeployRuntime> for DeployRuntimeNode {
         &self,
         _key: usize,
     ) -> impl std::future::Future<
-        Output = Pin<
-            Box<
-                dyn hydroflow_plus::futures::Sink<
-                    hydroflow_plus::bytes::Bytes,
-                    Error = std::io::Error,
-                >,
-            >,
-        >,
+        Output = Pin<Box<dyn crate::futures::Sink<crate::bytes::Bytes, Error = std::io::Error>>>,
     > + 'a {
         async { panic!() }
     }
@@ -199,7 +192,7 @@ impl<'a> RegisterPort<'a, DeployRuntime> for DeployRuntimeNode {
         &self,
         _key: usize,
     ) -> impl std::future::Future<
-        Output = Pin<Box<dyn hydroflow_plus::futures::Sink<T, Error = std::io::Error>>>,
+        Output = Pin<Box<dyn crate::futures::Sink<T, Error = std::io::Error>>>,
     > + 'a {
         async { panic!() }
     }
