@@ -11,6 +11,8 @@
 //! ## [`var_args!`]
 #![doc = include_str!("../var_args.md")]
 
+pub mod hash_set;
+
 use std::any::Any;
 
 use sealed::sealed;
@@ -545,7 +547,7 @@ impl CloneVariadic for () {
     fn clone_var_ref(_this: Self::AsRefVar<'_>) -> Self {}
 }
 
-/// A variadic where all item implement `PartialEq`.
+/// A variadic where all item implement [`PartialEq`].
 #[sealed]
 pub trait PartialEqVariadic: VariadicExt {
     /// `PartialEq` between a referenced variadic and a variadic of references, of the same types.
