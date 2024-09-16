@@ -827,7 +827,7 @@ mod test {
 
         for t in rx_ght.recursive_iter() {
             let (x, (a, ())): (&u32, (&u32, _)) = t;
-            if let (Some(s), Some(t)) = (sx_ght.get(&*x), tx_ght.get(&*x)) {
+            if let (Some(s), Some(t)) = (sx_ght.get(x), tx_ght.get(x)) {
                 // All unwraps succeeded, use `s`, `t` here
                 for b in s.iter() {
                     for c in t.iter() {

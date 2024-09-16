@@ -3,9 +3,9 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use variadics::{var_expr, var_type, CloneVariadic, SplitBySuffix, VariadicExt};
+use variadics::{var_expr, var_type, CloneVariadic, PartialEqVariadic, SplitBySuffix, VariadicExt};
 
-use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
+use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf, TupleSet};
 use crate::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
 
 //////////////////////////
@@ -47,11 +47,13 @@ where
     }
 }
 
-impl<Schema, SuffixSchema> Merge<GhtLeaf<Schema, SuffixSchema>> for GhtLeaf<Schema, SuffixSchema>
+impl<Schema, SuffixSchema, Storage> Merge<GhtLeaf<Schema, SuffixSchema, Storage>>
+    for GhtLeaf<Schema, SuffixSchema, Storage>
 where
     Schema: Eq + Hash,
+    Storage: TupleSet<Schema = Schema> + Extend<Schema> + Iterator<Item = Schema>,
 {
-    fn merge(&mut self, other: GhtLeaf<Schema, SuffixSchema>) -> bool {
+    fn merge(&mut self, other: GhtLeaf<Schema, SuffixSchema, Storage>) -> bool {
         let old_len = self.elements.len();
         self.elements.extend(other.elements);
         self.elements.len() > old_len
@@ -163,20 +165,17 @@ where
     }
 }
 
-impl<Schema, SuffixSchema> PartialOrd<GhtLeaf<Schema, SuffixSchema>>
-    for GhtLeaf<Schema, SuffixSchema>
+impl<Schema, SuffixSchema, Storage> PartialOrd<GhtLeaf<Schema, SuffixSchema, Storage>>
+    for GhtLeaf<Schema, SuffixSchema, Storage>
 where
-    Schema: Eq + Hash,
+    Schema: Eq + Hash + PartialEqVariadic,
     SuffixSchema: Eq + Hash,
+    Storage: TupleSet<Schema = Schema> + PartialEq,
 {
-    fn partial_cmp(&self, other: &GhtLeaf<Schema, SuffixSchema>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &GhtLeaf<Schema, SuffixSchema, Storage>) -> Option<Ordering> {
         match self.elements.len().cmp(&other.elements.len()) {
             Greater => {
-                if other
-                    .elements
-                    .iter()
-                    .all(|head| self.elements.contains(head))
-                {
+                if other.elements.iter().all(|tup| self.elements.contains(tup)) {
                     Some(Greater)
                 } else {
                     None
@@ -224,11 +223,12 @@ where
     Node: GeneralizedHashTrieNode,
 {
 }
-impl<Schema, SuffixSchema> LatticeOrd<GhtLeaf<Schema, SuffixSchema>>
-    for GhtLeaf<Schema, SuffixSchema>
+impl<Schema, SuffixSchema, Storage> LatticeOrd<GhtLeaf<Schema, SuffixSchema, Storage>>
+    for GhtLeaf<Schema, SuffixSchema, Storage>
 where
-    Schema: Eq + Hash,
+    Schema: Eq + Hash + PartialEqVariadic,
     SuffixSchema: Eq + Hash,
+    Storage: TupleSet<Schema = Schema> + PartialEq,
 {
 }
 
@@ -253,10 +253,11 @@ where
     }
 }
 
-impl<Schema, SuffixSchema> IsBot for GhtLeaf<Schema, SuffixSchema>
+impl<Schema, SuffixSchema, Storage> IsBot for GhtLeaf<Schema, SuffixSchema, Storage>
 where
     Schema: Eq + Hash,
     SuffixSchema: Eq + Hash,
+    Storage: TupleSet<Schema = Schema>,
 {
     fn is_bot(&self) -> bool {
         self.elements.is_empty()
@@ -284,10 +285,11 @@ where
     }
 }
 
-impl<Schema, SuffixSchema> IsTop for GhtLeaf<Schema, SuffixSchema>
+impl<Schema, SuffixSchema, Storage> IsTop for GhtLeaf<Schema, SuffixSchema, Storage>
 where
     Schema: Eq + Hash,
     SuffixSchema: Eq + Hash,
+    Storage: TupleSet<Schema = Schema>,
 {
     fn is_top(&self) -> bool {
         false
@@ -457,6 +459,7 @@ where
 
     fn call(&mut self, ght_a: &'a GhtA, ght_b: &'b GhtB) -> Self::Output {
         let mut children = HashMap::<Head, ValFunc::Output>::new();
+        // for head in ght_b.iter_keys() {
         for head in ght_b.iter() {
             if let Some(get_a) = ght_a.get(&head) {
                 let get_b = ght_b.get(&head).unwrap();
@@ -486,16 +489,22 @@ where
         <(NodeA, NodeB) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism,
     >;
 }
-impl<SchemaA, SuffixSchemaA, SchemaB, SuffixSchemaB> DeepJoinLatticeBimorphism
+impl<SchemaA, SuffixSchemaA, StorageA, SchemaB, SuffixSchemaB, StorageB> DeepJoinLatticeBimorphism
     for (
-        GhtLeaf<SchemaA, SuffixSchemaA>,
-        GhtLeaf<SchemaB, SuffixSchemaB>,
+        GhtLeaf<SchemaA, SuffixSchemaA, StorageA>,
+        GhtLeaf<SchemaB, SuffixSchemaB, StorageB>,
     )
 where
-    SchemaA: 'static + VariadicExt + Eq + Hash + SplitBySuffix<SuffixSchemaA>, /* + AsRefVariadicPartialEq */
+    SchemaA: 'static
+        + VariadicExt<Extend<SuffixSchemaB> = SchemaA>
+        + Eq
+        + Hash
+        + SplitBySuffix<SuffixSchemaA>, // + AsRefVariadicPartialEq
     SuffixSchemaA: 'static + VariadicExt + Eq + Hash, // + AsRefVariadicPartialEq
     SchemaB: 'static + VariadicExt + Eq + Hash + SplitBySuffix<SuffixSchemaB>, /* + AsRefVariadicPartialEq */
     SuffixSchemaB: 'static + VariadicExt + Eq + Hash, // + AsRefVariadicPartialEq
+    StorageA: TupleSet<Schema = SchemaA>,
+    StorageB: TupleSet<Schema = SchemaB>,
     for<'x> SchemaA::AsRefVar<'x>: CloneVariadic,
     for<'x> SchemaB::AsRefVar<'x>: CloneVariadic,
     var_type!(...SchemaA, ...SuffixSchemaB): Eq + Hash,
@@ -504,6 +513,7 @@ where
         GhtLeaf<
             var_type!(...SchemaA, ...SuffixSchemaB),
             var_type!(...SuffixSchemaA, ...SuffixSchemaB),
+            StorageA,
         >,
     >;
 }

@@ -189,7 +189,9 @@ pub trait VariadicExt: Variadic {
     where
         Self: 'static;
 
+    /// type for all elements of the variadic being wrapped in Option
     type AsOption;
+    /// wrap all elements of the variadic in Option
     fn as_option(self) -> Self::AsOption;
 }
 #[sealed]
