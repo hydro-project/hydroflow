@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 use std::collections::HashSet;
-use std::ops::Deref;
 
 use crate::ir::*;
 
@@ -8,193 +7,107 @@ fn persist_pullup_node<'a>(
     node: &mut HfPlusNode<'a>,
     persist_pulled_tees: &mut HashSet<*const RefCell<HfPlusNode<'a>>>,
 ) {
-    match node {
-        HfPlusNode::Unpersist(box HfPlusNode::Persist(_)) => {
-            if let HfPlusNode::Unpersist(box HfPlusNode::Persist(box behind_persist)) =
-                std::mem::replace(node, HfPlusNode::Placeholder)
-            {
-                *node = behind_persist;
-            } else {
-                unreachable!()
-            }
-        }
+    *node = match std::mem::replace(node, HfPlusNode::Placeholder) {
+        HfPlusNode::Unpersist(box HfPlusNode::Persist(box behind_persist)) => behind_persist,
 
-        HfPlusNode::Delta(box HfPlusNode::Persist(_)) => {
-            if let HfPlusNode::Delta(box HfPlusNode::Persist(box behind_persist)) =
-                std::mem::replace(node, HfPlusNode::Placeholder)
-            {
-                *node = behind_persist;
-            } else {
-                unreachable!()
-            }
-        }
+        HfPlusNode::Delta(box HfPlusNode::Persist(box behind_persist)) => behind_persist,
 
         HfPlusNode::Tee { inner } => {
             if persist_pulled_tees.contains(&(inner.as_ref() as *const RefCell<HfPlusNode<'a>>)) {
-                *node = HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
+                HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
                     inner: inner.clone(),
-                }));
-            } else {
-                let inner_borrow = inner.borrow();
-                if let HfPlusNode::Persist(_) = inner_borrow.deref() {
-                    drop(inner_borrow);
-                    persist_pulled_tees.insert(inner.as_ref() as *const RefCell<HfPlusNode<'a>>);
-                    if let HfPlusNode::Persist(box behind_persist) =
-                        inner.replace(HfPlusNode::Placeholder)
-                    {
-                        *inner.borrow_mut() = behind_persist;
-                    } else {
-                        unreachable!()
-                    }
-
-                    *node = HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
-                        inner: inner.clone(),
-                    }));
+                }))
+            } else if matches!(*inner.borrow(), HfPlusNode::Persist(_)) {
+                persist_pulled_tees.insert(inner.as_ref() as *const RefCell<HfPlusNode<'a>>);
+                if let HfPlusNode::Persist(box behind_persist) =
+                    inner.replace(HfPlusNode::Placeholder)
+                {
+                    *inner.borrow_mut() = behind_persist;
+                } else {
+                    unreachable!()
                 }
+
+                HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
+                    inner: inner.clone(),
+                }))
+            } else {
+                HfPlusNode::Tee { inner }
             }
         }
 
         HfPlusNode::Map {
-            f: _,
-            input: box HfPlusNode::Persist(_),
-        } => {
-            if let HfPlusNode::Map {
-                f,
-                input: box HfPlusNode::Persist(behind_persist),
-            } = std::mem::replace(node, HfPlusNode::Placeholder)
-            {
-                *node = HfPlusNode::Persist(Box::new(HfPlusNode::Map {
-                    f,
-                    input: behind_persist,
-                }));
-            } else {
-                unreachable!()
-            }
-        }
+            f,
+            input: box HfPlusNode::Persist(behind_persist),
+        } => HfPlusNode::Persist(Box::new(HfPlusNode::Map {
+            f,
+            input: behind_persist,
+        })),
 
         HfPlusNode::FlatMap {
-            f: _,
-            input: box HfPlusNode::Persist(_),
-        } => {
-            if let HfPlusNode::FlatMap {
-                f,
-                input: box HfPlusNode::Persist(behind_persist),
-            } = std::mem::replace(node, HfPlusNode::Placeholder)
-            {
-                *node = HfPlusNode::Persist(Box::new(HfPlusNode::FlatMap {
-                    f,
-                    input: behind_persist,
-                }));
-            } else {
-                unreachable!()
-            }
-        }
+            f,
+            input: box HfPlusNode::Persist(behind_persist),
+        } => HfPlusNode::Persist(Box::new(HfPlusNode::FlatMap {
+            f,
+            input: behind_persist,
+        })),
 
         HfPlusNode::Filter {
-            f: _,
-            input: box HfPlusNode::Persist(_),
-        } => {
-            if let HfPlusNode::Filter {
-                f,
-                input: box HfPlusNode::Persist(behind_persist),
-            } = std::mem::replace(node, HfPlusNode::Placeholder)
-            {
-                *node = HfPlusNode::Persist(Box::new(HfPlusNode::Filter {
-                    f,
-                    input: behind_persist,
-                }));
-            } else {
-                unreachable!()
-            }
-        }
+            f,
+            input: box HfPlusNode::Persist(behind_persist),
+        } => HfPlusNode::Persist(Box::new(HfPlusNode::Filter {
+            f,
+            input: behind_persist,
+        })),
 
         HfPlusNode::Network {
-            input: box HfPlusNode::Persist(_),
+            from_location,
+            from_key,
+            to_location,
+            to_key,
+            serialize_pipeline,
+            instantiate_fn,
+            deserialize_pipeline,
+            input: box HfPlusNode::Persist(behind_persist),
             ..
-        } => {
-            if let HfPlusNode::Network {
-                from_location,
-                from_key,
-                to_location,
-                to_key,
-                serialize_pipeline,
-                instantiate_fn,
-                deserialize_pipeline,
-                input: box HfPlusNode::Persist(behind_persist),
-            } = std::mem::replace(node, HfPlusNode::Placeholder)
-            {
-                *node = HfPlusNode::Persist(Box::new(HfPlusNode::Network {
-                    from_location,
-                    from_key,
-                    to_location,
-                    to_key,
-                    serialize_pipeline,
-                    instantiate_fn,
-                    deserialize_pipeline,
-                    input: behind_persist,
-                }));
-            } else {
-                unreachable!()
-            }
+        } => HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+            from_location,
+            from_key,
+            to_location,
+            to_key,
+            serialize_pipeline,
+            instantiate_fn,
+            deserialize_pipeline,
+            input: behind_persist,
+        })),
+
+        HfPlusNode::Union(box HfPlusNode::Persist(left), box HfPlusNode::Persist(right)) => {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Union(left, right)))
         }
 
-        HfPlusNode::Union(box HfPlusNode::Persist(_), box HfPlusNode::Persist(_)) => {
-            if let HfPlusNode::Union(
-                box HfPlusNode::Persist(left),
-                box HfPlusNode::Persist(right),
-            ) = std::mem::replace(node, HfPlusNode::Placeholder)
-            {
-                *node = HfPlusNode::Persist(Box::new(HfPlusNode::Union(left, right)));
-            } else {
-                unreachable!()
-            }
+        HfPlusNode::CrossProduct(box HfPlusNode::Persist(left), box HfPlusNode::Persist(right)) => {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(
+                HfPlusNode::CrossProduct(
+                    Box::new(HfPlusNode::Persist(left)),
+                    Box::new(HfPlusNode::Persist(right)),
+                ),
+            ))))
         }
 
-        HfPlusNode::CrossProduct(box HfPlusNode::Persist(_), box HfPlusNode::Persist(_)) => {
-            if let HfPlusNode::CrossProduct(
-                box HfPlusNode::Persist(left),
-                box HfPlusNode::Persist(right),
-            ) = std::mem::replace(node, HfPlusNode::Placeholder)
-            {
-                *node = HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(
-                    HfPlusNode::CrossProduct(
-                        Box::new(HfPlusNode::Persist(left)),
-                        Box::new(HfPlusNode::Persist(right)),
-                    ),
-                ))));
-            } else {
-                unreachable!()
-            }
+        HfPlusNode::Join(box HfPlusNode::Persist(left), box HfPlusNode::Persist(right)) => {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Join(
+                Box::new(HfPlusNode::Persist(left)),
+                Box::new(HfPlusNode::Persist(right)),
+            )))))
         }
 
-        HfPlusNode::Join(box HfPlusNode::Persist(_), box HfPlusNode::Persist(_)) => {
-            if let HfPlusNode::Join(box HfPlusNode::Persist(left), box HfPlusNode::Persist(right)) =
-                std::mem::replace(node, HfPlusNode::Placeholder)
-            {
-                *node =
-                    HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Join(
-                        Box::new(HfPlusNode::Persist(left)),
-                        Box::new(HfPlusNode::Persist(right)),
-                    )))));
-            } else {
-                unreachable!()
-            }
+        HfPlusNode::Unique(box HfPlusNode::Persist(inner)) => {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Unique(
+                Box::new(HfPlusNode::Persist(inner)),
+            )))))
         }
 
-        HfPlusNode::Unique(box HfPlusNode::Persist(_)) => {
-            if let HfPlusNode::Unique(box HfPlusNode::Persist(inner)) =
-                std::mem::replace(node, HfPlusNode::Placeholder)
-            {
-                *node = HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(
-                    HfPlusNode::Unique(Box::new(HfPlusNode::Persist(inner))),
-                ))));
-            } else {
-                unreachable!()
-            }
-        }
-
-        _ => {}
-    }
+        node => node,
+    };
 }
 
 pub fn persist_pullup(ir: Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf> {
