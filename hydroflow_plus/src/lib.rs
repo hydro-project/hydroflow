@@ -165,3 +165,12 @@ impl<'a> FreeVariable<Hydroflow<'a>> for HfBuiltWithId<'a> {
         (None, Some(self.tokens))
     }
 }
+
+#[stageleft::runtime]
+#[cfg(test)]
+mod tests {
+    #[ctor::ctor]
+    fn init() {
+        crate::deploy::init_test();
+    }
+}
