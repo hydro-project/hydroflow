@@ -123,6 +123,11 @@ where
 
         gossip_in[Ack]
             -> inspect(|request| trace!("{:?}: Received gossip ack: {:?}.", context.current_tick(), request))
+            // -> map( |(message_id, addr)| {
+            //     let peer_member_id: MemberId;
+            //     MapUnionSingletonMap::new_from((message_id, InfectingWrite { write: Default::default(), members: BoundedSetLattice::new_from([addr]) }))
+            // })
+            // -> infecting_writes;
             -> null();
 
         gossip_in[Nack]
@@ -132,11 +137,11 @@ where
         gossip_out = union() -> dest_sink(gossip_outputs);
 
         incoming_gossip_messages
-            -> map(|(_msg_id, writes, _addr)| writes )
+            -> map(|(_msg_id, _member_id, writes, _addr)| writes )
             -> writes;
 
         incoming_gossip_messages
-            -> map(|(msg_id, writes, sender_address) : (String, Namespaces<Max<u64>>, Addr)| {
+            -> map(|(msg_id, member_id, writes, sender_address) : (String, MemberId, Namespaces<Max<u64>>, Addr)| {
                 let namespaces = &#namespaces;
                 let all_data: &HashMap<Namespace, TableMap<RowValue<Clock>>> = namespaces.as_reveal_ref();
                 let possible_new_data: HashMap<Namespace, TableMap<RowValue<Max<u64>>>>= writes.into_reveal();
@@ -162,9 +167,9 @@ where
                     });
 
                 if gossip_has_new_data {
-                    (Ack { message_id: msg_id }, sender_address)
+                    (Ack { message_id: msg_id, member_id: my_member_id.clone()}, sender_address)
                 } else {
-                    (Nack { message_id: msg_id }, sender_address)
+                    (Nack { message_id: msg_id, member_id: my_member_id.clone()}, sender_address)
                 }
              })
             -> inspect( |(msg, addr)| trace!("{:?}: Sending gossip response: {:?} to {:?}.", context.current_tick(), msg, addr))
@@ -275,6 +280,7 @@ where
         -> map(|(message_id, infecting_write, peer_gossip_address): (String, InfectingWrite, Addr)| {
             let gossip_request = GossipMessage::Gossip {
                 message_id: message_id.clone(),
+                member_id: my_member_id.to_string(),
                 writes: infecting_write.write.clone(),
             };
             (gossip_request, peer_gossip_address)

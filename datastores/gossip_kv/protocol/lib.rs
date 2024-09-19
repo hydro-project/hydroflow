@@ -154,14 +154,15 @@ pub enum GossipMessage {
     /// An "infecting message" to share updates with a peer.
     Gossip {
         message_id: String,
+        member_id: String,
         writes: Namespaces<Clock>,
     },
     /// An acknowledgement message sent by a peer in response to a Gossip message, to indicate
     /// that it hasn't seen some of the writes in the Gossip message before.
-    Ack { message_id: String },
+    Ack { message_id: String, member_id: String },
     /// A negative acknowledgement sent by a peer in response to a Gossip message, to indicate
     /// that it has seen all of the writes in the Gossip message before.
-    Nack { message_id: String },
+    Nack { message_id: String, member_id: String },
 }
 
 #[cfg(test)]
