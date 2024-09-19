@@ -1,5 +1,5 @@
 use hydroflow_plus::*;
-use location::{ExternalBincodePort, ExternalProcess};
+use location::{ExternalBincodeSink, ExternalProcess};
 use serde::{Deserialize, Serialize};
 use stageleft::*;
 
@@ -15,7 +15,7 @@ pub fn first_ten_distributed(
     flow: &FlowBuilder,
 ) -> (
     ExternalProcess<()>,
-    ExternalBincodePort<String>,
+    ExternalBincodeSink<String>,
     Process<P1>,
     Process<P2>,
 ) {
