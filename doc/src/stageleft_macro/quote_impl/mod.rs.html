@@ -224,7 +224,7 @@
             #(#unitialized_free_variables;)*
 
             <span class="kw-2">*</span>set_mod = <span class="macro">module_path!</span>().to_string();
-            <span class="kw-2">*</span>set_crate_name = <span class="macro">env!</span>(<span class="string">"STAGELEFT_FINAL_CRATE_NAME"</span>);
+            <span class="kw-2">*</span>set_crate_name = <span class="macro">option_env!</span>(<span class="string">"STAGELEFT_FINAL_CRATE_NAME"</span>).unwrap_or(<span class="macro">env!</span>(<span class="string">"CARGO_PKG_NAME"</span>));
             <span class="kw-2">*</span>set_tokens = #<span class="macro">root::internal::quote!</span> {
                 #expr_without_spans
             };

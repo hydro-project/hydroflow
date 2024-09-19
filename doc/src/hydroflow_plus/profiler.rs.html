@@ -110,17 +110,13 @@
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
 <a href="#112" id="112">112</a>
-<a href="#113" id="113">113</a>
-<a href="#114" id="114">114</a>
-<a href="#115" id="115">115</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 
 <span class="kw">use </span>hydroflow::futures::channel::mpsc::UnboundedSender;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-<span class="kw">use crate as </span>hydroflow_plus;
 <span class="kw">use </span><span class="kw">crate</span>::ir::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::RuntimeContext;
+<span class="kw">use crate</span>::{profiler <span class="kw">as </span>myself, RuntimeContext};
 
 <span class="kw">pub fn </span>increment_counter(count: <span class="kw-2">&amp;mut </span>u64) {
     <span class="kw-2">*</span>count += <span class="number">1</span>;
@@ -158,9 +154,7 @@
                 .unwrap();
             counters.borrow_mut()[my_id <span class="kw">as </span>usize] = <span class="number">0</span>;
             <span class="kw">move </span>|<span class="kw">_</span>| {
-                hydroflow_plus::profiler::increment_counter(
-                    <span class="kw-2">&amp;mut </span>counters.borrow_mut()[my_id <span class="kw">as </span>usize],
-                );
+                myself::increment_counter(<span class="kw-2">&amp;mut </span>counters.borrow_mut()[my_id <span class="kw">as </span>usize]);
             }
         }))
         .splice_untyped()

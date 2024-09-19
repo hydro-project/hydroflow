@@ -90,7 +90,6 @@
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
 <a href="#92" id="92">92</a>
-<a href="#93" id="93">93</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>location::{ExternalBincodePort, ExternalProcess};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
@@ -124,9 +123,9 @@
     numbers
         .map(<span class="macro">q!</span>(|n| SendOverNetwork { n }))
         .send_bincode(<span class="kw-2">&amp;</span>second_process)
-        .for_each(<span class="macro">q!</span>(|n: SendOverNetwork| <span class="macro">println!</span>(<span class="string">"{}"</span>, n.n))); <span class="comment">// TODO(shadaj): why is the explicit type required here?
+        .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n.n)));
 
-    </span>(
+    (
         external_process,
         numbers_external_port,
         process,
@@ -140,7 +139,7 @@
 
     <span class="kw">use </span>futures::SinkExt;
     <span class="kw">use </span>hydro_deploy::{Deployment, Host};
-    <span class="kw">use </span>hydroflow_plus_deploy::{DeployCrateWrapper, TrybuildHost};
+    <span class="kw">use </span>hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>first_ten_distributed() {
@@ -154,8 +153,7 @@
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
-        <span class="comment">// if we drop this, we drop the references to the deployment nodes
-        </span><span class="kw">let </span>nodes = built
+        <span class="kw">let </span>nodes = built
             .with_process(<span class="kw-2">&amp;</span>first_node, TrybuildHost::new(deployment.Localhost()))
             .with_process(<span class="kw-2">&amp;</span>second_node, TrybuildHost::new(deployment.Localhost()))
             .with_external(<span class="kw-2">&amp;</span>external_process, deployment.Localhost() <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>Host&gt;)

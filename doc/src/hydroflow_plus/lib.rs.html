@@ -165,6 +165,15 @@
 <a href="#165" id="165">165</a>
 <a href="#166" id="166">166</a>
 <a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
 </pre></div><pre class="rust"><code><span class="attr">#![feature(box_patterns)]
 
 </span><span class="macro">stageleft::stageleft_no_entry_crate!</span>();
@@ -330,6 +339,15 @@
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; FreeVariable&lt;Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>HfBuiltWithId&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">fn </span>to_tokens(<span class="self">self</span>) -&gt; (<span class="prelude-ty">Option</span>&lt;TokenStream&gt;, <span class="prelude-ty">Option</span>&lt;TokenStream&gt;) {
         (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="self">self</span>.tokens))
+    }
+}
+
+<span class="attr">#[stageleft::runtime]
+#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="attr">#[ctor::ctor]
+    </span><span class="kw">fn </span>init() {
+        <span class="kw">crate</span>::deploy::init_test();
     }
 }
 </code></pre></div></section></main></body></html>

@@ -200,10 +200,6 @@
 <a href="#200" id="200">200</a>
 <a href="#201" id="201">201</a>
 <a href="#202" id="202">202</a>
-<a href="#203" id="203">203</a>
-<a href="#204" id="204">204</a>
-<a href="#205" id="205">205</a>
-<a href="#206" id="206">206</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
 <span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
@@ -258,13 +254,9 @@
         source2 = source2.persist();
     }
 
-    <span class="comment">// TODO(shadaj): inference fails without a for_each type annotation here
-    </span>source
-        .anti_join(source2)
-        .all_ticks()
-        .for_each(<span class="macro">q!</span>(|v: (u32, u32)| {
-            output.send(v.<span class="number">0</span>).unwrap();
-        }));
+    source.anti_join(source2).all_ticks().for_each(<span class="macro">q!</span>(|v| {
+        output.send(v.<span class="number">0</span>).unwrap();
+    }));
 
     flow.with_default_optimize()
         .compile_no_network::&lt;SingleProcessGraph&gt;()
