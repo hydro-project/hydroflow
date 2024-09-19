@@ -32,27 +32,55 @@ pub enum GossipRequestWithAddress<A> {
     /// A gossip request with the message id, writes and the address of the client.
     Gossip {
         message_id: String,
+        member_id: String,
         writes: Namespaces<Clock>,
         addr: A,
     },
     /// An ack request with the message id and the address of the client.
-    Ack { message_id: String, addr: A },
+    Ack {
+        message_id: String,
+        member_id: String,
+        addr: A,
+    },
     /// A nack request with the message id and the address of the client.
-    Nack { message_id: String, addr: A },
+    Nack {
+        message_id: String,
+        member_id: String,
+        addr: A,
+    },
 }
 
 impl<A> GossipRequestWithAddress<A> {
     /// Create a `GossipRequestWithAddress` from a `GossipMessage` and an address.
     pub fn from_request_and_address(request: GossipMessage, addr: A) -> Self {
         match request {
-            GossipMessage::Gossip { message_id, writes } => Self::Gossip {
+            GossipMessage::Gossip {
                 message_id,
+                member_id,
+                writes,
+            } => Self::Gossip {
+                message_id,
+                member_id,
                 writes,
                 addr,
             },
 
-            GossipMessage::Ack { message_id } => Self::Ack { message_id, addr },
-            GossipMessage::Nack { message_id } => Self::Nack { message_id, addr },
+            GossipMessage::Ack {
+                message_id,
+                member_id,
+            } => Self::Ack {
+                message_id,
+                addr,
+                member_id,
+            },
+            GossipMessage::Nack {
+                message_id,
+                member_id,
+            } => Self::Nack {
+                message_id,
+                addr,
+                member_id,
+            },
         }
     }
 }
