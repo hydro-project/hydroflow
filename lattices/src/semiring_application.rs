@@ -52,7 +52,6 @@ impl One<bool> for BinaryTrust {
     }
 }
 
-#[allow(dead_code)]
 /// Implementation of the Multiplicity semiring (N, +, *, 0, 1)
 pub struct Multiplicity(u32);
 
@@ -104,7 +103,6 @@ pub enum U32WithInfinity {
     Finite(u32),
 }
 
-#[allow(dead_code)]
 /// Implementation of the Cost/Tropical semiring (N U Inf, min, +, inf, 0)
 pub struct Cost(U32WithInfinity);
 
@@ -159,7 +157,6 @@ impl One<U32WithInfinity> for Cost {
     }
 }
 
-#[allow(dead_code)]
 /// Implementation of the confidence Score semiring ([0, 1], max, *, 0, 1)
 pub struct ConfidenceScore(f64);
 
@@ -204,7 +201,6 @@ impl One<f64> for ConfidenceScore {
     }
 }
 
-#[allow(dead_code)]
 /// Implementation of Fuzzy Logic semiring ([0, 1], max, min, 0, 1).
 pub struct FuzzyLogic(f64);
 

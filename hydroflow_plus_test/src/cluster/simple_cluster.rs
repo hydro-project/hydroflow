@@ -15,10 +15,12 @@ pub fn simple_cluster(flow: &FlowBuilder) -> (Process<()>, Cluster<()>) {
     ids.cross_product(numbers)
         .map(q!(|(id, n)| (id, (id, n))))
         .send_bincode(&cluster)
+        .tick_batch()
         .inspect(q!(move |n| println!(
             "cluster received: {:?} (self cluster id: {})",
             n, cluster_self_id
         )))
+        .all_ticks()
         .send_bincode(&process)
         .for_each(q!(|(id, d)| println!("node received: ({}, {:?})", id, d)));
 
@@ -33,7 +35,6 @@ mod tests {
     #[tokio::test]
     async fn simple_cluster() {
         let mut deployment = Deployment::new();
-        let localhost = deployment.Localhost();
 
         let builder = hydroflow_plus::FlowBuilder::new();
         let (node, cluster) = super::simple_cluster(&builder);
@@ -42,11 +43,11 @@ mod tests {
         insta::assert_debug_snapshot!(built.ir());
 
         let nodes = built
-            .with_process(&node, TrybuildHost::new(localhost.clone()))
+            .with_process(&node, TrybuildHost::new(deployment.Localhost()))
             .with_cluster(
                 &cluster,
                 (0..2)
-                    .map(|_| TrybuildHost::new(localhost.clone()))
+                    .map(|_| TrybuildHost::new(deployment.Localhost()))
                     .collect::<Vec<_>>(),
             )
             .deploy(&mut deployment);

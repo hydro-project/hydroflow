@@ -14,21 +14,26 @@ pub fn map_reduce(flow: &FlowBuilder) -> (Process<Leader>, Cluster<Worker>) {
 
     let all_ids_vec = flow.cluster_members(&cluster);
     let words_partitioned = words
+        .tick_batch()
         .enumerate()
-        .map(q!(|(i, w)| ((i % all_ids_vec.len()) as u32, w)));
+        .map(q!(|(i, w)| ((i % all_ids_vec.len()) as u32, w)))
+        .all_ticks();
 
     words_partitioned
         .send_bincode(&cluster)
-        .tick_batch()
         .map(q!(|string| (string, ())))
+        .tick_batch()
         .fold_keyed(q!(|| 0), q!(|count, _| *count += 1))
         .inspect(q!(|(string, count)| println!(
             "partition count: {} - {}",
             string, count
         )))
-        .send_bincode_interleaved(&process)
         .all_ticks()
+        .send_bincode_interleaved(&process)
+        .tick_batch()
+        .persist()
         .reduce_keyed(q!(|total, count| *total += count))
+        .all_ticks()
         .for_each(q!(|(string, count)| println!("{}: {}", string, count)));
 
     (process, cluster)
@@ -36,7 +41,7 @@ pub fn map_reduce(flow: &FlowBuilder) -> (Process<Leader>, Cluster<Worker>) {
 
 #[cfg(test)]
 mod tests {
-    use hydroflow_plus_deploy::CLIRuntime;
+    use hydroflow_plus_deploy::DeployRuntime;
     use stageleft::RuntimeData;
 
     #[test]
@@ -48,11 +53,11 @@ mod tests {
         insta::assert_debug_snapshot!(built.ir());
 
         for (id, ir) in built
-            .compile::<CLIRuntime>(&RuntimeData::new("FAKE"))
+            .compile::<DeployRuntime>(&RuntimeData::new("FAKE"))
             .hydroflow_ir()
         {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
-                insta::assert_display_snapshot!(ir.surface_syntax_string());
+                insta::assert_snapshot!(ir.surface_syntax_string());
             });
         }
     }

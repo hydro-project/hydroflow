@@ -79,7 +79,7 @@ mod tests {
             };
 
             insta::with_settings!({snapshot_suffix => "macro_tokens"}, {
-                insta::assert_display_snapshot!(
+                insta::assert_snapshot!(
                     prettyplease::unparse(&wrapped)
                 );
             });

@@ -1,18 +1,15 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::future::Future;
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use anyhow::{Context as _, Error, Result};
+use anyhow::{Context as _, Result};
 use async_ssh2_lite::ssh2::ErrorCode;
 use async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
 use async_trait::async_trait;
 use futures::io::BufReader as FuturesBufReader;
-use futures::stream::FuturesUnordered;
 use futures::{AsyncBufReadExt, AsyncWriteExt};
 use hydroflow_deploy_integration::ServerBindConfig;
 use inferno::collapse::perf::Folder;
@@ -29,7 +26,8 @@ use super::progress::ProgressTracker;
 use super::util::async_retry;
 use super::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
 use crate::hydroflow_crate::build::BuildOutput;
-use crate::hydroflow_crate::perf_options::PerfOptions;
+use crate::hydroflow_crate::flamegraph::handle_fold_data;
+use crate::hydroflow_crate::tracing_options::TracingOptions;
 use crate::util::prioritized_broadcast;
 
 const PERF_OUTFILE: &str = "__profile.perf.data";
@@ -42,7 +40,7 @@ struct LaunchedSshBinary {
     stdout_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
     stdout_deploy_receivers: Arc<Mutex<Option<oneshot::Sender<String>>>>,
     stderr_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
-    perf: Option<PerfOptions>,
+    tracing: Option<TracingOptions>,
 }
 
 #[async_trait]
@@ -108,9 +106,9 @@ impl LaunchedBinary for LaunchedSshBinary {
         }
 
         // Run perf post-processing and download perf output.
-        if let Some(perf) = &mut self.perf {
+        if let Some(tracing) = self.tracing.as_ref() {
             let mut script_channel = self.session.as_ref().unwrap().channel_session().await?;
-            let mut fold_er = Folder::from(perf.fold_options.clone().unwrap_or_default());
+            let mut fold_er = Folder::from(tracing.fold_perf_options.clone().unwrap_or_default());
 
             let fold_data = ProgressTracker::leaf("perf script & folding", async move {
                 let mut stderr_lines = FuturesBufReader::new(script_channel.stderr()).lines();
@@ -148,73 +146,8 @@ impl LaunchedBinary for LaunchedSshBinary {
                 Result::<_>::Ok(fold_data)
             })
             .await?;
-            // Wrap in Arc to allow sharing data across multiple outputs.
-            let fold_data = Arc::new(fold_data);
-            let output_tasks =
-                FuturesUnordered::<Pin<Box<dyn Future<Output = Result<()>> + Send + Sync>>>::new();
 
-            // fold_outfile
-            if let Some(fold_outfile) = perf.fold_outfile.clone() {
-                let fold_data = Arc::clone(&fold_data);
-                output_tasks.push(Box::pin(async move {
-                    let mut reader = &**fold_data;
-                    let mut writer = tokio::fs::File::create(fold_outfile).await?;
-                    tokio::io::copy_buf(&mut reader, &mut writer).await?;
-                    Ok(())
-                }));
-            };
-
-            // flamegraph_outfile
-            if let Some(flamegraph_outfile) = perf.flamegraph_outfile.clone() {
-                let mut options = perf.flamegraph_options.map(|f| (f)()).unwrap_or_default();
-                let fold_data = Arc::clone(&fold_data);
-                output_tasks.push(Box::pin(async move {
-                    let writer = tokio::fs::File::create(flamegraph_outfile)
-                        .await?
-                        .into_std()
-                        .await;
-                    tokio::task::spawn_blocking(move || {
-                        let reader = &**fold_data;
-                        inferno::flamegraph::from_lines(
-                            &mut options,
-                            reader
-                                .split(|&b| b == b'\n')
-                                .map(std::str::from_utf8)
-                                .map(Result::unwrap),
-                            writer,
-                        )
-                    })
-                    .await??;
-                    Ok(())
-                }));
-            };
-
-            let errors = output_tasks
-                .filter_map(Result::err)
-                .collect::<Vec<_>>()
-                .await;
-            if !errors.is_empty() {
-                Err(MultipleErrors { errors })?;
-            };
-
-            // TODO(mingwei): re-use this code to download `dtrace` data.
-            // let sftp = self.session.as_ref().unwrap().sftp().await?;
-            // // Check if perf.data exists
-            // match sftp.open(&PathBuf::from(output_file)).await {
-            //     Ok(perf_data) => {
-            //         // download perf.data
-            //         let mut perf_data_local = tokio::fs::File::create(output_file).await?;
-            //         tokio::io::copy(&mut perf_data, &mut perf_data_local).await?;
-            //     }
-            //     Err(Error::Ssh2(ssh2_err)) if ErrorCode::SFTP(2) == ssh2_err.code() => {
-            //         // File not found, probably due to some other previous error.
-            //         ProgressTracker::println(&format!(
-            //             "perf output file {:?} not found on remote machine (SFTP error 2).",
-            //             output_file
-            //         ));
-            //     }
-            //     Err(unexpected_err) => Err(unexpected_err)?,
-            // }
+            handle_fold_data(tracing, fold_data).await?;
         };
 
         Ok(())
@@ -412,7 +345,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
         id: String,
         binary: &BuildOutput,
         args: &[String],
-        perf: Option<PerfOptions>,
+        tracing: Option<TracingOptions>,
     ) -> Result<Box<dyn LaunchedBinary>> {
         let session = self.open_ssh_session().await?;
 
@@ -444,10 +377,10 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
                     command.push_str(&shell_escape::unix::escape(Cow::Borrowed(arg)))
                 }
                 // Launch with perf if specified, also copy local binary to expected place for perf report to work
-                if let Some(PerfOptions { frequency, .. }) = perf.clone() {
+                if let Some(TracingOptions { frequency, .. }) = tracing.clone() {
                     // Attach perf to the command
                     command = format!(
-                        "perf record -F {frequency} --call-graph dwarf,64000 -o {PERF_OUTFILE} {command}",
+                        "perf record -F {frequency} -e cycles:u --call-graph dwarf,65528 -o {PERF_OUTFILE} {command}",
                     );
                 }
                 channel.exec(&command).await?;
@@ -486,7 +419,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
             stdout_deploy_receivers,
             stdout_receivers,
             stderr_receivers,
-            perf,
+            tracing,
         }))
     }
 
@@ -500,7 +433,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
         let port = addr.port();
 
         tokio::spawn(async move {
-            #[allow(clippy::never_loop)]
+            #[expect(clippy::never_loop, reason = "tcp accept loop pattern")]
             while let Ok((mut local_stream, _)) = local_port.accept().await {
                 let mut channel = session
                     .channel_direct_tcpip(&internal_ip, port, None)
@@ -518,25 +451,3 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
         Ok(local_addr)
     }
 }
-
-#[derive(Debug)]
-struct MultipleErrors {
-    errors: Vec<Error>,
-}
-impl std::fmt::Display for MultipleErrors {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if 1 == self.errors.len() {
-            self.errors.first().unwrap().fmt(f)
-        } else {
-            writeln!(f, "({}) errors occured:", self.errors.len())?;
-            writeln!(f)?;
-            for (i, error) in self.errors.iter().enumerate() {
-                write!(f, "({}/{}):", i + 1, self.errors.len())?;
-                error.fmt(f)?;
-                writeln!(f)?;
-            }
-            Ok(())
-        }
-    }
-}
-impl std::error::Error for MultipleErrors {}

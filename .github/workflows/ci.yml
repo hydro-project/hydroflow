@@ -29,7 +29,7 @@ jobs:
   check:
     name: Lint and Check
     if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
-    timeout-minutes: 15
+    timeout-minutes: 20
     needs: pre_job
     runs-on: ${{ matrix.os }}
     strategy:
@@ -125,7 +125,7 @@ jobs:
   test:
     name: Test Suite
     if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
-    timeout-minutes: 25
+    timeout-minutes: 35
     needs: pre_job
     runs-on: ${{ matrix.os }}
     strategy:

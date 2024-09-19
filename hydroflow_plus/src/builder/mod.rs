@@ -4,17 +4,24 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 use std::time::Duration;
 
+use hydroflow::bytes::Bytes;
 use hydroflow::futures::stream::Stream as FuturesStream;
+use hydroflow::{tokio, tokio_stream};
 use internal::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use runtime_support::FreeVariable;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use stageleft::*;
 
+use crate::cycle::{CycleCollection, CycleCollectionWithInitial};
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
-use crate::location::{Cluster, Location, LocationId, Process};
-use crate::stream::{Async, Windowed};
-use crate::{HfCycle, RuntimeContext, Stream};
+use crate::location::{
+    Cluster, ExternalBincodePort, ExternalBytesPort, ExternalProcess, Location, LocationId, Process,
+};
+use crate::stream::{Bounded, NoTick, Tick, Unbounded};
+use crate::{HfCycle, Optional, RuntimeContext, Singleton, Stream};
 
 pub mod built;
 pub mod deploy;
@@ -73,6 +80,7 @@ pub struct FlowBuilder<'a> {
     cycle_ids: RefCell<HashMap<usize, usize>>,
 
     next_node_id: RefCell<usize>,
+    next_external_port_id: RefCell<usize>,
 
     /// Tracks whether this flow has been finalized; it is an error to
     /// drop without finalizing.
@@ -100,7 +108,10 @@ impl<'a> QuotedContext for FlowBuilder<'a> {
 }
 
 impl<'a> FlowBuilder<'a> {
-    #[allow(clippy::new_without_default)]
+    #[expect(
+        clippy::new_without_default,
+        reason = "call `new` explicitly, not `default`"
+    )]
     pub fn new() -> FlowBuilder<'a> {
         FlowBuilder {
             ir_leaves: Rc::new(RefCell::new(Some(Vec::new()))),
@@ -108,6 +119,7 @@ impl<'a> FlowBuilder<'a> {
             clusters: RefCell::new(vec![]),
             cycle_ids: RefCell::new(HashMap::new()),
             next_node_id: RefCell::new(0),
+            next_external_port_id: RefCell::new(0),
             finalized: false,
             _phantom: PhantomData,
         }
@@ -153,6 +165,19 @@ impl<'a> FlowBuilder<'a> {
         }
     }
 
+    pub fn external_process<P>(&self) -> ExternalProcess<P> {
+        let mut next_node_id = self.next_node_id.borrow_mut();
+        let id = *next_node_id;
+        *next_node_id += 1;
+
+        self.nodes.borrow_mut().push(id);
+
+        ExternalProcess {
+            id,
+            _phantom: PhantomData,
+        }
+    }
+
     pub fn cluster<C>(&self) -> Cluster<C> {
         let mut next_node_id = self.next_node_id.borrow_mut();
         let id = *next_node_id;
@@ -189,14 +214,14 @@ impl<'a> FlowBuilder<'a> {
         }
     }
 
-    pub fn spin<L: Location>(&self, on: &L) -> Stream<'a, (), Async, L> {
+    pub fn spin<L: Location>(&self, on: &L) -> Stream<'a, (), Unbounded, NoTick, L> {
         Stream::new(
             on.id(),
             self.ir_leaves().clone(),
-            HfPlusNode::Source {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
                 source: HfPlusSource::Spin(),
                 location_kind: on.id(),
-            },
+            })),
         )
     }
 
@@ -204,27 +229,102 @@ impl<'a> FlowBuilder<'a> {
         &self,
         on: &L,
         batch_size: impl Quoted<'a, usize> + Copy + 'a,
-    ) -> Stream<'a, (), Windowed, L> {
+    ) -> Stream<'a, (), Bounded, Tick, L> {
         self.spin(on)
             .flat_map(q!(move |_| 0..batch_size))
             .map(q!(|_| ()))
             .tick_batch()
     }
 
+    pub fn source_external_bytes<P, L: Location>(
+        &self,
+        from: &ExternalProcess<P>,
+        to: &L,
+    ) -> (ExternalBytesPort, Stream<'a, Bytes, Unbounded, NoTick, L>) {
+        let next_external_port_id = {
+            let mut next_external_port_id = self.next_external_port_id.borrow_mut();
+            let id = *next_external_port_id;
+            *next_external_port_id += 1;
+            id
+        };
+
+        (
+            ExternalBytesPort {
+                process_id: from.id,
+                port_id: next_external_port_id,
+            },
+            Stream::new(
+                to.id(),
+                self.ir_leaves().clone(),
+                HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+                    from_location: LocationId::ExternalProcess(from.id),
+                    from_key: Some(next_external_port_id),
+                    to_location: to.id(),
+                    to_key: None,
+                    serialize_pipeline: None,
+                    instantiate_fn: crate::ir::DebugInstantiate::Building(),
+                    deserialize_pipeline: Some(syn::parse_quote!(map(|b| b.unwrap().freeze()))),
+                    input: Box::new(HfPlusNode::Source {
+                        source: HfPlusSource::ExternalNetwork(),
+                        location_kind: LocationId::ExternalProcess(from.id),
+                    }),
+                })),
+            ),
+        )
+    }
+
+    pub fn source_external_bincode<P, L: Location, T: Serialize + DeserializeOwned>(
+        &self,
+        from: &ExternalProcess<P>,
+        to: &L,
+    ) -> (ExternalBincodePort<T>, Stream<'a, T, Unbounded, NoTick, L>) {
+        let next_external_port_id = {
+            let mut next_external_port_id = self.next_external_port_id.borrow_mut();
+            let id = *next_external_port_id;
+            *next_external_port_id += 1;
+            id
+        };
+
+        (
+            ExternalBincodePort {
+                process_id: from.id,
+                port_id: next_external_port_id,
+                _phantom: PhantomData,
+            },
+            Stream::new(
+                to.id(),
+                self.ir_leaves().clone(),
+                HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+                    from_location: LocationId::ExternalProcess(from.id),
+                    from_key: Some(next_external_port_id),
+                    to_location: to.id(),
+                    to_key: None,
+                    serialize_pipeline: None,
+                    instantiate_fn: crate::ir::DebugInstantiate::Building(),
+                    deserialize_pipeline: Some(crate::stream::deserialize_bincode::<T>(false)),
+                    input: Box::new(HfPlusNode::Source {
+                        source: HfPlusSource::ExternalNetwork(),
+                        location_kind: LocationId::ExternalProcess(from.id),
+                    }),
+                })),
+            ),
+        )
+    }
+
     pub fn source_stream<T, E: FuturesStream<Item = T> + Unpin, L: Location>(
         &self,
         on: &L,
         e: impl Quoted<'a, E>,
-    ) -> Stream<'a, T, Async, L> {
-        let e = e.splice();
+    ) -> Stream<'a, T, Unbounded, NoTick, L> {
+        let e = e.splice_untyped();
 
         Stream::new(
             on.id(),
             self.ir_leaves().clone(),
-            HfPlusNode::Source {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
                 source: HfPlusSource::Stream(e.into()),
                 location_kind: on.id(),
-            },
+            })),
         )
     }
 
@@ -232,10 +332,51 @@ impl<'a> FlowBuilder<'a> {
         &self,
         on: &L,
         e: impl Quoted<'a, E>,
-    ) -> Stream<'a, T, Windowed, L> {
-        let e = e.splice();
+    ) -> Stream<'a, T, Bounded, NoTick, L> {
+        let e = e.splice_untyped();
 
         Stream::new(
+            on.id(),
+            self.ir_leaves().clone(),
+            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
+                source: HfPlusSource::Iter(e.into()),
+                location_kind: on.id(),
+            })),
+        )
+    }
+
+    pub fn singleton<T: Clone, L: Location>(
+        &self,
+        on: &L,
+        e: impl Quoted<'a, T>,
+    ) -> Singleton<'a, T, Bounded, NoTick, L> {
+        let e_arr = q!([e]);
+        let e = e_arr.splice_untyped();
+
+        // we do a double persist here because if the singleton shows up on every tick,
+        // we first persist the source so that we store that value and then persist again
+        // so that it grows every tick
+        Singleton::new(
+            on.id(),
+            self.ir_leaves().clone(),
+            HfPlusNode::Persist(Box::new(HfPlusNode::Persist(Box::new(
+                HfPlusNode::Source {
+                    source: HfPlusSource::Iter(e.into()),
+                    location_kind: on.id(),
+                },
+            )))),
+        )
+    }
+
+    pub fn singleton_first_tick<T: Clone, L: Location>(
+        &self,
+        on: &L,
+        e: impl Quoted<'a, T>,
+    ) -> Optional<'a, T, Bounded, Tick, L> {
+        let e_arr = q!([e]);
+        let e = e_arr.splice_untyped();
+
+        Optional::new(
             on.id(),
             self.ir_leaves().clone(),
             HfPlusNode::Source {
@@ -249,24 +390,45 @@ impl<'a> FlowBuilder<'a> {
         &self,
         on: &L,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
-    ) -> Stream<'a, (), Async, L> {
-        let interval = interval.splice();
+    ) -> Optional<'a, (), Unbounded, NoTick, L> {
+        let interval = interval.splice_untyped();
 
-        Stream::new(
+        Optional::new(
             on.id(),
             self.ir_leaves().clone(),
-            HfPlusNode::Source {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
                 source: HfPlusSource::Interval(interval.into()),
                 location_kind: on.id(),
-            },
+            })),
         )
     }
 
-    pub fn cycle<T, W, L: Location>(&self, on: &L) -> (HfCycle<'a, T, W, L>, Stream<'a, T, W, L>) {
+    pub fn source_interval_delayed<L: Location>(
+        &self,
+        on: &L,
+        delay: impl Quoted<'a, Duration> + Copy + 'a,
+        interval: impl Quoted<'a, Duration> + Copy + 'a,
+    ) -> Optional<'a, tokio::time::Instant, Unbounded, NoTick, L> {
+        self.source_stream(
+            on,
+            q!(tokio_stream::wrappers::IntervalStream::new(
+                tokio::time::interval_at(tokio::time::Instant::now() + delay, interval)
+            )),
+        )
+        .tick_batch()
+        .first()
+        .latest()
+    }
+
+    pub fn tick_cycle<S: CycleCollection<'a, Tick>>(
+        &self,
+        on: &S::Location,
+    ) -> (HfCycle<'a, Tick, S>, S) {
         let next_id = {
             let on_id = match on.id() {
                 LocationId::Process(id) => id,
                 LocationId::Cluster(id) => id,
+                LocationId::ExternalProcess(_) => panic!(),
             };
 
             let mut cycle_ids = self.cycle_ids.borrow_mut();
@@ -282,18 +444,70 @@ impl<'a> FlowBuilder<'a> {
         (
             HfCycle {
                 ident: ident.clone(),
-                location_kind: on.id(),
-                ir_leaves: self.ir_leaves().clone(),
                 _phantom: PhantomData,
             },
-            Stream::new(
-                on.id(),
-                self.ir_leaves().clone(),
-                HfPlusNode::CycleSource {
-                    ident,
-                    location_kind: on.id(),
-                },
-            ),
+            S::create_source(ident, self.ir_leaves.clone(), on.id()),
+        )
+    }
+
+    pub fn cycle<S: CycleCollection<'a, NoTick>>(
+        &self,
+        on: &S::Location,
+    ) -> (HfCycle<'a, NoTick, S>, S) {
+        let next_id = {
+            let on_id = match on.id() {
+                LocationId::Process(id) => id,
+                LocationId::Cluster(id) => id,
+                LocationId::ExternalProcess(_) => panic!(),
+            };
+
+            let mut cycle_ids = self.cycle_ids.borrow_mut();
+            let next_id_entry = cycle_ids.entry(on_id).or_default();
+
+            let id = *next_id_entry;
+            *next_id_entry += 1;
+            id
+        };
+
+        let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
+
+        (
+            HfCycle {
+                ident: ident.clone(),
+                _phantom: PhantomData,
+            },
+            S::create_source(ident, self.ir_leaves.clone(), on.id()),
+        )
+    }
+
+    pub fn tick_cycle_with_initial<S: CycleCollectionWithInitial<'a, Tick>>(
+        &self,
+        on: &S::Location,
+        initial: S,
+    ) -> (HfCycle<'a, Tick, S>, S) {
+        let next_id = {
+            let on_id = match on.id() {
+                LocationId::Process(id) => id,
+                LocationId::Cluster(id) => id,
+                LocationId::ExternalProcess(_) => panic!(),
+            };
+
+            let mut cycle_ids = self.cycle_ids.borrow_mut();
+            let next_id_entry = cycle_ids.entry(on_id).or_default();
+
+            let id = *next_id_entry;
+            *next_id_entry += 1;
+            id
+        };
+
+        let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
+
+        (
+            HfCycle {
+                ident: ident.clone(),
+                _phantom: PhantomData,
+            },
+            S::create_source(ident, self.ir_leaves.clone(), initial, on.id()),
         )
     }
 }

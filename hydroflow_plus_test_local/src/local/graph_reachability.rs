@@ -26,7 +26,7 @@ pub fn graph_reachability<'a>(
         .map(q!(|(_from, (_, to))| to));
     set_reached_cycle.complete(reachable);
 
-    reached.tick_batch().unique().for_each(q!(|v| {
+    reached.unique().for_each(q!(|v| {
         reached_out.send(v).unwrap();
     }));
 

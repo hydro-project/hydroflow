@@ -4,14 +4,16 @@ expression: built.ir()
 ---
 [
     ForEach {
-        f: { use crate :: __staged :: cluster :: simple_cluster :: * ; | (id , d) | println ! ("node received: ({}, {:?})" , id , d) },
+        f: stageleft :: runtime_support :: fn1_type_hint :: < (u32 , (u32 , i32)) , () > ({ use crate :: __staged :: cluster :: simple_cluster :: * ; | (id , d) | println ! ("node received: ({}, {:?})" , id , d) }),
         input: Network {
             from_location: Cluster(
                 1,
             ),
+            from_key: None,
             to_location: Process(
                 0,
             ),
+            to_key: None,
             serialize_pipeline: Some(
                 Operator(
                     Operator {
@@ -34,14 +36,16 @@ expression: built.ir()
                 ),
             ),
             input: Inspect {
-                f: { use crate :: __staged :: cluster :: simple_cluster :: * ; let cluster_self_id = __hydroflow_plus_cluster_self_id_1 ; move | n | println ! ("cluster received: {:?} (self cluster id: {})" , n , cluster_self_id) },
+                f: stageleft :: runtime_support :: fn1_borrow_type_hint :: < (u32 , i32) , () > ({ use crate :: __staged :: cluster :: simple_cluster :: * ; let cluster_self_id = __hydroflow_plus_cluster_self_id_1 ; move | n | println ! ("cluster received: {:?} (self cluster id: {})" , n , cluster_self_id) }),
                 input: Network {
                     from_location: Process(
                         0,
                     ),
+                    from_key: None,
                     to_location: Cluster(
                         1,
                     ),
+                    to_key: None,
                     serialize_pipeline: Some(
                         Operator(
                             Operator {
@@ -64,27 +68,33 @@ expression: built.ir()
                         ),
                     ),
                     input: Map {
-                        f: { use crate :: __staged :: cluster :: simple_cluster :: * ; | (id , n) | (id , (id , n)) },
-                        input: CrossProduct(
-                            Map {
-                                f: { use crate :: __staged :: cluster :: simple_cluster :: * ; | & id | id },
-                                input: Source {
-                                    source: Iter(
-                                        __hydroflow_plus_cluster_ids_1,
-                                    ),
-                                    location_kind: Process(
-                                        0,
-                                    ),
-                                },
-                            },
-                            Source {
-                                source: Iter(
-                                    { use crate :: __staged :: cluster :: simple_cluster :: * ; 0 .. 5 },
+                        f: stageleft :: runtime_support :: fn1_type_hint :: < (u32 , i32) , (u32 , (u32 , i32)) > ({ use crate :: __staged :: cluster :: simple_cluster :: * ; | (id , n) | (id , (id , n)) }),
+                        input: Delta(
+                            CrossProduct(
+                                Persist(
+                                    Map {
+                                        f: stageleft :: runtime_support :: fn1_type_hint :: < & u32 , u32 > ({ use crate :: __staged :: cluster :: simple_cluster :: * ; | & id | id }),
+                                        input: Source {
+                                            source: Iter(
+                                                __hydroflow_plus_cluster_ids_1,
+                                            ),
+                                            location_kind: Process(
+                                                0,
+                                            ),
+                                        },
+                                    },
                                 ),
-                                location_kind: Process(
-                                    0,
+                                Persist(
+                                    Source {
+                                        source: Iter(
+                                            { use crate :: __staged :: cluster :: simple_cluster :: * ; 0 .. 5 },
+                                        ),
+                                        location_kind: Process(
+                                            0,
+                                        ),
+                                    },
                                 ),
-                            },
+                            ),
                         ),
                     },
                 },

@@ -5,7 +5,141 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.9.0 (2024-08-30)
+
+### Chore
+
+ - <csr-id-11af32828bab6e4a4264d2635ff71a12bb0bb778/> lower min dependency versions where possible, update `Cargo.lock`
+   Moved from #1418
+   
+   ---------
+
+### Documentation
+
+ - <csr-id-f5f1eb0c612f5c0c1752360d972ef6853c5e12f0/> cleanup doc comments for clippy latest
+
+### New Features
+
+ - <csr-id-71f69aa5e9f2ba187f07c44c0a9f2becfe72aab1/> add API for cycle with initial value
+ - <csr-id-82de6f5fc89fd44fd2ac18fddd94d121b4b10c8a/> add unbounded top-level singletons
+ - <csr-id-7bf9ee2f707ddd5d8f51853ab7babe035fd8d964/> add paxos
+ - <csr-id-46a8a2cb08732bb21096e824bc4542d208c68fb2/> use trybuild to compile subgraph binaries
+ - <csr-id-eaf497b601928be37530bc8d81717d200fd5987a/> add operators necessary for Paxos / PBFT
+
+### Bug Fixes
+
+ - <csr-id-22c72189bb76412955d29b03c5d99894c558a07c/> remove `FlowProps`
+ - <csr-id-1aeacb212227f654e8f0cdc8a59816a68f059177/> rewrite IR in place to avoid stack overflow and disable cloning
+   Cloning was unsafe because values behind a `Rc<RefCell<...>>` in the
+   case of tee would be entangled with the old IR.
+   ---
+   [//]: # (BEGIN SAPLING FOOTER)
+   Stack created with [Sapling](https://sapling-scm.com). Best reviewed
+   with
+   [ReviewStack](https://reviewstack.dev/hydro-project/hydroflow/pull/1404).
+   * #1405
+   * #1398
+   * __->__ #1404
+ - <csr-id-b518e674560971ebd1b32c737151214b8d3310b0/> wrong stream type for `source_interval`
+ - <csr-id-c12b2495c70f170eba655e458f4591ef7d0941a4/> add `Clone` bounds to `cross_join` and simplify broadcast logic
+ - <csr-id-ab12e5b66718f06adc3c34bf879c9581d79ee0d2/> overly restrictive input types for `send_bincode_interleaved`
+   The original types prevented usage in cluster-to-cluster communication.
+
+### New Features (BREAKING)
+
+ - <csr-id-44c6b149bea102e8598460ba0286e370b36fd25a/> separate singletons into their own types
+ - <csr-id-536e6442d68b0947da5bfef9991825003e6867fc/> refactor API to have no-tick semantics by default
+   Now, by default streams exist at a "top-level" where there are no ticks
+   and operators run over the entire collection. To perform iterative
+   computations, developers must explicitly entire a tick domain (using
+   `tick_batch`), and return to the outer domain (using `all_ticks`).
+
+### Refactor (BREAKING)
+
+ - <csr-id-0a465e55dd39c76bc1aefb020460a639d792fe87/> rename integration crates to drop CLI references
+ - <csr-id-5f2789a13d1602f170e678fe9bbc59caf69db4b5/> disentangle instantiated nodes from locations
+ - <csr-id-128aaecd40edce57dc254afdcd61ecd5b9948d71/> simplify process/cluster specs
+   ---
+   [//]: # (BEGIN SAPLING FOOTER)
+   Stack created with [Sapling](https://sapling-scm.com). Best reviewed
+   with
+   [ReviewStack](https://reviewstack.dev/hydro-project/hydroflow/pull/1394).
+   * #1395
+   * __->__ #1394
+ - <csr-id-0eba702f62e7a6816cf931b01a2ea5643bd7321d/> defer network instantiation until after finalizing IR
+   ---
+   [//]: # (BEGIN SAPLING FOOTER)
+   Stack created with [Sapling](https://sapling-scm.com). Best reviewed
+   with
+   [ReviewStack](https://reviewstack.dev/hydro-project/hydroflow/pull/1377).
+   * #1395
+   * #1394
+   * __->__ #1377
+ - <csr-id-09d6d44eafc866881e73719813fe9edeb49ca2a6/> start rearranging stages of flow compilation to prepare for trybuild approach
+
+### Style (BREAKING)
+
+ - <csr-id-fa417205569d8c49c85b0c2324118e0f9b1c8407/> rename some `CLI`->`Deploy`, decapitalize acronym names
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 20 commits contributed to the release.
+ - 20 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 20 unique issues were worked on: [#1358](https://github.com/hydro-project/hydroflow/issues/1358), [#1368](https://github.com/hydro-project/hydroflow/issues/1368), [#1375](https://github.com/hydro-project/hydroflow/issues/1375), [#1376](https://github.com/hydro-project/hydroflow/issues/1376), [#1377](https://github.com/hydro-project/hydroflow/issues/1377), [#1394](https://github.com/hydro-project/hydroflow/issues/1394), [#1395](https://github.com/hydro-project/hydroflow/issues/1395), [#1398](https://github.com/hydro-project/hydroflow/issues/1398), [#1399](https://github.com/hydro-project/hydroflow/issues/1399), [#1404](https://github.com/hydro-project/hydroflow/issues/1404), [#1405](https://github.com/hydro-project/hydroflow/issues/1405), [#1410](https://github.com/hydro-project/hydroflow/issues/1410), [#1413](https://github.com/hydro-project/hydroflow/issues/1413), [#1420](https://github.com/hydro-project/hydroflow/issues/1420), [#1421](https://github.com/hydro-project/hydroflow/issues/1421), [#1423](https://github.com/hydro-project/hydroflow/issues/1423), [#1425](https://github.com/hydro-project/hydroflow/issues/1425), [#1427](https://github.com/hydro-project/hydroflow/issues/1427), [#1428](https://github.com/hydro-project/hydroflow/issues/1428), [#1430](https://github.com/hydro-project/hydroflow/issues/1430)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1358](https://github.com/hydro-project/hydroflow/issues/1358)**
+    - Start rearranging stages of flow compilation to prepare for trybuild approach ([`09d6d44`](https://github.com/hydro-project/hydroflow/commit/09d6d44eafc866881e73719813fe9edeb49ca2a6))
+ * **[#1368](https://github.com/hydro-project/hydroflow/issues/1368)**
+    - Overly restrictive input types for `send_bincode_interleaved` ([`ab12e5b`](https://github.com/hydro-project/hydroflow/commit/ab12e5b66718f06adc3c34bf879c9581d79ee0d2))
+ * **[#1375](https://github.com/hydro-project/hydroflow/issues/1375)**
+    - Add `Clone` bounds to `cross_join` and simplify broadcast logic ([`c12b249`](https://github.com/hydro-project/hydroflow/commit/c12b2495c70f170eba655e458f4591ef7d0941a4))
+ * **[#1376](https://github.com/hydro-project/hydroflow/issues/1376)**
+    - Add operators necessary for Paxos / PBFT ([`eaf497b`](https://github.com/hydro-project/hydroflow/commit/eaf497b601928be37530bc8d81717d200fd5987a))
+ * **[#1377](https://github.com/hydro-project/hydroflow/issues/1377)**
+    - Defer network instantiation until after finalizing IR ([`0eba702`](https://github.com/hydro-project/hydroflow/commit/0eba702f62e7a6816cf931b01a2ea5643bd7321d))
+ * **[#1394](https://github.com/hydro-project/hydroflow/issues/1394)**
+    - Simplify process/cluster specs ([`128aaec`](https://github.com/hydro-project/hydroflow/commit/128aaecd40edce57dc254afdcd61ecd5b9948d71))
+ * **[#1395](https://github.com/hydro-project/hydroflow/issues/1395)**
+    - Disentangle instantiated nodes from locations ([`5f2789a`](https://github.com/hydro-project/hydroflow/commit/5f2789a13d1602f170e678fe9bbc59caf69db4b5))
+ * **[#1398](https://github.com/hydro-project/hydroflow/issues/1398)**
+    - Use trybuild to compile subgraph binaries ([`46a8a2c`](https://github.com/hydro-project/hydroflow/commit/46a8a2cb08732bb21096e824bc4542d208c68fb2))
+ * **[#1399](https://github.com/hydro-project/hydroflow/issues/1399)**
+    - Rename some `CLI`->`Deploy`, decapitalize acronym names ([`fa41720`](https://github.com/hydro-project/hydroflow/commit/fa417205569d8c49c85b0c2324118e0f9b1c8407))
+ * **[#1404](https://github.com/hydro-project/hydroflow/issues/1404)**
+    - Rewrite IR in place to avoid stack overflow and disable cloning ([`1aeacb2`](https://github.com/hydro-project/hydroflow/commit/1aeacb212227f654e8f0cdc8a59816a68f059177))
+ * **[#1405](https://github.com/hydro-project/hydroflow/issues/1405)**
+    - Wrong stream type for `source_interval` ([`b518e67`](https://github.com/hydro-project/hydroflow/commit/b518e674560971ebd1b32c737151214b8d3310b0))
+ * **[#1410](https://github.com/hydro-project/hydroflow/issues/1410)**
+    - Add paxos ([`7bf9ee2`](https://github.com/hydro-project/hydroflow/commit/7bf9ee2f707ddd5d8f51853ab7babe035fd8d964))
+ * **[#1413](https://github.com/hydro-project/hydroflow/issues/1413)**
+    - Rename integration crates to drop CLI references ([`0a465e5`](https://github.com/hydro-project/hydroflow/commit/0a465e55dd39c76bc1aefb020460a639d792fe87))
+ * **[#1420](https://github.com/hydro-project/hydroflow/issues/1420)**
+    - Remove `FlowProps` ([`22c7218`](https://github.com/hydro-project/hydroflow/commit/22c72189bb76412955d29b03c5d99894c558a07c))
+ * **[#1421](https://github.com/hydro-project/hydroflow/issues/1421)**
+    - Refactor API to have no-tick semantics by default ([`536e644`](https://github.com/hydro-project/hydroflow/commit/536e6442d68b0947da5bfef9991825003e6867fc))
+ * **[#1423](https://github.com/hydro-project/hydroflow/issues/1423)**
+    - Lower min dependency versions where possible, update `Cargo.lock` ([`11af328`](https://github.com/hydro-project/hydroflow/commit/11af32828bab6e4a4264d2635ff71a12bb0bb778))
+ * **[#1425](https://github.com/hydro-project/hydroflow/issues/1425)**
+    - Separate singletons into their own types ([`44c6b14`](https://github.com/hydro-project/hydroflow/commit/44c6b149bea102e8598460ba0286e370b36fd25a))
+ * **[#1427](https://github.com/hydro-project/hydroflow/issues/1427)**
+    - Add unbounded top-level singletons ([`82de6f5`](https://github.com/hydro-project/hydroflow/commit/82de6f5fc89fd44fd2ac18fddd94d121b4b10c8a))
+ * **[#1428](https://github.com/hydro-project/hydroflow/issues/1428)**
+    - Cleanup doc comments for clippy latest ([`f5f1eb0`](https://github.com/hydro-project/hydroflow/commit/f5f1eb0c612f5c0c1752360d972ef6853c5e12f0))
+ * **[#1430](https://github.com/hydro-project/hydroflow/issues/1430)**
+    - Add API for cycle with initial value ([`71f69aa`](https://github.com/hydro-project/hydroflow/commit/71f69aa5e9f2ba187f07c44c0a9f2becfe72aab1))
+</details>
+
 ## v0.8.0 (2024-07-23)
+
+<csr-id-67c0e51fb25ea1a2e3aae197c1984920b46759fa/>
 
 ### Reverted
 
@@ -25,8 +159,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release over the course of 20 calendar days.
- - 59 days passed between releases.
+ - 3 commits contributed to the release.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#1143](https://github.com/hydro-project/hydroflow/issues/1143), [#1216](https://github.com/hydro-project/hydroflow/issues/1216), [#1295](https://github.com/hydro-project/hydroflow/issues/1295)
 
@@ -42,6 +175,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - "feat(hydroflow): Added poll_futures and poll_futures_async operators.", fix #1183 ([`256779a`](https://github.com/hydro-project/hydroflow/commit/256779abece03bee662b351430d27141d10bd5ef))
  * **[#1295](https://github.com/hydro-project/hydroflow/issues/1295)**
     - Require lifetime on `perist*()` operators ([`67c0e51`](https://github.com/hydro-project/hydroflow/commit/67c0e51fb25ea1a2e3aae197c1984920b46759fa))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.8.0, hydroflow_datalog_core v0.8.0, hydroflow_datalog v0.8.0, hydroflow_macro v0.8.0, lattices_macro v0.5.5, lattices v0.5.6, variadics v0.0.5, pusherator v0.0.7, hydroflow v0.8.0, hydroflow_plus v0.8.0, hydro_deploy v0.8.0, hydro_cli v0.8.0, hydroflow_plus_cli_integration v0.8.0, safety bump 7 crates ([`ca6c16b`](https://github.com/hydro-project/hydroflow/commit/ca6c16b4a7ce35e155fe7fc6c7d1676c37c9e4de))
 </details>
 
 ## v0.7.0 (2024-05-24)
@@ -69,8 +204,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release over the course of 42 calendar days.
- - 44 days passed between releases.
+ - 7 commits contributed to the release.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 6 unique issues were worked on: [#1143](https://github.com/hydro-project/hydroflow/issues/1143), [#1151](https://github.com/hydro-project/hydroflow/issues/1151), [#1156](https://github.com/hydro-project/hydroflow/issues/1156), [#1157](https://github.com/hydro-project/hydroflow/issues/1157), [#1194](https://github.com/hydro-project/hydroflow/issues/1194), [#1238](https://github.com/hydro-project/hydroflow/issues/1238)
 
@@ -129,8 +263,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 9 commits contributed to the release over the course of 28 calendar days.
- - 38 days passed between releases.
+ - 9 commits contributed to the release.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 6 unique issues were worked on: [#1083](https://github.com/hydro-project/hydroflow/issues/1083), [#1098](https://github.com/hydro-project/hydroflow/issues/1098), [#1100](https://github.com/hydro-project/hydroflow/issues/1100), [#1101](https://github.com/hydro-project/hydroflow/issues/1101), [#1107](https://github.com/hydro-project/hydroflow/issues/1107), [#1140](https://github.com/hydro-project/hydroflow/issues/1140)
 
@@ -177,8 +310,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release over the course of 2 calendar days.
- - 31 days passed between releases.
+ - 4 commits contributed to the release.
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#1070](https://github.com/hydro-project/hydroflow/issues/1070), [#1080](https://github.com/hydro-project/hydroflow/issues/1080), [#1084](https://github.com/hydro-project/hydroflow/issues/1084)
 
@@ -252,7 +384,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 25 commits contributed to the release over the course of 76 calendar days.
+ - 25 commits contributed to the release.
  - 23 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 20 unique issues were worked on: [#1001](https://github.com/hydro-project/hydroflow/issues/1001), [#1003](https://github.com/hydro-project/hydroflow/issues/1003), [#1004](https://github.com/hydro-project/hydroflow/issues/1004), [#1006](https://github.com/hydro-project/hydroflow/issues/1006), [#1013](https://github.com/hydro-project/hydroflow/issues/1013), [#1021](https://github.com/hydro-project/hydroflow/issues/1021), [#1022](https://github.com/hydro-project/hydroflow/issues/1022), [#1023](https://github.com/hydro-project/hydroflow/issues/1023), [#1035](https://github.com/hydro-project/hydroflow/issues/1035), [#1036](https://github.com/hydro-project/hydroflow/issues/1036), [#899](https://github.com/hydro-project/hydroflow/issues/899), [#976](https://github.com/hydro-project/hydroflow/issues/976), [#978](https://github.com/hydro-project/hydroflow/issues/978), [#981](https://github.com/hydro-project/hydroflow/issues/981), [#982](https://github.com/hydro-project/hydroflow/issues/982), [#984](https://github.com/hydro-project/hydroflow/issues/984), [#989](https://github.com/hydro-project/hydroflow/issues/989), [#991](https://github.com/hydro-project/hydroflow/issues/991), [#993](https://github.com/hydro-project/hydroflow/issues/993), [#995](https://github.com/hydro-project/hydroflow/issues/995)
 

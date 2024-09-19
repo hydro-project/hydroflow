@@ -1,10 +1,13 @@
 
 
-## Unreleased
+## 0.9.0 (2024-08-30)
+
+<csr-id-5f2789a13d1602f170e678fe9bbc59caf69db4b5/>
 
 ### New Features
 
  - <csr-id-46a8a2cb08732bb21096e824bc4542d208c68fb2/> use trybuild to compile subgraph binaries
+ - <csr-id-6568263e03899d4e96837690e6e59284c194d7ff/> Add end-to-end flamegraph generation for macos and linux localhost, fix #1351
 
 ### Refactor (BREAKING)
 
@@ -18,6 +21,62 @@
    * #1395
    * __->__ #1394
  - <csr-id-0eba702f62e7a6816cf931b01a2ea5643bd7321d/> defer network instantiation until after finalizing IR
+   ---
+   [//]: # (BEGIN SAPLING FOOTER)
+   Stack created with [Sapling](https://sapling-scm.com). Best reviewed
+   with
+   [ReviewStack](https://reviewstack.dev/hydro-project/hydroflow/pull/1377).
+   * #1395
+   * #1394
+   * __->__ #1377
+
+### Style (BREAKING)
+
+ - <csr-id-fa417205569d8c49c85b0c2324118e0f9b1c8407/> rename some `CLI`->`Deploy`, decapitalize acronym names
+
+### Refactor (BREAKING)
+
+ - <csr-id-0a465e55dd39c76bc1aefb020460a639d792fe87/> rename integration crates to drop CLI references
+
+### Style
+
+ - <csr-id-3fde68d0db0414017cfb771a218b14b8f57d1686/> use `name_of!` macro
+
+### Other
+
+ - <csr-id-c41787f527859cb9d704736ecdea5ca7bc641460/> update `RELEASING.md` notes, prep for release, wip
+
+### Bug Fixes
+
+ - <csr-id-22c72189bb76412955d29b03c5d99894c558a07c/> remove `FlowProps`
+
+### Chore
+
+ - <csr-id-a2ec110ccadb97e293b19d83a155d98d94224bba/> manually set versions for crates renamed in #1413
+ - <csr-id-11af32828bab6e4a4264d2635ff71a12bb0bb778/> lower min dependency versions where possible, update `Cargo.lock`
+   Moved from #1418
+   
+   ---------
+
+<csr-id-128aaecd40edce57dc254afdcd61ecd5b9948d71/> simplify process/cluster specs
+   ---
+   [//]: # (BEGIN SAPLING FOOTER)
+   Stack created with [Sapling](https://sapling-scm.com). Best reviewed
+   with
+   [ReviewStack](https://reviewstack.dev/hydro-project/hydroflow/pull/1394).
+   * #1395
+   * __->__ #1394
+ - <csr-id-0eba702f62e7a6816cf931b01a2ea5643bd7321d/> defer network instantiation until after finalizing IR
+   ---
+   [//]: # (BEGIN SAPLING FOOTER)
+   Stack created with [Sapling](https://sapling-scm.com). Best reviewed
+   with
+   [ReviewStack](https://reviewstack.dev/hydro-project/hydroflow/pull/1377).
+   * #1395
+   * #1394
+   * __->__ #1377
+
+<csr-id-0eba702f62e7a6816cf931b01a2ea5643bd7321d/> defer network instantiation until after finalizing IR
    ---
    [//]: # (BEGIN SAPLING FOOTER)
    Stack created with [Sapling](https://sapling-scm.com). Best reviewed
@@ -52,6 +111,37 @@
     - Use trybuild to compile subgraph binaries ([`46a8a2c`](https://github.com/hydro-project/hydroflow/commit/46a8a2cb08732bb21096e824bc4542d208c68fb2))
 </details>
 
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 8 commits contributed to the release.
+ - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 6 unique issues were worked on: [#1396](https://github.com/hydro-project/hydroflow/issues/1396), [#1399](https://github.com/hydro-project/hydroflow/issues/1399), [#1413](https://github.com/hydro-project/hydroflow/issues/1413), [#1420](https://github.com/hydro-project/hydroflow/issues/1420), [#1423](https://github.com/hydro-project/hydroflow/issues/1423), [#1429](https://github.com/hydro-project/hydroflow/issues/1429)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1396](https://github.com/hydro-project/hydroflow/issues/1396)**
+    - Add end-to-end flamegraph generation for macos and linux localhost, fix #1351 ([`6568263`](https://github.com/hydro-project/hydroflow/commit/6568263e03899d4e96837690e6e59284c194d7ff))
+ * **[#1399](https://github.com/hydro-project/hydroflow/issues/1399)**
+    - Rename some `CLI`->`Deploy`, decapitalize acronym names ([`fa41720`](https://github.com/hydro-project/hydroflow/commit/fa417205569d8c49c85b0c2324118e0f9b1c8407))
+ * **[#1413](https://github.com/hydro-project/hydroflow/issues/1413)**
+    - Rename integration crates to drop CLI references ([`0a465e5`](https://github.com/hydro-project/hydroflow/commit/0a465e55dd39c76bc1aefb020460a639d792fe87))
+ * **[#1420](https://github.com/hydro-project/hydroflow/issues/1420)**
+    - Remove `FlowProps` ([`22c7218`](https://github.com/hydro-project/hydroflow/commit/22c72189bb76412955d29b03c5d99894c558a07c))
+ * **[#1423](https://github.com/hydro-project/hydroflow/issues/1423)**
+    - Lower min dependency versions where possible, update `Cargo.lock` ([`11af328`](https://github.com/hydro-project/hydroflow/commit/11af32828bab6e4a4264d2635ff71a12bb0bb778))
+ * **[#1429](https://github.com/hydro-project/hydroflow/issues/1429)**
+    - Use `name_of!` macro ([`3fde68d`](https://github.com/hydro-project/hydroflow/commit/3fde68d0db0414017cfb771a218b14b8f57d1686))
+ * **Uncategorized**
+    - Manually set versions for crates renamed in #1413 ([`a2ec110`](https://github.com/hydro-project/hydroflow/commit/a2ec110ccadb97e293b19d83a155d98d94224bba))
+    - Update `RELEASING.md` notes, prep for release, wip ([`c41787f`](https://github.com/hydro-project/hydroflow/commit/c41787f527859cb9d704736ecdea5ca7bc641460))
+</details>
+
 ## v0.8.0 (2024-07-23)
 
 <csr-id-c5a8de28e7844b3c29d58116d8340967f2e6bcc4/>
@@ -71,7 +161,7 @@
    We could make the publicly facing `stdout`, `stderr` APIs return `impl Stream<Output = String>` in the future, maybe
  - <csr-id-141eae1c3a1869fa42756250618a21ea2a2c7e34/> replace some uses of `tokio::sync::RwLock` with `std::sync::Mutex` #430 (3/3)
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -80,7 +170,7 @@
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1339](https://github.com/hydro-project/hydroflow/issues/1339), [#1346](https://github.com/hydro-project/hydroflow/issues/1346), [#1347](https://github.com/hydro-project/hydroflow/issues/1347), [#1356](https://github.com/hydro-project/hydroflow/issues/1356)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -111,7 +201,7 @@
  - <csr-id-6e571726ff40818fbe9bbe9923511877c20fb243/> add API to get the cluster ID of the current node
    feat(hydroflow_plus): add API to get the cluster ID of the current node
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -120,7 +210,7 @@
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1194](https://github.com/hydro-project/hydroflow/issues/1194), [#1238](https://github.com/hydro-project/hydroflow/issues/1238)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -147,7 +237,7 @@
    for having developers run the optimizer during deployment as well in
    case it changes the network topology.
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -156,7 +246,7 @@
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1100](https://github.com/hydro-project/hydroflow/issues/1100), [#1101](https://github.com/hydro-project/hydroflow/issues/1101)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -181,7 +271,7 @@
  - <csr-id-eb34ccd13f56e1d07cbae35ead79daeb3b9bad20/> use an IR before lowering to Hydroflow
    Makes it possible to write custom optimization passes.
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -190,7 +280,7 @@
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1070](https://github.com/hydro-project/hydroflow/issues/1070), [#1080](https://github.com/hydro-project/hydroflow/issues/1080)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -232,7 +322,7 @@
  - <csr-id-53d7aee8dcc574d47864ec89bfea30a82eab0ee7/> improve Rust API for defining services
  - <csr-id-c50ca121b6d5e30dc07843f82caa135b68626301/> split Rust core from Python bindings
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -240,7 +330,7 @@
  - 9 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 6 unique issues were worked on: [#1013](https://github.com/hydro-project/hydroflow/issues/1013), [#1056](https://github.com/hydro-project/hydroflow/issues/1056), [#986](https://github.com/hydro-project/hydroflow/issues/986), [#987](https://github.com/hydro-project/hydroflow/issues/987), [#995](https://github.com/hydro-project/hydroflow/issues/995), [#996](https://github.com/hydro-project/hydroflow/issues/996)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 

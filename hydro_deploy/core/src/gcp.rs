@@ -184,7 +184,10 @@ pub struct GcpComputeEngineHost {
 }
 
 impl GcpComputeEngineHost {
-    #[allow(clippy::too_many_arguments)] // TODO(mingwei)
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "internal code called by builder elsewhere"
+    )]
     pub fn new(
         id: usize,
         project: impl Into<String>,

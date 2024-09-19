@@ -5,13 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.9.0 (2024-08-30)
+
+### Chore
+
+ - <csr-id-a2ec110ccadb97e293b19d83a155d98d94224bba/> manually set versions for crates renamed in #1413
+ - <csr-id-11af32828bab6e4a4264d2635ff71a12bb0bb778/> lower min dependency versions where possible, update `Cargo.lock`
+   Moved from #1418
+   
+   ---------
+
+### Other
+
+ - <csr-id-c41787f527859cb9d704736ecdea5ca7bc641460/> update `RELEASING.md` notes, prep for release, wip
+
+### Refactor (BREAKING)
+
+ - <csr-id-0a465e55dd39c76bc1aefb020460a639d792fe87/> rename integration crates to drop CLI references
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 2 unique issues were worked on: [#1413](https://github.com/hydro-project/hydroflow/issues/1413), [#1423](https://github.com/hydro-project/hydroflow/issues/1423)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1413](https://github.com/hydro-project/hydroflow/issues/1413)**
+    - Rename integration crates to drop CLI references ([`0a465e5`](https://github.com/hydro-project/hydroflow/commit/0a465e55dd39c76bc1aefb020460a639d792fe87))
+ * **[#1423](https://github.com/hydro-project/hydroflow/issues/1423)**
+    - Lower min dependency versions where possible, update `Cargo.lock` ([`11af328`](https://github.com/hydro-project/hydroflow/commit/11af32828bab6e4a4264d2635ff71a12bb0bb778))
+ * **Uncategorized**
+    - Manually set versions for crates renamed in #1413 ([`a2ec110`](https://github.com/hydro-project/hydroflow/commit/a2ec110ccadb97e293b19d83a155d98d94224bba))
+    - Update `RELEASING.md` notes, prep for release, wip ([`c41787f`](https://github.com/hydro-project/hydroflow/commit/c41787f527859cb9d704736ecdea5ca7bc641460))
+</details>
+
 ## 0.5.2 (2024-04-05)
+
+<csr-id-ba2df44efd42b7c4d37ebefbf82e77c6f1d4cb94/>
 
 ### Refactor
 
  - <csr-id-ba2df44efd42b7c4d37ebefbf82e77c6f1d4cb94/> use `TcpListenerStream` instead of spawning task, fix #659
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -20,7 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#1121](https://github.com/hydro-project/hydroflow/issues/1121)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -73,7 +116,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Auto-configure Hydro Deploy based on Hydroflow+ plans ([`9e27582`](https://github.com/hydro-project/hydroflow/commit/9e275824c88b24d060a7de5822e1359959b36b03))
 </details>
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -82,7 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1046](https://github.com/hydro-project/hydroflow/issues/1046), [#986](https://github.com/hydro-project/hydroflow/issues/986)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 

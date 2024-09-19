@@ -1,29 +1,49 @@
 use std::marker::PhantomData;
 
 use crate::builder::FlowLeaves;
-use crate::ir::HfPlusLeaf;
 use crate::location::{Location, LocationId};
-use crate::Stream;
+use crate::{NoTick, Tick};
+
+pub trait CycleComplete<'a, T> {
+    fn complete(self, ident: syn::Ident);
+}
+
+pub trait CycleCollection<'a, T>: CycleComplete<'a, T> {
+    type Location: Location;
+
+    fn create_source(ident: syn::Ident, ir_leaves: FlowLeaves<'a>, l: LocationId) -> Self;
+}
+
+pub trait CycleCollectionWithInitial<'a, T>: CycleComplete<'a, T> {
+    type Location: Location;
+
+    fn create_source(
+        ident: syn::Ident,
+        ir_leaves: FlowLeaves<'a>,
+        initial: Self,
+        l: LocationId,
+    ) -> Self;
+}
 
 /// Represents a fixpoint cycle in the graph that will be fulfilled
 /// by a stream that is not yet known.
 ///
-/// See [`Stream`] for an explainer on the type parameters.
-pub struct HfCycle<'a, T, W, N: Location> {
+/// See [`crate::FlowBuilder`] for an explainer on the type parameters.
+pub struct HfCycle<'a, T, S: CycleComplete<'a, T>> {
     pub(crate) ident: syn::Ident,
-    pub(crate) location_kind: LocationId,
-    pub(crate) ir_leaves: FlowLeaves<'a>,
-    pub(crate) _phantom: PhantomData<(N, &'a mut &'a (), T, W)>,
+    pub(crate) _phantom: PhantomData<(&'a mut &'a (), T, S)>,
 }
 
-impl<'a, T, W, N: Location> HfCycle<'a, T, W, N> {
-    pub fn complete(self, stream: Stream<'a, T, W, N>) {
+impl<'a, S: CycleComplete<'a, NoTick>> HfCycle<'a, NoTick, S> {
+    pub fn complete(self, stream: S) {
         let ident = self.ident;
+        S::complete(stream, ident)
+    }
+}
 
-        self.ir_leaves.borrow_mut().as_mut().expect("Attempted to add a cycle to a flow that has already been finalized. No cycles can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
-            ident,
-            location_kind: self.location_kind,
-            input: Box::new(stream.ir_node.into_inner()),
-        });
+impl<'a, S: CycleComplete<'a, Tick>> HfCycle<'a, Tick, S> {
+    pub fn complete_next_tick(self, stream: S) {
+        let ident = self.ident;
+        S::complete(stream, ident)
     }
 }

@@ -10,7 +10,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::ToTokens;
 use syn::parse_quote;
 
-use crate::deploy::Deploy;
+use crate::deploy::{Deploy, RegisterPort};
 use crate::location::LocationId;
 
 #[derive(Clone)]
@@ -66,6 +66,7 @@ impl std::fmt::Debug for DebugPipelineFn {
 #[derive(Debug)]
 pub enum HfPlusSource {
     Stream(DebugExpr),
+    ExternalNetwork(),
     Iter(DebugExpr),
     Interval(DebugExpr),
     Spin(),
@@ -98,10 +99,11 @@ impl<'a> HfPlusLeaf<'a> {
         seen_tees: &mut SeenTees<'a>,
         nodes: &HashMap<usize, D::Process>,
         clusters: &HashMap<usize, D::Cluster>,
+        externals: &HashMap<usize, D::ExternalProcess>,
     ) -> HfPlusLeaf<'a> {
         self.transform_children(
             |n, s| {
-                n.compile_network::<D>(compile_env, s, nodes, clusters);
+                n.compile_network::<D>(compile_env, s, nodes, clusters, externals);
             },
             seen_tees,
         )
@@ -187,6 +189,7 @@ impl<'a> HfPlusLeaf<'a> {
                 let location_id = match location_kind {
                     LocationId::Process(id) => id,
                     LocationId::Cluster(id) => id,
+                    LocationId::ExternalProcess(_) => panic!(),
                 };
 
                 assert_eq!(
@@ -226,6 +229,7 @@ pub enum HfPlusNode<'a> {
     },
 
     Persist(Box<HfPlusNode<'a>>),
+    Unpersist(Box<HfPlusNode<'a>>),
     Delta(Box<HfPlusNode<'a>>),
 
     Union(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
@@ -284,7 +288,9 @@ pub enum HfPlusNode<'a> {
 
     Network {
         from_location: LocationId,
+        from_key: Option<usize>,
         to_location: LocationId,
+        to_key: Option<usize>,
         serialize_pipeline: Option<Pipeline>,
         instantiate_fn: DebugInstantiate<'a>,
         deserialize_pipeline: Option<Pipeline>,
@@ -301,170 +307,33 @@ impl<'a> HfPlusNode<'a> {
         seen_tees: &mut SeenTees<'a>,
         nodes: &HashMap<usize, D::Process>,
         clusters: &HashMap<usize, D::Cluster>,
+        externals: &HashMap<usize, D::ExternalProcess>,
     ) {
         self.transform_children(
-            |n, s| n.compile_network::<D>(compile_env, s, nodes, clusters),
+            |n, s| n.compile_network::<D>(compile_env, s, nodes, clusters, externals),
             seen_tees,
         );
 
         if let HfPlusNode::Network {
             from_location,
+            from_key,
             to_location,
+            to_key,
             instantiate_fn,
             ..
         } = self
         {
             let (sink_expr, source_expr, connect_fn) = match instantiate_fn {
-                DebugInstantiate::Building() => {
-                    let ((sink, source), connect_fn) = match (from_location, to_location) {
-                        (LocationId::Process(from), LocationId::Process(to)) => {
-                            let from_node = nodes
-                                .get(from)
-                                .unwrap_or_else(|| {
-                                    panic!(
-                                        "A location used in the graph was not instantiated: {}",
-                                        from
-                                    )
-                                })
-                                .clone();
-                            let to_node = nodes
-                                .get(to)
-                                .unwrap_or_else(|| {
-                                    panic!(
-                                        "A location used in the graph was not instantiated: {}",
-                                        to
-                                    )
-                                })
-                                .clone();
-
-                            let sink_port = D::allocate_process_port(&from_node);
-                            let source_port = D::allocate_process_port(&to_node);
-
-                            (
-                                D::o2o_sink_source(
-                                    compile_env,
-                                    &from_node,
-                                    &sink_port,
-                                    &to_node,
-                                    &source_port,
-                                ),
-                                Box::new(move || {
-                                    D::o2o_connect(&from_node, &sink_port, &to_node, &source_port)
-                                }) as Box<dyn Fn() + 'a>,
-                            )
-                        }
-                        (LocationId::Process(from), LocationId::Cluster(to)) => {
-                            let from_node = nodes
-                                .get(from)
-                                .unwrap_or_else(|| {
-                                    panic!(
-                                        "A location used in the graph was not instantiated: {}",
-                                        from
-                                    )
-                                })
-                                .clone();
-                            let to_node = clusters
-                                .get(to)
-                                .unwrap_or_else(|| {
-                                    panic!(
-                                        "A location used in the graph was not instantiated: {}",
-                                        to
-                                    )
-                                })
-                                .clone();
-
-                            let sink_port = D::allocate_process_port(&from_node);
-                            let source_port = D::allocate_cluster_port(&to_node);
-
-                            (
-                                D::o2m_sink_source(
-                                    compile_env,
-                                    &from_node,
-                                    &sink_port,
-                                    &to_node,
-                                    &source_port,
-                                ),
-                                Box::new(move || {
-                                    D::o2m_connect(&from_node, &sink_port, &to_node, &source_port)
-                                }) as Box<dyn Fn() + 'a>,
-                            )
-                        }
-                        (LocationId::Cluster(from), LocationId::Process(to)) => {
-                            let from_node = clusters
-                                .get(from)
-                                .unwrap_or_else(|| {
-                                    panic!(
-                                        "A location used in the graph was not instantiated: {}",
-                                        from
-                                    )
-                                })
-                                .clone();
-                            let to_node = nodes
-                                .get(to)
-                                .unwrap_or_else(|| {
-                                    panic!(
-                                        "A location used in the graph was not instantiated: {}",
-                                        to
-                                    )
-                                })
-                                .clone();
-
-                            let sink_port = D::allocate_cluster_port(&from_node);
-                            let source_port = D::allocate_process_port(&to_node);
-
-                            (
-                                D::m2o_sink_source(
-                                    compile_env,
-                                    &from_node,
-                                    &sink_port,
-                                    &to_node,
-                                    &source_port,
-                                ),
-                                Box::new(move || {
-                                    D::m2o_connect(&from_node, &sink_port, &to_node, &source_port)
-                                }) as Box<dyn Fn() + 'a>,
-                            )
-                        }
-                        (LocationId::Cluster(from), LocationId::Cluster(to)) => {
-                            let from_node = clusters
-                                .get(from)
-                                .unwrap_or_else(|| {
-                                    panic!(
-                                        "A location used in the graph was not instantiated: {}",
-                                        from
-                                    )
-                                })
-                                .clone();
-                            let to_node = clusters
-                                .get(to)
-                                .unwrap_or_else(|| {
-                                    panic!(
-                                        "A location used in the graph was not instantiated: {}",
-                                        to
-                                    )
-                                })
-                                .clone();
-
-                            let sink_port = D::allocate_cluster_port(&from_node);
-                            let source_port = D::allocate_cluster_port(&to_node);
-
-                            (
-                                D::m2m_sink_source(
-                                    compile_env,
-                                    &from_node,
-                                    &sink_port,
-                                    &to_node,
-                                    &source_port,
-                                ),
-                                Box::new(move || {
-                                    D::m2m_connect(&from_node, &sink_port, &to_node, &source_port)
-                                }) as Box<dyn Fn() + 'a>,
-                            )
-                        }
-                    };
-
-                    (sink, source, connect_fn)
-                }
+                DebugInstantiate::Building() => instantiate_network::<D>(
+                    from_location,
+                    *from_key,
+                    to_location,
+                    *to_key,
+                    nodes,
+                    clusters,
+                    externals,
+                    compile_env,
+                ),
 
                 DebugInstantiate::Finalized(_, _, _) => panic!("network already finalized"),
             };
@@ -486,6 +355,18 @@ impl<'a> HfPlusNode<'a> {
         }
     }
 
+    pub fn transform_bottom_up<C>(
+        &mut self,
+        mut transform: impl FnMut(&mut HfPlusNode<'a>, &mut C) + Copy,
+        seen_tees: &mut SeenTees<'a>,
+        ctx: &mut C,
+    ) {
+        self.transform_children(|n, s| n.transform_bottom_up(transform, s, ctx), seen_tees);
+
+        transform(self, ctx)
+    }
+
+    #[inline(always)]
     pub fn transform_children(
         &mut self,
         mut transform: impl FnMut(&mut HfPlusNode<'a>, &mut SeenTees<'a>),
@@ -519,6 +400,7 @@ impl<'a> HfPlusNode<'a> {
             }
 
             HfPlusNode::Persist(inner) => transform(inner.as_mut(), seen_tees),
+            HfPlusNode::Unpersist(inner) => transform(inner.as_mut(), seen_tees),
             HfPlusNode::Delta(inner) => transform(inner.as_mut(), seen_tees),
 
             HfPlusNode::Union(left, right) => {
@@ -623,6 +505,10 @@ impl<'a> HfPlusNode<'a> {
                 (persist_ident, location)
             }
 
+            HfPlusNode::Unpersist(_) => {
+                panic!("Unpersist is a marker node and should have been optimized away. This is likely a compiler bug.")
+            }
+
             HfPlusNode::Delta(inner) => {
                 let (inner_ident, location) = inner.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -644,49 +530,58 @@ impl<'a> HfPlusNode<'a> {
                 source,
                 location_kind,
             } => {
-                let source_id = *next_stmt_id;
-                *next_stmt_id += 1;
-
-                let source_ident =
-                    syn::Ident::new(&format!("stream_{}", source_id), Span::call_site());
-
-                let source_stmt = match source {
-                    HfPlusSource::Stream(expr) => {
-                        parse_quote! {
-                            #source_ident = source_stream(#expr);
-                        }
-                    }
-
-                    HfPlusSource::Iter(expr) => {
-                        parse_quote! {
-                            #source_ident = source_iter(#expr);
-                        }
-                    }
-
-                    HfPlusSource::Interval(expr) => {
-                        parse_quote! {
-                            #source_ident = source_interval(#expr);
-                        }
-                    }
-
-                    HfPlusSource::Spin() => {
-                        parse_quote! {
-                            #source_ident = spin();
-                        }
-                    }
-                };
-
                 let location_id = match location_kind {
                     LocationId::Process(id) => id,
                     LocationId::Cluster(id) => id,
+                    LocationId::ExternalProcess(id) => id,
                 };
 
-                graph_builders
-                    .entry(*location_id)
-                    .or_default()
-                    .add_statement(source_stmt);
+                if let HfPlusSource::ExternalNetwork() = source {
+                    (syn::Ident::new("DUMMY", Span::call_site()), *location_id)
+                } else {
+                    let source_id = *next_stmt_id;
+                    *next_stmt_id += 1;
 
-                (source_ident, *location_id)
+                    let source_ident =
+                        syn::Ident::new(&format!("stream_{}", source_id), Span::call_site());
+
+                    let source_stmt = match source {
+                        HfPlusSource::Stream(expr) => {
+                            parse_quote! {
+                                #source_ident = source_stream(#expr);
+                            }
+                        }
+
+                        HfPlusSource::ExternalNetwork() => {
+                            unreachable!()
+                        }
+
+                        HfPlusSource::Iter(expr) => {
+                            parse_quote! {
+                                #source_ident = source_iter(#expr);
+                            }
+                        }
+
+                        HfPlusSource::Interval(expr) => {
+                            parse_quote! {
+                                #source_ident = source_interval(#expr);
+                            }
+                        }
+
+                        HfPlusSource::Spin() => {
+                            parse_quote! {
+                                #source_ident = spin();
+                            }
+                        }
+                    };
+
+                    graph_builders
+                        .entry(*location_id)
+                        .or_default()
+                        .add_statement(source_stmt);
+
+                    (source_ident, *location_id)
+                }
             }
 
             HfPlusNode::CycleSource {
@@ -696,6 +591,7 @@ impl<'a> HfPlusNode<'a> {
                 let location_id = match location_kind {
                     LocationId::Process(id) => id,
                     LocationId::Cluster(id) => id,
+                    LocationId::ExternalProcess(_) => panic!(),
                 };
 
                 (ident.clone(), *location_id)
@@ -1180,7 +1076,9 @@ impl<'a> HfPlusNode<'a> {
 
             HfPlusNode::Network {
                 from_location: _,
+                from_key: _,
                 to_location,
+                to_key: _,
                 serialize_pipeline,
                 instantiate_fn,
                 deserialize_pipeline,
@@ -1214,6 +1112,7 @@ impl<'a> HfPlusNode<'a> {
                 let to_id = match to_location {
                     LocationId::Process(id) => id,
                     LocationId::Cluster(id) => id,
+                    LocationId::ExternalProcess(_) => panic!(),
                 };
 
                 let receiver_builder = graph_builders.entry(*to_id).or_default();
@@ -1237,4 +1136,156 @@ impl<'a> HfPlusNode<'a> {
             }
         }
     }
+}
+
+#[expect(clippy::too_many_arguments, reason = "networking internals")]
+fn instantiate_network<'a, D: Deploy<'a> + 'a>(
+    from_location: &mut LocationId,
+    from_key: Option<usize>,
+    to_location: &mut LocationId,
+    _to_key: Option<usize>,
+    nodes: &HashMap<usize, D::Process>,
+    clusters: &HashMap<usize, D::Cluster>,
+    externals: &HashMap<usize, D::ExternalProcess>,
+    compile_env: &D::CompileEnv,
+) -> (syn::Expr, syn::Expr, Box<dyn Fn() + 'a>) {
+    let ((sink, source), connect_fn) = match (from_location, to_location) {
+        (LocationId::Process(from), LocationId::Process(to)) => {
+            let from_node = nodes
+                .get(from)
+                .unwrap_or_else(|| {
+                    panic!("A process used in the graph was not instantiated: {}", from)
+                })
+                .clone();
+            let to_node = nodes
+                .get(to)
+                .unwrap_or_else(|| {
+                    panic!("A process used in the graph was not instantiated: {}", to)
+                })
+                .clone();
+
+            let sink_port = D::allocate_process_port(&from_node);
+            let source_port = D::allocate_process_port(&to_node);
+
+            (
+                D::o2o_sink_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
+                Box::new(move || D::o2o_connect(&from_node, &sink_port, &to_node, &source_port))
+                    as Box<dyn Fn() + 'a>,
+            )
+        }
+        (LocationId::Process(from), LocationId::Cluster(to)) => {
+            let from_node = nodes
+                .get(from)
+                .unwrap_or_else(|| {
+                    panic!("A process used in the graph was not instantiated: {}", from)
+                })
+                .clone();
+            let to_node = clusters
+                .get(to)
+                .unwrap_or_else(|| {
+                    panic!("A cluster used in the graph was not instantiated: {}", to)
+                })
+                .clone();
+
+            let sink_port = D::allocate_process_port(&from_node);
+            let source_port = D::allocate_cluster_port(&to_node);
+
+            (
+                D::o2m_sink_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
+                Box::new(move || D::o2m_connect(&from_node, &sink_port, &to_node, &source_port))
+                    as Box<dyn Fn() + 'a>,
+            )
+        }
+        (LocationId::Cluster(from), LocationId::Process(to)) => {
+            let from_node = clusters
+                .get(from)
+                .unwrap_or_else(|| {
+                    panic!("A cluster used in the graph was not instantiated: {}", from)
+                })
+                .clone();
+            let to_node = nodes
+                .get(to)
+                .unwrap_or_else(|| {
+                    panic!("A process used in the graph was not instantiated: {}", to)
+                })
+                .clone();
+
+            let sink_port = D::allocate_cluster_port(&from_node);
+            let source_port = D::allocate_process_port(&to_node);
+
+            (
+                D::m2o_sink_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
+                Box::new(move || D::m2o_connect(&from_node, &sink_port, &to_node, &source_port))
+                    as Box<dyn Fn() + 'a>,
+            )
+        }
+        (LocationId::Cluster(from), LocationId::Cluster(to)) => {
+            let from_node = clusters
+                .get(from)
+                .unwrap_or_else(|| {
+                    panic!("A cluster used in the graph was not instantiated: {}", from)
+                })
+                .clone();
+            let to_node = clusters
+                .get(to)
+                .unwrap_or_else(|| {
+                    panic!("A cluster used in the graph was not instantiated: {}", to)
+                })
+                .clone();
+
+            let sink_port = D::allocate_cluster_port(&from_node);
+            let source_port = D::allocate_cluster_port(&to_node);
+
+            (
+                D::m2m_sink_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
+                Box::new(move || D::m2m_connect(&from_node, &sink_port, &to_node, &source_port))
+                    as Box<dyn Fn() + 'a>,
+            )
+        }
+        (LocationId::ExternalProcess(from), LocationId::Process(to)) => {
+            let from_node = externals
+                .get(from)
+                .unwrap_or_else(|| {
+                    panic!(
+                        "A external used in the graph was not instantiated: {}",
+                        from
+                    )
+                })
+                .clone();
+
+            let to_node = nodes
+                .get(to)
+                .unwrap_or_else(|| {
+                    panic!("A process used in the graph was not instantiated: {}", to)
+                })
+                .clone();
+
+            let sink_port = D::allocate_external_port(&from_node);
+            let source_port = D::allocate_process_port(&to_node);
+
+            from_node.register(from_key.unwrap(), sink_port.clone());
+
+            (
+                (
+                    parse_quote!(DUMMY),
+                    D::e2o_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
+                ),
+                Box::new(move || D::e2o_connect(&from_node, &sink_port, &to_node, &source_port))
+                    as Box<dyn Fn() + 'a>,
+            )
+        }
+        (LocationId::ExternalProcess(_from), LocationId::Cluster(_to)) => {
+            todo!("NYI")
+        }
+        (LocationId::ExternalProcess(_), LocationId::ExternalProcess(_)) => {
+            panic!("Cannot send from external to external")
+        }
+        (LocationId::Process(_from), LocationId::ExternalProcess(_to)) => {
+            todo!("NYI")
+        }
+        (LocationId::Cluster(_from), LocationId::ExternalProcess(_to)) => {
+            todo!("NYI")
+        }
+    };
+    (sink, source, connect_fn)
 }

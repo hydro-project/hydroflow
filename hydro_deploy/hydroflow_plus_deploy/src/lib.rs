@@ -8,7 +8,7 @@ pub(crate) mod trybuild;
 
 pub use runtime::*;
 
-#[allow(unused)]
+#[allow(clippy::allow_attributes, unused, reason = "stageleft")]
 pub(crate) mod deploy_runtime;
 
 #[cfg(feature = "deploy")]

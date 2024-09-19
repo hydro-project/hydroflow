@@ -20,10 +20,10 @@ pub fn compute_pi(flow: &FlowBuilder, batch_size: RuntimeData<usize>) -> Process
 
                 *total += 1;
             }),
-        );
+        )
+        .all_ticks();
 
     trials
-        .all_ticks()
         .reduce(q!(|(inside, total), (inside_batch, total_batch)| {
             *inside += inside_batch;
             *total += total_batch;

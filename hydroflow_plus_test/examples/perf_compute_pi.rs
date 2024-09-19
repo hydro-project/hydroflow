@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use hydro_deploy::gcp::GcpNetwork;
-use hydro_deploy::hydroflow_crate::perf_options::PerfOptions;
+use hydro_deploy::hydroflow_crate::tracing_options::TracingOptions;
 use hydro_deploy::{Deployment, Host};
 use hydroflow_plus_deploy::TrybuildHost;
 use tokio::sync::RwLock;
@@ -56,12 +56,13 @@ async fn main() {
             &leader,
             TrybuildHost::new(create_host(&mut deployment))
                 .rustflags(rustflags)
-                .perf(
-                    PerfOptions::builder()
-                        .perf_outfile("leader.perf")
+                .tracing(
+                    TracingOptions::builder()
+                        .perf_raw_outfile("leader.perf.data")
+                        .dtrace_outfile("leader.stacks")
                         .fold_outfile("leader.data.folded")
                         .flamegraph_outfile("leader.svg")
-                        .frequency(5)
+                        .frequency(128)
                         .build(),
                 ),
         )
@@ -71,12 +72,13 @@ async fn main() {
                 .map(|idx| {
                     TrybuildHost::new(create_host(&mut deployment))
                         .rustflags(rustflags)
-                        .perf(
-                            PerfOptions::builder()
-                                .perf_outfile(format!("cluster{}.leader.perf", idx))
+                        .tracing(
+                            TracingOptions::builder()
+                                .perf_raw_outfile(format!("cluster{}.perf.data", idx))
+                                .dtrace_outfile(format!("cluster{}.leader.stacks", idx))
                                 .fold_outfile(format!("cluster{}.data.folded", idx))
                                 .flamegraph_outfile(format!("cluster{}.svg", idx))
-                                .frequency(5)
+                                .frequency(128)
                                 .build(),
                         )
                 })

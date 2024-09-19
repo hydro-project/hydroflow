@@ -15,5 +15,8 @@
     ],
     "files.watcherExclude": {
         "**/target": true
-    }
+    },
+    "rust-analyzer.cargo.features": [
+        "python"
+    ]
 }
