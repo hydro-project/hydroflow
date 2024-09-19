@@ -137,7 +137,6 @@ where
         writes = union();
 
         writes -> namespaces;
-        // writes -> new_writes;
 
         namespaces = state::<'static, Namespaces::<Clock>>();
         new_writes = namespaces -> tee();
@@ -146,7 +145,6 @@ where
 
         new_writes -> [0]process_system_table_reads;
         reads -> [1]process_system_table_reads;
-
 
         process_system_table_reads = lattice_bimorphism(KeyedBimorphism::<HashMap<_, _>, _>::new(KeyedBimorphism::<HashMap<_, _>, _>::new(KeyedBimorphism::<HashMap<_, _>, _>::new(PairBimorphism))), #namespaces, #reads)
             -> lattice_reduce::<'tick>() // TODO: This can be removed if we fix https://github.com/hydro-project/hydroflow/issues/1401. Otherwise the result can be returned twice if get & gossip arrive in the same tick.
@@ -202,9 +200,7 @@ where
                 #infecting_writes.as_reveal_ref().clone()
             }
         )
-        -> inspect(|x| trace!("Before: {:?}", x))
         -> filter(|(_id, infecting_write)| !infecting_write.members.is_top())
-        -> inspect(|x| trace!("After: {:?}", x))
         -> map(|(id, infecting_write)| {
             trace!("{:?}: Choosing a peer to gossip to. {:?}:{:?}", context.current_tick(), id, infecting_write);
             let peers = #namespaces.as_reveal_ref().get(&Namespace::System).unwrap().as_reveal_ref().get("members").unwrap().as_reveal_ref().clone();
@@ -265,6 +261,7 @@ mod tests {
     use std::collections::HashSet;
 
     use gossip_protocol::membership::{MemberDataBuilder, Protocol};
+    use hydroflow::lang::graph::WriteConfig;
     use hydroflow::tokio;
     use hydroflow::util::simulation::{Address, Fleet, Hostname};
 
@@ -300,7 +297,7 @@ mod tests {
                 ))
                 .build();
 
-            server(
+            let server = server(
                 client_input,
                 client_output,
                 gossip_input,
@@ -308,7 +305,11 @@ mod tests {
                 gossip_trigger_rx,
                 member_data,
                 vec![],
-            )
+            );
+
+            server.meta_graph().unwrap().open_mermaid(&Default::default()).unwrap();
+
+            server
         });
 
         let client_name: Hostname = "client".to_string();
