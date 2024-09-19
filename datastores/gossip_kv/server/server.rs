@@ -3,9 +3,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 use gossip_protocol::membership::{MemberData, MemberId};
-use gossip_protocol::model::{
-    delete_row, upsert_row, Clock, NamespaceMap, Namespaces, RowKey, RowValue, TableName,
-};
+use gossip_protocol::model::{delete_row, upsert_row, Clock, NamespaceMap, Namespaces, RowKey, RowValue, TableMap, TableName};
 use gossip_protocol::{ClientRequest, ClientResponse, GossipMessage, Key, Namespace};
 use hydroflow::futures::{Sink, Stream};
 use hydroflow::hydroflow_syntax;
@@ -15,13 +13,13 @@ use hydroflow::lattices::set_union::SetUnionHashSet;
 use hydroflow::lattices::{Lattice, PairBimorphism};
 use hydroflow::scheduled::graph::Hydroflow;
 use lattices::set_union::SetUnion;
-use lattices::{IsTop, Pair};
+use lattices::{IsTop, Max, Pair};
 use rand::seq::IteratorRandom;
 use rand::thread_rng;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use tracing::{info, trace};
-
+use gossip_protocol::GossipMessage::{Ack, Nack};
 use crate::lattices::BoundedSetLattice;
 use crate::util::{ClientRequestWithAddress, GossipRequestWithAddress};
 
@@ -119,10 +117,9 @@ where
             -> map(|(msg, addr)| GossipRequestWithAddress::from_request_and_address(msg, addr))
             -> demux_enum::<GossipRequestWithAddress<Addr>>();
 
-        gossip_in[Gossip]
+        incoming_gossip_messages = gossip_in[Gossip]
             -> inspect(|request| trace!("{:?}: Received gossip request: {:?}.", context.current_tick(), request))
-            -> map(|(_msg_id, writes, _addr)| writes )
-            -> writes;
+            -> tee();
 
         gossip_in[Ack]
             -> inspect(|request| trace!("{:?}: Received gossip ack: {:?}.", context.current_tick(), request))
@@ -132,7 +129,46 @@ where
             -> inspect(|request| trace!("{:?}: Received gossip nack: {:?}.", context.current_tick(), request))
             -> null();
 
-        gossip_out = dest_sink(gossip_outputs);
+        gossip_out = union() -> dest_sink(gossip_outputs);
+
+        incoming_gossip_messages
+            -> map(|(_msg_id, writes, _addr)| writes )
+            -> writes;
+
+        incoming_gossip_messages
+            -> map(|(msg_id, writes, sender_address) : (String, Namespaces<Max<u64>>, Addr)| {
+                let namespaces = &#namespaces;
+                let all_data: &HashMap<Namespace, TableMap<RowValue<Clock>>> = namespaces.as_reveal_ref();
+                let possible_new_data: HashMap<Namespace, TableMap<RowValue<Max<u64>>>>= writes.into_reveal();
+
+                // Check if any of the data is new
+                let gossip_has_new_data = possible_new_data.iter()
+                    .flat_map(|(namespace, tables)| {
+                        tables.as_reveal_ref().iter().flat_map(move |(table, rows)|{
+                            rows.as_reveal_ref().iter().map(move |(row_key, row_value)| (namespace, table, row_key, row_value.as_reveal_ref().0.as_reveal_ref()))
+                        })
+                    })
+                    .any(|(ns,table, row_key, new_ts)| {
+                        let existing_tables = all_data.get(ns);
+                        let existing_rows = existing_tables.and_then(|tables| tables.as_reveal_ref().get(table));
+                        let existing_row = existing_rows.and_then(|rows| rows.as_reveal_ref().get(row_key));
+                        let existing_ts = existing_row.map(|row| row.as_reveal_ref().0.as_reveal_ref());
+
+                        if let Some(existing_ts) = existing_ts {
+                            new_ts > existing_ts
+                        } else {
+                            true
+                        }
+                    });
+
+                if gossip_has_new_data {
+                    (Ack { message_id: msg_id }, sender_address)
+                } else {
+                    (Nack { message_id: msg_id }, sender_address)
+                }
+             })
+            -> inspect( |(msg, addr)| trace!("{:?}: Sending gossip response: {:?} to {:?}.", context.current_tick(), msg, addr))
+            -> gossip_out;
 
         writes = union();
 
@@ -261,8 +297,6 @@ mod tests {
     use std::collections::HashSet;
 
     use gossip_protocol::membership::{MemberDataBuilder, Protocol};
-    use hydroflow::lang::graph::WriteConfig;
-    use hydroflow::tokio;
     use hydroflow::util::simulation::{Address, Fleet, Hostname};
 
     use super::*;
@@ -297,7 +331,7 @@ mod tests {
                 ))
                 .build();
 
-            let server = server(
+            server(
                 client_input,
                 client_output,
                 gossip_input,
@@ -305,11 +339,7 @@ mod tests {
                 gossip_trigger_rx,
                 member_data,
                 vec![],
-            );
-
-            server.meta_graph().unwrap().open_mermaid(&Default::default()).unwrap();
-
-            server
+            )
         });
 
         let client_name: Hostname = "client".to_string();
