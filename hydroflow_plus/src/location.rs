@@ -19,7 +19,13 @@ pub struct ExternalBytesPort {
     pub(crate) port_id: usize,
 }
 
-pub struct ExternalBincodePort<T: Serialize + DeserializeOwned> {
+pub struct ExternalBincodeSink<T: Serialize> {
+    pub(crate) process_id: usize,
+    pub(crate) port_id: usize,
+    pub(crate) _phantom: PhantomData<T>,
+}
+
+pub struct ExternalBincodeStream<T: DeserializeOwned> {
     pub(crate) process_id: usize,
     pub(crate) port_id: usize,
     pub(crate) _phantom: PhantomData<T>,
@@ -36,6 +42,12 @@ impl<P> Clone for ExternalProcess<P> {
             id: self.id,
             _phantom: PhantomData,
         }
+    }
+}
+
+impl<P> Location for ExternalProcess<P> {
+    fn id(&self) -> LocationId {
+        LocationId::ExternalProcess(self.id)
     }
 }
 
@@ -136,5 +148,18 @@ impl<C1, C2> CanSend<Cluster<C2>> for Cluster<C1> {
 
     fn is_tagged() -> bool {
         true
+    }
+}
+
+impl<P1, E2> CanSend<ExternalProcess<E2>> for Process<P1> {
+    type In<T> = T;
+    type Out<T> = T;
+
+    fn is_demux() -> bool {
+        false
+    }
+
+    fn is_tagged() -> bool {
+        false
     }
 }

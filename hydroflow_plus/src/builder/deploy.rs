@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use std::pin::Pin;
 
 use hydroflow::bytes::Bytes;
-use hydroflow::futures::Sink;
+use hydroflow::futures::{Sink, Stream};
 use proc_macro2::Span;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -14,7 +14,8 @@ use super::built::build_inner;
 use crate::deploy::{ExternalSpec, LocalDeploy, Node, RegisterPort};
 use crate::ir::HfPlusLeaf;
 use crate::location::{
-    ExternalBincodePort, ExternalBytesPort, ExternalProcess, Location, LocationId,
+    ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort, ExternalProcess, Location,
+    LocationId,
 };
 use crate::{Cluster, ClusterSpec, Deploy, HfCompiled, Process, ProcessSpec};
 
@@ -261,12 +262,34 @@ impl<'a, D: Deploy<'a>> DeployResult<'a, D> {
 
     pub async fn connect_sink_bincode<T: Serialize + DeserializeOwned + 'static>(
         &self,
-        port: ExternalBincodePort<T>,
+        port: ExternalBincodeSink<T>,
     ) -> Pin<Box<dyn Sink<T, Error = Error>>> {
         self.externals
             .get(&port.process_id)
             .unwrap()
             .as_bincode_sink(port.port_id)
+            .await
+    }
+
+    pub async fn connect_source_bytes(
+        &self,
+        port: ExternalBytesPort,
+    ) -> Pin<Box<dyn Stream<Item = Bytes>>> {
+        self.externals
+            .get(&port.process_id)
+            .unwrap()
+            .as_bytes_source(port.port_id)
+            .await
+    }
+
+    pub async fn connect_source_bincode<T: Serialize + DeserializeOwned + 'static>(
+        &self,
+        port: ExternalBincodeStream<T>,
+    ) -> Pin<Box<dyn Stream<Item = T>>> {
+        self.externals
+            .get(&port.process_id)
+            .unwrap()
+            .as_bincode_source(port.port_id)
             .await
     }
 }
