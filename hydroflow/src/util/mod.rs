@@ -30,6 +30,11 @@ pub use socket::*;
 #[cfg(feature = "deploy_integration")]
 pub mod deploy;
 
+#[cfg(all(feature = "websocket", not(target_arch = "wasm32")))]
+mod websocket;
+#[cfg(all(feature = "websocket", not(target_arch = "wasm32")))]
+pub use websocket::*;
+
 use std::io::Read;
 use std::net::SocketAddr;
 use std::num::NonZeroUsize;

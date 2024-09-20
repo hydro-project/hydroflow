@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use clap::{Parser, ValueEnum};
 use client::run_client;
-use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
+use hydroflow::util::{bind_udp_bytes, bind_websocket, ipv4_resolve};
 use server::run_server;
 
 mod client;
@@ -42,9 +42,7 @@ async fn main() {
         Role::Server => {
             run_server(outbound, inbound, opts).await;
         }
-        Role::Client => {
-            run_client(outbound, inbound, opts).await;
-        }
+        _ => panic!("Unsupported!")
     }
 }
 
