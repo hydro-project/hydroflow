@@ -71,6 +71,10 @@ where
     E: Debug + 'static,
 {
     let my_member_id = member_info.id.clone();
+    let member_id_2 = my_member_id.clone();
+    let member_id_3 = my_member_id.clone();
+    let member_id_4 = my_member_id.clone();
+    let member_id_5 = my_member_id.clone();
 
     hydroflow_syntax! {
 
@@ -78,7 +82,7 @@ where
         on_start -> for_each(|_| info!("{:?}: Transducer started.", context.current_tick()));
 
         // Setup member metadata for this process.
-        on_start -> map(|_| upsert_row(Clock::new(0), Namespace::System, "members".to_string(), member_info.id.clone(), serde_json::to_string(&member_info).unwrap()))
+        on_start -> map(|_| upsert_row(Clock::new(0), Namespace::System, "members".to_string(), my_member_id.clone(), serde_json::to_string(&member_info).unwrap()))
             -> writes;
 
         client_out =
@@ -167,9 +171,9 @@ where
                     });
 
                 if gossip_has_new_data {
-                    (Ack { message_id: msg_id, member_id: my_member_id.clone()}, sender_address)
+                    (Ack { message_id: msg_id, member_id: member_id_2.clone()}, sender_address)
                 } else {
-                    (Nack { message_id: msg_id, member_id: my_member_id.clone()}, sender_address)
+                    (Nack { message_id: msg_id, member_id: member_id_3.clone()}, sender_address)
                 }
              })
             -> inspect( |(msg, addr)| trace!("{:?}: Sending gossip response: {:?} to {:?}.", context.current_tick(), msg, addr))
@@ -256,7 +260,7 @@ where
             });
 
             // Exclude self from the list of peers.
-            peer_names.remove(&my_member_id);
+            peer_names.remove(&member_id_5);
 
             trace!("{:?}: Peers: {:?}", context.current_tick(), peer_names);
 
@@ -280,7 +284,7 @@ where
         -> map(|(message_id, infecting_write, peer_gossip_address): (String, InfectingWrite, Addr)| {
             let gossip_request = GossipMessage::Gossip {
                 message_id: message_id.clone(),
-                member_id: my_member_id.to_string(),
+                member_id: member_id_4.clone(),
                 writes: infecting_write.write.clone(),
             };
             (gossip_request, peer_gossip_address)
