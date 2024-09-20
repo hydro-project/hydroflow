@@ -16,6 +16,7 @@ pub struct Client {}
 
 pub fn two_pc(
     flow: &FlowBuilder,
+    num_participants: u32,
 ) -> (
     Process<Coordinator>,
     Cluster<Participants>,
@@ -41,19 +42,14 @@ pub fn two_pc(
     // assume all participants reply commit
     let p_ready_to_commit = p_receive_prepare.map(q!(|t| (t, String::from("commit"))));
     let c_received_reply = p_ready_to_commit.send_bincode(&coordinator);
-    c_received_reply.clone().inspect(q!(|(id, (t, reply))| println!("participant {id} said {reply} for transaction {t}")));
+    // c_received_reply.clone().inspect(q!(|(id, (t, reply))| println!("participant {id} said {reply} for transaction {t}")));
 
     /* collect votes from participant. */
     // aborted transactions.
     let c_participant_voted_abort = 
-    c_received_reply.clone().filter_map(q!(|(id, (t, reply))| 
-    if reply == "abort" {
-        Some((t, id))
-    } else {
-        None
-    }
-    ));
-    
+    c_received_reply.clone()
+    .filter(q!(|(_id, (_t, reply))| reply == "abort"))
+    .map(q!(|(id, (t, _reply))| (t, id)));
     let p_receive_abort = c_participant_voted_abort.broadcast_bincode(&participants);
     p_receive_abort.clone().inspect(q!(|(t, id)| println!("{} vote abort for transaction {}", id, t)));
     let c_receive_ack = p_receive_abort.send_bincode(&coordinator);
@@ -61,27 +57,24 @@ pub fn two_pc(
 
     // committed transactions
     let c_participant_voted_commit = 
-    c_received_reply.filter_map(q!(|(id, (t, reply))| 
-    if reply == "commit"{
-        Some((t, id))
-    } else {
-        None
-    }
-    
-    ))// fold_keyed: 1 input stream of type (K, V1), 1 output stream of type (K, V2). 
+    c_received_reply
+    .filter(q!(|(_id, (_t, reply))| reply == "commit"))
+    .map(q!(|(id, (t, _reply))| (t, id)))
+    // fold_keyed: 1 input stream of type (K, V1), 1 output stream of type (K, V2). 
     // The output will have one tuple for each distinct K, with an accumulated value of type V2.
-    .tick_batch().fold_keyed(q!(|| 0), q!(|old: &mut u32, _: u32| *old += 1)).filter_map(q!(|(t, count)| {
+    .tick_batch().fold_keyed(q!(|| 0), q!(|old: &mut u32, _: u32| *old += 1)).filter_map(q!(move |(t, count)| {
         // here I set the participant to 3. If want more or less participant, fix line 26 of examples/broadcast.rs
-        if count == 3 {
+        if count == num_participants {
             Some(t)
         } else {
             None
         }
-    }));
+    }))
+    ;
 
     // broadcast commit transactions to participants.
     let p_receive_commit = c_participant_voted_commit.all_ticks().broadcast_bincode(&participants);
-    p_receive_commit.clone().for_each(q!(|t| println!("commit for transaction {}", t)));
+    // p_receive_commit.clone().for_each(q!(|t| println!("commit for transaction {}", t)));
     
     let c_receive_ack = p_receive_commit.send_bincode(&coordinator);
     c_receive_ack.for_each(q!(|(id, t)| println!("receive participant {} commit for transaction {}", id, t)));
@@ -98,14 +91,15 @@ mod tests {
     async fn two_pc() {
         let mut deployment = Deployment::new();
 
-        let builder = hydroflow_plus::FlowBuilder::new();
-        let (coordinator, participants, client)  = super::two_pc(&builder);
+        let builder: hydroflow_plus::FlowBuilder<'_> = hydroflow_plus::FlowBuilder::new();
+        let num_participants : u32 = 3;
+        let (coordinator, participants, client)  = super::two_pc(&builder, num_participants);
         let built = builder.with_default_optimize();
         let nodes = built
         .with_process(&coordinator, TrybuildHost::new(deployment.Localhost()))
         .with_cluster(
                 &participants,
-                (0..3)
+                (0..num_participants)
                     .map(|_| TrybuildHost::new(deployment.Localhost()))
                     .collect::<Vec<_>>(),
             )
@@ -116,6 +110,6 @@ mod tests {
 
         deployment.start().await.unwrap();
 
-        // tokio::signal::ctrl_c().await.unwrap();
+        tokio::signal::ctrl_c().await.unwrap();
     }
 }
