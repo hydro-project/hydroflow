@@ -3,6 +3,7 @@ mod test {
     use std::collections::HashSet;
     use std::io::{self, Write};
 
+    use variadics::hash_set::VariadicHashSet;
     use variadics::{var_expr, var_type, VariadicExt};
 
     use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtLeaf, GhtPrefixIter};
@@ -44,6 +45,7 @@ mod test {
     #[test]
     fn test_ght_node_type_macro() {
         type LilTrie = GhtType!(() => u32);
+        let _j = LilTrie::default();
         let _l = LilTrie::new_from(vec![var_expr!(1)]);
 
         type LilTrie2 = GhtType!(() => u32, u64);
@@ -191,7 +193,9 @@ mod test {
             .iter()
             .map(|&(a, b, c)| var_expr!(a, b, c)),
         );
-        let leaf = GhtLeaf::<InputType, var_type!(u16, u32)>::new_from(input.clone());
+        let leaf = GhtLeaf::<InputType, var_type!(u16, u32), VariadicHashSet<InputType>>::new_from(
+            input.clone(),
+        );
         // let key = var_expr!(42u8).as_ref_var();
         let key = (); // (var_expr!().as_ref_var();)
         let v: HashSet<ResultType> = leaf.prefix_iter(key).collect();
@@ -940,49 +944,51 @@ mod test {
         assert_eq!(
             // println!(
             //     "found in trie {}",
-            ForestFindLeaf::<var_type!(u8, u16, u32, u64)>::find_containing_leaf(
-                &forest,
-                var_expr!(1_u8, 1_u16, 1_u32, 1_u64).as_ref_var()
+            ForestFindLeaf::<
+                var_type!(u8, u16, u32, u64),
+                VariadicHashSet<var_type!(u8, u16, u32, u64)>,
+            >::find_containing_leaf(
+                &forest, var_expr!(1_u8, 1_u16, 1_u32, 1_u64).as_ref_var()
             )
             .unwrap()
             .iter_tuples()
             .next()
             .unwrap(),
-            var_expr!(1, 1, 1, 1)
+            var_expr!(1, 1, 1, 1).as_ref_var()
         );
         assert_eq!(
             // println!(
             //     "found in trie {}",
-            ForestFindLeaf::<var_type!(u8, u16, u32, u64)>::find_containing_leaf(
-                &forest,
-                var_expr!(2, 2, 2, 2).as_ref_var()
-            )
+            ForestFindLeaf::<
+                var_type!(u8, u16, u32, u64),
+                VariadicHashSet<var_type!(u8, u16, u32, u64)>,
+            >::find_containing_leaf(&forest, var_expr!(2, 2, 2, 2).as_ref_var())
             .unwrap()
             .iter_tuples()
             .next()
             .unwrap(),
-            var_expr!(2, 2, 2, 2)
+            var_expr!(2, 2, 2, 2).as_ref_var()
         );
         assert_eq!(
             // println!(
             //     "found in trie {}",
-            ForestFindLeaf::<var_type!(u8, u16, u32, u64)>::find_containing_leaf(
-                &forest,
-                var_expr!(3, 3, 3, 3).as_ref_var()
-            )
+            ForestFindLeaf::<
+                var_type!(u8, u16, u32, u64),
+                VariadicHashSet<var_type!(u8, u16, u32, u64)>,
+            >::find_containing_leaf(&forest, var_expr!(3, 3, 3, 3).as_ref_var())
             .unwrap()
             .iter_tuples()
             .next()
             .unwrap(),
-            var_expr!(3, 3, 3, 3)
+            var_expr!(3, 3, 3, 3).as_ref_var()
         );
         assert!(
             // println!(
             //     "found in trie {}",
-            ForestFindLeaf::<var_type!(u8, u16, u32, u64)>::find_containing_leaf(
-                &forest,
-                var_expr!(4, 4, 4, 4).as_ref_var()
-            )
+            ForestFindLeaf::<
+                var_type!(u8, u16, u32, u64),
+                VariadicHashSet<var_type!(u8, u16, u32, u64)>,
+            >::find_containing_leaf(&forest, var_expr!(4, 4, 4, 4).as_ref_var())
             .is_none()
         );
         // println!("{:?}", forest.forest);
@@ -1031,11 +1037,12 @@ mod test {
             forest.0.insert(var_expr!(true, 2, "hello", i));
         }
         assert_eq!(forest.0.recursive_iter().count(), 1000009);
-        let leaf =
-            ForestFindLeaf::<var_type!(bool, usize, &'static str, i32)>::find_containing_leaf(
-                &forest,
-                var_expr!(true, 2, "hello", 2).as_ref_var(),
-            );
+        let leaf = ForestFindLeaf::<
+            var_type!(bool, usize, &'static str, i32),
+            VariadicHashSet<var_type!(bool, usize, &'static str, i32)>,
+        >::find_containing_leaf(
+            &forest, var_expr!(true, 2, "hello", 2).as_ref_var()
+        );
         println!("leaf size: {}", leaf.unwrap().elements.len());
         // println!("forest.0: {:?}", forest.0);
         println!("forest.1: {:?}", forest.1 .0);

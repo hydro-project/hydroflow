@@ -25,7 +25,7 @@ use crate::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
 
 impl<Head, Node> Merge<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
-    Node: GeneralizedHashTrieNode + Merge<Node> + Clone,
+    Node: GeneralizedHashTrieNode + Merge<Node>,
     Self: GeneralizedHashTrieNode,
     Head: Hash + Eq + Clone,
 {
@@ -47,13 +47,13 @@ where
     }
 }
 
-impl<Schema, SuffixSchema, Storage> Merge<GhtLeaf<Schema, SuffixSchema, Storage>>
-    for GhtLeaf<Schema, SuffixSchema, Storage>
+impl<Schema, ValType, Storage> Merge<GhtLeaf<Schema, ValType, Storage>>
+    for GhtLeaf<Schema, ValType, Storage>
 where
     Schema: Eq + Hash,
-    Storage: TupleSet<Schema = Schema> + Extend<Schema> + Iterator<Item = Schema>,
+    Storage: TupleSet<Schema = Schema> + Extend<Schema> + IntoIterator<Item = Schema>,
 {
-    fn merge(&mut self, other: GhtLeaf<Schema, SuffixSchema, Storage>) -> bool {
+    fn merge(&mut self, other: GhtLeaf<Schema, ValType, Storage>) -> bool {
         let old_len = self.elements.len();
         self.elements.extend(other.elements);
         self.elements.len() > old_len
@@ -472,48 +472,47 @@ where
 }
 
 /// bimorphism trait for equijoin on full tuple (keys in all GhtInner nodes)
-pub trait DeepJoinLatticeBimorphism {
+pub trait DeepJoinLatticeBimorphism<Storage> {
     /// bimorphism type for equijoin on full tuple (keys in all GhtInner nodes)
     type DeepJoinLatticeBimorphism;
 }
 /// bimorphism implementation for equijoin on full tuple (keys in all GhtInner nodes)
-impl<Head, NodeA, NodeB> DeepJoinLatticeBimorphism
+impl<Head, NodeA, NodeB, Storage> DeepJoinLatticeBimorphism<Storage>
     for (GhtInner<Head, NodeA>, GhtInner<Head, NodeB>)
 where
     Head: 'static + Hash + Eq + Clone,
     NodeA: 'static + GeneralizedHashTrieNode,
     NodeB: 'static + GeneralizedHashTrieNode,
-    (NodeA, NodeB): DeepJoinLatticeBimorphism,
+    (NodeA, NodeB): DeepJoinLatticeBimorphism<Storage>,
+    Storage: TupleSet<Schema = var_type!(...NodeA::Schema, ...NodeB::ValType)>,
 {
     type DeepJoinLatticeBimorphism = GhtNodeKeyedBimorphism<
-        <(NodeA, NodeB) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism,
+        <(NodeA, NodeB) as DeepJoinLatticeBimorphism<Storage>>::DeepJoinLatticeBimorphism,
     >;
 }
-impl<SchemaA, SuffixSchemaA, StorageA, SchemaB, SuffixSchemaB, StorageB> DeepJoinLatticeBimorphism
+impl<SchemaA, ValTypeA, StorageA, SchemaB, ValTypeB, StorageB, StorageOut>
+    DeepJoinLatticeBimorphism<StorageOut>
     for (
-        GhtLeaf<SchemaA, SuffixSchemaA, StorageA>,
-        GhtLeaf<SchemaB, SuffixSchemaB, StorageB>,
+        GhtLeaf<SchemaA, ValTypeA, StorageA>,
+        GhtLeaf<SchemaB, ValTypeB, StorageB>,
     )
 where
-    SchemaA: 'static
-        + VariadicExt<Extend<SuffixSchemaB> = SchemaA>
-        + Eq
-        + Hash
-        + SplitBySuffix<SuffixSchemaA>, // + AsRefVariadicPartialEq
-    SuffixSchemaA: 'static + VariadicExt + Eq + Hash, // + AsRefVariadicPartialEq
-    SchemaB: 'static + VariadicExt + Eq + Hash + SplitBySuffix<SuffixSchemaB>, /* + AsRefVariadicPartialEq */
-    SuffixSchemaB: 'static + VariadicExt + Eq + Hash, // + AsRefVariadicPartialEq
+    SchemaA: 'static + VariadicExt + Eq + Hash + SplitBySuffix<ValTypeA>, /* + AsRefVariadicPartialEq */
+    ValTypeA: 'static + VariadicExt + Eq + Hash, // + AsRefVariadicPartialEq
+    SchemaB: 'static + VariadicExt + Eq + Hash + SplitBySuffix<ValTypeB>, /* + AsRefVariadicPartialEq */
+    ValTypeB: 'static + VariadicExt + Eq + Hash, // + AsRefVariadicPartialEq
     StorageA: TupleSet<Schema = SchemaA>,
     StorageB: TupleSet<Schema = SchemaB>,
+    StorageOut: TupleSet<Schema = var_type!(...SchemaA, ...ValTypeB)>,
     for<'x> SchemaA::AsRefVar<'x>: CloneVariadic,
     for<'x> SchemaB::AsRefVar<'x>: CloneVariadic,
-    var_type!(...SchemaA, ...SuffixSchemaB): Eq + Hash,
+    var_type!(...SchemaA, ...ValTypeB): Eq + Hash,
 {
     type DeepJoinLatticeBimorphism = GhtValTypeProductBimorphism<
         GhtLeaf<
-            var_type!(...SchemaA, ...SuffixSchemaB),
-            var_type!(...SuffixSchemaA, ...SuffixSchemaB),
-            StorageA,
+            var_type!(...SchemaA, ...ValTypeB),
+            var_type!(...ValTypeA, ...ValTypeB),
+            StorageOut,
         >,
     >;
 }

@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use sealed::sealed;
 use variadics::{var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt};
 
-use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf, GhtTakeLeaf};
+use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf, GhtTakeLeaf, TupleSet};
 
 // Remaining Questions
 // 1. Should the first element in the forest be a single GhtLeaf?
@@ -69,7 +69,8 @@ where
 }
 
 #[sealed]
-impl<Schema, Head, Rest> ColumnLazyTrieNode for GhtLeaf<Schema, var_type!(Head, ...Rest)>
+impl<Schema, Head, Rest, Storage> ColumnLazyTrieNode
+    for GhtLeaf<Schema, var_type!(Head, ...Rest), Storage>
 where
     Head: 'static + Clone + Hash + Eq,
     Rest: 'static + Clone + Hash + Eq + VariadicExt,
@@ -83,8 +84,11 @@ where
     Schema: SplitBySuffix<Rest>,
     <Schema as SplitBySuffix<(Head, Rest)>>::Prefix: Eq + Hash + Clone,
     <Schema as SplitBySuffix<Rest>>::Prefix: Eq + Hash + Clone,
-    GhtLeaf<Schema, Rest>: GeneralizedHashTrieNode<Schema = Schema>,
-    GhtInner<Head, GhtLeaf<Schema, Rest>>: GeneralizedHashTrieNode<Schema = Schema>,
+    Storage: TupleSet<Schema = Schema>
+        + Default // + Iterator<Item = Schema>
+        + IntoIterator<Item = Schema>,
+    GhtLeaf<Schema, Rest, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
+    GhtInner<Head, GhtLeaf<Schema, Rest, Storage>>: GeneralizedHashTrieNode<Schema = Schema>,
 {
     fn into_iter(self) -> Option<impl Iterator<Item = Self::Schema>> {
         Some(self.elements.into_iter())
@@ -94,7 +98,7 @@ where
         Some(self.elements.drain())
     }
     // Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>
-    type Force = GhtInner<Head, GhtLeaf<Schema, Rest>>;
+    type Force = GhtInner<Head, GhtLeaf<Schema, Rest, Storage>>;
     fn force(mut self) -> Option<Self::Force> {
         let mut retval = Self::Force::default();
         self.forced = true;
@@ -106,7 +110,7 @@ where
         Some(retval)
     }
 
-    fn force_drain(&mut self) -> Option<GhtInner<Head, GhtLeaf<Schema, Rest>>> {
+    fn force_drain(&mut self) -> Option<GhtInner<Head, GhtLeaf<Schema, Rest, Storage>>> {
         let mut retval = Self::Force::default();
         self.forced = true;
         for row in self.drain().unwrap() {
@@ -176,17 +180,18 @@ pub trait ColtNodeTail<InnerToMerge>: ColtNode {
 }
 
 #[sealed]
-impl<'a, Rest, Schema, SuffixSchema> ColtNode for var_type!(&'a mut GhtLeaf<Schema, SuffixSchema>, ...Rest)
+impl<'a, Rest, Schema, SuffixSchema, Storage> ColtNode for var_type!(&'a mut GhtLeaf<Schema, SuffixSchema, Storage>, ...Rest)
 where
     Rest: ColtNodeTail<
-        <GhtLeaf<Schema, SuffixSchema> as ColumnLazyTrieNode>::Force,
+        <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
         Schema = Schema,
         // SuffixSchema = SuffixSchema,
     >,
     <Rest as ColtNode>::SuffixSchema: 'a,
-    GhtLeaf<Schema, SuffixSchema>: ColumnLazyTrieNode,
+    GhtLeaf<Schema, SuffixSchema, Storage>: ColumnLazyTrieNode,
     Schema: Clone + Hash + Eq + VariadicExt,
     SuffixSchema: Clone + Hash + Eq + VariadicExt,
+    Storage: TupleSet<Schema = Schema>,
 {
     type Schema = Schema;
     type Head = Rest::Head;
@@ -201,17 +206,18 @@ where
     }
 }
 #[sealed]
-impl<'a, Rest, Schema, SuffixSchema, T> ColtNodeTail<T> for var_type!(&'a mut GhtLeaf<Schema, SuffixSchema>, ...Rest)
+impl<'a, Rest, Schema, SuffixSchema, T, Storage> ColtNodeTail<T> for var_type!(&'a mut GhtLeaf<Schema, SuffixSchema, Storage>, ...Rest)
 where
     Rest: ColtNodeTail<
-        <GhtLeaf<Schema, SuffixSchema> as ColumnLazyTrieNode>::Force,
+        <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
         Schema = Schema,
         // SuffixSchema = SuffixSchema,
     >,
     <Rest as ColtNode>::SuffixSchema: 'a,
-    GhtLeaf<Schema, SuffixSchema>: ColumnLazyTrieNode,
+    GhtLeaf<Schema, SuffixSchema, Storage>: ColumnLazyTrieNode,
     Schema: Clone + Hash + Eq + VariadicExt,
     SuffixSchema: Clone + Hash + Eq + VariadicExt,
+    Storage: TupleSet<Schema = Schema>,
 {
     fn merge(&mut self, _inner_to_merge: T) {
         panic!();
@@ -265,32 +271,34 @@ where
 }
 
 #[sealed]
-impl<'a, Head, Rest, Schema, ValType> ColtNode for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType>>, ...Rest)
+impl<'a, Head, Rest, Schema, ValType, Storage> ColtNode for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>, ...Rest)
 where
     Rest: ColtNode<Head = Head>,
     Head: Eq + Hash + Clone,
     Schema: Eq + Hash + Clone + PartialEqVariadic,
     ValType: Eq + Hash + Clone + PartialEqVariadic,
-    GhtLeaf<Schema, ValType>: GeneralizedHashTrieNode,
+    Storage: TupleSet<Schema = Schema>,
+    GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode,
     Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<ValType> + PartialEqVariadic,
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
-    GhtInner<Head, GhtLeaf<Schema, ValType>>: GeneralizedHashTrieNode<Head = Head> + GhtGet,
+    GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>:
+        GeneralizedHashTrieNode<Head = Head> + GhtGet,
     // Rest: ColtNode<Head = Head>,
     // Head: Eq + Hash + Clone,
     // Head2: Eq + Hash + Clone,
     // Node: GeneralizedHashTrieNode,
-    GhtInner<Head, GhtLeaf<Schema, ValType>>: GeneralizedHashTrieNode<
+    GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>: GeneralizedHashTrieNode<
         Head = Rest::Head,
         // SuffixSchema = Rest::SuffixSchema,
         Schema = Rest::Schema,
     >,
-    GhtLeaf<Schema, ValType>: GeneralizedHashTrieNode<Schema = Rest::Schema> + GhtGet,
+    GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Rest::Schema> + GhtGet,
 {
     type Schema = Rest::Schema;
     type Head = Rest::Head;
     type SuffixSchema = Rest::SuffixSchema;
     // type Get = Rest::Get; // Option<&'a <GhtLeaf<Schema, ValType> as GhtGet>::Get>,
-    type Get = var_type!(&'a mut GhtLeaf<Schema, ValType>, ...Rest::Get);
+    type Get = var_type!(&'a mut GhtLeaf<Schema, ValType, Storage>, ...Rest::Get);
 
     fn get(self, head: &Self::Head) -> Self::Get {
         let (first, rest) = self;
@@ -299,20 +307,22 @@ where
     }
 }
 #[sealed]
-impl<'a, Head, Rest, Schema, ValType> ColtNodeTail<GhtInner<Head, GhtLeaf<Schema, ValType>>> for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType>>, ...Rest)
+impl<'a, Head, Rest, Schema, ValType, Storage>
+    ColtNodeTail<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>> for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>, ...Rest)
 where
     Rest: ColtNode<Head = Head, Schema = Schema>,
     Head: Eq + Hash + Clone,
     Schema: Eq + Hash + Clone + PartialEqVariadic,
     ValType: Eq + Hash + Clone + PartialEqVariadic,
-    GhtLeaf<Schema, ValType>: GeneralizedHashTrieNode<Schema = Schema>,
+    Storage: TupleSet<Schema = Schema>,
+    GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
     Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<ValType> + PartialEqVariadic,
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
-    GhtInner<Head, GhtLeaf<Schema, ValType>>: GeneralizedHashTrieNode<Head = Head, Schema = Schema>
-        + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType>>>
+    GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>: GeneralizedHashTrieNode<Head = Head, Schema = Schema>
+        + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
         + GhtGet,
 {
-    fn merge(&mut self, inner_to_merge: GhtInner<Head, GhtLeaf<Schema, ValType>>) {
+    fn merge(&mut self, inner_to_merge: GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>) {
         // This shouldn't be none? IDK
         let (head, _rest) = self;
         crate::Merge::merge(*head, inner_to_merge);
@@ -337,18 +347,20 @@ where
     }
 }
 #[sealed]
-impl<'a, Head, Schema, ValType> ColtNodeTail<GhtInner<Head, GhtLeaf<Schema, ValType>>>
-    for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType>>)
+impl<'a, Head, Schema, ValType, Storage>
+    ColtNodeTail<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
+    for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>)
 where
-    GhtInner<Head, GhtLeaf<Schema, ValType>>: GeneralizedHashTrieNode<Head = Head>
+    GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>: GeneralizedHashTrieNode<Head = Head>
         + GhtGet
-        + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType>>>
+        + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
         + GhtGet,
-    GhtLeaf<Schema, ValType>: GeneralizedHashTrieNode<Schema = Schema>,
+    GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
     Head: Clone + Eq + Hash,
     Schema: Clone + Eq + Hash + VariadicExt,
+    Storage: TupleSet<Schema = Schema>,
 {
-    fn merge(&mut self, inner_to_merge: GhtInner<Head, GhtLeaf<Schema, ValType>>) {
+    fn merge(&mut self, inner_to_merge: GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>) {
         crate::Merge::merge(self.0, inner_to_merge);
     }
 }
@@ -393,17 +405,19 @@ where
 impl<TrieFirst, TrieSecond, TrieRest, SearchKey /* , Head, Rest */> GhtForest<SearchKey> for var_type!(TrieFirst, TrieSecond, ...TrieRest)
 where
     TrieFirst: GeneralizedHashTrieNode + GhtTakeLeaf,
-    TrieSecond: GeneralizedHashTrieNode<Schema = TrieFirst::Schema> + GhtTakeLeaf,
+    TrieSecond: GeneralizedHashTrieNode<Schema = TrieFirst::Schema, Storage = TrieFirst::Storage>
+        + GhtTakeLeaf,
     SearchKey: VariadicExt + Split<TrieFirst::Schema> + Clone,
     var_type!(TrieSecond, ...TrieRest): GhtForest<SearchKey>,
     // GhtForestStruct<var_type!(TrieSecond, ...TrieRest)>: GhtForest<SearchKey>,
     TrieFirst::Schema: PartialEqVariadic + SplitBySuffix<TrieFirst::ValType> + Eq + Hash + Clone,
     TrieSecond::Schema: PartialEqVariadic + SplitBySuffix<TrieSecond::ValType> + Eq + Hash + Clone,
-    Self: ForestFindLeaf<TrieFirst::Schema>,
+    Self: ForestFindLeaf<TrieFirst::Schema, TrieFirst::Storage>,
     <<TrieFirst::Schema as VariadicExt>::Reverse as VariadicExt>::Reverse: Eq + Hash + Clone,
     GhtLeaf<
         <TrieFirst as GeneralizedHashTrieNode>::Schema,
         <TrieFirst as GeneralizedHashTrieNode>::ValType,
+        TrieFirst::Storage,
     >: ColumnLazyTrieNode,
 {
     fn force<'a>(&mut self, search_key: SearchKey) -> bool {
@@ -419,7 +433,7 @@ where
                 // TrieFirst::ValType IS NOT the same as TrieSecond::ValType,
                 // but the elements in the leaf are the same.
                 // So we just need a new GhtLeaf with the right ValType.
-                let leaf = GhtLeaf::<TrieSecond::Schema, TrieSecond::ValType> {
+                let leaf = GhtLeaf::<TrieSecond::Schema, TrieSecond::ValType, TrieSecond::Storage> {
                     elements: leaf.elements,
                     forced: false,
                     _suffix_schema: PhantomData,
@@ -459,35 +473,36 @@ where
 
 #[sealed]
 /// a trait for finding a matching leaf in the forest
-pub trait ForestFindLeaf<Schema>
+pub trait ForestFindLeaf<Schema, Storage>
 where
     Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
+    Storage: TupleSet<Schema = Schema>,
 {
     /// find a matching leaf in the forest
-    fn find_containing_leaf(&self, row: Schema::AsRefVar<'_>) -> Option<&'_ GhtLeaf<Schema, ()>>;
+    fn find_containing_leaf(
+        &self,
+        row: Schema::AsRefVar<'_>,
+    ) -> Option<&'_ GhtLeaf<Schema, (), Storage>>;
 }
 
 #[sealed]
-impl<TrieFirst, TrieRest> ForestFindLeaf<<TrieFirst as GeneralizedHashTrieNode>::Schema> for var_type!(TrieFirst, ...TrieRest)
+impl<TrieFirst, TrieRest> ForestFindLeaf<TrieFirst::Schema, TrieFirst::Storage> for var_type!(TrieFirst, ...TrieRest)
 where
     <TrieFirst as GeneralizedHashTrieNode>::Schema: PartialEqVariadic,
     TrieFirst: GeneralizedHashTrieNode,
-    TrieRest: ForestFindLeaf<<TrieFirst as GeneralizedHashTrieNode>::Schema>,
+    TrieRest: ForestFindLeaf<<TrieFirst as GeneralizedHashTrieNode>::Schema, TrieFirst::Storage>,
 {
     fn find_containing_leaf(
         &self,
         row: <<TrieFirst as GeneralizedHashTrieNode>::Schema as VariadicExt>::AsRefVar<'_>,
-    ) -> Option<&'_ GhtLeaf<<TrieFirst as GeneralizedHashTrieNode>::Schema, ()>> {
+    ) -> Option<&'_ GhtLeaf<TrieFirst::Schema, (), TrieFirst::Storage>> {
         let var_expr!(first, ...rest) = &self;
         if let Some(leaf) = first.find_containing_leaf(row) {
             // TODO!!!!
             unsafe {
                 std::mem::transmute::<
-                    &GhtLeaf<
-                        <TrieFirst as GeneralizedHashTrieNode>::Schema,
-                        <TrieFirst as GeneralizedHashTrieNode>::ValType,
-                    >,
-                    Option<&GhtLeaf<<TrieFirst as GeneralizedHashTrieNode>::Schema, ()>>,
+                    &GhtLeaf<TrieFirst::Schema, TrieFirst::ValType, TrieFirst::Storage>,
+                    Option<&GhtLeaf<TrieFirst::Schema, (), TrieFirst::Storage>>,
                 >(leaf)
             }
         } else {
@@ -497,14 +512,15 @@ where
 }
 
 #[sealed]
-impl<Schema> ForestFindLeaf<Schema> for var_type!()
+impl<Schema, Storage> ForestFindLeaf<Schema, Storage> for var_type!()
 where
     Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
+    Storage: TupleSet<Schema = Schema>,
 {
     fn find_containing_leaf(
         &self,
         _row: <Schema as VariadicExt>::AsRefVar<'_>,
-    ) -> Option<&'_ GhtLeaf<Schema, ()>> {
+    ) -> Option<&'_ GhtLeaf<Schema, (), Storage>> {
         None
     }
 }

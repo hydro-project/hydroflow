@@ -4,6 +4,7 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use sealed::sealed;
+use variadics::hash_set::VariadicHashSet;
 use variadics::{
     var_args, var_type, PartialEqVariadic, RefVariadic, Split, SplitBySuffix, VariadicExt,
 };
@@ -23,7 +24,7 @@ pub trait GeneralizedHashTrieNode: Default {
     /// This type is the same in all nodes of the trie.
     type ValType: VariadicExt + Eq + Hash + Clone;
     /// The type that holds the data in the leaves
-    type Storage: TupleSet<Schema = Self::Schema> + Default;
+    type Storage: TupleSet<Schema = Self::Schema> + Default + IntoIterator<Item = Self::Schema>;
 
     /// SuffixSchema variadic: the suffix of the schema *from this node of the trie
     /// downward*. The first entry in this variadic is of type Head.
@@ -65,10 +66,10 @@ pub trait GeneralizedHashTrieNode: Default {
     // ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>>;
 
     /// Bimorphism for joining on full tuple keys (all GhtInner keys) in the trie
-    type DeepJoin<Other>
+    type DeepJoin<Other, Storage>
     where
         Other: GeneralizedHashTrieNode,
-        (Self, Other): DeepJoinLatticeBimorphism;
+        (Self, Other): DeepJoinLatticeBimorphism<Storage>;
 
     // /// For Inner nodes only, this is the type of the Child node
     // type ChildNode: GeneralizedHashTrieNode;
@@ -171,10 +172,10 @@ where
     //         .flat_map(|(_k, vs)| vs.recursive_iter_keys().map(move |v| v))
     // }
 
-    type DeepJoin<Other> = <(Self, Other) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism
+    type DeepJoin<Other, Storage> = <(Self, Other) as DeepJoinLatticeBimorphism<Storage>>::DeepJoinLatticeBimorphism
     where
         Other: GeneralizedHashTrieNode,
-        (Self, Other): DeepJoinLatticeBimorphism;
+        (Self, Other): DeepJoinLatticeBimorphism<Storage>;
 
     fn find_containing_leaf(
         &self,
@@ -231,28 +232,33 @@ pub trait TupleSet {
     fn len(&self) -> usize;
 
     /// Return true if empty
-    fn is_empty(&self) -> bool;
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    fn drain(&mut self) -> impl Iterator<Item = Self::Schema>;
 
     /// Check for containment
-    fn contains(&self, value: &Self::Schema) -> bool;
+    fn contains(&self, value: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool;
 }
 
-impl<Schema> TupleSet for HashSet<Schema>
+impl<Schema> TupleSet for VariadicHashSet<Schema>
 where
     Schema: 'static + Eq + Hash + PartialEqVariadic,
+    for<'a> <Schema as VariadicExt>::AsRefVar<'a>: Hash,
 {
     type Schema = Schema;
 
     fn insert(&mut self, element: Self::Schema) -> bool {
-        HashSet::insert(self, element)
+        self.insert(element)
     }
 
     fn iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
-        self.iter().map(Self::Schema::as_ref_var)
+        self.iter()
     }
 
     fn len(&self) -> usize {
-        HashSet::len(self)
+        self.len()
     }
 
     /// Return true if empty
@@ -260,9 +266,12 @@ where
         self.len() == 0
     }
 
-    fn contains(&self, value: &Self::Schema) -> bool {
-        let t = value;
-        HashSet::contains(self, &t)
+    fn drain(&mut self) -> impl Iterator<Item = Self::Schema> {
+        self.drain()
+    }
+
+    fn contains(&self, value: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool {
+        self.get(value).is_some()
     }
 }
 
@@ -308,7 +317,7 @@ where
     var_type!(ValHead, ...ValRest): Clone + Eq + Hash + PartialEqVariadic,
     <Schema as SplitBySuffix<var_type!(ValHead, ...ValRest)>>::Prefix: Eq + Hash + Clone,
     // for<'a> Schema::AsRefVar<'a>: PartialEq,
-    Storage: TupleSet<Schema = Schema> + Default,
+    Storage: TupleSet<Schema = Schema> + Default + IntoIterator<Item = Schema>,
 {
     type Schema = Schema;
     type SuffixSchema = var_type!(ValHead, ...ValRest);
@@ -346,10 +355,10 @@ where
         self.elements.iter() // .map(Schema::as_ref_var)
     }
 
-    type DeepJoin<Other> = <(Self, Other) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism
+    type DeepJoin<Other, TheStorage> = <(Self, Other) as DeepJoinLatticeBimorphism<TheStorage>>::DeepJoinLatticeBimorphism
     where
         Other: GeneralizedHashTrieNode,
-        (Self, Other): DeepJoinLatticeBimorphism;
+        (Self, Other): DeepJoinLatticeBimorphism<TheStorage>;
 
     fn find_containing_leaf(
         &self,
@@ -378,7 +387,7 @@ where
         + Clone
         // + SplitBySuffix<var_type!(ValHead, ...ValRest)>
         + PartialEqVariadic,
-    Storage: TupleSet<Schema = Schema> + Default,
+    Storage: TupleSet<Schema = Schema> + Default + IntoIterator<Item = Schema>,
     // ValHead: Clone + Eq + Hash,
     // var_type!(ValHead, ...ValRest): Clone + Eq + Hash + PartialEqVariadic,
     // <Schema as SplitBySuffix<var_type!(ValHead, ...ValRest)>>::Prefix: Eq + Hash + Clone,
@@ -420,10 +429,10 @@ where
         self.elements.iter() //.map(Schema::as_ref_var)
     }
 
-    type DeepJoin<Other> = <(Self, Other) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism
+    type DeepJoin<Other, TheStorage> = <(Self, Other) as DeepJoinLatticeBimorphism<TheStorage>>::DeepJoinLatticeBimorphism
     where
         Other: GeneralizedHashTrieNode,
-        (Self, Other): DeepJoinLatticeBimorphism;
+        (Self, Other): DeepJoinLatticeBimorphism<TheStorage>;
 
     fn find_containing_leaf(
         &self,
@@ -776,17 +785,17 @@ macro_rules! GhtTypeWithSchema {
 
     // Empty key (Leaf)
     (() => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ), HashSet<$schema> >
+        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ), $crate::variadics::hash_set::VariadicHashSet<$schema> >
     );
 
     // Singleton key & Empty val (Inner over Leaf)
     ($a:ty => () => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, (), HashSet<$schema> >>
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, (), $crate::variadics::hash_set::VariadicHashSet<$schema> >>
     );
 
     // Singleton key (Inner over Leaf)
     ($a:ty => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*), HashSet<$schema> >>
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*), $crate::variadics::hash_set::VariadicHashSet<$schema> >>
     );
 
     // Recursive case with empty val
