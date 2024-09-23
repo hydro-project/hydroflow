@@ -475,7 +475,7 @@ impl<'a, T, N: Location> Stream<'a, T, Unbounded, NoTick, N> {
     ) -> Stream<'a, T, Unbounded, NoTick, N> {
         let interval = duration.splice_typed();
 
-        let samples = Stream::<'a, hydroflow::tokio::time::Instant, Bounded, Tick, N>::new(
+        let samples = Stream::<'a, tokio::time::Instant, Bounded, Tick, N>::new(
             self.location_kind,
             self.ir_leaves.clone(),
             HfPlusNode::Source {
@@ -833,5 +833,54 @@ impl<'a, T, W, N: Location> Stream<'a, T, W, NoTick, N> {
         T: Clone,
     {
         self.broadcast_bytes(other).map(q!(|(_, b)| b))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use hydro_deploy::Deployment;
+    use serde::{Deserialize, Serialize};
+    use stageleft::q;
+
+    use crate::deploy::{DeployCrateWrapper, TrybuildHost};
+    use crate::FlowBuilder;
+
+    struct P1 {}
+    struct P2 {}
+
+    #[derive(Serialize, Deserialize, Debug)]
+    struct SendOverNetwork {
+        n: u32,
+    }
+
+    #[tokio::test]
+    async fn first_ten_distributed() {
+        let mut deployment = Deployment::new();
+
+        let flow = FlowBuilder::new();
+        let first_node = flow.process::<P1>();
+        let second_node = flow.process::<P2>();
+
+        let numbers = flow.source_iter(&first_node, q!(0..10));
+        numbers
+            .map(q!(|n| SendOverNetwork { n }))
+            .send_bincode(&second_node)
+            .for_each(q!(|n| println!("{}", n.n)));
+
+        let nodes = flow
+            .with_default_optimize()
+            .with_process(&first_node, TrybuildHost::new(deployment.Localhost()))
+            .with_process(&second_node, TrybuildHost::new(deployment.Localhost()))
+            .deploy(&mut deployment);
+
+        deployment.deploy().await.unwrap();
+
+        let mut second_node_stdout = nodes.get_process(&second_node).stdout().await;
+
+        deployment.start().await.unwrap();
+
+        for i in 0..10 {
+            assert_eq!(second_node_stdout.recv().await.unwrap(), i.to_string());
+        }
     }
 }
