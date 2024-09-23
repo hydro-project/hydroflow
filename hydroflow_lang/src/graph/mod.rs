@@ -45,6 +45,9 @@ new_key_type! {
 
     /// ID to identify a subgraph in [`HydroflowGraph`].
     pub struct GraphSubgraphId;
+
+    /// ID to identify a loop block in [`HydroflowGraph`].
+    pub struct GraphLoopId;
 }
 
 /// Context identifier as a string.
