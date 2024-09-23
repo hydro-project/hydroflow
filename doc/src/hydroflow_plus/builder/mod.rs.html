@@ -511,6 +511,9 @@
 <a href="#511" id="511">511</a>
 <a href="#512" id="512">512</a>
 <a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -531,7 +534,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleCollectionWithInitial};
 <span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 <span class="kw">use </span><span class="kw">crate</span>::location::{
-    Cluster, ExternalBincodePort, ExternalBytesPort, ExternalProcess, Location, LocationId, Process,
+    Cluster, ExternalBincodeSink, ExternalBytesPort, ExternalProcess, Location, LocationId, Process,
 };
 <span class="kw">use </span><span class="kw">crate</span>::stream::{Bounded, NoTick, Tick, Unbounded};
 <span class="kw">use crate</span>::{HfCycle, Optional, RuntimeContext, Singleton, Stream};
@@ -542,7 +545,12 @@
 <span class="doccomment">/// Tracks the leaves of the dataflow IR. This is referenced by
 /// `Stream` and `HfCycle` to build the IR. The inner option will
 /// be set to `None` when this builder is finalized.
-</span><span class="kw">pub type </span>FlowLeaves&lt;<span class="lifetime">'a</span>&gt; = Rc&lt;RefCell&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;&gt;&gt;&gt;;
+///
+/// The second `usize` is used to generate unique identifiers for external
+/// outputs of the dataflow.
+</span><span class="kw">pub type </span>FlowLeaves&lt;<span class="lifetime">'a</span>&gt; = Rc&lt;RefCell&lt;(<span class="prelude-ty">Option</span>&lt;Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;&gt;, usize)&gt;&gt;;
+
+<span class="kw">pub type </span>ExternalPortCounter = Rc&lt;RefCell&lt;usize&gt;&gt;;
 
 <span class="attr">#[derive(Copy, Clone)]
 </span><span class="kw">pub struct </span>ClusterIds&lt;<span class="lifetime">'a</span>&gt; {
@@ -593,7 +601,6 @@
     cycle_ids: RefCell&lt;HashMap&lt;usize, usize&gt;&gt;,
 
     next_node_id: RefCell&lt;usize&gt;,
-    next_external_port_id: RefCell&lt;usize&gt;,
 
     <span class="doccomment">/// Tracks whether this flow has been finalized; it is an error to
     /// drop without finalizing.
@@ -627,12 +634,11 @@
     </span>)]
     </span><span class="kw">pub fn </span>new() -&gt; FlowBuilder&lt;<span class="lifetime">'a</span>&gt; {
         FlowBuilder {
-            ir_leaves: Rc::new(RefCell::new(<span class="prelude-val">Some</span>(Vec::new()))),
+            ir_leaves: Rc::new(RefCell::new((<span class="prelude-val">Some</span>(Vec::new()), <span class="number">0</span>))),
             nodes: RefCell::new(<span class="macro">vec!</span>[]),
             clusters: RefCell::new(<span class="macro">vec!</span>[]),
             cycle_ids: RefCell::new(HashMap::new()),
             next_node_id: RefCell::new(<span class="number">0</span>),
-            next_external_port_id: RefCell::new(<span class="number">0</span>),
             finalized: <span class="bool-val">false</span>,
             _phantom: PhantomData,
         }
@@ -642,7 +648,7 @@
         <span class="self">self</span>.finalized = <span class="bool-val">true</span>;
 
         built::BuiltFlow {
-            ir: <span class="self">self</span>.ir_leaves.borrow_mut().take().unwrap(),
+            ir: <span class="self">self</span>.ir_leaves.borrow_mut().<span class="number">0</span>.take().unwrap(),
             processes: <span class="self">self</span>.nodes.replace(<span class="macro">vec!</span>[]),
             clusters: <span class="self">self</span>.clusters.replace(<span class="macro">vec!</span>[]),
             used: <span class="bool-val">false</span>,
@@ -755,9 +761,9 @@
         to: <span class="kw-2">&amp;</span>L,
     ) -&gt; (ExternalBytesPort, Stream&lt;<span class="lifetime">'a</span>, Bytes, Unbounded, NoTick, L&gt;) {
         <span class="kw">let </span>next_external_port_id = {
-            <span class="kw">let </span><span class="kw-2">mut </span>next_external_port_id = <span class="self">self</span>.next_external_port_id.borrow_mut();
-            <span class="kw">let </span>id = <span class="kw-2">*</span>next_external_port_id;
-            <span class="kw-2">*</span>next_external_port_id += <span class="number">1</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>ir_leaves = <span class="self">self</span>.ir_leaves.borrow_mut();
+            <span class="kw">let </span>id = ir_leaves.<span class="number">1</span>;
+            ir_leaves.<span class="number">1 </span>+= <span class="number">1</span>;
             id
         };
 
@@ -790,16 +796,16 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         from: <span class="kw-2">&amp;</span>ExternalProcess&lt;P&gt;,
         to: <span class="kw-2">&amp;</span>L,
-    ) -&gt; (ExternalBincodePort&lt;T&gt;, Stream&lt;<span class="lifetime">'a</span>, T, Unbounded, NoTick, L&gt;) {
+    ) -&gt; (ExternalBincodeSink&lt;T&gt;, Stream&lt;<span class="lifetime">'a</span>, T, Unbounded, NoTick, L&gt;) {
         <span class="kw">let </span>next_external_port_id = {
-            <span class="kw">let </span><span class="kw-2">mut </span>next_external_port_id = <span class="self">self</span>.next_external_port_id.borrow_mut();
-            <span class="kw">let </span>id = <span class="kw-2">*</span>next_external_port_id;
-            <span class="kw-2">*</span>next_external_port_id += <span class="number">1</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>ir_leaves = <span class="self">self</span>.ir_leaves.borrow_mut();
+            <span class="kw">let </span>id = ir_leaves.<span class="number">1</span>;
+            ir_leaves.<span class="number">1 </span>+= <span class="number">1</span>;
             id
         };
 
         (
-            ExternalBincodePort {
+            ExternalBincodeSink {
                 process_id: from.id,
                 port_id: next_external_port_id,
                 _phantom: PhantomData,

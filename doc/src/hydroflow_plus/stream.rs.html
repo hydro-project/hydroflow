@@ -884,6 +884,86 @@
 <a href="#884" id="884">884</a>
 <a href="#885" id="885">885</a>
 <a href="#886" id="886">886</a>
+<a href="#887" id="887">887</a>
+<a href="#888" id="888">888</a>
+<a href="#889" id="889">889</a>
+<a href="#890" id="890">890</a>
+<a href="#891" id="891">891</a>
+<a href="#892" id="892">892</a>
+<a href="#893" id="893">893</a>
+<a href="#894" id="894">894</a>
+<a href="#895" id="895">895</a>
+<a href="#896" id="896">896</a>
+<a href="#897" id="897">897</a>
+<a href="#898" id="898">898</a>
+<a href="#899" id="899">899</a>
+<a href="#900" id="900">900</a>
+<a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+<a href="#908" id="908">908</a>
+<a href="#909" id="909">909</a>
+<a href="#910" id="910">910</a>
+<a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
+<a href="#916" id="916">916</a>
+<a href="#917" id="917">917</a>
+<a href="#918" id="918">918</a>
+<a href="#919" id="919">919</a>
+<a href="#920" id="920">920</a>
+<a href="#921" id="921">921</a>
+<a href="#922" id="922">922</a>
+<a href="#923" id="923">923</a>
+<a href="#924" id="924">924</a>
+<a href="#925" id="925">925</a>
+<a href="#926" id="926">926</a>
+<a href="#927" id="927">927</a>
+<a href="#928" id="928">928</a>
+<a href="#929" id="929">929</a>
+<a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
+<a href="#932" id="932">932</a>
+<a href="#933" id="933">933</a>
+<a href="#934" id="934">934</a>
+<a href="#935" id="935">935</a>
+<a href="#936" id="936">936</a>
+<a href="#937" id="937">937</a>
+<a href="#938" id="938">938</a>
+<a href="#939" id="939">939</a>
+<a href="#940" id="940">940</a>
+<a href="#941" id="941">941</a>
+<a href="#942" id="942">942</a>
+<a href="#943" id="943">943</a>
+<a href="#944" id="944">944</a>
+<a href="#945" id="945">945</a>
+<a href="#946" id="946">946</a>
+<a href="#947" id="947">947</a>
+<a href="#948" id="948">948</a>
+<a href="#949" id="949">949</a>
+<a href="#950" id="950">950</a>
+<a href="#951" id="951">951</a>
+<a href="#952" id="952">952</a>
+<a href="#953" id="953">953</a>
+<a href="#954" id="954">954</a>
+<a href="#955" id="955">955</a>
+<a href="#956" id="956">956</a>
+<a href="#957" id="957">957</a>
+<a href="#958" id="958">958</a>
+<a href="#959" id="959">959</a>
+<a href="#960" id="960">960</a>
+<a href="#961" id="961">961</a>
+<a href="#962" id="962">962</a>
+<a href="#963" id="963">963</a>
+<a href="#964" id="964">964</a>
+<a href="#965" id="965">965</a>
+<a href="#966" id="966">966</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -903,7 +983,9 @@
 <span class="kw">use </span><span class="kw">crate</span>::builder::{ClusterIds, FlowLeaves};
 <span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleComplete};
 <span class="kw">use </span><span class="kw">crate</span>::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource};
-<span class="kw">use </span><span class="kw">crate</span>::location::{CanSend, Location, LocationId};
+<span class="kw">use </span><span class="kw">crate</span>::location::{
+    CanSend, ExternalBincodeStream, ExternalBytesPort, ExternalProcess, Location, LocationId,
+};
 <span class="kw">use crate</span>::{Cluster, Optional, Singleton};
 
 <span class="doccomment">/// Marks the stream as being unbounded, which means that it is not
@@ -942,7 +1024,7 @@
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&gt; CycleComplete&lt;<span class="lifetime">'a</span>, Tick&gt; <span class="kw">for </span>Stream&lt;<span class="lifetime">'a</span>, T, Bounded, Tick, N&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
         <span class="kw">let </span>me = <span class="self">self</span>.defer_tick();
-        me.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
+        me.ir_leaves.borrow_mut().<span class="number">0</span>.as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
             ident,
             location_kind: me.location_kind,
             input: Box::new(me.ir_node.into_inner()),
@@ -967,7 +1049,7 @@
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; CycleComplete&lt;<span class="lifetime">'a</span>, NoTick&gt; <span class="kw">for </span>Stream&lt;<span class="lifetime">'a</span>, T, W, NoTick, N&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
-        <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
+        <span class="self">self</span>.ir_leaves.borrow_mut().<span class="number">0</span>.as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
             ident,
             location_kind: <span class="self">self</span>.location_kind,
             input: Box::new(HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner()))),
@@ -1156,7 +1238,7 @@
     }
 
     <span class="kw">pub fn </span>dest_sink&lt;S: Unpin + Sink&lt;T&gt; + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, sink: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, S&gt;) {
-        <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::DestSink {
+        <span class="self">self</span>.ir_leaves.borrow_mut().<span class="number">0</span>.as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::DestSink {
             sink: sink.splice_typed().into(),
             input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
         });
@@ -1347,7 +1429,7 @@
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, NoTick, N&gt; {
     <span class="kw">pub fn </span>for_each&lt;F: Fn(T) + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) {
-        <span class="self">self</span>.ir_leaves.borrow_mut().as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::ForEach {
+        <span class="self">self</span>.ir_leaves.borrow_mut().<span class="number">0</span>.as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::ForEach {
             input: Box::new(HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner()))),
             f: f.splice_fn1().into(),
         });
@@ -1611,6 +1693,47 @@
         )
     }
 
+    <span class="kw">pub fn </span>send_bincode_external&lt;N2, CoreType&gt;(
+        <span class="self">self</span>,
+        other: <span class="kw-2">&amp;</span>ExternalProcess&lt;N2&gt;,
+    ) -&gt; ExternalBincodeStream&lt;N::Out&lt;CoreType&gt;&gt;
+    <span class="kw">where
+        </span>N: CanSend&lt;ExternalProcess&lt;N2&gt;, In&lt;CoreType&gt; = T, Out&lt;CoreType&gt; = CoreType&gt;,
+        CoreType: Serialize + DeserializeOwned,
+        <span class="comment">// for now, we restirct Out&lt;CoreType&gt; to be CoreType, which means no tagged cluster -&gt; external
+    </span>{
+        <span class="kw">let </span>serialize_pipeline = <span class="prelude-val">Some</span>(serialize_bincode::&lt;CoreType&gt;(N::is_demux()));
+
+        <span class="kw">let </span><span class="kw-2">mut </span>leaves_borrow = <span class="self">self</span>.ir_leaves.borrow_mut();
+
+        <span class="kw">let </span>external_key = leaves_borrow.<span class="number">1</span>;
+        leaves_borrow.<span class="number">1 </span>+= <span class="number">1</span>;
+
+        <span class="kw">let </span>leaves = leaves_borrow.<span class="number">0</span>.as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled()"</span>);
+
+        <span class="kw">let </span>dummy_f: syn::Expr = <span class="macro">syn::parse_quote!</span>(());
+
+        leaves.push(HfPlusLeaf::ForEach {
+            f: dummy_f.into(),
+            input: Box::new(HfPlusNode::Network {
+                from_location: <span class="self">self</span>.location_kind,
+                from_key: <span class="prelude-val">None</span>,
+                to_location: other.id(),
+                to_key: <span class="prelude-val">Some</span>(external_key),
+                serialize_pipeline,
+                instantiate_fn: DebugInstantiate::Building(),
+                deserialize_pipeline: <span class="prelude-val">None</span>,
+                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            }),
+        });
+
+        ExternalBincodeStream {
+            process_id: other.id,
+            port_id: external_key,
+            _phantom: PhantomData,
+        }
+    }
+
     <span class="kw">pub fn </span>send_bytes&lt;N2: Location&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
@@ -1636,6 +1759,38 @@
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
+    }
+
+    <span class="kw">pub fn </span>send_bytes_external&lt;N2&gt;(<span class="self">self</span>, other: <span class="kw-2">&amp;</span>ExternalProcess&lt;N2&gt;) -&gt; ExternalBytesPort
+    <span class="kw">where
+        </span>N: CanSend&lt;ExternalProcess&lt;N2&gt;, In&lt;Bytes&gt; = T, Out&lt;Bytes&gt; = Bytes&gt;,
+    {
+        <span class="kw">let </span><span class="kw-2">mut </span>leaves_borrow = <span class="self">self</span>.ir_leaves.borrow_mut();
+        <span class="kw">let </span>external_key = leaves_borrow.<span class="number">1</span>;
+        leaves_borrow.<span class="number">1 </span>+= <span class="number">1</span>;
+
+        <span class="kw">let </span>leaves = leaves_borrow.<span class="number">0</span>.as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled()"</span>);
+
+        <span class="kw">let </span>dummy_f: syn::Expr = <span class="macro">syn::parse_quote!</span>(());
+
+        leaves.push(HfPlusLeaf::ForEach {
+            f: dummy_f.into(),
+            input: Box::new(HfPlusNode::Network {
+                from_location: <span class="self">self</span>.location_kind,
+                from_key: <span class="prelude-val">None</span>,
+                to_location: other.id(),
+                to_key: <span class="prelude-val">Some</span>(external_key),
+                serialize_pipeline: <span class="prelude-val">None</span>,
+                instantiate_fn: DebugInstantiate::Building(),
+                deserialize_pipeline: <span class="prelude-val">None</span>,
+                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            }),
+        });
+
+        ExternalBytesPort {
+            process_id: other.id,
+            port_id: external_key,
+        }
     }
 
     <span class="kw">pub fn </span>send_bincode_interleaved&lt;N2: Location, Tag, CoreType&gt;(
@@ -1724,11 +1879,14 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>hydro_deploy::Deployment;
+    <span class="kw">use </span>std::sync::Arc;
+
+    <span class="kw">use </span>hydro_deploy::{Deployment, Host};
+    <span class="kw">use </span>hydroflow::futures::StreamExt;
     <span class="kw">use </span>serde::{Deserialize, Serialize};
     <span class="kw">use </span>stageleft::q;
 
-    <span class="kw">use </span><span class="kw">crate</span>::deploy::{DeployCrateWrapper, TrybuildHost};
+    <span class="kw">use </span><span class="kw">crate</span>::deploy::TrybuildHost;
     <span class="kw">use </span><span class="kw">crate</span>::FlowBuilder;
 
     <span class="kw">struct </span>P1 {}
@@ -1746,27 +1904,29 @@
         <span class="kw">let </span>flow = FlowBuilder::new();
         <span class="kw">let </span>first_node = flow.process::&lt;P1&gt;();
         <span class="kw">let </span>second_node = flow.process::&lt;P2&gt;();
+        <span class="kw">let </span>external = flow.external_process::&lt;P2&gt;();
 
         <span class="kw">let </span>numbers = flow.source_iter(<span class="kw-2">&amp;</span>first_node, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
-        numbers
+        <span class="kw">let </span>out_port = numbers
             .map(<span class="macro">q!</span>(|n| SendOverNetwork { n }))
             .send_bincode(<span class="kw-2">&amp;</span>second_node)
-            .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n.n)));
+            .send_bincode_external(<span class="kw-2">&amp;</span>external);
 
         <span class="kw">let </span>nodes = flow
             .with_default_optimize()
             .with_process(<span class="kw-2">&amp;</span>first_node, TrybuildHost::new(deployment.Localhost()))
             .with_process(<span class="kw-2">&amp;</span>second_node, TrybuildHost::new(deployment.Localhost()))
+            .with_external(<span class="kw-2">&amp;</span>external, deployment.Localhost() <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>Host&gt;)
             .deploy(<span class="kw-2">&amp;mut </span>deployment);
 
         deployment.deploy().<span class="kw">await</span>.unwrap();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>second_node_stdout = nodes.get_process(<span class="kw-2">&amp;</span>second_node).stdout().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>external_out = nodes.connect_source_bincode(out_port).<span class="kw">await</span>;
 
         deployment.start().<span class="kw">await</span>.unwrap();
 
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
-            <span class="macro">assert_eq!</span>(second_node_stdout.recv().<span class="kw">await</span>.unwrap(), i.to_string());
+            <span class="macro">assert_eq!</span>(external_out.next().<span class="kw">await</span>.unwrap().n, i);
         }
     }
 }

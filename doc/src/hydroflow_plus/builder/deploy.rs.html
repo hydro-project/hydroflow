@@ -270,13 +270,36 @@
 <a href="#270" id="270">270</a>
 <a href="#271" id="271">271</a>
 <a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::io::Error;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::pin::Pin;
 
 <span class="kw">use </span>hydroflow::bytes::Bytes;
-<span class="kw">use </span>hydroflow::futures::Sink;
+<span class="kw">use </span>hydroflow::futures::{Sink, Stream};
 <span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>serde::de::DeserializeOwned;
 <span class="kw">use </span>serde::Serialize;
@@ -286,7 +309,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::deploy::{ExternalSpec, LocalDeploy, Node, RegisterPort};
 <span class="kw">use </span><span class="kw">crate</span>::ir::HfPlusLeaf;
 <span class="kw">use </span><span class="kw">crate</span>::location::{
-    ExternalBincodePort, ExternalBytesPort, ExternalProcess, Location, LocationId,
+    ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort, ExternalProcess, Location,
+    LocationId,
 };
 <span class="kw">use crate</span>::{Cluster, ClusterSpec, Deploy, HfCompiled, Process, ProcessSpec};
 
@@ -533,12 +557,34 @@
 
     <span class="kw">pub async fn </span>connect_sink_bincode&lt;T: Serialize + DeserializeOwned + <span class="lifetime">'static</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        port: ExternalBincodePort&lt;T&gt;,
+        port: ExternalBincodeSink&lt;T&gt;,
     ) -&gt; Pin&lt;Box&lt;<span class="kw">dyn </span>Sink&lt;T, Error = Error&gt;&gt;&gt; {
         <span class="self">self</span>.externals
             .get(<span class="kw-2">&amp;</span>port.process_id)
             .unwrap()
             .as_bincode_sink(port.port_id)
+            .<span class="kw">await
+    </span>}
+
+    <span class="kw">pub async fn </span>connect_source_bytes(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        port: ExternalBytesPort,
+    ) -&gt; Pin&lt;Box&lt;<span class="kw">dyn </span>Stream&lt;Item = Bytes&gt;&gt;&gt; {
+        <span class="self">self</span>.externals
+            .get(<span class="kw-2">&amp;</span>port.process_id)
+            .unwrap()
+            .as_bytes_source(port.port_id)
+            .<span class="kw">await
+    </span>}
+
+    <span class="kw">pub async fn </span>connect_source_bincode&lt;T: Serialize + DeserializeOwned + <span class="lifetime">'static</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        port: ExternalBincodeStream&lt;T&gt;,
+    ) -&gt; Pin&lt;Box&lt;<span class="kw">dyn </span>Stream&lt;Item = T&gt;&gt;&gt; {
+        <span class="self">self</span>.externals
+            .get(<span class="kw-2">&amp;</span>port.process_id)
+            .unwrap()
+            .as_bincode_source(port.port_id)
             .<span class="kw">await
     </span>}
 }
