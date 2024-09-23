@@ -123,7 +123,7 @@ pub async fn bind_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>
                         continue;
                     };
                     if let Err(_err) = SinkExt::send(stream, payload).await {
-                        tracing::warn!("Failed to send message to peer: {}", peer_addr);
+                        tracing::error!("Failed to send message to peer: {}", peer_addr);
                     };
                 }
                 // Receive incoming messages.
@@ -132,7 +132,7 @@ pub async fn bind_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>
                         unreachable!(); // => `peers_recv.is_empty()`.
                     };
                     if let Err(err) = send_ingress.send(payload_result.map(|payload| (payload, peer_addr))).await {
-                        tracing::warn!("Error passing along received message: {:?}", err);
+                        tracing::error!("Error passing along received message: {:?}", err);
                     }
                 }
             }
@@ -182,7 +182,7 @@ pub fn connect_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>(
                     };
 
                     if let Err(_err) = stream.send(payload).await {
-                        tracing::warn!("Failed to send message to peer: {}", peer_addr);
+                        tracing::error!("Failed to send message to peer: {}", peer_addr);
                     }
                 }
                 // Receive incoming messages.
@@ -191,7 +191,7 @@ pub fn connect_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>(
                         unreachable!(); // => `peers_recv.is_empty()`.
                     };
                     if let Err(err) = send_ingres.send(payload_result.map(|payload| (payload, peer_addr))).await {
-                        tracing::warn!("Error passing along received message: {:?}", err);
+                        tracing::error!("Error passing along received message: {:?}", err);
                     }
                 }
             }
