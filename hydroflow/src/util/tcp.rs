@@ -119,21 +119,20 @@ pub async fn bind_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>
                         continue;
                     };
                     let Some(stream) = peers_send.get_mut(&peer_addr) else {
-                        eprintln!("Dropping message to non-connected peer: {}", peer_addr);
+                        tracing::warn!("Dropping message to non-connected peer: {}", peer_addr);
                         continue;
                     };
                     if let Err(_err) = SinkExt::send(stream, payload).await {
-                        eprintln!("Failed to send message to peer: {}", peer_addr);
+                        tracing::warn!("Failed to send message to peer: {}", peer_addr);
                     };
                 }
                 // Receive incoming messages.
                 msg_recv = peers_recv.next(), if !peers_recv.is_empty() => {
                     let Some((peer_addr, payload_result)) = msg_recv else {
-                        eprintln!("Error receiving message");
-                        continue;
+                        unreachable!(); // => `peers_recv.is_empty()`.
                     };
                     if let Err(err) = send_ingress.send(payload_result.map(|payload| (payload, peer_addr))).await {
-                        eprintln!("Error passing along received message: {:?}", err);
+                        tracing::warn!("Error passing along received message: {:?}", err);
                     }
                 }
             }
@@ -183,17 +182,16 @@ pub fn connect_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>(
                     };
 
                     if let Err(_err) = stream.send(payload).await {
-                        eprintln!("Failed to send message to peer: {}", peer_addr);
+                        tracing::warn!("Failed to send message to peer: {}", peer_addr);
                     }
                 }
                 // Receive incoming messages.
                 msg_recv = peers_recv.next(), if !peers_recv.is_empty() => {
                     let Some((peer_addr, payload_result)) = msg_recv else {
-                        // End of stream.
-                        break;
+                        unreachable!(); // => `peers_recv.is_empty()`.
                     };
                     if let Err(err) = send_ingres.send(payload_result.map(|payload| (payload, peer_addr))).await {
-                        eprintln!("Error passing along received message: {:?}", err);
+                        tracing::warn!("Error passing along received message: {:?}", err);
                     }
                 }
             }
