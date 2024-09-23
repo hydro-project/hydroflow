@@ -351,6 +351,27 @@ impl<'a, T, B, N: Location> Singleton<'a, T, B, NoTick, N> {
             HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
         )
     }
+
+    pub fn sample_every(
+        self,
+        duration: impl Quoted<'a, std::time::Duration> + Copy + 'a,
+    ) -> Stream<'a, T, Unbounded, NoTick, N> {
+        let interval = duration.splice_typed();
+
+        let samples = Stream::<'a, (), Bounded, Tick, N>::new(
+            self.location_kind,
+            self.ir_leaves.clone(),
+            HfPlusNode::Source {
+                source: HfPlusSource::Interval(interval.into()),
+                location_kind: self.location_kind,
+            },
+        );
+
+        self.latest_tick()
+            .continue_if(samples.first())
+            .latest()
+            .tick_samples()
+    }
 }
 
 impl<'a, T, N: Location> Singleton<'a, T, Unbounded, NoTick, N> {
