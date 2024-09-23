@@ -9,6 +9,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use stageleft::Quoted;
 
+#[cfg(feature = "deploy_runtime")]
 pub mod macro_runtime;
 
 #[cfg(feature = "deploy")]
@@ -18,8 +19,11 @@ pub use macro_runtime::*;
 #[cfg(feature = "deploy")]
 pub use trybuild::init_test;
 
+#[cfg(feature = "deploy_runtime")]
 #[allow(clippy::allow_attributes, unused, reason = "stageleft")]
 pub(crate) mod deploy_runtime;
+#[cfg(feature = "deploy_runtime")]
+pub use deploy_runtime::HydroflowPlusMeta;
 
 #[cfg(feature = "deploy")]
 pub mod deploy_graph;

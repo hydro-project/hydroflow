@@ -1,9 +1,18 @@
+use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
 use stageleft::{q, Quoted, RuntimeData};
 
-use super::HydroflowPlusMeta;
 use crate::util::deploy::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, DeployPorts,
 };
+
+#[derive(Default, Serialize, Deserialize)]
+pub struct HydroflowPlusMeta {
+    pub clusters: HashMap<usize, Vec<u32>>,
+    pub cluster_id: Option<u32>,
+    pub subgraph_id: usize,
+}
 
 pub fn cluster_members(
     cli: RuntimeData<&DeployPorts<HydroflowPlusMeta>>,
