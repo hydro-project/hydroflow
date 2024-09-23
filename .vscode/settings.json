@@ -13,10 +13,16 @@
             }
         }
     ],
+    "rust-analyzer.runnables.extraTestBinaryArgs": [
+        "--nocapture"
+    ],
+    "rust-analyzer.cargo.features": [
+        "python"
+    ],
+    "rust-analyzer.server.extraEnv": {
+        "CARGO_TARGET_DIR": "${workspaceFolder}/target/rust-analyzer",
+    },
     "files.watcherExclude": {
         "**/target": true
     },
-    "rust-analyzer.cargo.features": [
-        "python"
-    ]
 }
