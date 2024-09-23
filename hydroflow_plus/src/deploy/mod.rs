@@ -3,8 +3,9 @@ use std::io::Error;
 use std::pin::Pin;
 
 use hydroflow::bytes::Bytes;
-use hydroflow::futures::Sink;
+use hydroflow::futures::{Sink, Stream};
 use hydroflow_lang::graph::HydroflowGraph;
+use serde::de::DeserializeOwned;
 use serde::Serialize;
 use stageleft::Quoted;
 
@@ -151,6 +152,21 @@ pub trait Deploy<'a> {
         p2_port: &Self::Port,
     );
 
+    fn o2e_sink(
+        compile_env: &Self::CompileEnv,
+        p1: &Self::Process,
+        p1_port: &Self::Port,
+        p2: &Self::ExternalProcess,
+        p2_port: &Self::Port,
+    ) -> syn::Expr;
+
+    fn o2e_connect(
+        p1: &Self::Process,
+        p1_port: &Self::Port,
+        p2: &Self::ExternalProcess,
+        p2_port: &Self::Port,
+    );
+
     fn cluster_ids(
         env: &Self::CompileEnv,
         of_cluster: usize,
@@ -220,12 +236,24 @@ pub trait Node {
 pub trait RegisterPort<'a, D: Deploy<'a> + ?Sized>: Clone {
     fn register(&self, key: usize, port: D::Port);
     fn raw_port(&self, key: usize) -> D::ExternalRawPort;
+
     fn as_bytes_sink(
         &self,
         key: usize,
     ) -> impl Future<Output = Pin<Box<dyn Sink<Bytes, Error = Error>>>> + 'a;
+
     fn as_bincode_sink<T: Serialize + 'static>(
         &self,
         key: usize,
     ) -> impl Future<Output = Pin<Box<dyn Sink<T, Error = Error>>>> + 'a;
+
+    fn as_bytes_source(
+        &self,
+        key: usize,
+    ) -> impl Future<Output = Pin<Box<dyn Stream<Item = Bytes>>>> + 'a;
+
+    fn as_bincode_source<T: DeserializeOwned + 'static>(
+        &self,
+        key: usize,
+    ) -> impl Future<Output = Pin<Box<dyn Stream<Item = T>>>> + 'a;
 }
