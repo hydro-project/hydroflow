@@ -11,7 +11,7 @@ use quote::ToTokens;
 use syn::spanned::Spanned;
 use syn::{Error, Ident, ItemUse};
 
-use super::{GraphEdgeId, GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
+use super::{GraphEdgeId, GraphLoopId, GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::{PortListSpec, RangeTrait};
 use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
@@ -103,6 +103,7 @@ impl FlatGraphBuilder {
                     import_expr: Span::call_site(),
                 },
                 Some(Ident::new("input", Span::call_site())),
+                None,
             ),
             builder.flat_graph.insert_node(
                 GraphNode::ModuleBoundary {
@@ -110,6 +111,7 @@ impl FlatGraphBuilder {
                     import_expr: Span::call_site(),
                 },
                 Some(Ident::new("output", Span::call_site())),
+                None,
             ),
         ));
         builder.process_statements(input.statements);
@@ -136,13 +138,18 @@ impl FlatGraphBuilder {
 
     /// Add a single [`HfStatement`] line to this `HydroflowGraph`.
     pub fn add_statement(&mut self, stmt: HfStatement) {
+        self.add_statement_loop(stmt, None);
+    }
+
+    /// Add a single [`HfStatement`] line to this `HydroflowGraph`.
+    pub fn add_statement_loop(&mut self, stmt: HfStatement, current_loop: Option<GraphLoopId>) {
         match stmt {
             HfStatement::Use(yuse) => {
                 self.uses.push(yuse);
             }
             HfStatement::Named(named) => {
                 let stmt_span = named.span();
-                let ends = self.add_pipeline(named.pipeline, Some(&named.name));
+                let ends = self.add_pipeline(named.pipeline, Some(&named.name), current_loop);
                 match self.varname_ends.entry(named.name) {
                     Entry::Vacant(vacant_entry) => {
                         vacant_entry.insert(VarnameInfo::new(ends));
@@ -171,20 +178,32 @@ impl FlatGraphBuilder {
                 }
             }
             HfStatement::Pipeline(pipeline_stmt) => {
-                let ends = self.add_pipeline(pipeline_stmt.pipeline, None);
+                let ends = self.add_pipeline(pipeline_stmt.pipeline, None, current_loop);
                 Self::helper_check_unused_port(&mut self.diagnostics, &ends, true);
                 Self::helper_check_unused_port(&mut self.diagnostics, &ends, false);
+            }
+            HfStatement::Loop(block_statement) => {
+                let inner_loop = self.flat_graph.insert_loop(current_loop);
+                for stmt in block_statement.statements {
+                    self.add_statement_loop(stmt, Some(inner_loop));
+                }
             }
         }
     }
 
     /// Helper: Add a pipeline, i.e. `a -> b -> c`. Return the input and output ends for it.
-    fn add_pipeline(&mut self, pipeline: Pipeline, current_varname: Option<&Ident>) -> Ends {
+    fn add_pipeline(
+        &mut self,
+        pipeline: Pipeline,
+        current_varname: Option<&Ident>,
+        current_loop: Option<GraphLoopId>,
+    ) -> Ends {
         match pipeline {
             Pipeline::Paren(ported_pipeline_paren) => {
                 let (inn_port, pipeline_paren, out_port) =
                     PortIndexValue::from_ported(ported_pipeline_paren);
-                let og_ends = self.add_pipeline(*pipeline_paren.pipeline, current_varname);
+                let og_ends =
+                    self.add_pipeline(*pipeline_paren.pipeline, current_varname, current_loop);
                 Self::helper_combine_ends(&mut self.diagnostics, og_ends, inn_port, out_port)
             }
             Pipeline::Name(pipeline_name) => {
@@ -222,8 +241,8 @@ impl FlatGraphBuilder {
             }
             Pipeline::Link(pipeline_link) => {
                 // Add the nested LHS and RHS of this link.
-                let lhs_ends = self.add_pipeline(*pipeline_link.lhs, current_varname);
-                let rhs_ends = self.add_pipeline(*pipeline_link.rhs, current_varname);
+                let lhs_ends = self.add_pipeline(*pipeline_link.lhs, current_varname, current_loop);
+                let rhs_ends = self.add_pipeline(*pipeline_link.rhs, current_varname, current_loop);
 
                 // Outer (first and last) ends.
                 let outer_ends = Ends {
@@ -242,7 +261,7 @@ impl FlatGraphBuilder {
                 let op_span = Some(operator.span());
                 let nid = self
                     .flat_graph
-                    .insert_node(GraphNode::Operator(operator), current_varname.cloned());
+                    .insert_node(GraphNode::Operator(operator), current_varname.cloned(), current_loop);
                 Ends {
                     inn: Some((PortIndexValue::Elided(op_span), GraphDet::Determined(nid))),
                     out: Some((PortIndexValue::Elided(op_span), GraphDet::Determined(nid))),
@@ -314,7 +333,7 @@ impl FlatGraphBuilder {
             match node {
                 GraphNode::Operator(_) => {
                     let varname = other.node_varname(other_node_id);
-                    let new_id = self.flat_graph.insert_node(node.clone(), varname);
+                    let new_id = self.flat_graph.insert_node(node.clone(), varname, None);
                     node_mapping.insert(other_node_id, new_id);
                 }
                 GraphNode::ModuleBoundary { input, .. } => {
@@ -324,6 +343,7 @@ impl FlatGraphBuilder {
                             import_expr: parent_span,
                         },
                         Some(Ident::new(&format!("module_{}", input), parent_span)),
+                        None,
                     );
                     node_mapping.insert(other_node_id, new_id);
 

@@ -236,3 +236,16 @@ pub fn test_parser_forwardref_self_middle() {
         self_ref = map(|a: usize| a) -> [0]self_ref[1] -> map(|b: usize| b);
     };
 }
+
+#[multiplatform_test]
+pub fn test_hydroflow_2() {
+    hydroflow_parser! {
+        users = source_stream(0..);
+        messages = source_stream(0..);
+        loop {
+            users -> [0]cp;
+            messages -> [1]cp;
+            cp = cross_join() -> for_each(|(user, message)| println!("notify {} of {}", user, message));
+        }
+    }
+}
