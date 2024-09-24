@@ -119,7 +119,6 @@ pub fn paxos_core<'a, P: PaxosPayload>(
         p_ballot_calc(flow, &proposers, p_received_max_ballot.latest_tick());
 
     let (p_is_leader, p_log_to_try_commit, p_max_slot, p_log_holes) = p_p1b(
-        flow,
         &proposers,
         a_to_proposers_p1b.inspect(q!(|(_, p1b)| println!("Proposer received P1b: {:?}", p1b))),
         p_ballot_num.clone(),
@@ -473,7 +472,6 @@ fn p_p2a<'a, P: PaxosPayload>(
 // Proposer logic for processing p1bs, determining if the proposer is now the leader, which uncommitted messages to commit, what the maximum slot is in the p1bs, and which no-ops to commit to fill log holes.
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 fn p_p1b<'a, P: PaxosPayload>(
-    flow: &FlowBuilder<'a>,
     proposers: &Cluster<Proposer>,
     a_to_proposers_p1b: Stream<'a, (u32, P1b<P>), Unbounded, NoTick, Cluster<Proposer>>,
     p_ballot_num: Singleton<'a, u32, Bounded, Tick, Cluster<Proposer>>,
