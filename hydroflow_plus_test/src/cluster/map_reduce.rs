@@ -12,7 +12,7 @@ pub fn map_reduce(flow: &FlowBuilder) -> (Process<Leader>, Cluster<Worker>) {
         .source_iter(&process, q!(vec!["abc", "abc", "xyz", "abc"]))
         .map(q!(|s| s.to_string()));
 
-    let all_ids_vec = flow.cluster_members(&cluster);
+    let all_ids_vec = cluster.members();
     let words_partitioned = words
         .tick_batch()
         .enumerate()

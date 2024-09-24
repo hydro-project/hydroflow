@@ -36,7 +36,7 @@ Elements in a cluster are identified by a **cluster ID** (a `u32`). To get the I
 
 This can then be passed into `source_iter` to load the IDs into the graph.
 ```rust
-let stream = flow.source_iter(&process, flow.cluster_members(&cluster)).cloned();
+let stream = flow.source_iter(&process, cluster.members()).cloned();
 ```
 
 ### One-to-Many
@@ -44,7 +44,7 @@ When sending data from a process to a cluster, the source must be a stream of tu
 
 This is useful for partitioning data across instances. For example, we can partition a stream of elements in a round-robin fashion by using `enumerate` to add a sequence number to each element, then using `send_bincode` to send each element to the instance with the matching sequence number:
 ```rust
-let cluster_ids = flow.cluster_members(&cluster);
+let cluster_ids = cluster.members();
 let stream = flow.source_iter(&process, q!(vec![123, 456, 789]))
     .enumerate()
     .map(q!(|(i, x)| (

@@ -264,7 +264,7 @@ fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
     median_latency_window_size: usize,
     f: usize,
 ) -> Stream<'a, (u32, ClientPayload), Unbounded, NoTick, Cluster<Client>> {
-    let c_id = flow.cluster_self_id(clients);
+    let c_id = clients.self_id();
     // r_to_clients_payload_applied.clone().inspect(q!(|payload: &(u32, ReplicaPayload)| println!("Client received payload: {:?}", payload)));
     // Only keep the latest leader
     let c_max_leader_ballot = p_to_clients_leader_elected

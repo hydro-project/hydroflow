@@ -58,9 +58,9 @@ impl<'a> FreeVariable<&'a Vec<u32>> for ClusterIds<'a> {
 impl<'a> Quoted<'a, &'a Vec<u32>> for ClusterIds<'a> {}
 
 #[derive(Copy, Clone)]
-struct ClusterSelfId<'a> {
-    id: usize,
-    _phantom: PhantomData<&'a mut &'a u32>,
+pub(crate) struct ClusterSelfId<'a> {
+    pub(crate) id: usize,
+    pub(crate) _phantom: PhantomData<&'a mut &'a u32>,
 }
 
 impl<'a> FreeVariable<u32> for ClusterSelfId<'a> {
@@ -196,23 +196,6 @@ impl<'a> FlowBuilder<'a> {
 
     pub fn runtime_context(&self) -> RuntimeContext<'a> {
         RuntimeContext {
-            _phantom: PhantomData,
-        }
-    }
-
-    pub fn cluster_members<C>(
-        &self,
-        cluster: &Cluster<C>,
-    ) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
-        ClusterIds {
-            id: cluster.id,
-            _phantom: PhantomData,
-        }
-    }
-
-    pub fn cluster_self_id<C>(&self, cluster: &Cluster<C>) -> impl Quoted<'a, u32> + Copy + 'a {
-        ClusterSelfId {
-            id: cluster.id,
             _phantom: PhantomData,
         }
     }
