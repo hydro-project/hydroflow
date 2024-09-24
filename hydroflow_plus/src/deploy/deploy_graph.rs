@@ -17,7 +17,7 @@ use hydroflow::futures::StreamExt;
 use hydroflow::util::deploy::ConnectedSource;
 use nameof::name_of;
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 use stageleft::{Quoted, RuntimeData};
 use syn::visit_mut::VisitMut;
@@ -30,13 +30,6 @@ use super::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
 use crate::futures::SinkExt;
 use crate::lang::graph::HydroflowGraph;
 use crate::util::deploy::ConnectedSink;
-
-#[derive(Default, Serialize, Deserialize)]
-pub struct HydroflowPlusMeta {
-    pub clusters: HashMap<usize, Vec<u32>>,
-    pub cluster_id: Option<u32>,
-    pub subgraph_id: usize,
-}
 
 pub struct HydroDeploy {}
 
