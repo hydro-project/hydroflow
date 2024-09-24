@@ -14,7 +14,7 @@ use serde::Serialize;
 use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
 
-use crate::builder::{ClusterIds, FlowLeaves};
+use crate::builder::FlowLeaves;
 use crate::cycle::{CycleCollection, CycleComplete};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{
@@ -856,10 +856,7 @@ impl<'a, T, W, N: Location> Stream<'a, T, W, NoTick, N> {
         N: CanSend<Cluster<C2>, In<T> = (u32, T)>,
         T: Clone + Serialize + DeserializeOwned,
     {
-        let ids = ClusterIds::<'a> {
-            id: other.id,
-            _phantom: PhantomData,
-        };
+        let ids = other.members();
 
         self.flat_map(q!(|b| ids.iter().map(move |id| (
             ::std::clone::Clone::clone(id),
@@ -887,10 +884,7 @@ impl<'a, T, W, N: Location> Stream<'a, T, W, NoTick, N> {
         N: CanSend<Cluster<C2>, In<Bytes> = (u32, T)> + 'a,
         T: Clone,
     {
-        let ids = ClusterIds::<'a> {
-            id: other.id,
-            _phantom: PhantomData,
-        };
+        let ids = other.members();
 
         self.flat_map(q!(|b| ids.iter().map(move |id| (
             ::std::clone::Clone::clone(id),

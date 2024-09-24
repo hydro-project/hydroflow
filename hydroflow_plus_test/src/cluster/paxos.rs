@@ -96,7 +96,7 @@ pub fn paxos_core<'a, P: PaxosPayload>(
     // Proposers.
     flow.source_iter(&proposers, q!(["Proposers say hello"]))
         .for_each(q!(|s| println!("{}", s)));
-    let p_id = flow.cluster_self_id(&proposers);
+    let p_id = proposers.self_id();
 
     let (p_to_proposers_i_am_leader_complete_cycle, p_to_proposers_i_am_leader) =
         flow.cycle::<Stream<_, _, _, _>>(&proposers);
@@ -413,7 +413,7 @@ fn p_p2a<'a, P: PaxosPayload>(
     Optional<'a, i32, Bounded, Tick, Cluster<Proposer>>,
     Stream<'a, P2a<P>, Unbounded, NoTick, Cluster<Acceptor>>,
 ) {
-    let p_id = flow.cluster_self_id(proposers);
+    let p_id = proposers.self_id();
     let (p_next_slot_complete_cycle, p_next_slot) =
         flow.tick_cycle::<Optional<i32, _, _, _>>(proposers);
     let p_next_slot_after_reconciling_p1bs = p_max_slot
@@ -485,7 +485,7 @@ fn p_p1b<'a, P: PaxosPayload>(
     Optional<'a, i32, Bounded, Tick, Cluster<Proposer>>,
     Stream<'a, P2a<P>, Bounded, Tick, Cluster<Proposer>>,
 ) {
-    let p_id = flow.cluster_self_id(proposers);
+    let p_id = proposers.self_id();
     let p_relevant_p1bs = a_to_proposers_p1b
         .clone()
         .tick_prefix()
@@ -598,7 +598,7 @@ fn p_ballot_calc<'a>(
     Singleton<'a, u32, Bounded, Tick, Cluster<Proposer>>,
     Optional<'a, (Ballot, u32), Bounded, Tick, Cluster<Proposer>>,
 ) {
-    let p_id = flow.cluster_self_id(proposers);
+    let p_id = proposers.self_id();
     let (p_ballot_num_complete_cycle, p_ballot_num) =
         flow.tick_cycle_with_initial(proposers, flow.singleton(proposers, q!(0)).latest_tick());
 
@@ -654,7 +654,7 @@ fn p_p1a<'a>(
     Stream<'a, Ballot, Unbounded, NoTick, Cluster<Proposer>>,
     Stream<'a, P1a, Unbounded, NoTick, Cluster<Acceptor>>,
 ) {
-    let p_id = flow.cluster_self_id(proposers);
+    let p_id = proposers.self_id();
     let p_to_proposers_i_am_leader_new = p_ballot_num
         .clone()
         .continue_if(
