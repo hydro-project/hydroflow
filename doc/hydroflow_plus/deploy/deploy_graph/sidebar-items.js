@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["CrateOrTrybuild"],"struct":["DeployCluster","DeployClusterNode","DeployClusterSpec","DeployExternal","DeployNode","DeployProcessSpec","HydroDeploy","HydroflowPlusMeta","TrybuildHost"],"trait":["DeployCrateWrapper"]};
