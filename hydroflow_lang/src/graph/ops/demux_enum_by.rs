@@ -10,9 +10,9 @@ use super::{
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::change_spans;
 
-/// > Generic Argument: A enum type which has `#[derive(DemuxEnum)]`. Must match the items in the input stream.
 ///
-/// Takes an input stream of enum instances and splits them into their variants.
+/// Similar to `demux_enum`, but allows the user to specify a mapping function that extracts the
+/// enum from another type.
 ///
 /// ```rustdoc
 /// #[derive(DemuxEnum)]
@@ -25,11 +25,11 @@ use crate::graph::change_spans;
 ///
 /// let mut df = hydroflow_syntax! {
 ///     my_demux = source_iter([
-///         Shape::Square(9.0),
-///         Shape::Rectangle(10.0, 8.0),
-///         Shape::Circle { r: 5.0 },
-///         Shape::Triangle { w: 12.0, h: 13.0 },
-///     ]) -> demux_enum::<Shape>();
+///         (Shape::Square(9.0), ()),
+///         (Shape::Rectangle(10.0, 8.0), ()),
+///         (Shape::Circle { r: 5.0 }, ()),
+///         (Shape::Triangle { w: 12.0, h: 13.0 }, ()),
+///     ]) -> demux_enum::<Shape>(|x: (Shape, ())| x.0);
 ///
 ///     my_demux[Square] -> map(|s| s * s) -> out;
 ///     my_demux[Circle] -> map(|(r,)| std::f64::consts::PI * r * r) -> out;
@@ -115,6 +115,7 @@ pub const DEMUX_ENUM_BY: OperatorConstraints = OperatorConstraints {
             .collect::<Vec<_>>();
         let root_span = change_spans(root.clone(), enum_type.span());
         let write_prologue = quote_spanned! {enum_type.span()=>
+            #[allow(unreachable_code)]
             let _ = |__val: #enum_type| {
                 fn check_impl_demux_enum<T: ?Sized + #root_span::util::demux_enum::DemuxEnumBase>(_: &T) {}
                 check_impl_demux_enum(&__val);
@@ -156,7 +157,9 @@ pub const DEMUX_ENUM_BY: OperatorConstraints = OperatorConstraints {
                 let #ident = {
                     let mut __outputs = ( #( #sorted_outputs, )* );
                     #root::pusherator::for_each::ForEach::new(move |__item: _| {
-                        let __mapped_item = (#mapfn)(__item);
+                        #[allow(clippy::redundant_closure_call)]
+                        let __mapped_item : #enum_type = (#mapfn)(__item);
+                        #[allow(unreachable_code, reason = "Code is unreachable for zero-variant enums.")]
                         #root::util::demux_enum::DemuxEnum::demux_enum(
                             __mapped_item,
                             &mut __outputs,
