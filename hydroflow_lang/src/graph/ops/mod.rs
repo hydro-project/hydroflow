@@ -249,6 +249,7 @@ declare_ops![
     cross_singleton::CROSS_SINGLETON,
     demux::DEMUX,
     demux_enum::DEMUX_ENUM,
+    demux_enum_by::DEMUX_ENUM_BY,
     dest_file::DEST_FILE,
     dest_sink::DEST_SINK,
     dest_sink_serde::DEST_SINK_SERDE,
