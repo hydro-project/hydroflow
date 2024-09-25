@@ -94,7 +94,6 @@ pub fn test_demux_enum() {
 
 #[multiplatform_test]
 pub fn test_demux_enum_by() {
-
     #[derive(DemuxEnum)]
     enum Shape {
         Square(f64),
@@ -116,7 +115,6 @@ pub fn test_demux_enum_by() {
         out = union() -> for_each(|area| println!("Area: {}", area));
     };
     df.run_available();
-
 }
 
 #[multiplatform_test]
