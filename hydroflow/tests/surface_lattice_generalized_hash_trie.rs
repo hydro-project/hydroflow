@@ -1,14 +1,14 @@
 use hydroflow::hydroflow_syntax;
 use hydroflow::lattices::ght::GeneralizedHashTrieNode;
 use hydroflow::lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
-use hydroflow::lattices::GhtType;
+use hydroflow::lattices::GhtRowType;
 use hydroflow::util::collect_ready;
 use hydroflow::variadics::{var_expr, var_type};
 use variadics::hash_set::VariadicHashSet; // Import the Insert trait
 
 #[test]
 fn test_basic() {
-    type MyGht = GhtType!(u16, u32 => u64);
+    type MyGht = GhtRowType!(u16, u32 => u64);
     type FlatTup = var_type!(u16, u32, u64);
     let input: Vec<FlatTup> = vec![
         var_expr!(42, 314, 43770),
@@ -34,8 +34,8 @@ fn test_basic() {
 
 #[test]
 fn test_join() {
-    type MyGht = GhtType!(u8 => u16);
-    type ResultGht = GhtType!(u8 => u16, u16);
+    type MyGht = GhtRowType!(u8 => u16);
+    type ResultGht = GhtRowType!(u8 => u16, u16);
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
     let r = vec![

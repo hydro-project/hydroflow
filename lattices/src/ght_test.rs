@@ -6,19 +6,21 @@ mod test {
     use variadics::hash_set::VariadicHashSet;
     use variadics::{var_expr, var_type, VariadicExt};
 
-    use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtLeaf, GhtPrefixIter};
+    use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtLeaf, GhtPrefixIter, TupleSet};
     use crate::ght_lattice::{
         //     DeepJoinLatticeBimorphism, GhtBimorphism,
         GhtCartesianProductBimorphism,
         //     GhtNodeKeyedBimorphism, GhtValTypeProductBimorphism,
     };
-    use crate::ght_lazy::{ColtNode, ColumnLazyTrieNode, ForestFindLeaf, GhtForest}; /* GhtForestStruct}; */
-    use crate::{GhtForestType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
+    use crate::ght_lazy::{ColtNode, ColumnLazyTrieNode, ColumnVecSet, ForestFindLeaf, GhtForest}; /* GhtForestStruct}; */
+    use crate::{
+        GhtColumnType, GhtForestType, GhtRowType, LatticeBimorphism, Merge, NaiveLatticeOrd,
+    };
 
     #[test]
     fn basic_test() {
         // Example usage
-        type MyTrie1 = GhtType!(u32, u32 => &'static str);
+        type MyTrie1 = GhtRowType!(u32, u32 => &'static str);
 
         fn ght_type<T: GeneralizedHashTrieNode>() {}
         ght_type::<MyTrie1>();
@@ -27,12 +29,12 @@ mod test {
         assert!(htrie1.contains(var_expr!(&42, &314, &"hello")));
         assert_eq!(htrie1.recursive_iter().count(), 1);
 
-        type MyTrie2 = GhtType!(u32 => u32);
+        type MyTrie2 = GhtRowType!(u32 => u32);
         let htrie2 = MyTrie2::new_from(vec![var_expr!(42, 314)]);
         assert!(htrie2.contains(var_expr!(&42, &314)));
         assert_eq!(htrie1.recursive_iter().count(), 1);
 
-        type MyTrie3 = GhtType!(u32, u64, u16 => &'static str);
+        type MyTrie3 = GhtRowType!(u32, u64, u16 => &'static str);
         let htrie3 = MyTrie3::new_from(vec![
             var_expr!(123, 2, 5, "hello"),
             var_expr!(50, 1, 1, "hi"),
@@ -44,35 +46,35 @@ mod test {
     }
     #[test]
     fn test_ght_node_type_macro() {
-        type LilTrie = GhtType!(() => u32);
+        type LilTrie = GhtRowType!(() => u32);
         let _j = LilTrie::default();
         let _l = LilTrie::new_from(vec![var_expr!(1)]);
 
-        type LilTrie2 = GhtType!(() => u32, u64);
+        type LilTrie2 = GhtRowType!(() => u32, u64);
         let _l = LilTrie2::default();
         let _l = LilTrie2::new_from(vec![var_expr!(1, 1)]);
 
-        type SmallTrie = GhtType!(u32 => &'static str);
-        type SmallKeyedTrie = GhtType!(u32 => &'static str);
+        type SmallTrie = GhtRowType!(u32 => &'static str);
+        type SmallKeyedTrie = GhtRowType!(u32 => &'static str);
         let l = SmallTrie::new_from(vec![var_expr!(1, "hello")]);
         let _: SmallKeyedTrie = l;
 
-        type LongKeySmallValTrie = GhtType!(u32, u16 => &'static str);
-        type LongKeySmallValKeyedTrie = GhtType!(u32, u16 => &'static str);
+        type LongKeySmallValTrie = GhtRowType!(u32, u16 => &'static str);
+        type LongKeySmallValKeyedTrie = GhtRowType!(u32, u16 => &'static str);
         let x = LongKeySmallValTrie::new_from(vec![var_expr!(1, 314, "hello")]);
         let _: LongKeySmallValKeyedTrie = x;
         let _ = LongKeySmallValTrie::new_from(vec![var_expr!(1, 314, "hello")]);
 
-        type SmallKeyLongValTrie = GhtType!(u32 => u64, u16, &'static str);
+        type SmallKeyLongValTrie = GhtRowType!(u32 => u64, u16, &'static str);
         let _x = SmallKeyLongValTrie::new_from(vec![var_expr!(1, 999, 222, "hello")]);
 
-        type LongKeyLongValTrie = GhtType!(u32, u64 => u16, &'static str);
+        type LongKeyLongValTrie = GhtRowType!(u32, u64 => u16, &'static str);
         let _x = LongKeyLongValTrie::new_from(vec![var_expr!(1, 999, 222, "hello")]);
     }
 
     #[test]
     fn test_insert() {
-        let mut htrie = <GhtType!(u16, u32 => u64)>::default();
+        let mut htrie = <GhtRowType!(u16, u32 => u64)>::default();
         htrie.insert(var_expr!(42, 314, 43770));
         assert_eq!(htrie.recursive_iter().count(), 1);
         assert_eq!(htrie.height(), 2);
@@ -89,7 +91,7 @@ mod test {
         assert!(htrie.contains(var_expr!(&42, &315, &43770)));
         assert!(htrie.contains(var_expr!(&43, &10, &600)));
 
-        type LongKeyLongValTrie = GhtType!(u32, u64 => u16, &'static str);
+        type LongKeyLongValTrie = GhtRowType!(u32, u64 => u16, &'static str);
         let mut htrie = LongKeyLongValTrie::new_from(vec![var_expr!(1, 999, 222, "hello")]);
         htrie.insert(var_expr!(1, 999, 111, "bye"));
         assert_eq!(htrie.height(), 2);
@@ -103,7 +105,7 @@ mod test {
 
     #[test]
     fn test_scale() {
-        type MyGht = GhtType!(bool, usize, &'static str => i32);
+        type MyGht = GhtRowType!(bool, usize, &'static str => i32);
         let mut htrie = MyGht::new_from(vec![var_expr!(true, 1, "hello", -5)]);
         assert_eq!(htrie.recursive_iter().count(), 1);
         for i in 1..1000000 {
@@ -114,7 +116,7 @@ mod test {
 
     #[test]
     fn test_contains() {
-        type MyGht = GhtType!(u16, u32 => u64);
+        type MyGht = GhtRowType!(u16, u32 => u64);
         let htrie = MyGht::new_from(vec![var_expr!(42_u16, 314_u32, 43770_u64)]);
         // println!("HTrie: {:?}", htrie);
         let x = var_expr!(&42, &314, &43770);
@@ -128,7 +130,7 @@ mod test {
 
     #[test]
     fn test_get() {
-        type MyGht = GhtType!(u32, u32 => u32);
+        type MyGht = GhtRowType!(u32, u32 => u32);
         let ht_root = MyGht::new_from(vec![var_expr!(42, 314, 43770)]);
 
         let inner = ht_root.get(&42).unwrap();
@@ -158,7 +160,7 @@ mod test {
 
     #[test]
     fn test_recursive_iter() {
-        type MyGht = GhtType!(u32, u32 => u32);
+        type MyGht = GhtRowType!(u32, u32 => u32);
         type InputType = var_type!(u32, u32, u32);
         type ResultType<'a> = var_type!(&'a u32, &'a u32, &'a u32);
         let input: HashSet<InputType> = HashSet::from_iter(
@@ -209,7 +211,7 @@ mod test {
 
     #[test]
     fn test_prefix_iter() {
-        type MyGht = GhtType!(u8, u16 => u32);
+        type MyGht = GhtRowType!(u8, u16 => u32);
         type InputType = var_type!(u8, u16, u32);
         type ResultType<'a> = var_type!(&'a u8, &'a u16, &'a u32);
         let input: HashSet<InputType> = HashSet::from_iter(
@@ -265,7 +267,7 @@ mod test {
 
     #[test]
     fn test_prefix_iter_complex() {
-        type MyGht = GhtType!(bool, u32, &'static str => i32);
+        type MyGht = GhtRowType!(bool, u32, &'static str => i32);
         type InputType = var_type!(bool, u32, &'static str, i32);
         type ResultType<'a> = var_type!(&'a bool, &'a u32, &'a &'static str, &'a i32);
         let input: HashSet<InputType> = HashSet::from_iter(
@@ -305,7 +307,7 @@ mod test {
     }
     #[test]
     fn test_merge() {
-        type MyGht = GhtType!(u32, u64 => u16, &'static str);
+        type MyGht = GhtRowType!(u32, u64 => u16, &'static str);
 
         let mut test_ght1 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
         let mut test_ght2 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
@@ -324,8 +326,8 @@ mod test {
     }
     #[test]
     fn test_node_lattice() {
-        type MyGht = GhtType!(u32, u64 => u16, &'static str);
-        type MyGhtNode = GhtType!(u32, u64 => u16, &'static str);
+        type MyGht = GhtRowType!(u32, u64 => u16, &'static str);
+        type MyGhtNode = GhtRowType!(u32, u64 => u16, &'static str);
 
         let mut test_vec: Vec<MyGhtNode> = Vec::new();
 
@@ -350,8 +352,8 @@ mod test {
 
     #[test]
     fn test_cartesian_bimorphism() {
-        type MyGhtA = GhtType!(u32, u64 => u16, &'static str);
-        type MyGhtB = GhtType!(u32, u64, u16 => &'static str);
+        type MyGhtA = GhtRowType!(u32, u64 => u16, &'static str);
+        type MyGhtB = GhtRowType!(u32, u64, u16 => &'static str);
 
         let mut ght_a = MyGhtA::default();
         let mut ght_b = MyGhtB::default();
@@ -363,7 +365,7 @@ mod test {
         ght_b.insert(var_expr!(10, 1, 2, "hi"));
         ght_b.insert(var_expr!(12, 10, 98, "bye"));
 
-        type MyGhtAb = GhtType!(u32, u64, u16, &'static str, u32, u64 => u16, &'static str);
+        type MyGhtAb = GhtRowType!(u32, u64, u16, &'static str, u32, u64 => u16, &'static str);
 
         let mut bim = GhtCartesianProductBimorphism::<MyGhtAb>::default();
         let ght_out = bim.call(&ght_a, &ght_b);
@@ -644,7 +646,7 @@ mod test {
         let b = tuple!(tup, 3);
         assert_eq!(b, (1, 2, (3, ())));
 
-        type MyRoot = GhtType!(u16, u32 => u64);
+        type MyRoot = GhtRowType!(u16, u32 => u64);
 
         let mut trie1 = MyRoot::default();
         // Can get the len, but cannot pass it into tuple! macro anyhow
@@ -662,7 +664,7 @@ mod test {
     fn test_triangle_generic_join() {
         use fnv::FnvHasher;
         const MATCHES: u32 = 1000;
-        type MyGht = GhtType!(u32 => u32);
+        type MyGht = GhtRowType!(u32 => u32);
 
         let r_iter = (0..MATCHES)
             .map(|i| (0, i))
@@ -792,7 +794,7 @@ mod test {
 
         let (r_iter, s_iter, t_iter) = clover_setup(MATCHES);
 
-        type MyGht = GhtType!(u32 => u32);
+        type MyGht = GhtRowType!(u32 => u32);
         let rx_ght = MyGht::new_from(r_iter.map(|(x, a)| var_expr!(x, a)));
         let sx_ght = MyGht::new_from(s_iter.map(|(x, b)| var_expr!(x, b)));
         let tx_ght = MyGht::new_from(t_iter.map(|(x, c)| var_expr!(x, c)));
@@ -823,8 +825,8 @@ mod test {
 
         let (r_iter, s_iter, t_iter) = clover_setup(MATCHES);
 
-        type Ght1 = GhtType!(() => u32, u32);
-        type Ght2 = GhtType!(u32 => u32);
+        type Ght1 = GhtRowType!(() => u32, u32);
+        type Ght2 = GhtRowType!(u32 => u32);
         let rx_ght = Ght1::new_from(r_iter.map(|(x, a)| var_expr!(x, a)));
         let sx_ght = Ght2::new_from(s_iter.map(|(x, b)| var_expr!(x, b)));
         let tx_ght = Ght2::new_from(t_iter.map(|(x, c)| var_expr!(x, c)));
@@ -848,7 +850,7 @@ mod test {
 
     #[test]
     fn test_force() {
-        type LeafType = GhtType!(() => u16, u32, u64);
+        type LeafType = GhtRowType!(() => u16, u32, u64);
         let n = LeafType::new_from(vec![
             var_expr!(1, 1, 1),
             var_expr!(1, 2, 2),
@@ -866,7 +868,7 @@ mod test {
         //
         // R(a, x, y), S(a, x, c), T(a, x, c)
         // [[R(a, x),S(a, x),T(a, x)], [T(a, c), S(a, c)]]
-        type LeafType = GhtType!(() => u16, u32, u64);
+        type LeafType = GhtColumnType!(() => u16, u32, u64);
 
         let table_r = LeafType::new_from(vec![
             var_expr!(0, 1, 1),
@@ -946,7 +948,7 @@ mod test {
             //     "found in trie {}",
             ForestFindLeaf::<
                 var_type!(u8, u16, u32, u64),
-                VariadicHashSet<var_type!(u8, u16, u32, u64)>,
+                ColumnVecSet<var_type!(u8, u16, u32, u64)>,
             >::find_containing_leaf(
                 &forest, var_expr!(1_u8, 1_u16, 1_u32, 1_u64).as_ref_var()
             )
@@ -961,7 +963,7 @@ mod test {
             //     "found in trie {}",
             ForestFindLeaf::<
                 var_type!(u8, u16, u32, u64),
-                VariadicHashSet<var_type!(u8, u16, u32, u64)>,
+                ColumnVecSet<var_type!(u8, u16, u32, u64)>,
             >::find_containing_leaf(&forest, var_expr!(2, 2, 2, 2).as_ref_var())
             .unwrap()
             .iter_tuples()
@@ -974,7 +976,7 @@ mod test {
             //     "found in trie {}",
             ForestFindLeaf::<
                 var_type!(u8, u16, u32, u64),
-                VariadicHashSet<var_type!(u8, u16, u32, u64)>,
+                ColumnVecSet<var_type!(u8, u16, u32, u64)>,
             >::find_containing_leaf(&forest, var_expr!(3, 3, 3, 3).as_ref_var())
             .unwrap()
             .iter_tuples()
@@ -987,7 +989,7 @@ mod test {
             //     "found in trie {}",
             ForestFindLeaf::<
                 var_type!(u8, u16, u32, u64),
-                VariadicHashSet<var_type!(u8, u16, u32, u64)>,
+                ColumnVecSet<var_type!(u8, u16, u32, u64)>,
             >::find_containing_leaf(&forest, var_expr!(4, 4, 4, 4).as_ref_var())
             .is_none()
         );
@@ -1039,7 +1041,7 @@ mod test {
         assert_eq!(forest.0.recursive_iter().count(), 1000009);
         let leaf = ForestFindLeaf::<
             var_type!(bool, usize, &'static str, i32),
-            VariadicHashSet<var_type!(bool, usize, &'static str, i32)>,
+            ColumnVecSet<var_type!(bool, usize, &'static str, i32)>,
         >::find_containing_leaf(
             &forest, var_expr!(true, 2, "hello", 2).as_ref_var()
         );

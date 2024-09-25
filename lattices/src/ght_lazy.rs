@@ -2,19 +2,11 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use sealed::sealed;
-use variadics::{var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt};
+use variadics::{
+    var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt, VariadicVec,
+};
 
 use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf, GhtTakeLeaf, TupleSet};
-
-// Remaining Questions
-// 1. Should the first element in the forest be a single GhtLeaf?
-//    Doesn't seem to help with columnstore case (its just the range [1..]) but it's that way in the paper.
-// 2. How does "get" work?
-//    - get on a leaf forces. That should work ok.
-//    - get on an internal node "just get"s .. what's the analogy in the forest if get on an inner fails?
-//      Could there be "previously forced siblings"? Do we need get tombstones/sibling pointers?
-//      See Figure 11 in the paper: x0->b0 would be in the sibling. What do I do for get(0)?
-// 3. Similarly, how does "iter" work? Where are "all the keys"?
 
 // Strategies for Get on a ColtNode:
 // 1. ColtNode returns different type for var_type!(GhtInner<Key, GhtLeaf<...>>) (drops First).
@@ -113,7 +105,7 @@ where
     fn force_drain(&mut self) -> Option<GhtInner<Head, GhtLeaf<Schema, Rest, Storage>>> {
         let mut retval = Self::Force::default();
         self.forced = true;
-        for row in self.drain().unwrap() {
+        for row in self.elements.drain() {
             // let var_expr!(h, ...r) = row;
             // retval.insert((h, r));
             retval.insert(row);
@@ -127,21 +119,21 @@ where
 /// one for each height from 1 to length of the schema
 macro_rules! GhtForestType {
     ($a:ty, $( $b:ty ),* => ()) => {
-        var_type!(GhtType!($a, $( $b ),* => ()))
+        var_type!($crate::GhtColumnType!($a, $( $b ),* => ()))
     };
     ($a:ty => $c:ty, $( $d:ty ),* ) => {
-        (GhtType!($a => $c, $( $d ),*), GhtForestType!($a, $c => $( $d ),*))
+        ($crate::GhtColumnType!($a => $c, $( $d ),*), GhtForestType!($a, $c => $( $d ),*))
     };
     ($a:ty, $( $b:ty ),* => $c:ty) => {
-        (GhtType!($a, $( $b ),* => $c), GhtForestType!($a, $( $b ),*, $c => ()))
+        ($crate::GhtColumnType!($a, $( $b ),* => $c), GhtForestType!($a, $( $b ),*, $c => ()))
     };
 
     ($a:ty, $( $b:ty ),* => $c:ty, $( $d:ty ),* ) => {
-        (GhtType!($a, $( $b ),* => $c, $( $d ),*), GhtForestType!($a, $( $b ),* , $c => $( $d ),*))
+        ($crate::GhtColumnType!($a, $( $b ),* => $c, $( $d ),*), GhtForestType!($a, $( $b ),* , $c => $( $d ),*))
     };
 
     ($a:ty, $( $b:ty ),* ) => {
-        (GhtType!(() => $a, $( $b ),*), GhtForestType!($a => $( $b ),*))
+        ($crate::GhtColumnType!(() => $a, $( $b ),*), GhtForestType!($a => $( $b ),*))
     };
 }
 
@@ -523,4 +515,110 @@ where
     ) -> Option<&'_ GhtLeaf<Schema, (), Storage>> {
         None
     }
+}
+
+#[derive(Default)]
+pub struct ColumnVecSet<Schema>
+where
+    Schema: VariadicExt,
+{
+    columns: Schema::AsVec,
+    last_offset: usize,
+}
+
+impl<Schema> TupleSet for ColumnVecSet<Schema>
+where
+    Schema: PartialEqVariadic,
+{
+    type Schema = Schema;
+
+    fn insert(&mut self, element: Self::Schema) -> bool {
+        if self.last_offset == 0 {
+            self.columns = element.as_vec()
+        } else {
+            self.columns.push(element);
+        }
+        self.last_offset += 1;
+        true
+    }
+
+    fn iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
+        self.columns.zip_vecs()
+    }
+
+    fn len(&self) -> usize {
+        self.last_offset
+    }
+
+    fn drain(&mut self) -> impl Iterator<Item = Self::Schema> {
+        self.last_offset = 0;
+        self.columns.drain(0..)
+    }
+
+    fn contains(&self, value: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool {
+        self.iter()
+            .any(|t| <Schema as PartialEqVariadic>::eq_ref(t, value))
+    }
+}
+
+impl<Schema> IntoIterator for ColumnVecSet<Schema>
+where
+    Schema: PartialEqVariadic,
+{
+    type Item = Schema;
+    type IntoIter = <Schema::AsVec as VariadicVec>::IntoZip;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.columns.into_zip()
+    }
+}
+
+impl<T> std::fmt::Debug for ColumnVecSet<T>
+where
+    T: std::fmt::Debug + VariadicExt + PartialEqVariadic,
+    for<'a> T::AsRefVar<'a>: Hash + std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_set().entries(self.iter()).finish()
+    }
+}
+
+// THIS CODE ADAPTED FROM hashbrown::HashMap
+impl<K> Extend<K> for ColumnVecSet<K>
+where
+    K: Eq + Hash + PartialEqVariadic,
+    for<'a> K::AsRefVar<'a>: Hash,
+    // for<'a> S::Hasher: Fn(&'a K) -> u64,
+    // A: Allocator,
+{
+    // #[cfg_attr(feature = "inline-more", inline)]
+    fn extend<T: IntoIterator<Item = K>>(&mut self, iter: T) {
+        let iter = iter.into_iter();
+        // self.table.reserve(reserve, hasher);
+        iter.for_each(move |k| {
+            self.insert(k);
+        });
+    }
+
+    // #[inline]
+    // #[cfg(feature = "nightly")]
+    // fn extend_one(&mut self, (k, v): (K, V)) {
+    //     self.insert(k, v);
+    // }
+
+    // #[inline]
+    // #[cfg(feature = "nightly")]
+    // fn extend_reserve(&mut self, additional: usize) {
+    //     // Keys may be already present or show multiple times in the iterator.
+    //     // Reserve the entire hint lower bound if the map is empty.
+    //     // Otherwise reserve half the hint (rounded up), so the map
+    //     // will only resize twice in the worst case.
+    //     let reserve = if self.is_empty() {
+    //         additional
+    //     } else {
+    //         (additional + 1) / 2
+    //     };
+    //     self.reserve(reserve);
+    // }
 }

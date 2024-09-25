@@ -14,6 +14,8 @@
 pub mod hash_set;
 
 use std::any::Any;
+use std::iter;
+use std::ops::RangeBounds;
 
 use sealed::sealed;
 
@@ -195,6 +197,12 @@ pub trait VariadicExt: Variadic {
     type AsOption;
     /// wrap all elements of the variadic in Option
     fn as_option(self) -> Self::AsOption;
+
+    /// type for all elements of the variadic being wrapped in Vec
+    type AsVec: VariadicVec<UnVec = Self>;
+
+    /// wrap all elements of the variadic in a Vec
+    fn as_vec(self) -> Self::AsVec;
 }
 #[sealed]
 impl<Item, Rest> VariadicExt for (Item, Rest)
@@ -271,7 +279,14 @@ where
         let var_args!(item, ...rest) = self;
         var_expr!(Some(item), ...rest.as_option())
     }
+
+    type AsVec = (Vec<Item>, Rest::AsVec);
+    fn as_vec(self) -> Self::AsVec {
+        let var_args!(item, ...rest) = self;
+        var_expr!(vec!(item), ...rest.as_vec())
+    }
 }
+
 #[sealed]
 impl VariadicExt for () {
     const LEN: usize = 0;
@@ -316,6 +331,9 @@ impl VariadicExt for () {
 
     type AsOption = ();
     fn as_option(self) -> Self::AsOption {}
+
+    type AsVec = ();
+    fn as_vec(self) -> Self::AsVec {}
 }
 
 /// A variadic of either shared references, exclusive references, or both.
@@ -792,6 +810,127 @@ where
     }
 }
 
+// pub trait Split<Prefix>: VariadicExt
+// where
+//     Prefix: VariadicExt,
+// {
+//     /// The second part when splitting this variadic by `Prefix`.
+//     type Suffix: VariadicExt;
+//     /// Splits this variadic into two parts, first the `Prefix`, and second the `Suffix`.
+//     fn split(self) -> (Prefix, Self::Suffix);
+
+// impl<Item, Rest, PrefixRest> Split<(Item, PrefixRest)> for (Item, Rest)
+// where
+//     PrefixRest: VariadicExt,
+//     Rest: Split<PrefixRest>,
+// {
+//     /// The second part when splitting this variadic by `Prefix`.
+//     type Suffix = <Rest as Split<PrefixRest>>::Suffix;
+//     /// Splits this variadic into two parts, first the `Prefix`, and second the `Suffix`.
+//     fn split(self) -> ((Item, PrefixRest), Self::Suffix) {
+
+/// trait for Variadic of vecs, as formed by `VariadicExt::as_vec()`
+#[sealed]
+pub trait VariadicVec: VariadicExt {
+    /// Individual variadic items without the Vec wrapper
+    type UnVec: VariadicExt<AsVec = Self>;
+
+    /// zip across all the vecs in this VariadicVec
+    fn zip_vecs(&self) -> impl Iterator<Item = <Self::UnVec as VariadicExt>::AsRefVar<'_>>;
+
+    /// append an unvec'ed Variadic into this VariadicVec
+    fn push(&mut self, item: Self::UnVec);
+
+    /// get the unvec'ed Variadic at position `index`
+    fn get(&mut self, index: usize) -> Option<<Self::UnVec as VariadicExt>::AsRefVar<'_>>;
+
+    type IntoZip: Iterator<Item = Self::UnVec>;
+    /// Turns into an iterator of items `UnVec` -- i.e. iterate through rows (not columns!).
+    fn into_zip(self) -> Self::IntoZip;
+
+    type Drain<'a>: Iterator<Item = Self::UnVec>
+    where
+        Self: 'a;
+    /// Turns into a Drain of items `UnVec` -- i.e. rows (not columns!).
+    fn drain<'a, R>(&'a mut self, range: R) -> Self::Drain<'a>
+    where
+        R: RangeBounds<usize> + Clone;
+}
+
+#[sealed]
+impl<Item, Rest> VariadicVec for (Vec<Item>, Rest)
+where
+    Rest: VariadicVec,
+    // Item: 'static,
+    // Rest: 'static,
+{
+    type UnVec = var_type!(Item, ...Rest::UnVec);
+
+    fn zip_vecs(&self) -> impl Iterator<Item = <Self::UnVec as VariadicExt>::AsRefVar<'_>> {
+        let (this, rest) = self;
+        std::iter::zip(this.iter(), rest.zip_vecs())
+    }
+
+    fn push(&mut self, row: Self::UnVec) {
+        let (this_vec, rest_vecs) = self;
+        let (this_col, rest_cols) = row;
+        this_vec.push(this_col);
+        rest_vecs.push(rest_cols);
+    }
+
+    /// get the unvec'ed Variadic at position `index`
+    fn get(&mut self, index: usize) -> Option<<Self::UnVec as VariadicExt>::AsRefVar<'_>> {
+        let (this_vec, rest_vecs) = self;
+        if let Some(rest) = VariadicVec::get(rest_vecs, index) {
+            this_vec.get(index).map(|item| var_expr!(item, ...rest))
+        } else {
+            None
+        }
+    }
+
+    type IntoZip = std::iter::Zip<std::vec::IntoIter<Item>, Rest::IntoZip>;
+    /// Turns into an iterator of items `UnVec` -- i.e. iterate through rows (not columns!).
+    fn into_zip(self) -> Self::IntoZip {
+        let (this, rest) = self;
+        std::iter::zip(this, rest.into_zip())
+    }
+    type Drain<'a> = std::iter::Zip<std::vec::Drain<'a, Item>, Rest::Drain<'a>> where Self: 'a;
+    fn drain<'a, R>(&'a mut self, range: R) -> Self::Drain<'a>
+    where
+        R: RangeBounds<usize> + Clone,
+    {
+        let (this, rest) = self;
+        std::iter::zip(this.drain(range.clone()), rest.drain(range))
+    }
+}
+
+#[sealed]
+impl VariadicVec for var_type!() {
+    type UnVec = var_type!();
+
+    fn zip_vecs(&self) -> impl Iterator<Item = <Self::UnVec as VariadicExt>::AsRefVar<'_>> {
+        std::iter::repeat(var_expr!())
+    }
+    fn push(&mut self, _item: Self::UnVec) {}
+    /// get the unvec'ed Variadic at position `index`
+    fn get(&mut self, _index: usize) -> Option<<Self::UnVec as VariadicExt>::AsRefVar<'_>> {
+        Some(())
+    }
+
+    type IntoZip = std::iter::Repeat<var_type!()>;
+    // // type IntoIter = Iterator<Item = var_type!()>;
+    fn into_zip(self) -> Self::IntoZip {
+        std::iter::repeat(var_expr!())
+    }
+    type Drain<'a> = std::iter::Repeat<var_type!()> where Self: 'a;
+    fn drain<R>(&mut self, _range: R) -> Self::Drain<'_>
+    where
+        R: RangeBounds<usize>,
+    {
+        std::iter::repeat(var_expr!())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -883,5 +1022,19 @@ mod test {
             assert_eq!(Some(i), var.get(i).copied());
             assert_eq!(Some(i), var.get_mut(i).copied());
         }
+    }
+
+    #[test]
+    fn test_as_vec() {
+        use crate::VariadicVec;
+
+        type Item = var_type!(i32, String);
+        let first: Item = var_expr!(1, "Joe".to_string());
+        let second: Item = var_expr!(2, "Mingwei".to_string());
+        let mut column_store = first.clone().as_vec();
+        column_store.push(second.clone());
+        assert_eq!(column_store.len(), 2);
+        assert_eq!(column_store.get(0).unwrap(), first.as_ref_var());
+        assert_eq!(column_store.get(1).unwrap(), second.as_ref_var());
     }
 }
