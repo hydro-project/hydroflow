@@ -6,12 +6,15 @@ use stageleft::*;
 pub struct Worker {}
 pub struct Leader {}
 
-pub fn compute_pi(flow: &FlowBuilder, batch_size: usize) -> (Cluster<Worker>, Process<Leader>) {
+pub fn compute_pi<'a>(
+    flow: &FlowBuilder<'a>,
+    batch_size: usize,
+) -> (Cluster<'a, Worker>, Process<'a, Leader>) {
     let cluster = flow.cluster();
     let process = flow.process();
 
-    let trials = flow
-        .spin_batch(&cluster, q!(batch_size))
+    let trials = cluster
+        .spin_batch(q!(batch_size))
         .map(q!(|_| rand::random::<(f64, f64)>()))
         .map(q!(|(x, y)| x * x + y * y < 1.0))
         .fold(

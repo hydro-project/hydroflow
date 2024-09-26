@@ -77,7 +77,7 @@ impl<'a> Deploy<'a> for HydroDeploy {
         p1_port: &Self::Port,
         p2: &Self::Process,
         p2_port: &Self::Port,
-    ) {
+    ) -> Box<dyn FnOnce()> {
         let self_underlying_borrow = p1.underlying.borrow();
         let self_underlying = self_underlying_borrow.as_ref().unwrap();
         let source_port = self_underlying
@@ -92,7 +92,7 @@ impl<'a> Deploy<'a> for HydroDeploy {
             .unwrap()
             .get_port(p2_port.clone(), other_underlying);
 
-        source_port.send_to(&recipient_port);
+        Box::new(move || source_port.send_to(&recipient_port))
     }
 
     fn o2m_sink_source(
@@ -116,7 +116,7 @@ impl<'a> Deploy<'a> for HydroDeploy {
         p1_port: &Self::Port,
         c2: &Self::Cluster,
         c2_port: &Self::Port,
-    ) {
+    ) -> Box<dyn FnOnce()> {
         let self_underlying_borrow = p1.underlying.borrow();
         let self_underlying = self_underlying_borrow.as_ref().unwrap();
         let source_port = self_underlying
@@ -141,7 +141,7 @@ impl<'a> Deploy<'a> for HydroDeploy {
                 .collect(),
         };
 
-        source_port.send_to(&recipient_port);
+        Box::new(move || source_port.send_to(&recipient_port))
     }
 
     fn m2o_sink_source(
@@ -165,7 +165,7 @@ impl<'a> Deploy<'a> for HydroDeploy {
         c1_port: &Self::Port,
         p2: &Self::Process,
         p2_port: &Self::Port,
-    ) {
+    ) -> Box<dyn FnOnce()> {
         let other_underlying_borrow = p2.underlying.borrow();
         let other_underlying = other_underlying_borrow.as_ref().unwrap();
         let recipient_port = other_underlying
@@ -174,19 +174,30 @@ impl<'a> Deploy<'a> for HydroDeploy {
             .get_port(p2_port.clone(), other_underlying)
             .merge();
 
-        for (i, node) in c1.members.borrow().iter().enumerate() {
-            let source_port = node
-                .underlying
-                .try_read()
-                .unwrap()
-                .get_port(c1_port.clone(), &node.underlying);
+        let tagged_sources = c1
+            .members
+            .borrow()
+            .iter()
+            .enumerate()
+            .map(|(i, node)| {
+                let source_port = node
+                    .underlying
+                    .try_read()
+                    .unwrap()
+                    .get_port(c1_port.clone(), &node.underlying);
 
-            TaggedSource {
-                source: Arc::new(source_port),
-                tag: i as u32,
+                TaggedSource {
+                    source: Arc::new(source_port),
+                    tag: i as u32,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        Box::new(move || {
+            for source in &tagged_sources {
+                source.send_to(&recipient_port);
             }
-            .send_to(&recipient_port);
-        }
+        })
     }
 
     fn m2m_sink_source(
@@ -210,37 +221,48 @@ impl<'a> Deploy<'a> for HydroDeploy {
         c1_port: &Self::Port,
         c2: &Self::Cluster,
         c2_port: &Self::Port,
-    ) {
-        for (i, sender) in c1.members.borrow().iter().enumerate() {
-            let source_port = sender
-                .underlying
-                .try_read()
-                .unwrap()
-                .get_port(c1_port.clone(), &sender.underlying);
+    ) -> Box<dyn FnOnce()> {
+        let recipient_port = DemuxSink {
+            demux: c2
+                .members
+                .borrow()
+                .iter()
+                .enumerate()
+                .map(|(id, c)| {
+                    let n = c.underlying.try_read().unwrap();
+                    (
+                        id as u32,
+                        Arc::new(n.get_port(c2_port.clone(), &c.underlying).merge())
+                            as Arc<dyn HydroflowSink + 'static>,
+                    )
+                })
+                .collect(),
+        };
 
-            let recipient_port = DemuxSink {
-                demux: c2
-                    .members
-                    .borrow()
-                    .iter()
-                    .enumerate()
-                    .map(|(id, c)| {
-                        let n = c.underlying.try_read().unwrap();
-                        (
-                            id as u32,
-                            Arc::new(n.get_port(c2_port.clone(), &c.underlying).merge())
-                                as Arc<dyn HydroflowSink + 'static>,
-                        )
-                    })
-                    .collect(),
-            };
+        let sources = c1
+            .members
+            .borrow()
+            .iter()
+            .enumerate()
+            .map(|(i, node)| {
+                let source_port = node
+                    .underlying
+                    .try_read()
+                    .unwrap()
+                    .get_port(c1_port.clone(), &node.underlying);
 
-            TaggedSource {
-                source: Arc::new(source_port),
-                tag: i as u32,
+                TaggedSource {
+                    source: Arc::new(source_port),
+                    tag: i as u32,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        Box::new(move || {
+            for source in &sources {
+                source.send_to(&recipient_port);
             }
-            .send_to(&recipient_port);
-        }
+        })
     }
 
     fn e2o_source(
@@ -264,7 +286,7 @@ impl<'a> Deploy<'a> for HydroDeploy {
         p1_port: &Self::Port,
         p2: &Self::Process,
         p2_port: &Self::Port,
-    ) {
+    ) -> Box<dyn FnOnce()> {
         let self_underlying_borrow = p1.underlying.borrow();
         let self_underlying = self_underlying_borrow.as_ref().unwrap();
         let source_port = self_underlying
@@ -279,11 +301,15 @@ impl<'a> Deploy<'a> for HydroDeploy {
             .unwrap()
             .get_port(p2_port.clone(), other_underlying);
 
-        source_port.send_to(&recipient_port);
+        let client_ports = p1.client_ports.clone();
+        let p1_port = p1_port.clone();
+        Box::new(move || {
+            source_port.send_to(&recipient_port);
 
-        p1.client_ports
-            .borrow_mut()
-            .insert(p1_port.clone(), source_port);
+            client_ports
+                .borrow_mut()
+                .insert(p1_port.clone(), source_port);
+        })
     }
 
     fn o2e_sink(
@@ -307,7 +333,7 @@ impl<'a> Deploy<'a> for HydroDeploy {
         p1_port: &Self::Port,
         p2: &Self::ExternalProcess,
         p2_port: &Self::Port,
-    ) {
+    ) -> Box<dyn FnOnce()> {
         let self_underlying_borrow = p1.underlying.borrow();
         let self_underlying = self_underlying_borrow.as_ref().unwrap();
         let source_port = self_underlying
@@ -322,11 +348,16 @@ impl<'a> Deploy<'a> for HydroDeploy {
             .unwrap()
             .declare_client(other_underlying);
 
-        source_port.send_to(&recipient_port);
+        let client_ports = p2.client_ports.clone();
+        let p2_port = p2_port.clone();
 
-        p2.client_ports
-            .borrow_mut()
-            .insert(p2_port.clone(), recipient_port);
+        Box::new(move || {
+            source_port.send_to(&recipient_port);
+
+            client_ports
+                .borrow_mut()
+                .insert(p2_port.clone(), recipient_port);
+        })
     }
 
     fn cluster_ids(
