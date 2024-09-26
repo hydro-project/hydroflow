@@ -5,6 +5,95 @@ use hashbrown::hash_table::{Entry, HashTable};
 
 use crate::{PartialEqVariadic, VariadicExt, VecVariadic};
 
+/// Trait for a set of Tuples
+pub trait VariadicSet {
+    /// The Schema (aka Variadic type) associated with tuples in this set
+    type Schema: PartialEqVariadic;
+
+    /// Insert an element into the set
+    fn insert(&mut self, element: Self::Schema) -> bool;
+
+    /// Iterate over the elements of the set
+    fn iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>>;
+
+    /// Return number of elements in the set
+    fn len(&self) -> usize;
+
+    /// Return true if empty
+    fn is_empty(&self) -> bool;
+
+    /// iterate and drain items from the set
+    fn drain(&mut self) -> impl Iterator<Item = Self::Schema>;
+
+    /// Check for containment
+    fn contains(&self, value: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool;
+}
+
+// impl<Schema> TupleSet for VariadicHashSet<Schema>
+// where
+//     Schema: 'static + Eq + Hash + PartialEqVariadic,
+//     for<'a> <Schema as VariadicExt>::AsRefVar<'a>: Hash,
+// {
+//     type Schema = Schema;
+
+//     fn insert(&mut self, element: Self::Schema) -> bool {
+//         self.insert(element)
+//     }
+
+//     fn iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
+//         self.iter()
+//     }
+
+//     fn len(&self) -> usize {
+//         self.len()
+//     }
+
+//     /// Return true if empty
+//     fn is_empty(&self) -> bool {
+//         self.is_empty()
+//     }
+
+//     fn drain(&mut self) -> impl Iterator<Item = Self::Schema> {
+//         self.drain()
+//     }
+
+//     fn contains(&self, value: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool {
+//         self.get(value).is_some()
+//     }
+// }
+
+// impl<Schema> TupleSet for VariadicColumnarSet<Schema>
+// where
+//     Schema: 'static + Eq + Hash + PartialEqVariadic,
+// {
+//     type Schema = Schema;
+
+//     fn insert(&mut self, element: Self::Schema) -> bool {
+//         self.insert(element)
+//     }
+
+//     fn iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
+//         self.iter()
+//     }
+
+//     fn len(&self) -> usize {
+//         self.len()
+//     }
+
+//     fn is_empty(&self) -> bool {
+//         self.is_empty()
+//     }
+
+//     fn drain(&mut self) -> impl Iterator<Item = Self::Schema> {
+//         self.drain()
+//     }
+
+//     fn contains(&self, value: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool {
+//         self.iter()
+//             .any(|t| <Schema as PartialEqVariadic>::eq_ref(t, value))
+//     }
+// }
+
 /// HashSet that stores Variadics of owned values but allows
 /// for lookups with RefVariadics as well
 #[derive(Clone)]
@@ -41,32 +130,35 @@ where
 
 impl<T, S> VariadicHashSet<T, S>
 where
-    T: VariadicExt + PartialEqVariadic,
+    T: PartialEqVariadic,
     for<'a> T::AsRefVar<'a>: Hash,
     S: BuildHasher,
 {
-    fn get_hash(hasher: &S, ref_var: T::AsRefVar<'_>) -> u64 {
-        hasher.hash_one(ref_var)
-        // let mut hasher = hasher.build_hasher();
-        // ref_var.hash(&mut hasher);
-        // hasher.finish()
-    }
-
     /// given a RefVariadic lookup key, get a RefVariadic version of a tuple in the set
     pub fn get<'a>(&'a self, ref_var: T::AsRefVar<'_>) -> Option<&'a T> {
-        let hash = Self::get_hash(&self.hasher, ref_var);
+        // let hash = Self::get_hash(&self.hasher, ref_var);
+        let hash = self.hasher.hash_one(ref_var);
         self.table.find(hash, |item| {
             <T as PartialEqVariadic>::eq_ref(ref_var, item.as_ref_var())
         })
     }
+}
+impl<T, S> VariadicSet for VariadicHashSet<T, S>
+where
+    T: VariadicExt + PartialEqVariadic,
+    for<'a> T::AsRefVar<'a>: Hash,
+    S: BuildHasher,
+{
+    type Schema = T;
 
     /// insert a tuple
-    pub fn insert(&mut self, element: T) -> bool {
-        let hash = Self::get_hash(&self.hasher, element.as_ref_var());
+    fn insert(&mut self, element: T) -> bool {
+        // let hash = Self::get_hash(&self.hasher, element.as_ref_var());
+        let hash = self.hasher.hash_one(element.as_ref_var());
         let entry = self.table.entry(
             hash,
             |item| <T as PartialEqVariadic>::eq(&element, item),
-            |item| Self::get_hash(&self.hasher, item.as_ref_var()),
+            |item| self.hasher.hash_one(item.as_ref_var()),
         );
         match entry {
             Entry::Occupied(_occupied_entry) => false,
@@ -78,22 +170,27 @@ where
     }
 
     /// return the number of tuples in the set
-    pub fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.table.len()
     }
 
     /// return the number of tuples in the set
-    pub fn is_empty(&self) -> bool {
+    fn is_empty(&self) -> bool {
         self.table.len() == 0
     }
 
     /// drain the set: iterate and remove the tuples without deallocating
-    pub fn drain(&mut self) -> hashbrown::hash_table::Drain<'_, T> {
+    // fn drain(&mut self) -> hashbrown::hash_table::Drain<'_, T> {
+    fn drain(&mut self) -> impl Iterator<Item = Self::Schema> {
         self.table.drain()
     }
 
+    fn contains(&self, value: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool {
+        self.get(value).is_some()
+    }
+
     /// iterate through the set
-    pub fn iter(&self) -> impl Iterator<Item = T::AsRefVar<'_>> {
+    fn iter(&self) -> impl Iterator<Item = T::AsRefVar<'_>> {
         self.table.iter().map(|item| item.as_ref_var())
     }
 }
@@ -198,12 +295,14 @@ where
     last_offset: usize,
 }
 
-impl<Schema> VariadicColumnarSet<Schema>
+impl<Schema> VariadicSet for VariadicColumnarSet<Schema>
 where
-    Schema: VariadicExt,
+    Schema: PartialEqVariadic,
 {
+    type Schema = Schema;
+
     /// Insert an element into the set
-    pub fn insert(&mut self, element: Schema) -> bool {
+    fn insert(&mut self, element: Schema) -> bool {
         if self.last_offset == 0 {
             self.columns = element.as_vec()
         } else {
@@ -214,24 +313,29 @@ where
     }
 
     /// Iterate over the elements of the set
-    pub fn iter(&self) -> impl Iterator<Item = <Schema as VariadicExt>::AsRefVar<'_>> {
+    fn iter(&self) -> impl Iterator<Item = <Schema as VariadicExt>::AsRefVar<'_>> {
         self.columns.zip_vecs()
     }
 
     /// Return number of elements in the set
-    pub fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.last_offset
     }
 
     /// Return true if empty
-    pub fn is_empty(&self) -> bool {
+    fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     /// iterate and drain items from the set
-    pub fn drain(&mut self) -> impl Iterator<Item = Schema> + '_ {
+    fn drain(&mut self) -> impl Iterator<Item = Self::Schema> {
         self.last_offset = 0;
         self.columns.drain(0..)
+    }
+
+    fn contains(&self, value: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool {
+        self.iter()
+            .any(|t| <Schema as PartialEqVariadic>::eq_ref(t, value))
     }
 }
 

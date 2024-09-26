@@ -12,7 +12,7 @@
 #![doc = include_str!("../var_args.md")]
 
 /// VariadicHashSet module
-pub mod hash_set;
+pub mod variadic_sets;
 
 use std::any::Any;
 use std::ops::RangeBounds;

@@ -3,18 +3,16 @@ mod test {
     use std::collections::HashSet;
     use std::io::{self, Write};
 
-    use variadics::hash_set::VariadicHashSet;
+    use variadics::variadic_sets::{VariadicColumnarSet, VariadicHashSet, VariadicSet};
     use variadics::{var_expr, var_type, VariadicExt};
 
-    use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtLeaf, GhtPrefixIter, TupleSet};
+    use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtLeaf, GhtPrefixIter};
     use crate::ght_lattice::{
         //     DeepJoinLatticeBimorphism, GhtBimorphism,
         GhtCartesianProductBimorphism,
         //     GhtNodeKeyedBimorphism, GhtValTypeProductBimorphism,
     };
-    use crate::ght_lazy::{
-        ColtNode, ColumnLazyTrieNode, ForestFindLeaf, GhtForest, VariadicColumnarSet,
-    }; // GhtForestStruct};
+    use crate::ght_lazy::{ColtNode, ColumnLazyTrieNode, ForestFindLeaf, GhtForest}; /* GhtForestStruct}; */
     use crate::{GhtForestType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
 
     #[test]

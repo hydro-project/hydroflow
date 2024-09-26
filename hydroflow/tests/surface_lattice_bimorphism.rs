@@ -8,7 +8,7 @@ use lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
 use lattices::GhtType;
 use multiplatform_test::multiplatform_test;
-use variadics::hash_set::VariadicHashSet;
+use variadics::variadic_sets::VariadicHashSet;
 use variadics::{var_expr, CloneVariadic};
 
 #[multiplatform_test]
@@ -155,17 +155,6 @@ fn test_ght_join_bimorphism() {
         VariadicHashSet<Output>,
     >>::DeepJoinLatticeBimorphism;
     type MyBim = GhtBimorphism<MyNodeBim>;
-
-    // let mut hf = hydroflow_syntax! {
-    // lhs = source_iter_delta([
-    //         var_expr!(123, 2, 5, "hello"),
-    //         var_expr!(50, 1, 1, "hi"),
-    //         var_expr!(5, 1, 7, "hi"),
-    //         var_expr!(5, 1, 7, "bye"),
-    //     ])
-    //     -> map(|row| MyGhtATrie::new_from([row]))
-    //     -> state::<'tick, MyGhtATrie>();
-    // };
 
     let mut hf = hydroflow_syntax! {
         lhs = source_iter_delta([

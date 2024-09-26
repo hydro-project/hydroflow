@@ -2,11 +2,10 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use sealed::sealed;
-use variadics::{
-    var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt, VecVariadic,
-};
+use variadics::variadic_sets::VariadicSet;
+use variadics::{var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt};
 
-use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf, GhtTakeLeaf, TupleSet};
+use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf, GhtTakeLeaf};
 
 // Strategies for Get on a ColtNode:
 // 1. ColtNode returns different type for var_type!(GhtInner<Key, GhtLeaf<...>>) (drops First).
@@ -76,7 +75,7 @@ where
     Schema: SplitBySuffix<Rest>,
     <Schema as SplitBySuffix<(Head, Rest)>>::Prefix: Eq + Hash + Clone,
     <Schema as SplitBySuffix<Rest>>::Prefix: Eq + Hash + Clone,
-    Storage: TupleSet<Schema = Schema>
+    Storage: VariadicSet<Schema = Schema>
         + Default // + Iterator<Item = Schema>
         + IntoIterator<Item = Schema>,
     GhtLeaf<Schema, Rest, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
@@ -183,7 +182,7 @@ where
     GhtLeaf<Schema, SuffixSchema, Storage>: ColumnLazyTrieNode,
     Schema: Clone + Hash + Eq + VariadicExt,
     SuffixSchema: Clone + Hash + Eq + VariadicExt,
-    Storage: TupleSet<Schema = Schema>,
+    Storage: VariadicSet<Schema = Schema>,
 {
     type Schema = Schema;
     type Head = Rest::Head;
@@ -209,7 +208,7 @@ where
     GhtLeaf<Schema, SuffixSchema, Storage>: ColumnLazyTrieNode,
     Schema: Clone + Hash + Eq + VariadicExt,
     SuffixSchema: Clone + Hash + Eq + VariadicExt,
-    Storage: TupleSet<Schema = Schema>,
+    Storage: VariadicSet<Schema = Schema>,
 {
     fn merge(&mut self, _inner_to_merge: T) {
         panic!();
@@ -269,7 +268,7 @@ where
     Head: Eq + Hash + Clone,
     Schema: Eq + Hash + Clone + PartialEqVariadic,
     ValType: Eq + Hash + Clone + PartialEqVariadic,
-    Storage: TupleSet<Schema = Schema>,
+    Storage: VariadicSet<Schema = Schema>,
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode,
     Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<ValType> + PartialEqVariadic,
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
@@ -306,7 +305,7 @@ where
     Head: Eq + Hash + Clone,
     Schema: Eq + Hash + Clone + PartialEqVariadic,
     ValType: Eq + Hash + Clone + PartialEqVariadic,
-    Storage: TupleSet<Schema = Schema>,
+    Storage: VariadicSet<Schema = Schema>,
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
     Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<ValType> + PartialEqVariadic,
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
@@ -350,7 +349,7 @@ where
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
     Head: Clone + Eq + Hash,
     Schema: Clone + Eq + Hash + VariadicExt,
-    Storage: TupleSet<Schema = Schema>,
+    Storage: VariadicSet<Schema = Schema>,
 {
     fn merge(&mut self, inner_to_merge: GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>) {
         crate::Merge::merge(self.0, inner_to_merge);
@@ -468,7 +467,7 @@ where
 pub trait ForestFindLeaf<Schema, Storage>
 where
     Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
-    Storage: TupleSet<Schema = Schema>,
+    Storage: VariadicSet<Schema = Schema>,
 {
     /// find a matching leaf in the forest
     fn find_containing_leaf(
@@ -507,7 +506,7 @@ where
 impl<Schema, Storage> ForestFindLeaf<Schema, Storage> for var_type!()
 where
     Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
-    Storage: TupleSet<Schema = Schema>,
+    Storage: VariadicSet<Schema = Schema>,
 {
     fn find_containing_leaf(
         &self,
@@ -515,112 +514,4 @@ where
     ) -> Option<&'_ GhtLeaf<Schema, (), Storage>> {
         None
     }
-}
-
-/// Column storage for Variadic tuples of type Schema
-/// An alternative to VariadicHashSet
-#[derive(Default)]
-pub struct VariadicColumnarSet<Schema>
-where
-    Schema: VariadicExt,
-{
-    columns: Schema::AsVec,
-    last_offset: usize,
-}
-
-impl<Schema> TupleSet for VariadicColumnarSet<Schema>
-where
-    Schema: PartialEqVariadic,
-{
-    type Schema = Schema;
-
-    fn insert(&mut self, element: Self::Schema) -> bool {
-        if self.last_offset == 0 {
-            self.columns = element.as_vec()
-        } else {
-            self.columns.push(element);
-        }
-        self.last_offset += 1;
-        true
-    }
-
-    fn iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
-        self.columns.zip_vecs()
-    }
-
-    fn len(&self) -> usize {
-        self.last_offset
-    }
-
-    fn drain(&mut self) -> impl Iterator<Item = Self::Schema> {
-        self.last_offset = 0;
-        self.columns.drain(0..)
-    }
-
-    fn contains(&self, value: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool {
-        self.iter()
-            .any(|t| <Schema as PartialEqVariadic>::eq_ref(t, value))
-    }
-}
-
-impl<Schema> IntoIterator for VariadicColumnarSet<Schema>
-where
-    Schema: PartialEqVariadic,
-{
-    type Item = Schema;
-    type IntoIter = <Schema::AsVec as VecVariadic>::IntoZip;
-
-    #[inline]
-    fn into_iter(self) -> Self::IntoIter {
-        self.columns.into_zip()
-    }
-}
-
-impl<T> std::fmt::Debug for VariadicColumnarSet<T>
-where
-    T: std::fmt::Debug + VariadicExt + PartialEqVariadic,
-    for<'a> T::AsRefVar<'a>: Hash + std::fmt::Debug,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_set().entries(self.iter()).finish()
-    }
-}
-
-// THIS CODE ADAPTED FROM hashbrown::HashMap
-impl<K> Extend<K> for VariadicColumnarSet<K>
-where
-    K: Eq + Hash + PartialEqVariadic,
-    for<'a> K::AsRefVar<'a>: Hash,
-    // for<'a> S::Hasher: Fn(&'a K) -> u64,
-    // A: Allocator,
-{
-    // #[cfg_attr(feature = "inline-more", inline)]
-    fn extend<T: IntoIterator<Item = K>>(&mut self, iter: T) {
-        let iter = iter.into_iter();
-        // self.table.reserve(reserve, hasher);
-        iter.for_each(move |k| {
-            self.insert(k);
-        });
-    }
-
-    // #[inline]
-    // #[cfg(feature = "nightly")]
-    // fn extend_one(&mut self, (k, v): (K, V)) {
-    //     self.insert(k, v);
-    // }
-
-    // #[inline]
-    // #[cfg(feature = "nightly")]
-    // fn extend_reserve(&mut self, additional: usize) {
-    //     // Keys may be already present or show multiple times in the iterator.
-    //     // Reserve the entire hint lower bound if the map is empty.
-    //     // Otherwise reserve half the hint (rounded up), so the map
-    //     // will only resize twice in the worst case.
-    //     let reserve = if self.is_empty() {
-    //         additional
-    //     } else {
-    //         (additional + 1) / 2
-    //     };
-    //     self.reserve(reserve);
-    // }
 }
