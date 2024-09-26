@@ -164,14 +164,6 @@ where
             .flat_map(|(_k, vs)| vs.recursive_iter())
     }
 
-    // fn recursive_iter_keys(
-    //     &self,
-    // ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
-    //     self.children
-    //         .iter()
-    //         .flat_map(|(_k, vs)| vs.recursive_iter_keys().map(move |v| v))
-    // }
-
     type DeepJoin<Other, Storage> = <(Self, Other) as DeepJoinLatticeBimorphism<Storage>>::DeepJoinLatticeBimorphism
     where
         Other: GeneralizedHashTrieNode,
@@ -200,21 +192,6 @@ where
             out.insert(row);
         }
         out
-    }
-}
-
-impl<Schema, ValType, Storage> FromIterator<Schema> for GhtLeaf<Schema, ValType, Storage>
-where
-    Schema: Eq + Hash,
-    Storage: VariadicSet<Schema = Schema> + Default + FromIterator<Schema>,
-{
-    fn from_iter<Iter: IntoIterator<Item = Schema>>(iter: Iter) -> Self {
-        let elements = iter.into_iter().collect();
-        Self {
-            elements,
-            forced: false,
-            _suffix_schema: PhantomData,
-        }
     }
 }
 
@@ -394,7 +371,23 @@ where
     }
 }
 
-/// A trait for the get method, which works differently on leaves than internal nodes
+impl<Schema, ValType, Storage> FromIterator<Schema> for GhtLeaf<Schema, ValType, Storage>
+where
+    Schema: Eq + Hash,
+    Storage: VariadicSet<Schema = Schema> + Default + FromIterator<Schema>,
+{
+    fn from_iter<Iter: IntoIterator<Item = Schema>>(iter: Iter) -> Self {
+        let elements = iter.into_iter().collect();
+        Self {
+            elements,
+            forced: false,
+            _suffix_schema: PhantomData,
+        }
+    }
+}
+
+/// A trait for the get and iter methods from Wang/Willsey/Suciu, which
+/// work differently on leaves than internal nodes
 pub trait GhtGet: GeneralizedHashTrieNode {
     /// Type returned by [`Self::get`].
     type Get: GeneralizedHashTrieNode<Schema = Self::Schema>;
@@ -445,6 +438,7 @@ where
         std::iter::empty()
     }
 }
+
 impl<Schema, ValType, Storage> GhtGet for GhtLeaf<Schema, ValType, Storage>
 where
     Schema: 'static + Eq + Hash + Clone + PartialEqVariadic + SplitBySuffix<ValType>,
@@ -475,153 +469,6 @@ where
     fn iter_tuples(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
         // impl Iterator<Item = Self::Schema> {
         self.elements.iter() //.cloned()
-    }
-}
-
-/// Trait for taking a matching leaf out of a trie, as part of the COLT force
-#[sealed]
-pub trait GhtTakeLeaf: GeneralizedHashTrieNode {
-    /// take a matching leaf out of a trie, as part of the COLT force
-    fn take_containing_leaf(
-        &mut self,
-        row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
-    ) -> Option<GhtLeaf<Self::Schema, Self::ValType, Self::Storage>>;
-
-    /// Merges a leaf into the hash trie
-    fn merge_leaf(
-        &mut self,
-        row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
-        leaf: GhtLeaf<Self::Schema, Self::ValType, Self::Storage>,
-    ) -> bool;
-}
-
-#[sealed]
-impl<Head, Head2, GrandNode> GhtTakeLeaf for GhtInner<Head, GhtInner<Head2, GrandNode>>
-where
-    Head: 'static + Hash + Eq + Clone,
-    Head2: 'static + Hash + Eq + Clone,
-    GrandNode: 'static + GeneralizedHashTrieNode,
-    GhtInner<Head2, GrandNode>: GhtTakeLeaf,
-    <GhtInner<Head2, GrandNode> as GeneralizedHashTrieNode>::Schema: SplitBySuffix<
-        var_type!(Head,  ...<GhtInner<Head2, GrandNode> as GeneralizedHashTrieNode>::SuffixSchema),
-    >,
-{
-    fn take_containing_leaf(
-        &mut self,
-        row: <<GhtInner<Head2, GrandNode> as GeneralizedHashTrieNode>::Schema as VariadicExt>::AsRefVar<'_>,
-    ) -> Option<
-        GhtLeaf<
-            <GhtInner<Head2, GrandNode> as GeneralizedHashTrieNode>::Schema,
-            <GhtInner<Head2, GrandNode> as GeneralizedHashTrieNode>::ValType,
-            <GhtInner<Head2, GrandNode> as GeneralizedHashTrieNode>::Storage,
-        >,
-    > {
-        let (_prefix, var_args!(head, ..._rest)) = Self::Schema::split_by_suffix_ref(row);
-        self.children
-            .get_mut(head)
-            .and_then(|child| child.take_containing_leaf(row))
-    }
-
-    fn merge_leaf(
-        &mut self,
-        row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
-        leaf: GhtLeaf<Self::Schema, Self::ValType, Self::Storage>,
-    ) -> bool {
-        // TODO(mingwei): clones head...
-        let (_prefix, var_args!(head, ..._rest)) = Self::Schema::split_by_suffix_ref(row);
-        let retval = self
-            .children
-            .entry(head.clone())
-            .or_default()
-            .merge_leaf(row, leaf);
-        // self.height = self.get(head).and_then(|n| n.old_height).map(|h| h + 1);
-        retval
-    }
-}
-
-#[sealed]
-impl<Head, Schema, ValType, Storage> GhtTakeLeaf
-    for GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>
-where
-    Schema: 'static
-        + Hash
-        + Clone
-        + Eq
-        + PartialEqVariadic
-        + SplitBySuffix<ValType>
-        + SplitBySuffix<var_type!(Head, ...ValType)>,
-    ValType: 'static + Hash + Clone + Eq + VariadicExt + PartialEqVariadic,
-    Head: 'static + Hash + Eq + Clone,
-    <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
-    // <Self as GeneralizedHashTrieNode>::Schema:
-    //     SplitBySuffix<<Self as GeneralizedHashTrieNode>::SuffixSchema>,
-    GhtLeaf<Schema, ValType, Storage>:
-        GeneralizedHashTrieNode<Schema = Schema, ValType = ValType, Storage = Storage>,
-    // Schema: SplitBySuffix<<Self as GeneralizedHashTrieNode>::SuffixSchema>,
-    Schema: SplitBySuffix<(
-        Head,
-        <GhtLeaf<Schema, ValType, Storage> as GeneralizedHashTrieNode>::SuffixSchema,
-    )>,
-    Storage: 'static + VariadicSet<Schema = Schema> + Default,
-{
-    fn take_containing_leaf(
-        &mut self,
-        row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
-    ) -> Option<GhtLeaf<Self::Schema, Self::ValType, Self::Storage>> {
-        let (_prefix, var_args!(head, ..._rest)) =
-            <<Self as GeneralizedHashTrieNode>::Schema as SplitBySuffix<
-                <Self as GeneralizedHashTrieNode>::SuffixSchema,
-            >>::split_by_suffix_ref(row);
-        let retval = self.children.remove(head);
-        let new_child = GhtLeaf::<Schema, ValType, Storage> {
-            elements: Default::default(),
-            forced: true,
-            _suffix_schema: Default::default(),
-        };
-        self.children.insert(head.clone(), new_child);
-        retval
-    }
-
-    fn merge_leaf(
-        &mut self,
-        row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
-        leaf: GhtLeaf<Self::Schema, Self::ValType, Self::Storage>,
-    ) -> bool {
-        let (_prefix, var_args!(head, ..._rest)) =
-            <<Self as GeneralizedHashTrieNode>::Schema as SplitBySuffix<
-                <Self as GeneralizedHashTrieNode>::SuffixSchema,
-            >>::split_by_suffix_ref(row);
-        if let Some(old_val) = self.children.insert(head.clone(), leaf) {
-            self.children.insert(head.clone(), old_val);
-            panic!();
-            false
-        } else {
-            true
-        }
-    }
-}
-
-#[sealed]
-impl<Schema, ValType, Storage> GhtTakeLeaf for GhtLeaf<Schema, ValType, Storage>
-where
-    Schema: 'static + Hash + Clone + Eq + PartialEqVariadic + SplitBySuffix<ValType>,
-    ValType: 'static + Hash + Clone + Eq + VariadicExt + PartialEqVariadic,
-    GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode,
-    Storage: 'static + VariadicSet<Schema = Schema>,
-{
-    fn take_containing_leaf(
-        &mut self,
-        _row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
-    ) -> Option<GhtLeaf<Self::Schema, Self::ValType, Self::Storage>> {
-        None
-    }
-
-    fn merge_leaf(
-        &mut self,
-        _row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
-        _leaf: GhtLeaf<Self::Schema, Self::ValType, Self::Storage>,
-    ) -> bool {
-        false
     }
 }
 
