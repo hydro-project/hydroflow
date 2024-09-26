@@ -1,10 +1,16 @@
 use std::marker::PhantomData;
+use std::time::Duration;
 
+use hydroflow::bytes::Bytes;
+use hydroflow::futures::stream::Stream as FuturesStream;
+use hydroflow::{tokio, tokio_stream};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use stageleft::Quoted;
+use stageleft::{q, Quoted};
 
-use super::builder::{ClusterIds, ClusterSelfId};
+use super::builder::{ClusterIds, ClusterSelfId, FlowLeaves};
+use crate::ir::{HfPlusNode, HfPlusSource};
+use crate::{Bounded, NoTick, Optional, Singleton, Stream, Tick, Unbounded};
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum LocationId {
@@ -13,8 +19,152 @@ pub enum LocationId {
     ExternalProcess(usize),
 }
 
-pub trait Location {
+pub trait Location<'a> {
     fn id(&self) -> LocationId;
+
+    fn ir_leaves(&self) -> &FlowLeaves;
+
+    fn spin(&self) -> Stream<(), Unbounded, NoTick, Self>
+    where
+        Self: Sized,
+    {
+        Stream::new(
+            self.id(),
+            self.ir_leaves().clone(),
+            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
+                source: HfPlusSource::Spin(),
+                location_kind: self.id(),
+            })),
+        )
+    }
+
+    fn spin_batch(
+        &self,
+        batch_size: impl Quoted<'a, usize> + Copy + 'a,
+    ) -> Stream<(), Bounded, Tick, Self>
+    where
+        Self: Sized,
+    {
+        self.spin()
+            .flat_map(q!(move |_| 0..batch_size))
+            .map(q!(|_| ()))
+            .tick_batch()
+    }
+
+    fn source_stream<T, E: FuturesStream<Item = T> + Unpin>(
+        &self,
+        e: impl Quoted<'a, E>,
+    ) -> Stream<T, Unbounded, NoTick, Self>
+    where
+        Self: Sized,
+    {
+        let e = e.splice_untyped();
+
+        Stream::new(
+            self.id(),
+            self.ir_leaves().clone(),
+            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
+                source: HfPlusSource::Stream(e.into()),
+                location_kind: self.id(),
+            })),
+        )
+    }
+
+    fn source_iter<T, E: IntoIterator<Item = T>>(
+        &self,
+        e: impl Quoted<'a, E>,
+    ) -> Stream<T, Bounded, NoTick, Self>
+    where
+        Self: Sized,
+    {
+        let e = e.splice_untyped();
+
+        Stream::new(
+            self.id(),
+            self.ir_leaves().clone(),
+            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
+                source: HfPlusSource::Iter(e.into()),
+                location_kind: self.id(),
+            })),
+        )
+    }
+
+    fn singleton<T: Clone>(&self, e: impl Quoted<'a, T>) -> Singleton<T, Bounded, NoTick, Self>
+    where
+        Self: Sized,
+    {
+        let e_arr = q!([e]);
+        let e = e_arr.splice_untyped();
+
+        // we do a double persist here because if the singleton shows up on every tick,
+        // we first persist the source so that we store that value and then persist again
+        // so that it grows every tick
+        Singleton::new(
+            self.id(),
+            self.ir_leaves().clone(),
+            HfPlusNode::Persist(Box::new(HfPlusNode::Persist(Box::new(
+                HfPlusNode::Source {
+                    source: HfPlusSource::Iter(e.into()),
+                    location_kind: self.id(),
+                },
+            )))),
+        )
+    }
+
+    fn singleton_first_tick<T: Clone>(
+        &self,
+        e: impl Quoted<'a, T>,
+    ) -> Optional<T, Bounded, Tick, Self>
+    where
+        Self: Sized,
+    {
+        let e_arr = q!([e]);
+        let e = e_arr.splice_untyped();
+
+        Optional::new(
+            self.id(),
+            self.ir_leaves().clone(),
+            HfPlusNode::Source {
+                source: HfPlusSource::Iter(e.into()),
+                location_kind: self.id(),
+            },
+        )
+    }
+
+    fn source_interval(
+        &self,
+        interval: impl Quoted<'a, Duration> + Copy + 'a,
+    ) -> Optional<(), Unbounded, NoTick, Self>
+    where
+        Self: Sized,
+    {
+        let interval = interval.splice_untyped();
+
+        Optional::new(
+            self.id(),
+            self.ir_leaves().clone(),
+            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
+                source: HfPlusSource::Interval(interval.into()),
+                location_kind: self.id(),
+            })),
+        )
+    }
+
+    fn source_interval_delayed(
+        &self,
+        delay: impl Quoted<'a, Duration> + Copy + 'a,
+        interval: impl Quoted<'a, Duration> + Copy + 'a,
+    ) -> Optional<tokio::time::Instant, Unbounded, NoTick, Self>
+    where
+        Self: Sized,
+    {
+        self.source_stream(q!(tokio_stream::wrappers::IntervalStream::new(
+            tokio::time::interval_at(tokio::time::Instant::now() + delay, interval)
+        )))
+        .tick_batch()
+        .first()
+        .latest()
+    }
 }
 
 pub struct ExternalBytesPort {
@@ -34,60 +184,150 @@ pub struct ExternalBincodeStream<T: DeserializeOwned> {
     pub(crate) _phantom: PhantomData<T>,
 }
 
-pub struct ExternalProcess<P> {
+pub struct ExternalProcess<'a, P> {
     pub(crate) id: usize,
-    pub(crate) _phantom: PhantomData<P>,
+
+    pub(crate) ir_leaves: FlowLeaves,
+
+    pub(crate) _phantom: PhantomData<&'a &'a mut P>,
 }
 
-impl<P> Clone for ExternalProcess<P> {
+impl<'a, P> Clone for ExternalProcess<'a, P> {
     fn clone(&self) -> Self {
         ExternalProcess {
             id: self.id,
+            ir_leaves: self.ir_leaves.clone(),
             _phantom: PhantomData,
         }
     }
 }
 
-impl<P> Location for ExternalProcess<P> {
+impl<'a, P> Location<'a> for ExternalProcess<'a, P> {
     fn id(&self) -> LocationId {
         LocationId::ExternalProcess(self.id)
     }
+
+    fn ir_leaves(&self) -> &FlowLeaves {
+        &self.ir_leaves
+    }
 }
 
-pub struct Process<P> {
+impl<'a, P> ExternalProcess<'a, P> {
+    pub fn source_external_bytes<L: Location<'a>>(
+        &self,
+        to: &L,
+    ) -> (ExternalBytesPort, Stream<Bytes, Unbounded, NoTick, L>) {
+        let next_external_port_id = {
+            let mut ir_leaves = self.ir_leaves.borrow_mut();
+            let id = ir_leaves.1;
+            ir_leaves.1 += 1;
+            id
+        };
+
+        (
+            ExternalBytesPort {
+                process_id: self.id,
+                port_id: next_external_port_id,
+            },
+            Stream::new(
+                to.id(),
+                self.ir_leaves().clone(),
+                HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+                    from_location: LocationId::ExternalProcess(self.id),
+                    from_key: Some(next_external_port_id),
+                    to_location: to.id(),
+                    to_key: None,
+                    serialize_pipeline: None,
+                    instantiate_fn: crate::ir::DebugInstantiate::Building(),
+                    deserialize_pipeline: Some(syn::parse_quote!(map(|b| b.unwrap().freeze()))),
+                    input: Box::new(HfPlusNode::Source {
+                        source: HfPlusSource::ExternalNetwork(),
+                        location_kind: LocationId::ExternalProcess(self.id),
+                    }),
+                })),
+            ),
+        )
+    }
+
+    pub fn source_external_bincode<L: Location<'a>, T: Serialize + DeserializeOwned>(
+        &self,
+        to: &L,
+    ) -> (ExternalBincodeSink<T>, Stream<T, Unbounded, NoTick, L>) {
+        let next_external_port_id = {
+            let mut ir_leaves = self.ir_leaves.borrow_mut();
+            let id = ir_leaves.1;
+            ir_leaves.1 += 1;
+            id
+        };
+
+        (
+            ExternalBincodeSink {
+                process_id: self.id,
+                port_id: next_external_port_id,
+                _phantom: PhantomData,
+            },
+            Stream::new(
+                to.id(),
+                self.ir_leaves().clone(),
+                HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+                    from_location: LocationId::ExternalProcess(self.id),
+                    from_key: Some(next_external_port_id),
+                    to_location: to.id(),
+                    to_key: None,
+                    serialize_pipeline: None,
+                    instantiate_fn: crate::ir::DebugInstantiate::Building(),
+                    deserialize_pipeline: Some(crate::stream::deserialize_bincode::<T>(false)),
+                    input: Box::new(HfPlusNode::Source {
+                        source: HfPlusSource::ExternalNetwork(),
+                        location_kind: LocationId::ExternalProcess(self.id),
+                    }),
+                })),
+            ),
+        )
+    }
+}
+
+pub struct Process<'a, P> {
     pub(crate) id: usize,
-    pub(crate) _phantom: PhantomData<P>,
+    pub(crate) ir_leaves: FlowLeaves,
+    pub(crate) _phantom: PhantomData<&'a &'a mut P>,
 }
 
-impl<P> Clone for Process<P> {
+impl<'a, P> Clone for Process<'a, P> {
     fn clone(&self) -> Self {
         Process {
             id: self.id,
+            ir_leaves: self.ir_leaves.clone(),
             _phantom: PhantomData,
         }
     }
 }
 
-impl<P> Location for Process<P> {
+impl<'a, P> Location<'a> for Process<'a, P> {
     fn id(&self) -> LocationId {
         LocationId::Process(self.id)
     }
+
+    fn ir_leaves(&self) -> &FlowLeaves {
+        &self.ir_leaves
+    }
 }
 
-pub struct Cluster<C> {
+pub struct Cluster<'a, C> {
     pub(crate) id: usize,
-    pub(crate) _phantom: PhantomData<C>,
+    pub(crate) ir_leaves: FlowLeaves,
+    pub(crate) _phantom: PhantomData<&'a &'a mut C>,
 }
 
-impl<C> Cluster<C> {
-    pub fn self_id<'a>(&self) -> impl Quoted<'a, u32> + Copy + 'a {
+impl<'a, C> Cluster<'a, C> {
+    pub fn self_id(&self) -> impl Quoted<'a, u32> + Copy + 'a {
         ClusterSelfId {
             id: self.id,
             _phantom: PhantomData,
         }
     }
 
-    pub fn members<'a>(&self) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
+    pub fn members(&self) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
         ClusterIds {
             id: self.id,
             _phantom: PhantomData,
@@ -95,22 +335,27 @@ impl<C> Cluster<C> {
     }
 }
 
-impl<C> Clone for Cluster<C> {
+impl<'a, C> Clone for Cluster<'a, C> {
     fn clone(&self) -> Self {
         Cluster {
             id: self.id,
+            ir_leaves: self.ir_leaves.clone(),
             _phantom: PhantomData,
         }
     }
 }
 
-impl<C> Location for Cluster<C> {
+impl<'a, C> Location<'a> for Cluster<'a, C> {
     fn id(&self) -> LocationId {
         LocationId::Cluster(self.id)
     }
+
+    fn ir_leaves(&self) -> &FlowLeaves {
+        &self.ir_leaves
+    }
 }
 
-pub trait CanSend<To: Location>: Location {
+pub trait CanSend<'a, To: Location<'a>>: Location<'a> {
     type In<T>;
     type Out<T>;
 
@@ -118,7 +363,7 @@ pub trait CanSend<To: Location>: Location {
     fn is_tagged() -> bool;
 }
 
-impl<P1, P2> CanSend<Process<P2>> for Process<P1> {
+impl<'a, P1, P2> CanSend<'a, Process<'a, P2>> for Process<'a, P1> {
     type In<T> = T;
     type Out<T> = T;
 
@@ -131,7 +376,7 @@ impl<P1, P2> CanSend<Process<P2>> for Process<P1> {
     }
 }
 
-impl<P1, C2> CanSend<Cluster<C2>> for Process<P1> {
+impl<'a, P1, C2> CanSend<'a, Cluster<'a, C2>> for Process<'a, P1> {
     type In<T> = (u32, T);
     type Out<T> = T;
 
@@ -144,7 +389,7 @@ impl<P1, C2> CanSend<Cluster<C2>> for Process<P1> {
     }
 }
 
-impl<C1, P2> CanSend<Process<P2>> for Cluster<C1> {
+impl<'a, C1, P2> CanSend<'a, Process<'a, P2>> for Cluster<'a, C1> {
     type In<T> = T;
     type Out<T> = (u32, T);
 
@@ -157,7 +402,7 @@ impl<C1, P2> CanSend<Process<P2>> for Cluster<C1> {
     }
 }
 
-impl<C1, C2> CanSend<Cluster<C2>> for Cluster<C1> {
+impl<'a, C1, C2> CanSend<'a, Cluster<'a, C2>> for Cluster<'a, C1> {
     type In<T> = (u32, T);
     type Out<T> = (u32, T);
 
@@ -170,7 +415,7 @@ impl<C1, C2> CanSend<Cluster<C2>> for Cluster<C1> {
     }
 }
 
-impl<P1, E2> CanSend<ExternalProcess<E2>> for Process<P1> {
+impl<'a, P1, E2> CanSend<'a, ExternalProcess<'a, E2>> for Process<'a, P1> {
     type In<T> = T;
     type Out<T> = T;
 

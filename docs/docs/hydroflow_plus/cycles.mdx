@@ -18,8 +18,8 @@ For example, consider the classic graph reachability problem, which computes the
 In Hydroflow+, we can implement this using cycles:
 
 ```rust
-let roots = flow.source_stream(&process, roots);
-let edges = flow.source_stream(&process, edges);
+let roots = process.source_stream(roots);
+let edges = process.source_stream(edges);
 
 let (complete_reached_nodes, reached_nodes) = flow.cycle(&process);
 

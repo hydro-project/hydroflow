@@ -13,8 +13,8 @@ pub fn graph_reachability<'a>(
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process::<()>();
 
-    let roots = flow.source_stream(&process, roots);
-    let edges = flow.source_stream(&process, edges);
+    let roots = process.source_stream(roots);
+    let edges = process.source_stream(edges);
 
     let (set_reached_cycle, reached_cycle) = flow.cycle(&process);
 
