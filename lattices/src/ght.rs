@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::marker::PhantomData;
@@ -220,6 +220,7 @@ where
 
 /// Trait for a set of Tuples
 pub trait TupleSet {
+    /// The Schema (aka Variadic type) associated with tuples in this set
     type Schema: PartialEqVariadic;
 
     /// Insert an element into the set
@@ -236,6 +237,7 @@ pub trait TupleSet {
         self.len() == 0
     }
 
+    /// iterate and drain items from the set
     fn drain(&mut self) -> impl Iterator<Item = Self::Schema>;
 
     /// Check for containment

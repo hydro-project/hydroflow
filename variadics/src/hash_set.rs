@@ -1,10 +1,12 @@
 use std::fmt;
-use std::hash::{BuildHasher, Hash, Hasher, RandomState};
+use std::hash::{BuildHasher, Hash, RandomState};
 
 use hashbrown::hash_table::{Entry, HashTable};
 
 use crate::{PartialEqVariadic, VariadicExt};
 
+/// HashSet that stores Variadics of owned values but allows
+/// for lookups with RefVariadics as well
 #[derive(Clone)]
 pub struct VariadicHashSet<T, S = RandomState> {
     table: HashTable<T>,
@@ -44,11 +46,13 @@ where
     S: BuildHasher,
 {
     fn get_hash(hasher: &S, ref_var: T::AsRefVar<'_>) -> u64 {
-        let mut hasher = hasher.build_hasher();
-        ref_var.hash(&mut hasher);
-        hasher.finish()
+        hasher.hash_one(ref_var)
+        // let mut hasher = hasher.build_hasher();
+        // ref_var.hash(&mut hasher);
+        // hasher.finish()
     }
 
+    /// given a RefVariadic lookup key, get a RefVariadic version of a tuple in the set
     pub fn get<'a>(&'a self, ref_var: T::AsRefVar<'_>) -> Option<&'a T> {
         let hash = Self::get_hash(&self.hasher, ref_var);
         self.table.find(hash, |item| {
@@ -56,6 +60,7 @@ where
         })
     }
 
+    /// insert a tuple
     pub fn insert(&mut self, element: T) -> bool {
         let hash = Self::get_hash(&self.hasher, element.as_ref_var());
         let entry = self.table.entry(
@@ -72,15 +77,23 @@ where
         }
     }
 
+    /// return the number of tuples in the set
     pub fn len(&self) -> usize {
         self.table.len()
     }
 
+    /// return the number of tuples in the set
+    pub fn is_empty(&self) -> bool {
+        self.table.len() == 0
+    }
+
+    /// drain the set: iterate and remove the tuples without deallocating
     pub fn drain(&mut self) -> hashbrown::hash_table::Drain<'_, T> {
         self.table.drain()
     }
 
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = T::AsRefVar<'a>> {
+    /// iterate through the set
+    pub fn iter(&self) -> impl Iterator<Item = T::AsRefVar<'_>> {
         self.table.iter().map(|item| item.as_ref_var())
     }
 }
@@ -99,12 +112,14 @@ where
 }
 
 impl<T, S> VariadicHashSet<T, S> {
+    /// allocate a new VariadicHashSet with a specific hasher
     pub fn with_hasher(hasher: S) -> Self {
         Self {
             table: HashTable::new(),
             hasher,
         }
     }
+    /// allocate a new VariadicHashSet with a specific hasher and capacity
     pub fn with_capacity_and_hasher(capacity: usize, hasher: S) -> Self {
         Self {
             table: HashTable::with_capacity(capacity),
@@ -129,7 +144,8 @@ where
         // Otherwise reserve half the hint (rounded up), so the map
         // will only resize twice in the worst case.
         let iter = iter.into_iter();
-        let reserve = if self.len() == 0 {
+        // let reserve =
+        if self.is_empty() {
             iter.size_hint().0
         } else {
             (iter.size_hint().0 + 1) / 2

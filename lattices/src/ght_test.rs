@@ -74,7 +74,7 @@ mod test {
 
     #[test]
     fn test_insert() {
-        let mut htrie = <GhtType!(u16, u32 => u64)>::default(: Row);
+        let mut htrie = <GhtType!(u16, u32 => u64: Row)>::default();
         htrie.insert(var_expr!(42, 314, 43770));
         assert_eq!(htrie.recursive_iter().count(), 1);
         assert_eq!(htrie.height(), 2);

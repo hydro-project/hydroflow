@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow::util::collect_ready;
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
-use lattices::ght::{GeneralizedHashTrieNode, GhtInner};
+use lattices::ght::GeneralizedHashTrieNode;
 use lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
 use lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap};
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
@@ -147,7 +147,6 @@ fn test_ght_join_bimorphism() {
     // type MyGhtATrie = <MyGhtA as GeneralizedHashTrie>::Trie;
     // type MyGhtBTrie = <MyGhtB as GeneralizedHashTrie>::Trie;
     type MyGhtATrie = GhtType!(u32, u64, u16 => &'static str: Row);
-    let ght_a = MyGhtATrie::default();
     type MyGhtBTrie = GhtType!(u32, u64, u16 => &'static str: Row);
 
     type Output = variadics::var_type!(u32, u64, u16, &'static str, &'static str);
@@ -155,20 +154,18 @@ fn test_ght_join_bimorphism() {
     type MyNodeBim = <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism<
         VariadicHashSet<Output>,
     >>::DeepJoinLatticeBimorphism;
-    let me_node_bim = MyNodeBim::default();
     type MyBim = GhtBimorphism<MyNodeBim>;
-    let me_bim = MyBim::default();
 
-    let mut hf = hydroflow_syntax! {
-    lhs = source_iter_delta([
-            var_expr!(123, 2, 5, "hello"),
-            var_expr!(50, 1, 1, "hi"),
-            var_expr!(5, 1, 7, "hi"),
-            var_expr!(5, 1, 7, "bye"),
-        ])
-        -> map(|row| MyGhtATrie::new_from([row]))
-        -> state::<'tick, MyGhtATrie>();
-    };
+    // let mut hf = hydroflow_syntax! {
+    // lhs = source_iter_delta([
+    //         var_expr!(123, 2, 5, "hello"),
+    //         var_expr!(50, 1, 1, "hi"),
+    //         var_expr!(5, 1, 7, "hi"),
+    //         var_expr!(5, 1, 7, "bye"),
+    //     ])
+    //     -> map(|row| MyGhtATrie::new_from([row]))
+    //     -> state::<'tick, MyGhtATrie>();
+    // };
 
     let mut hf = hydroflow_syntax! {
         lhs = source_iter_delta([

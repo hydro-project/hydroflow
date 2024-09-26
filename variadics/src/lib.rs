@@ -11,10 +11,10 @@
 //! ## [`var_args!`]
 #![doc = include_str!("../var_args.md")]
 
+/// VariadicHashSet module
 pub mod hash_set;
 
 use std::any::Any;
-use std::iter;
 use std::ops::RangeBounds;
 
 use sealed::sealed;
@@ -844,15 +844,17 @@ pub trait VecVariadic: VariadicExt {
     /// get the unvec'ed Variadic at position `index`
     fn get(&mut self, index: usize) -> Option<<Self::UnVec as VariadicExt>::AsRefVar<'_>>;
 
+    /// result type from into_zip
     type IntoZip: Iterator<Item = Self::UnVec>;
     /// Turns into an iterator of items `UnVec` -- i.e. iterate through rows (not columns!).
     fn into_zip(self) -> Self::IntoZip;
 
+    /// result type from drain
     type Drain<'a>: Iterator<Item = Self::UnVec>
     where
         Self: 'a;
     /// Turns into a Drain of items `UnVec` -- i.e. rows (not columns!).
-    fn drain<'a, R>(&'a mut self, range: R) -> Self::Drain<'a>
+    fn drain<R>(&mut self, range: R) -> Self::Drain<'_>
     where
         R: RangeBounds<usize> + Clone;
 }
@@ -895,7 +897,7 @@ where
         std::iter::zip(this, rest.into_zip())
     }
     type Drain<'a> = std::iter::Zip<std::vec::Drain<'a, Item>, Rest::Drain<'a>> where Self: 'a;
-    fn drain<'a, R>(&'a mut self, range: R) -> Self::Drain<'a>
+    fn drain<R>(&mut self, range: R) -> Self::Drain<'_>
     where
         R: RangeBounds<usize> + Clone,
     {
