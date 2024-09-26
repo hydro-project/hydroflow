@@ -9,17 +9,17 @@ pub trait CycleComplete<'a, T> {
 }
 
 pub trait CycleCollection<'a, T>: CycleComplete<'a, T> {
-    type Location: Location;
+    type Location: Location<'a>;
 
-    fn create_source(ident: syn::Ident, ir_leaves: FlowLeaves<'a>, l: LocationId) -> Self;
+    fn create_source(ident: syn::Ident, ir_leaves: FlowLeaves, l: LocationId) -> Self;
 }
 
 pub trait CycleCollectionWithInitial<'a, T>: CycleComplete<'a, T> {
-    type Location: Location;
+    type Location: Location<'a>;
 
     fn create_source(
         ident: syn::Ident,
-        ir_leaves: FlowLeaves<'a>,
+        ir_leaves: FlowLeaves,
         initial: Self,
         l: LocationId,
     ) -> Self;

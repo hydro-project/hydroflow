@@ -77,22 +77,29 @@ impl<'a> Deploy<'a> for HydroDeploy {
         p1_port: &Self::Port,
         p2: &Self::Process,
         p2_port: &Self::Port,
-    ) {
-        let self_underlying_borrow = p1.underlying.borrow();
-        let self_underlying = self_underlying_borrow.as_ref().unwrap();
-        let source_port = self_underlying
-            .try_read()
-            .unwrap()
-            .get_port(p1_port.clone(), self_underlying);
+    ) -> Box<dyn FnOnce()> {
+        let p1 = p1.clone();
+        let p1_port = p1_port.clone();
+        let p2 = p2.clone();
+        let p2_port = p2_port.clone();
 
-        let other_underlying_borrow = p2.underlying.borrow();
-        let other_underlying = other_underlying_borrow.as_ref().unwrap();
-        let recipient_port = other_underlying
-            .try_read()
-            .unwrap()
-            .get_port(p2_port.clone(), other_underlying);
-
-        source_port.send_to(&recipient_port);
+        Box::new(move || {
+            let self_underlying_borrow = p1.underlying.borrow();
+            let self_underlying = self_underlying_borrow.as_ref().unwrap();
+            let source_port = self_underlying
+                .try_read()
+                .unwrap()
+                .get_port(p1_port.clone(), self_underlying);
+    
+            let other_underlying_borrow = p2.underlying.borrow();
+            let other_underlying = other_underlying_borrow.as_ref().unwrap();
+            let recipient_port = other_underlying
+                .try_read()
+                .unwrap()
+                .get_port(p2_port.clone(), other_underlying);
+    
+            source_port.send_to(&recipient_port)  
+        })
     }
 
     fn o2m_sink_source(
@@ -116,32 +123,39 @@ impl<'a> Deploy<'a> for HydroDeploy {
         p1_port: &Self::Port,
         c2: &Self::Cluster,
         c2_port: &Self::Port,
-    ) {
-        let self_underlying_borrow = p1.underlying.borrow();
-        let self_underlying = self_underlying_borrow.as_ref().unwrap();
-        let source_port = self_underlying
-            .try_read()
-            .unwrap()
-            .get_port(p1_port.clone(), self_underlying);
+    ) -> Box<dyn FnOnce()> {
+        let p1 = p1.clone();
+        let p1_port = p1_port.clone();
+        let c2 = c2.clone();
+        let c2_port = c2_port.clone();
 
-        let recipient_port = DemuxSink {
-            demux: c2
-                .members
-                .borrow()
-                .iter()
-                .enumerate()
-                .map(|(id, c)| {
-                    let n = c.underlying.try_read().unwrap();
-                    (
-                        id as u32,
-                        Arc::new(n.get_port(c2_port.clone(), &c.underlying))
-                            as Arc<dyn HydroflowSink + 'static>,
-                    )
-                })
-                .collect(),
-        };
-
-        source_port.send_to(&recipient_port);
+        Box::new(move || {
+            let self_underlying_borrow = p1.underlying.borrow();
+            let self_underlying = self_underlying_borrow.as_ref().unwrap();
+            let source_port = self_underlying
+                .try_read()
+                .unwrap()
+                .get_port(p1_port.clone(), self_underlying);
+    
+            let recipient_port = DemuxSink {
+                demux: c2
+                    .members
+                    .borrow()
+                    .iter()
+                    .enumerate()
+                    .map(|(id, c)| {
+                        let n = c.underlying.try_read().unwrap();
+                        (
+                            id as u32,
+                            Arc::new(n.get_port(c2_port.clone(), &c.underlying))
+                                as Arc<dyn HydroflowSink + 'static>,
+                        )
+                    })
+                    .collect(),
+            };
+    
+            source_port.send_to(&recipient_port)    
+        })
     }
 
     fn m2o_sink_source(
@@ -165,28 +179,35 @@ impl<'a> Deploy<'a> for HydroDeploy {
         c1_port: &Self::Port,
         p2: &Self::Process,
         p2_port: &Self::Port,
-    ) {
-        let other_underlying_borrow = p2.underlying.borrow();
-        let other_underlying = other_underlying_borrow.as_ref().unwrap();
-        let recipient_port = other_underlying
-            .try_read()
-            .unwrap()
-            .get_port(p2_port.clone(), other_underlying)
-            .merge();
+    ) -> Box<dyn FnOnce()> {
+        let c1 = c1.clone();
+        let c1_port = c1_port.clone();
+        let p2 = p2.clone();
+        let p2_port = p2_port.clone();
 
-        for (i, node) in c1.members.borrow().iter().enumerate() {
-            let source_port = node
-                .underlying
+        Box::new(move || {
+            let other_underlying_borrow = p2.underlying.borrow();
+            let other_underlying = other_underlying_borrow.as_ref().unwrap();
+            let recipient_port = other_underlying
                 .try_read()
                 .unwrap()
-                .get_port(c1_port.clone(), &node.underlying);
-
-            TaggedSource {
-                source: Arc::new(source_port),
-                tag: i as u32,
-            }
-            .send_to(&recipient_port);
-        }
+                .get_port(p2_port.clone(), other_underlying)
+                .merge();
+    
+            for (i, node) in c1.members.borrow().iter().enumerate() {
+                let source_port = node
+                    .underlying
+                    .try_read()
+                    .unwrap()
+                    .get_port(c1_port.clone(), &node.underlying);
+    
+                TaggedSource {
+                    source: Arc::new(source_port),
+                    tag: i as u32,
+                }
+                .send_to(&recipient_port);
+            }    
+        })
     }
 
     fn m2m_sink_source(
@@ -210,37 +231,44 @@ impl<'a> Deploy<'a> for HydroDeploy {
         c1_port: &Self::Port,
         c2: &Self::Cluster,
         c2_port: &Self::Port,
-    ) {
-        for (i, sender) in c1.members.borrow().iter().enumerate() {
-            let source_port = sender
-                .underlying
-                .try_read()
-                .unwrap()
-                .get_port(c1_port.clone(), &sender.underlying);
+    ) -> Box<dyn FnOnce()> {
+        let c1 = c1.clone();
+        let c1_port = c1_port.clone();
+        let c2 = c2.clone();
+        let c2_port = c2_port.clone();
 
-            let recipient_port = DemuxSink {
-                demux: c2
-                    .members
-                    .borrow()
-                    .iter()
-                    .enumerate()
-                    .map(|(id, c)| {
-                        let n = c.underlying.try_read().unwrap();
-                        (
-                            id as u32,
-                            Arc::new(n.get_port(c2_port.clone(), &c.underlying).merge())
-                                as Arc<dyn HydroflowSink + 'static>,
-                        )
-                    })
-                    .collect(),
-            };
-
-            TaggedSource {
-                source: Arc::new(source_port),
-                tag: i as u32,
-            }
-            .send_to(&recipient_port);
-        }
+        Box::new(move || {
+            for (i, sender) in c1.members.borrow().iter().enumerate() {
+                let source_port = sender
+                    .underlying
+                    .try_read()
+                    .unwrap()
+                    .get_port(c1_port.clone(), &sender.underlying);
+    
+                let recipient_port = DemuxSink {
+                    demux: c2
+                        .members
+                        .borrow()
+                        .iter()
+                        .enumerate()
+                        .map(|(id, c)| {
+                            let n = c.underlying.try_read().unwrap();
+                            (
+                                id as u32,
+                                Arc::new(n.get_port(c2_port.clone(), &c.underlying).merge())
+                                    as Arc<dyn HydroflowSink + 'static>,
+                            )
+                        })
+                        .collect(),
+                };
+    
+                TaggedSource {
+                    source: Arc::new(source_port),
+                    tag: i as u32,
+                }
+                .send_to(&recipient_port);
+            }    
+        })
     }
 
     fn e2o_source(
@@ -264,26 +292,33 @@ impl<'a> Deploy<'a> for HydroDeploy {
         p1_port: &Self::Port,
         p2: &Self::Process,
         p2_port: &Self::Port,
-    ) {
-        let self_underlying_borrow = p1.underlying.borrow();
-        let self_underlying = self_underlying_borrow.as_ref().unwrap();
-        let source_port = self_underlying
-            .try_read()
-            .unwrap()
-            .declare_client(self_underlying);
+    ) -> Box<dyn FnOnce()> {
+        let p1 = p1.clone();
+        let p1_port = p1_port.clone();
+        let p2 = p2.clone();
+        let p2_port = p2_port.clone();
 
-        let other_underlying_borrow = p2.underlying.borrow();
-        let other_underlying = other_underlying_borrow.as_ref().unwrap();
-        let recipient_port = other_underlying
-            .try_read()
-            .unwrap()
-            .get_port(p2_port.clone(), other_underlying);
-
-        source_port.send_to(&recipient_port);
-
-        p1.client_ports
-            .borrow_mut()
-            .insert(p1_port.clone(), source_port);
+        Box::new(move || {
+            let self_underlying_borrow = p1.underlying.borrow();
+            let self_underlying = self_underlying_borrow.as_ref().unwrap();
+            let source_port = self_underlying
+                .try_read()
+                .unwrap()
+                .declare_client(self_underlying);
+    
+            let other_underlying_borrow = p2.underlying.borrow();
+            let other_underlying = other_underlying_borrow.as_ref().unwrap();
+            let recipient_port = other_underlying
+                .try_read()
+                .unwrap()
+                .get_port(p2_port.clone(), other_underlying);
+    
+            source_port.send_to(&recipient_port);
+    
+            p1.client_ports
+                .borrow_mut()
+                .insert(p1_port.clone(), source_port);    
+        })
     }
 
     fn o2e_sink(
@@ -307,26 +342,33 @@ impl<'a> Deploy<'a> for HydroDeploy {
         p1_port: &Self::Port,
         p2: &Self::ExternalProcess,
         p2_port: &Self::Port,
-    ) {
-        let self_underlying_borrow = p1.underlying.borrow();
-        let self_underlying = self_underlying_borrow.as_ref().unwrap();
-        let source_port = self_underlying
-            .try_read()
-            .unwrap()
-            .get_port(p1_port.clone(), self_underlying);
+    ) -> Box<dyn FnOnce()> {
+        let p1 = p1.clone();
+        let p1_port = p1_port.clone();
+        let p2 = p2.clone();
+        let p2_port = p2_port.clone();
 
-        let other_underlying_borrow = p2.underlying.borrow();
-        let other_underlying = other_underlying_borrow.as_ref().unwrap();
-        let recipient_port = other_underlying
-            .try_read()
-            .unwrap()
-            .declare_client(other_underlying);
-
-        source_port.send_to(&recipient_port);
-
-        p2.client_ports
-            .borrow_mut()
-            .insert(p2_port.clone(), recipient_port);
+        Box::new(move || {
+            let self_underlying_borrow = p1.underlying.borrow();
+            let self_underlying = self_underlying_borrow.as_ref().unwrap();
+            let source_port = self_underlying
+                .try_read()
+                .unwrap()
+                .get_port(p1_port.clone(), self_underlying);
+    
+            let other_underlying_borrow = p2.underlying.borrow();
+            let other_underlying = other_underlying_borrow.as_ref().unwrap();
+            let recipient_port = other_underlying
+                .try_read()
+                .unwrap()
+                .declare_client(other_underlying);
+    
+            source_port.send_to(&recipient_port);
+    
+            p2.client_ports
+                .borrow_mut()
+                .insert(p2_port.clone(), recipient_port);    
+        })
     }
 
     fn cluster_ids(
