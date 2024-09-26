@@ -14,11 +14,8 @@ pub fn chat_app<'a>(
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process::<()>();
 
-    let users = flow
-        .source_stream(&process, users_stream)
-        .tick_batch()
-        .persist();
-    let messages = flow.source_stream(&process, messages);
+    let users = process.source_stream(users_stream).tick_batch().persist();
+    let messages = process.source_stream(messages);
     let messages = if replay_messages {
         messages.tick_batch().persist()
     } else {
