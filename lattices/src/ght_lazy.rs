@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 
 use sealed::sealed;
 use variadics::{
-    var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt, VariadicVec,
+    var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt, VecVariadic,
 };
 
 use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf, GhtTakeLeaf, TupleSet};
@@ -119,21 +119,21 @@ where
 /// one for each height from 1 to length of the schema
 macro_rules! GhtForestType {
     ($a:ty, $( $b:ty ),* => ()) => {
-        var_type!($crate::GhtColumnType!($a, $( $b ),* => ()))
+        var_type!($crate::GhtType!($a, $( $b ),* => (): Column))
     };
     ($a:ty => $c:ty, $( $d:ty ),* ) => {
-        ($crate::GhtColumnType!($a => $c, $( $d ),*), GhtForestType!($a, $c => $( $d ),*))
+        ($crate::GhtType!($a => $c, $( $d ),*: Column), GhtForestType!($a, $c => $( $d ),*))
     };
     ($a:ty, $( $b:ty ),* => $c:ty) => {
-        ($crate::GhtColumnType!($a, $( $b ),* => $c), GhtForestType!($a, $( $b ),*, $c => ()))
+        ($crate::GhtType!($a, $( $b ),* => $c: Column), GhtForestType!($a, $( $b ),*, $c => ()))
     };
 
     ($a:ty, $( $b:ty ),* => $c:ty, $( $d:ty ),* ) => {
-        ($crate::GhtColumnType!($a, $( $b ),* => $c, $( $d ),*), GhtForestType!($a, $( $b ),* , $c => $( $d ),*))
+        ($crate::GhtType!($a, $( $b ),* => $c, $( $d ),*: Column), GhtForestType!($a, $( $b ),* , $c => $( $d ),*))
     };
 
     ($a:ty, $( $b:ty ),* ) => {
-        ($crate::GhtColumnType!(() => $a, $( $b ),*), GhtForestType!($a => $( $b ),*))
+        ($crate::GhtType!(() => $a, $( $b ),*: Column), GhtForestType!($a => $( $b ),*))
     };
 }
 
@@ -517,8 +517,10 @@ where
     }
 }
 
+/// Column storage for Variadic tuples of type Schema
+/// An alternative to VariadicHashSet
 #[derive(Default)]
-pub struct ColumnVecSet<Schema>
+pub struct VariadicColumnarSet<Schema>
 where
     Schema: VariadicExt,
 {
@@ -526,7 +528,7 @@ where
     last_offset: usize,
 }
 
-impl<Schema> TupleSet for ColumnVecSet<Schema>
+impl<Schema> TupleSet for VariadicColumnarSet<Schema>
 where
     Schema: PartialEqVariadic,
 {
@@ -561,12 +563,12 @@ where
     }
 }
 
-impl<Schema> IntoIterator for ColumnVecSet<Schema>
+impl<Schema> IntoIterator for VariadicColumnarSet<Schema>
 where
     Schema: PartialEqVariadic,
 {
     type Item = Schema;
-    type IntoIter = <Schema::AsVec as VariadicVec>::IntoZip;
+    type IntoIter = <Schema::AsVec as VecVariadic>::IntoZip;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -574,7 +576,7 @@ where
     }
 }
 
-impl<T> std::fmt::Debug for ColumnVecSet<T>
+impl<T> std::fmt::Debug for VariadicColumnarSet<T>
 where
     T: std::fmt::Debug + VariadicExt + PartialEqVariadic,
     for<'a> T::AsRefVar<'a>: Hash + std::fmt::Debug,
@@ -585,7 +587,7 @@ where
 }
 
 // THIS CODE ADAPTED FROM hashbrown::HashMap
-impl<K> Extend<K> for ColumnVecSet<K>
+impl<K> Extend<K> for VariadicColumnarSet<K>
 where
     K: Eq + Hash + PartialEqVariadic,
     for<'a> K::AsRefVar<'a>: Hash,

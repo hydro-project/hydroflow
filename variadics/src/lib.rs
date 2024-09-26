@@ -199,7 +199,7 @@ pub trait VariadicExt: Variadic {
     fn as_option(self) -> Self::AsOption;
 
     /// type for all elements of the variadic being wrapped in Vec
-    type AsVec: VariadicVec<UnVec = Self>;
+    type AsVec: VecVariadic<UnVec = Self>;
 
     /// wrap all elements of the variadic in a Vec
     fn as_vec(self) -> Self::AsVec;
@@ -831,7 +831,7 @@ where
 
 /// trait for Variadic of vecs, as formed by `VariadicExt::as_vec()`
 #[sealed]
-pub trait VariadicVec: VariadicExt {
+pub trait VecVariadic: VariadicExt {
     /// Individual variadic items without the Vec wrapper
     type UnVec: VariadicExt<AsVec = Self>;
 
@@ -858,9 +858,9 @@ pub trait VariadicVec: VariadicExt {
 }
 
 #[sealed]
-impl<Item, Rest> VariadicVec for (Vec<Item>, Rest)
+impl<Item, Rest> VecVariadic for (Vec<Item>, Rest)
 where
-    Rest: VariadicVec,
+    Rest: VecVariadic,
     // Item: 'static,
     // Rest: 'static,
 {
@@ -881,7 +881,7 @@ where
     /// get the unvec'ed Variadic at position `index`
     fn get(&mut self, index: usize) -> Option<<Self::UnVec as VariadicExt>::AsRefVar<'_>> {
         let (this_vec, rest_vecs) = self;
-        if let Some(rest) = VariadicVec::get(rest_vecs, index) {
+        if let Some(rest) = VecVariadic::get(rest_vecs, index) {
             this_vec.get(index).map(|item| var_expr!(item, ...rest))
         } else {
             None
@@ -905,7 +905,7 @@ where
 }
 
 #[sealed]
-impl VariadicVec for var_type!() {
+impl VecVariadic for var_type!() {
     type UnVec = var_type!();
 
     fn zip_vecs(&self) -> impl Iterator<Item = <Self::UnVec as VariadicExt>::AsRefVar<'_>> {
@@ -1026,7 +1026,7 @@ mod test {
 
     #[test]
     fn test_as_vec() {
-        use crate::VariadicVec;
+        use crate::VecVariadic;
 
         type Item = var_type!(i32, String);
         let first: Item = var_expr!(1, "Joe".to_string());

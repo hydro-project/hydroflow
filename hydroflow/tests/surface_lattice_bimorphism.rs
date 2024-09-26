@@ -6,7 +6,7 @@ use lattices::ght::{GeneralizedHashTrieNode, GhtInner};
 use lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
 use lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap};
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
-use lattices::GhtRowType;
+use lattices::GhtType;
 use multiplatform_test::multiplatform_test;
 use variadics::hash_set::VariadicHashSet;
 use variadics::{var_expr, CloneVariadic};
@@ -146,9 +146,9 @@ fn test_ght_join_bimorphism() {
     // type MyGhtB = GhtType!(u32, u64, u16 => &'static str);
     // type MyGhtATrie = <MyGhtA as GeneralizedHashTrie>::Trie;
     // type MyGhtBTrie = <MyGhtB as GeneralizedHashTrie>::Trie;
-    type MyGhtATrie = GhtRowType!(u32, u64, u16 => &'static str);
+    type MyGhtATrie = GhtType!(u32, u64, u16 => &'static str: Row);
     let ght_a = MyGhtATrie::default();
-    type MyGhtBTrie = GhtRowType!(u32, u64, u16 => &'static str);
+    type MyGhtBTrie = GhtType!(u32, u64, u16 => &'static str: Row);
 
     type Output = variadics::var_type!(u32, u64, u16, &'static str, &'static str);
 
