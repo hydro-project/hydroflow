@@ -143,10 +143,6 @@ async fn main() {
         member_data,
         seed_nodes,
     );
-    server
-        .meta_graph()
-        .unwrap()
-        .open_mermaid(&Default::default())
-        .unwrap();
+
     server.run_async().await;
 }

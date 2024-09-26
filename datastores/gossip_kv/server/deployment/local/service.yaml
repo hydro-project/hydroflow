@@ -8,7 +8,7 @@ spec:
     app: gossip-kv-server-example
   type: LoadBalancer
   ports:
-    - name: tcp-port
-      port: 80
-      targetPort: 80
-      protocol: TCP
+    - name: client-port
+      port: 3001
+      targetPort: 3001
+      protocol: UDP
