@@ -3,9 +3,9 @@ use std::collections::HashSet;
 
 use crate::ir::*;
 
-fn persist_pullup_node<'a>(
-    node: &mut HfPlusNode<'a>,
-    persist_pulled_tees: &mut HashSet<*const RefCell<HfPlusNode<'a>>>,
+fn persist_pullup_node(
+    node: &mut HfPlusNode,
+    persist_pulled_tees: &mut HashSet<*const RefCell<HfPlusNode>>,
 ) {
     *node = match std::mem::replace(node, HfPlusNode::Placeholder) {
         HfPlusNode::Unpersist(box HfPlusNode::Persist(box behind_persist)) => behind_persist,
@@ -13,12 +13,12 @@ fn persist_pullup_node<'a>(
         HfPlusNode::Delta(box HfPlusNode::Persist(box behind_persist)) => behind_persist,
 
         HfPlusNode::Tee { inner } => {
-            if persist_pulled_tees.contains(&(inner.as_ref() as *const RefCell<HfPlusNode<'a>>)) {
+            if persist_pulled_tees.contains(&(inner.as_ref() as *const RefCell<HfPlusNode>)) {
                 HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
                     inner: inner.clone(),
                 }))
             } else if matches!(*inner.borrow(), HfPlusNode::Persist(_)) {
-                persist_pulled_tees.insert(inner.as_ref() as *const RefCell<HfPlusNode<'a>>);
+                persist_pulled_tees.insert(inner.as_ref() as *const RefCell<HfPlusNode>);
                 if let HfPlusNode::Persist(box behind_persist) =
                     inner.replace(HfPlusNode::Placeholder)
                 {
@@ -128,13 +128,15 @@ mod tests {
     use stageleft::*;
 
     use crate::deploy::MultiGraph;
+    use crate::location::Location;
 
     #[test]
     fn persist_pullup_through_map() {
         let flow = crate::builder::FlowBuilder::new();
         let process = flow.process::<()>();
 
-        flow.source_iter(&process, q!(0..10))
+        process
+            .source_iter(q!(0..10))
             .map(q!(|v| v + 1))
             .for_each(q!(|n| println!("{}", n)));
 
@@ -157,7 +159,7 @@ mod tests {
         let flow = crate::builder::FlowBuilder::new();
         let process = flow.process::<()>();
 
-        let before_tee = flow.source_iter(&process, q!(0..10)).tick_batch().persist();
+        let before_tee = process.source_iter(q!(0..10)).tick_batch().persist();
 
         before_tee
             .clone()

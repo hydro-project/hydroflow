@@ -65,7 +65,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p1_port: &Self::Port,
         _p2: &Self::Process,
         _p2_port: &Self::Port,
-    ) {
+    ) -> Box<dyn FnOnce()> {
         panic!()
     }
 
@@ -84,7 +84,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p1_port: &Self::Port,
         _c2: &Self::Cluster,
         _c2_port: &Self::Port,
-    ) {
+    ) -> Box<dyn FnOnce()> {
         panic!()
     }
 
@@ -103,7 +103,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _c1_port: &Self::Port,
         _p2: &Self::Process,
         _p2_port: &Self::Port,
-    ) {
+    ) -> Box<dyn FnOnce()> {
         panic!()
     }
 
@@ -122,7 +122,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _c1_port: &Self::Port,
         _c2: &Self::Cluster,
         _c2_port: &Self::Port,
-    ) {
+    ) -> Box<dyn FnOnce()> {
         panic!()
     }
 
@@ -141,7 +141,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p1_port: &Self::Port,
         _p2: &Self::Process,
         _p2_port: &Self::Port,
-    ) {
+    ) -> Box<dyn FnOnce()> {
         panic!()
     }
 
@@ -160,7 +160,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p1_port: &Self::Port,
         _p2: &Self::ExternalProcess,
         _p2_port: &Self::Port,
-    ) {
+    ) -> Box<dyn FnOnce()> {
         panic!()
     }
 

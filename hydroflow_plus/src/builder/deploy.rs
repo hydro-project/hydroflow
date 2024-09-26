@@ -20,7 +20,7 @@ use crate::location::{
 use crate::{Cluster, ClusterSpec, Deploy, HfCompiled, Process, ProcessSpec};
 
 pub struct DeployFlow<'a, D: LocalDeploy<'a>> {
-    pub(super) ir: Vec<HfPlusLeaf<'a>>,
+    pub(super) ir: Vec<HfPlusLeaf>,
     pub(super) nodes: HashMap<usize, D::Process>,
     pub(super) externals: HashMap<usize, D::ExternalProcess>,
     pub(super) clusters: HashMap<usize, D::Cluster>,
@@ -229,7 +229,7 @@ impl<'a, D: Deploy<'a>> DeployResult<'a, D> {
         self.processes.get(&id).unwrap()
     }
 
-    pub fn get_cluster<C>(&self, c: &Cluster<C>) -> &D::Cluster {
+    pub fn get_cluster<C>(&self, c: &Cluster<'a, C>) -> &D::Cluster {
         let id = match c.id() {
             LocationId::Cluster(id) => id,
             _ => panic!("Cluster ID expected"),
