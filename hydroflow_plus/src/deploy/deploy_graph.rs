@@ -13,19 +13,23 @@ use hydro_deploy::hydroflow_crate::ports::{
 use hydro_deploy::hydroflow_crate::tracing_options::TracingOptions;
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{CustomService, Deployment, Host, HydroflowCrate};
-use hydroflow_plus::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
-use hydroflow_plus::futures::SinkExt;
-use hydroflow_plus::lang::graph::HydroflowGraph;
-use hydroflow_plus::util::deploy::ConnectedSink;
+use hydroflow::futures::StreamExt;
+use hydroflow::util::deploy::ConnectedSource;
 use nameof::name_of;
+use serde::de::DeserializeOwned;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use stageleft::{Quoted, RuntimeData};
+use syn::visit_mut::VisitMut;
 use tokio::sync::RwLock;
+use trybuild_internals_api::path;
 
-use super::HydroflowPlusMeta;
-use crate::deploy_runtime::*;
-use crate::trybuild::{compile_graph_trybuild, create_trybuild};
+use super::deploy_runtime::*;
+use super::trybuild::{compile_graph_trybuild, create_trybuild};
+use super::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
+use crate::futures::SinkExt;
+use crate::lang::graph::HydroflowGraph;
+use crate::util::deploy::ConnectedSink;
 
 pub struct HydroDeploy {}
 
@@ -282,6 +286,49 @@ impl<'a> Deploy<'a> for HydroDeploy {
             .insert(p1_port.clone(), source_port);
     }
 
+    fn o2e_sink(
+        _compile_env: &Self::CompileEnv,
+        _p1: &Self::Process,
+        p1_port: &Self::Port,
+        _p2: &Self::ExternalProcess,
+        p2_port: &Self::Port,
+    ) -> syn::Expr {
+        let p1_port = p1_port.as_str();
+        let p2_port = p2_port.as_str();
+        deploy_o2e(
+            RuntimeData::new("__hydroflow_plus_trybuild_cli"),
+            p1_port,
+            p2_port,
+        )
+    }
+
+    fn o2e_connect(
+        p1: &Self::Process,
+        p1_port: &Self::Port,
+        p2: &Self::ExternalProcess,
+        p2_port: &Self::Port,
+    ) {
+        let self_underlying_borrow = p1.underlying.borrow();
+        let self_underlying = self_underlying_borrow.as_ref().unwrap();
+        let source_port = self_underlying
+            .try_read()
+            .unwrap()
+            .get_port(p1_port.clone(), self_underlying);
+
+        let other_underlying_borrow = p2.underlying.borrow();
+        let other_underlying = other_underlying_borrow.as_ref().unwrap();
+        let recipient_port = other_underlying
+            .try_read()
+            .unwrap()
+            .declare_client(other_underlying);
+
+        source_port.send_to(&recipient_port);
+
+        p2.client_ports
+            .borrow_mut()
+            .insert(p2_port.clone(), recipient_port);
+    }
+
     fn cluster_ids(
         _env: &Self::CompileEnv,
         of_cluster: usize,
@@ -413,37 +460,49 @@ impl<'a> RegisterPort<'a, HydroDeploy> for DeployExternal {
     fn as_bytes_sink(
         &self,
         key: usize,
-    ) -> impl Future<
-        Output = Pin<
-            Box<dyn hydroflow_plus::futures::Sink<hydroflow_plus::bytes::Bytes, Error = Error>>,
-        >,
-    > + 'a {
+    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Sink<crate::bytes::Bytes, Error = Error>>>> + 'a
+    {
         let port = self.raw_port(key);
         async move {
             let sink = port.connect().await.into_sink();
-            Box::pin(sink)
-                as Pin<
-                    Box<
-                        dyn hydroflow_plus::futures::Sink<
-                            hydroflow_plus::bytes::Bytes,
-                            Error = Error,
-                        >,
-                    >,
-                >
+            sink as Pin<Box<dyn crate::futures::Sink<crate::bytes::Bytes, Error = Error>>>
         }
     }
 
     fn as_bincode_sink<T: Serialize + 'static>(
         &self,
         key: usize,
-    ) -> impl Future<Output = Pin<Box<dyn hydroflow_plus::futures::Sink<T, Error = Error>>>> + 'a
-    {
+    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Sink<T, Error = Error>>>> + 'a {
         let port = self.raw_port(key);
         async move {
             let sink = port.connect().await.into_sink();
-            Box::pin(sink.with(|item| async move {
-                Ok(hydroflow_plus::bincode::serialize(&item).unwrap().into())
-            })) as Pin<Box<dyn hydroflow_plus::futures::Sink<T, Error = Error>>>
+            Box::pin(sink.with(|item| async move { Ok(bincode::serialize(&item).unwrap().into()) }))
+                as Pin<Box<dyn crate::futures::Sink<T, Error = Error>>>
+        }
+    }
+
+    fn as_bytes_source(
+        &self,
+        key: usize,
+    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Stream<Item = crate::bytes::Bytes>>>> + 'a
+    {
+        let port = self.raw_port(key);
+        async move {
+            let source = port.connect().await.into_source();
+            Box::pin(source.map(|r| r.unwrap().freeze()))
+                as Pin<Box<dyn crate::futures::Stream<Item = crate::bytes::Bytes>>>
+        }
+    }
+
+    fn as_bincode_source<T: DeserializeOwned + 'static>(
+        &self,
+        key: usize,
+    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Stream<Item = T>>>> + 'a {
+        let port = self.raw_port(key);
+        async move {
+            let source = port.connect().await.into_source();
+            Box::pin(source.map(|item| bincode::deserialize(&item.unwrap()).unwrap()))
+                as Pin<Box<dyn crate::futures::Stream<Item = T>>>
         }
     }
 }
@@ -732,6 +791,44 @@ fn clean_name_hint(name_hint: &str) -> String {
         .replace(")", "")
 }
 
+// TODO(shadaj): has to be public due to stageleft limitations
+#[doc(hidden)]
+pub struct ReplaceCrateNameWithStaged {
+    pub crate_name: String,
+}
+
+impl VisitMut for ReplaceCrateNameWithStaged {
+    fn visit_type_path_mut(&mut self, i: &mut syn::TypePath) {
+        if let Some(first) = i.path.segments.first() {
+            if first.ident == self.crate_name {
+                let tail = i.path.segments.iter().skip(1).collect::<Vec<_>>();
+                *i = syn::parse_quote!(crate::__staged #(::#tail)*);
+            }
+        }
+
+        syn::visit_mut::visit_type_path_mut(self, i);
+    }
+}
+
+// TODO(shadaj): has to be public due to stageleft limitations
+#[doc(hidden)]
+pub struct ReplaceCrateWithOrig {
+    pub crate_name: String,
+}
+
+impl VisitMut for ReplaceCrateWithOrig {
+    fn visit_item_use_mut(&mut self, i: &mut syn::ItemUse) {
+        if let syn::UseTree::Path(p) = &mut i.tree {
+            if p.ident == "crate" {
+                p.ident = syn::Ident::new(&self.crate_name, p.ident.span());
+                i.leading_colon = Some(Default::default());
+            }
+        }
+
+        syn::visit_mut::visit_item_use_mut(self, i);
+    }
+}
+
 fn create_graph_trybuild(
     graph: HydroflowGraph,
     extra_stmts: Vec<syn::Stmt>,
@@ -740,15 +837,44 @@ fn create_graph_trybuild(
     String,
     (std::path::PathBuf, std::path::PathBuf, Option<Vec<String>>),
 ) {
-    let source_ast = compile_graph_trybuild(graph, extra_stmts);
-
     let source_dir = trybuild_internals_api::cargo::manifest_dir().unwrap();
     let source_manifest = trybuild_internals_api::dependencies::get_manifest(&source_dir).unwrap();
     let crate_name = &source_manifest.package.name.to_string().replace("-", "_");
-    let source = prettyplease::unparse(&source_ast)
-        .to_string()
-        .replace(crate_name, &format!("{crate_name}::__staged"))
-        .replace("crate::__staged", &format!("{crate_name}::__staged"));
+
+    let is_test = super::trybuild::IS_TEST.load(std::sync::atomic::Ordering::Relaxed);
+
+    let mut generated_code = compile_graph_trybuild(graph, extra_stmts);
+
+    ReplaceCrateNameWithStaged {
+        crate_name: crate_name.clone(),
+    }
+    .visit_file_mut(&mut generated_code);
+
+    let mut inlined_staged = stageleft_tool::gen_staged_trybuild(
+        &path!(source_dir / "src" / "lib.rs"),
+        crate_name.clone(),
+        is_test,
+    );
+
+    ReplaceCrateWithOrig {
+        crate_name: crate_name.clone(),
+    }
+    .visit_file_mut(&mut inlined_staged);
+
+    let source = prettyplease::unparse(&syn::parse_quote! {
+        #generated_code
+
+        #[allow(
+            unused,
+            ambiguous_glob_reexports,
+            clippy::suspicious_else_formatting,
+            unexpected_cfgs,
+            reason = "generated code"
+        )]
+        pub mod __staged {
+            #inlined_staged
+        }
+    });
 
     let mut hasher = Sha256::new();
     hasher.update(&source);
@@ -763,7 +889,7 @@ fn create_graph_trybuild(
         hash
     };
 
-    let trybuild_created = create_trybuild(&source, &bin_name).unwrap();
+    let trybuild_created = create_trybuild(&source, &bin_name, is_test).unwrap();
     (bin_name, trybuild_created)
 }
 

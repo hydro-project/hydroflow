@@ -150,7 +150,7 @@ impl<'a, T, C, N: Location> From<Singleton<'a, T, Bounded, C, N>>
 
 impl<'a, T, N: Location> CycleComplete<'a, Tick> for Singleton<'a, T, Bounded, Tick, N> {
     fn complete(self, ident: syn::Ident) {
-        self.ir_leaves.borrow_mut().as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
+        self.ir_leaves.borrow_mut().0.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
             ident,
             location_kind: self.location_kind,
             input: Box::new(self.ir_node.into_inner()),
@@ -351,6 +351,27 @@ impl<'a, T, B, N: Location> Singleton<'a, T, B, NoTick, N> {
             HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
         )
     }
+
+    pub fn sample_every(
+        self,
+        duration: impl Quoted<'a, std::time::Duration> + Copy + 'a,
+    ) -> Stream<'a, T, Unbounded, NoTick, N> {
+        let interval = duration.splice_typed();
+
+        let samples = Stream::<'a, (), Bounded, Tick, N>::new(
+            self.location_kind,
+            self.ir_leaves.clone(),
+            HfPlusNode::Source {
+                source: HfPlusSource::Interval(interval.into()),
+                location_kind: self.location_kind,
+            },
+        );
+
+        self.latest_tick()
+            .continue_if(samples.first())
+            .latest()
+            .tick_samples()
+    }
 }
 
 impl<'a, T, N: Location> Singleton<'a, T, Unbounded, NoTick, N> {
@@ -408,7 +429,7 @@ impl<'a, T, W, C, N: Location> Optional<'a, T, W, C, N> {
 impl<'a, T, N: Location> CycleComplete<'a, Tick> for Optional<'a, T, Bounded, Tick, N> {
     fn complete(self, ident: syn::Ident) {
         let me = self.defer_tick();
-        me.ir_leaves.borrow_mut().as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
+        me.ir_leaves.borrow_mut().0.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
             ident,
             location_kind: me.location_kind,
             input: Box::new(me.ir_node.into_inner()),
@@ -433,7 +454,7 @@ impl<'a, T, N: Location> CycleCollection<'a, Tick> for Optional<'a, T, Bounded, 
 
 impl<'a, T, W, N: Location> CycleComplete<'a, NoTick> for Optional<'a, T, W, NoTick, N> {
     fn complete(self, ident: syn::Ident) {
-        self.ir_leaves.borrow_mut().as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
+        self.ir_leaves.borrow_mut().0.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
             ident,
             location_kind: self.location_kind,
             input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),

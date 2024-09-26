@@ -42,7 +42,7 @@ pub fn q_impl(root: TokenStream, expr: syn::Expr) -> TokenStream {
             #(#unitialized_free_variables;)*
 
             *set_mod = module_path!().to_string();
-            *set_crate_name = env!("STAGELEFT_FINAL_CRATE_NAME");
+            *set_crate_name = option_env!("STAGELEFT_FINAL_CRATE_NAME").unwrap_or(env!("CARGO_PKG_NAME"));
             *set_tokens = #root::internal::quote! {
                 #expr_without_spans
             };
