@@ -9,16 +9,19 @@ use variadics::{
 
 use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
 
-// Strategies for Get on a ColtNode:
-// 1. ColtNode returns different type for var_type!(GhtInner<Key, GhtLeaf<...>>) (drops First).
-//        THIS IS WHAT WE IMPLEMENTED
-// 2. Somehow cast the prefix of Nones on each call to have Head = ColtNode::Reverse::Car::Head
-//        Problem: messy
-// 3. Walk the tries in the forest sequentially (with a height parameter)
-//        Seems less efficient/elegant
-
 #[sealed]
 /// COLT from Wang/Willsey/Suciu
+/// In the paper, the COLT is an unbalanced trie that "grows upward" from leaves via the
+/// `force` method. Unbalanced tries don't interact well with our Rust types, which want
+/// a node's type to be defined via the type of its children, recursively --
+/// that means all paths need to be the same length!
+///
+/// To work around this, our COLT is a forest of balanced GHTs of increasing height, from 0 to the number of columns
+/// in the key - 1. Instead of the `force` method lengthening the path above a leaf by 1, it
+/// instead `take`s the leaf from the current trie and merges it in to the trie to the right which
+/// is 1 taller.
+
+/// A trait for the special behavior we need from the GHTs in a COLT forest
 pub trait ColumnLazyTrieNode: GeneralizedHashTrieNode {
     /// into_iter for leaf elements, needed by force below
     fn into_iter(self) -> Option<impl Iterator<Item = Self::Schema>>;
@@ -117,7 +120,7 @@ where
 
 #[macro_export]
 /// Constructs a forest (variadic list) of Ght structs,
-/// one for each height from 1 to length of the schema
+/// one for each height from 0 to length of the schema - 1
 macro_rules! GhtForestType {
     ($a:ty, $( $b:ty ),* => ()) => {
         var_type!($crate::GhtType!($a, $( $b ),* => (): Column))
@@ -286,10 +289,10 @@ where
 }
 
 /// Virtual COLT "node" with an API similar to GeneralizedHashTrieNode.
-/// This is basically a GhtForest of subtries, with each subtrie wrapped
-/// in Option<&'_ Subtrie>. The Option is there because the `get`s from the root(s)
-/// that led us to these subtries may have encountered no match in some of the tries
-/// in the forest; those tries are None now.
+/// The "current node" at depth d from the root in the Wang/Willsey/Suciu
+/// paper sits above an unbalanced trie. We emulate that here via a variadic
+/// of nodes at depth d in all the tries in the forest (that are height d or taller.)
+/// This is basically a GhtForest of subtries.
 #[sealed]
 pub trait ColtNode {
     /// Schema variadic: the schema of the relation stored in this COLT.
@@ -505,29 +508,8 @@ where
     }
 }
 
-// #[sealed]
-// impl<'a, Schema, ValType> ColtNode for var_type!(Option<&'a mut GhtLeaf<Schema, ValType>>)
-// where
-//     GhtLeaf<Schema, ValType>: GeneralizedHashTrieNode + GhtGet,
-//     ValType: Clone + Eq + Hash,
-// {
-//     type Schema = Schema;
-//     type SuffixSchema = ValType;
-//     type Head = <GhtInner<Head, Node> as GeneralizedHashTrieNode>::Head;
-//     type Get = var_type!(Option<&'a mut <GhtInner<Head, Node> as GhtGet>::Get>);
-
-//     fn get_broken(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
-//         var_expr!(self.0.unwrap().get_mut(head))
-//     }
-
-//     fn get(self, head: &GhtKey<Self::Head, Self::Schema>) -> Self::Get {
-//         // var_expr!(self.0.unwrap().get_mut(head))
-//         var_expr!(self.0.and_then(|x| x.get_mut(head)))
-//     }
-// }
-
 // THE CODE BELOW MAY NOT BE USEFUL
-/// Make a GhtForest trait with a force method that does the forcing+merging logic
+/// A GhtForest trait with a force method that does the forcing+merging logic
 /// This trait will be recursive on the variadic of `Ght`s.
 #[sealed]
 pub trait GhtForest<SearchKey>
@@ -538,7 +520,7 @@ where
     /// if it finds such a trie, and the search_key is longer than the height,
     /// it will force the leaf into the next trie over and recurse.
     /// returns true if it forces (1 or more times), and false otherwise.
-    fn force(&mut self, search_key: SearchKey) -> bool;
+    fn find_and_force(&mut self, search_key: SearchKey) -> bool;
 }
 
 #[sealed]
@@ -560,7 +542,7 @@ where
         TrieFirst::Storage,
     >: ColumnLazyTrieNode,
 {
-    fn force<'a>(&mut self, search_key: SearchKey) -> bool {
+    fn find_and_force<'a>(&mut self, search_key: SearchKey) -> bool {
         let var_expr!(first, ...rest) = self; //.forest;
         if first.height() < SearchKey::LEN {
             let (row, _): (
@@ -582,7 +564,9 @@ where
                 // drop through and recurse: we may have to force again in the neighbor
             }
             // recurse
-            <var_type!(TrieSecond, ...TrieRest) as GhtForest<SearchKey>>::force(rest, search_key)
+            <var_type!(TrieSecond, ...TrieRest) as GhtForest<SearchKey>>::find_and_force(
+                rest, search_key,
+            )
         } else {
             false
         }
@@ -596,7 +580,7 @@ where
     SearchKey: VariadicExt,
     TrieFirst: GeneralizedHashTrieNode,
 {
-    fn force<'a>(&mut self, _search_key: SearchKey) -> bool {
+    fn find_and_force<'a>(&mut self, _search_key: SearchKey) -> bool {
         false
     }
 }
@@ -606,7 +590,7 @@ impl<SearchKey> GhtForest<SearchKey> for var_type!()
 where
     SearchKey: VariadicExt,
 {
-    fn force<'a>(&mut self, _search_key: SearchKey) -> bool {
+    fn find_and_force<'a>(&mut self, _search_key: SearchKey) -> bool {
         false
     }
 }

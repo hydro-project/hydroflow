@@ -473,7 +473,7 @@ where
 }
 
 #[sealed]
-/// iterators for HashTries based on a prefix search
+/// iterators for GHTs based on a prefix search
 pub trait GhtPrefixIter<KeyPrefix> {
     /// the schema output
     type Item: VariadicExt;
@@ -528,7 +528,7 @@ where
     }
 }
 
-/// This case only splits HEAD and REST in order to prevent a conflict with the `HtPrefixIter<var_type!()>` impl.
+/// This case splits KeyPrefixRef and ValType in order to prevent a conflict with the `GhtPrefixIter<var_type!()>` impl.
 /// If not for that, we could just use a single variadic type parameter.
 #[sealed]
 impl<KeyPrefixRef, Schema, ValType, Storage> GhtPrefixIter<KeyPrefixRef>

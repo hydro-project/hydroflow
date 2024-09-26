@@ -1002,11 +1002,20 @@ mod test {
         forest.0.insert(var_expr!(2, 2, 2, 2));
         forest.0.insert(var_expr!(3, 3, 3, 3));
 
-        GhtForest::<var_type!(u8, u16, u32, u64)>::force(&mut forest, var_expr!(1, 1, 1, 1));
+        GhtForest::<var_type!(u8, u16, u32, u64)>::find_and_force(
+            &mut forest,
+            var_expr!(1, 1, 1, 1),
+        );
         println!("Forest after forcing (1, 1, 1, 1): {:?}", forest);
-        GhtForest::<var_type!(u8, u16, u32, u64)>::force(&mut forest, var_expr!(2, 1, 1, 1));
+        GhtForest::<var_type!(u8, u16, u32, u64)>::find_and_force(
+            &mut forest,
+            var_expr!(2, 1, 1, 1),
+        );
         println!("Forest after forcing (2, 1, 1, 1): {:?}", forest);
-        GhtForest::<var_type!(u8, u16, u32, u64)>::force(&mut forest, var_expr!(3, 3, 3, 3));
+        GhtForest::<var_type!(u8, u16, u32, u64)>::find_and_force(
+            &mut forest,
+            var_expr!(3, 3, 3, 3),
+        );
         println!("Forest after forcing (3, 3, 3, 3): {:?}", forest);
 
         println!(
