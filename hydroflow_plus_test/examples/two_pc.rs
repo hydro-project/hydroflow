@@ -10,10 +10,7 @@ async fn main() {
     let num_participants: u32 = 3;
 
     let (coordinator, participants, client) =
-        hydroflow_plus_test::cluster::two_pc::two_pc(
-            &builder,
-            num_participants,
-        );
+        hydroflow_plus_test::cluster::two_pc::two_pc(&builder, num_participants);
 
     let rustflags = "-C opt-level=3 -C codegen-units=1 -C strip=none -C debuginfo=2 -C lto=off";
 
@@ -21,12 +18,12 @@ async fn main() {
         .with_default_optimize()
         .with_process(&coordinator, TrybuildHost::new(deployment.Localhost()))
         .with_cluster(
-                &participants,
-                (0..num_participants)
-                    .map(|_| TrybuildHost::new(deployment.Localhost()))
-                    .collect::<Vec<_>>(),
-            )
-            .with_process(&client, TrybuildHost::new(deployment.Localhost()))
+            &participants,
+            (0..num_participants)
+                .map(|_| TrybuildHost::new(deployment.Localhost()))
+                .collect::<Vec<_>>(),
+        )
+        .with_process(&client, TrybuildHost::new(deployment.Localhost()))
         .deploy(&mut deployment);
 
     deployment.deploy().await.unwrap();
