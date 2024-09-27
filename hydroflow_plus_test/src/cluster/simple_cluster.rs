@@ -88,7 +88,7 @@ mod tests {
         let (process1, process2) = super::decouple_process(&builder);
         let built = builder.with_default_optimize();
 
-        let nodes = built
+        let _nodes = built
             .with_process(&process1, TrybuildHost::new(deployment.Localhost()))
             .with_process(&process2, TrybuildHost::new(deployment.Localhost()))
             .deploy(&mut deployment);

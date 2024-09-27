@@ -91,7 +91,7 @@ pub fn two_pc(
 #[cfg(test)]
 mod tests {
     use hydro_deploy::Deployment;
-    use hydroflow_plus_deploy::{DeployCrateWrapper, TrybuildHost};
+    use hydroflow_plus::deploy::TrybuildHost;
 
     #[tokio::test]
     async fn two_pc() {
