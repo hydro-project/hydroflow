@@ -2,7 +2,7 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use sealed::sealed;
-use variadics::variadic_sets::VariadicSet;
+use variadics::variadic_sets::VariadicMultiset;
 use variadics::{
     var_args, var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt,
 };
@@ -80,7 +80,7 @@ where
     Schema: SplitBySuffix<Rest>,
     <Schema as SplitBySuffix<(Head, Rest)>>::Prefix: Eq + Hash + Clone,
     <Schema as SplitBySuffix<Rest>>::Prefix: Eq + Hash + Clone,
-    Storage: VariadicSet<Schema = Schema>
+    Storage: VariadicMultiset<Schema = Schema>
         + Default // + Iterator<Item = Schema>
         + IntoIterator<Item = Schema>,
     GhtLeaf<Schema, Rest, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
@@ -225,7 +225,7 @@ where
         Head,
         <GhtLeaf<Schema, ValType, Storage> as GeneralizedHashTrieNode>::SuffixSchema,
     )>,
-    Storage: 'static + VariadicSet<Schema = Schema> + Default,
+    Storage: 'static + VariadicMultiset<Schema = Schema> + Default,
 {
     fn take_containing_leaf(
         &mut self,
@@ -270,7 +270,7 @@ where
     Schema: 'static + Hash + Clone + Eq + PartialEqVariadic + SplitBySuffix<ValType>,
     ValType: 'static + Hash + Clone + Eq + VariadicExt + PartialEqVariadic,
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode,
-    Storage: 'static + VariadicSet<Schema = Schema>,
+    Storage: 'static + VariadicMultiset<Schema = Schema>,
 {
     fn take_containing_leaf(
         &mut self,
@@ -334,7 +334,7 @@ where
     GhtLeaf<Schema, SuffixSchema, Storage>: ColumnLazyTrieNode,
     Schema: Clone + Hash + Eq + VariadicExt,
     SuffixSchema: Clone + Hash + Eq + VariadicExt,
-    Storage: VariadicSet<Schema = Schema>,
+    Storage: VariadicMultiset<Schema = Schema>,
 {
     type Schema = Schema;
     type Head = Rest::Head;
@@ -360,7 +360,7 @@ where
     GhtLeaf<Schema, SuffixSchema, Storage>: ColumnLazyTrieNode,
     Schema: Clone + Hash + Eq + VariadicExt,
     SuffixSchema: Clone + Hash + Eq + VariadicExt,
-    Storage: VariadicSet<Schema = Schema>,
+    Storage: VariadicMultiset<Schema = Schema>,
 {
     fn merge(&mut self, _inner_to_merge: T) {
         panic!();
@@ -420,7 +420,7 @@ where
     Head: Eq + Hash + Clone,
     Schema: Eq + Hash + Clone + PartialEqVariadic,
     ValType: Eq + Hash + Clone + PartialEqVariadic,
-    Storage: VariadicSet<Schema = Schema>,
+    Storage: VariadicMultiset<Schema = Schema>,
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode,
     Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<ValType> + PartialEqVariadic,
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
@@ -457,7 +457,7 @@ where
     Head: Eq + Hash + Clone,
     Schema: Eq + Hash + Clone + PartialEqVariadic,
     ValType: Eq + Hash + Clone + PartialEqVariadic,
-    Storage: VariadicSet<Schema = Schema>,
+    Storage: VariadicMultiset<Schema = Schema>,
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
     Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<ValType> + PartialEqVariadic,
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
@@ -501,7 +501,7 @@ where
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
     Head: Clone + Eq + Hash,
     Schema: Clone + Eq + Hash + VariadicExt,
-    Storage: VariadicSet<Schema = Schema>,
+    Storage: VariadicMultiset<Schema = Schema>,
 {
     fn merge(&mut self, inner_to_merge: GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>) {
         crate::Merge::merge(self.0, inner_to_merge);
@@ -600,7 +600,7 @@ where
 pub trait ForestFindLeaf<Schema, Storage>
 where
     Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
-    Storage: VariadicSet<Schema = Schema>,
+    Storage: VariadicMultiset<Schema = Schema>,
 {
     /// find a matching leaf in the forest
     fn find_containing_leaf(
@@ -639,7 +639,7 @@ where
 impl<Schema, Storage> ForestFindLeaf<Schema, Storage> for var_type!()
 where
     Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
-    Storage: VariadicSet<Schema = Schema>,
+    Storage: VariadicMultiset<Schema = Schema>,
 {
     fn find_containing_leaf(
         &self,

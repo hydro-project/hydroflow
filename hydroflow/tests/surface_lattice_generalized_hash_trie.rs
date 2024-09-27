@@ -4,7 +4,7 @@ use hydroflow::lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism}
 use hydroflow::lattices::GhtType;
 use hydroflow::util::collect_ready;
 use hydroflow::variadics::{var_expr, var_type};
-use variadics::variadic_sets::VariadicHashSet; // Import the Insert trait
+use variadics::variadic_sets::VariadicCountedHashSet; // Import the Insert trait
 
 #[test]
 fn test_basic() {
@@ -47,7 +47,7 @@ fn test_join() {
     let s = vec![var_expr!(1, 10), var_expr!(5, 50)];
 
     type MyNodeBim = <(MyGht, MyGht) as DeepJoinLatticeBimorphism<
-        VariadicHashSet<var_type!(u8, u16, u16)>,
+        VariadicCountedHashSet<var_type!(u8, u16, u16)>,
     >>::DeepJoinLatticeBimorphism;
     type MyBim = GhtBimorphism<MyNodeBim>;
 

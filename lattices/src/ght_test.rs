@@ -3,7 +3,9 @@ mod test {
     use std::collections::HashSet;
     use std::io::{self, Write};
 
-    use variadics::variadic_sets::{VariadicColumnarSet, VariadicHashSet, VariadicSet};
+    use variadics::variadic_sets::{
+        VariadicColumnMultiset, VariadicCountedHashSet, VariadicMultiset,
+    };
     use variadics::{var_expr, var_type, VariadicExt};
 
     use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtLeaf, GhtPrefixIter};
@@ -193,9 +195,10 @@ mod test {
             .iter()
             .map(|&(a, b, c)| var_expr!(a, b, c)),
         );
-        let leaf = GhtLeaf::<InputType, var_type!(u16, u32), VariadicHashSet<InputType>>::new_from(
-            input.clone(),
-        );
+        let leaf =
+            GhtLeaf::<InputType, var_type!(u16, u32), VariadicCountedHashSet<InputType>>::new_from(
+                input.clone(),
+            );
         // let key = var_expr!(42u8).as_ref_var();
         let key = (); // (var_expr!().as_ref_var();)
         let v: HashSet<ResultType> = leaf.prefix_iter(key).collect();
@@ -946,7 +949,7 @@ mod test {
             //     "found in trie {}",
             ForestFindLeaf::<
                 var_type!(u8, u16, u32, u64),
-                VariadicColumnarSet<var_type!(u8, u16, u32, u64)>,
+                VariadicColumnMultiset<var_type!(u8, u16, u32, u64)>,
             >::find_containing_leaf(
                 &forest, var_expr!(1_u8, 1_u16, 1_u32, 1_u64).as_ref_var()
             )
@@ -961,7 +964,7 @@ mod test {
             //     "found in trie {}",
             ForestFindLeaf::<
                 var_type!(u8, u16, u32, u64),
-                VariadicColumnarSet<var_type!(u8, u16, u32, u64)>,
+                VariadicColumnMultiset<var_type!(u8, u16, u32, u64)>,
             >::find_containing_leaf(&forest, var_expr!(2, 2, 2, 2).as_ref_var())
             .unwrap()
             .iter_tuples()
@@ -974,7 +977,7 @@ mod test {
             //     "found in trie {}",
             ForestFindLeaf::<
                 var_type!(u8, u16, u32, u64),
-                VariadicColumnarSet<var_type!(u8, u16, u32, u64)>,
+                VariadicColumnMultiset<var_type!(u8, u16, u32, u64)>,
             >::find_containing_leaf(&forest, var_expr!(3, 3, 3, 3).as_ref_var())
             .unwrap()
             .iter_tuples()
@@ -987,7 +990,7 @@ mod test {
             //     "found in trie {}",
             ForestFindLeaf::<
                 var_type!(u8, u16, u32, u64),
-                VariadicColumnarSet<var_type!(u8, u16, u32, u64)>,
+                VariadicColumnMultiset<var_type!(u8, u16, u32, u64)>,
             >::find_containing_leaf(&forest, var_expr!(4, 4, 4, 4).as_ref_var())
             .is_none()
         );
@@ -1048,7 +1051,7 @@ mod test {
         assert_eq!(forest.0.recursive_iter().count(), 1000009);
         let leaf = ForestFindLeaf::<
             var_type!(bool, usize, &'static str, i32),
-            VariadicColumnarSet<var_type!(bool, usize, &'static str, i32)>,
+            VariadicColumnMultiset<var_type!(bool, usize, &'static str, i32)>,
         >::find_containing_leaf(
             &forest, var_expr!(true, 2, "hello", 2).as_ref_var()
         );

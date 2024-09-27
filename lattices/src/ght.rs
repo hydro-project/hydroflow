@@ -4,7 +4,7 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use sealed::sealed;
-use variadics::variadic_sets::VariadicSet;
+use variadics::variadic_sets::VariadicMultiset;
 use variadics::{
     var_args, var_type, PartialEqVariadic, RefVariadic, Split, SplitBySuffix, VariadicExt,
 };
@@ -24,7 +24,9 @@ pub trait GeneralizedHashTrieNode: Default {
     /// This type is the same in all nodes of the trie.
     type ValType: VariadicExt + Eq + Hash + Clone;
     /// The type that holds the data in the leaves
-    type Storage: VariadicSet<Schema = Self::Schema> + Default + IntoIterator<Item = Self::Schema>;
+    type Storage: VariadicMultiset<Schema = Self::Schema>
+        + Default
+        + IntoIterator<Item = Self::Schema>;
 
     /// SuffixSchema variadic: the suffix of the schema *from this node of the trie
     /// downward*. The first entry in this variadic is of type Head.
@@ -201,7 +203,7 @@ where
 pub struct GhtLeaf<Schema, ValType, Storage>
 where
     Schema: Eq + Hash,
-    Storage: VariadicSet<Schema = Schema>,
+    Storage: VariadicMultiset<Schema = Schema>,
 {
     pub(crate) elements: Storage,
     pub(crate) forced: bool,
@@ -210,7 +212,7 @@ where
 impl<Schema, ValType, Storage> Default for GhtLeaf<Schema, ValType, Storage>
 where
     Schema: Eq + Hash,
-    Storage: VariadicSet<Schema = Schema> + Default,
+    Storage: VariadicMultiset<Schema = Schema> + Default,
 {
     fn default() -> Self {
         let elements = Default::default();
@@ -237,7 +239,7 @@ where
     var_type!(ValHead, ...ValRest): Clone + Eq + Hash + PartialEqVariadic,
     <Schema as SplitBySuffix<var_type!(ValHead, ...ValRest)>>::Prefix: Eq + Hash + Clone,
     // for<'a> Schema::AsRefVar<'a>: PartialEq,
-    Storage: VariadicSet<Schema = Schema> + Default + IntoIterator<Item = Schema>,
+    Storage: VariadicMultiset<Schema = Schema> + Default + IntoIterator<Item = Schema>,
 {
     type Schema = Schema;
     type SuffixSchema = var_type!(ValHead, ...ValRest);
@@ -263,7 +265,8 @@ where
     }
 
     fn insert(&mut self, row: Self::Schema) -> bool {
-        self.elements.insert(row)
+        self.elements.insert(row);
+        true
     }
 
     fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
@@ -307,7 +310,7 @@ where
         + Clone
         // + SplitBySuffix<var_type!(ValHead, ...ValRest)>
         + PartialEqVariadic,
-    Storage: VariadicSet<Schema = Schema> + Default + IntoIterator<Item = Schema>,
+    Storage: VariadicMultiset<Schema = Schema> + Default + IntoIterator<Item = Schema>,
     // ValHead: Clone + Eq + Hash,
     // var_type!(ValHead, ...ValRest): Clone + Eq + Hash + PartialEqVariadic,
     // <Schema as SplitBySuffix<var_type!(ValHead, ...ValRest)>>::Prefix: Eq + Hash + Clone,
@@ -337,7 +340,8 @@ where
     }
 
     fn insert(&mut self, row: Self::Schema) -> bool {
-        self.elements.insert(row)
+        self.elements.insert(row);
+        true
     }
 
     fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
@@ -374,7 +378,7 @@ where
 impl<Schema, ValType, Storage> FromIterator<Schema> for GhtLeaf<Schema, ValType, Storage>
 where
     Schema: Eq + Hash,
-    Storage: VariadicSet<Schema = Schema> + Default + FromIterator<Schema>,
+    Storage: VariadicMultiset<Schema = Schema> + Default + FromIterator<Schema>,
 {
     fn from_iter<Iter: IntoIterator<Item = Schema>>(iter: Iter) -> Self {
         let elements = iter.into_iter().collect();
@@ -445,7 +449,7 @@ where
     ValType: Eq + Hash + Clone + PartialEqVariadic,
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
-    Storage: VariadicSet<Schema = Schema>,
+    Storage: VariadicMultiset<Schema = Schema>,
 {
     /// Type returned by [`Self::get`].
     type Get = GhtLeaf<Schema, ValType, Storage>;
@@ -540,7 +544,7 @@ where
     // for<'a> SuffixSchema::AsRefVar<'a>: Split<KeyPrefixRef>,
     ValType: Split<KeyPrefixRef::UnRefVar>,
     KeyPrefixRef::UnRefVar: PartialEqVariadic,
-    Storage: 'static + VariadicSet<Schema = Schema>,
+    Storage: 'static + VariadicMultiset<Schema = Schema>,
 {
     type Item = Schema;
     fn prefix_iter<'a>(
@@ -575,17 +579,17 @@ macro_rules! GhtRowTypeWithSchema {
 
     // Empty key (Leaf)
     (() => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ), $crate::variadics::variadic_sets::VariadicHashSet<$schema> >
+        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ), $crate::variadics::variadic_sets::VariadicCountedHashSet<$schema> >
     );
 
     // Singleton key & Empty val (Inner over Leaf)
     ($a:ty => () => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, (), $crate::variadics::variadic_sets::VariadicHashSet<$schema> >>
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, (), $crate::variadics::variadic_sets::VariadicCountedHashSet<$schema> >>
     );
 
     // Singleton key (Inner over Leaf)
     ($a:ty => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*), $crate::variadics::variadic_sets::VariadicHashSet<$schema> >>
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*), $crate::variadics::variadic_sets::VariadicCountedHashSet<$schema> >>
     );
 
     // Recursive case with empty val
@@ -599,7 +603,7 @@ macro_rules! GhtRowTypeWithSchema {
     );
 }
 
-// Hack to test column store: just clones the above using VariadicColumnarSet instead of VariadicHashSet
+// Hack to test column store: just clones the above using VariadicColumnMultiset instead of VariadicCountedHashSet
 // Should unify these macros
 /// Helper that does the heavy lifting for GhtType!
 #[macro_export]
@@ -611,17 +615,17 @@ macro_rules! GhtColumnTypeWithSchema {
 
     // Empty key (Leaf)
     (() => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ), $crate::variadics::variadic_sets::VariadicColumnarSet<$schema> >
+        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ), $crate::variadics::variadic_sets::VariadicColumnMultiset<$schema> >
     );
 
     // Singleton key & Empty val (Inner over Leaf)
     ($a:ty => () => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, (), $crate::variadics::variadic_sets::VariadicColumnarSet<$schema> >>
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, (), $crate::variadics::variadic_sets::VariadicColumnMultiset<$schema> >>
     );
 
     // Singleton key (Inner over Leaf)
     ($a:ty => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*), $crate::variadics::variadic_sets::VariadicColumnarSet<$schema> >>
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*), $crate::variadics::variadic_sets::VariadicColumnMultiset<$schema> >>
     );
 
     // Recursive case with empty val

@@ -194,16 +194,16 @@ pub trait VariadicExt: Variadic {
         Self: 'static;
 
     /// type for all elements of the variadic being wrapped in Option
-    type AsOption;
+    type IntoOption;
     /// wrap all elements of the variadic in Option
-    fn as_option(self) -> Self::AsOption;
+    fn into_option(self) -> Self::IntoOption;
 
     /// type for all elements of the variadic being wrapped in Vec
-    type AsVec: VecVariadic<UnVec = Self>;
-
+    type IntoVec: VecVariadic<UnVec = Self> + Default;
     /// wrap all elements of the variadic in a Vec
-    fn as_vec(self) -> Self::AsVec;
+    fn into_singleton_vec(self) -> Self::IntoVec;
 }
+
 #[sealed]
 impl<Item, Rest> VariadicExt for (Item, Rest)
 where
@@ -274,16 +274,16 @@ where
         std::iter::once(item).chain(rest.iter_any_mut())
     }
 
-    type AsOption = (Option<Item>, Rest::AsOption);
-    fn as_option(self) -> Self::AsOption {
+    type IntoOption = (Option<Item>, Rest::IntoOption);
+    fn into_option(self) -> Self::IntoOption {
         let var_args!(item, ...rest) = self;
-        var_expr!(Some(item), ...rest.as_option())
+        var_expr!(Some(item), ...rest.into_option())
     }
 
-    type AsVec = (Vec<Item>, Rest::AsVec);
-    fn as_vec(self) -> Self::AsVec {
+    type IntoVec = (Vec<Item>, Rest::IntoVec);
+    fn into_singleton_vec(self) -> Self::IntoVec {
         let var_args!(item, ...rest) = self;
-        var_expr!(vec!(item), ...rest.as_vec())
+        var_expr!(vec!(item), ...rest.into_singleton_vec())
     }
 }
 
@@ -329,11 +329,11 @@ impl VariadicExt for () {
         std::iter::empty()
     }
 
-    type AsOption = ();
-    fn as_option(self) -> Self::AsOption {}
+    type IntoOption = ();
+    fn into_option(self) -> Self::IntoOption {}
 
-    type AsVec = ();
-    fn as_vec(self) -> Self::AsVec {}
+    type IntoVec = ();
+    fn into_singleton_vec(self) -> Self::IntoVec {}
 }
 
 /// A variadic of either shared references, exclusive references, or both.
@@ -429,23 +429,6 @@ impl EitherRefVariadic for () {
 
     fn unref_ref(&self) -> <Self::UnRefVar as VariadicExt>::AsRefVar<'_> {}
 }
-
-#[sealed]
-pub trait RefVariadicLt<'a>: EitherRefVariadic
-where
-    Self: 'a + EitherRefVariadic,
-    <Self as EitherRefVariadic>::UnRefVar: VariadicExt<AsRefVar<'a> = Self>,
-{
-}
-#[sealed]
-impl<'a, Item, Rest> RefVariadicLt<'a> for (&'a Item, Rest)
-where
-    Rest: RefVariadicLt<'a>,
-    <Rest as EitherRefVariadic>::UnRefVar: VariadicExt<AsRefVar<'a> = Rest>,
-{
-}
-#[sealed]
-impl<'a> RefVariadicLt<'a> for () {}
 
 /// A variadic where each item is a shared reference `&item`.
 ///
@@ -833,7 +816,7 @@ where
 #[sealed]
 pub trait VecVariadic: VariadicExt {
     /// Individual variadic items without the Vec wrapper
-    type UnVec: VariadicExt<AsVec = Self>;
+    type UnVec: VariadicExt<IntoVec = Self>;
 
     /// zip across all the vecs in this VariadicVec
     fn zip_vecs(&self) -> impl Iterator<Item = <Self::UnVec as VariadicExt>::AsRefVar<'_>>;
@@ -1033,7 +1016,7 @@ mod test {
         type Item = var_type!(i32, String);
         let first: Item = var_expr!(1, "Joe".to_string());
         let second: Item = var_expr!(2, "Mingwei".to_string());
-        let mut column_store = first.clone().as_vec();
+        let mut column_store = first.clone().into_singleton_vec();
         column_store.push(second.clone());
         assert_eq!(column_store.len(), 2);
         assert_eq!(column_store.get(0).unwrap(), first.as_ref_var());

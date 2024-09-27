@@ -8,7 +8,7 @@ use lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
 use lattices::GhtType;
 use multiplatform_test::multiplatform_test;
-use variadics::variadic_sets::VariadicHashSet;
+use variadics::variadic_sets::VariadicCountedHashSet;
 use variadics::{var_expr, CloneVariadic};
 
 #[multiplatform_test]
@@ -152,7 +152,7 @@ fn test_ght_join_bimorphism() {
     type Output = variadics::var_type!(u32, u64, u16, &'static str, &'static str);
 
     type MyNodeBim = <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism<
-        VariadicHashSet<Output>,
+        VariadicCountedHashSet<Output>,
     >>::DeepJoinLatticeBimorphism;
     type MyBim = GhtBimorphism<MyNodeBim>;
 
