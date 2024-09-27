@@ -317,8 +317,8 @@ where
         self.table
             .entry(
                 hash,
-                |item| <K as PartialEqVariadic>::eq(&element, &item.0),
-                |item| self.hasher.hash_one((&item.0, item.1 + 1)),
+                |(item, _count)| <K as PartialEqVariadic>::eq(&element, item),
+                |(item, _count)| self.hasher.hash_one(item.as_ref_var()),
             )
             .and_modify(|(_, count)| *count += 1)
             .or_insert((element, 1));
@@ -339,6 +339,7 @@ where
     fn drain(&mut self) -> impl Iterator<Item = Self::Schema> {
         // TODO: this shouldn't clone the last copy of each k!
         // particularly bad when there's typically only 1 copy per item
+        self.len = 0;
         self.table
             .drain()
             .flat_map(|(k, num)| (0..num).map(move |_i| k.clone()))
@@ -626,6 +627,13 @@ mod test {
         let mut hash_set: VariadicHashSet<TestSchema> = Default::default();
         hash_set.extend(test_data.clone());
         let mut multi_set: VariadicCountedHashSet<TestSchema> = Default::default();
+        let hash = multi_set
+            .hasher
+            .hash_one(var_expr!(1, 1, 1, "world").as_ref_var());
+        let hash2 = multi_set
+            .hasher
+            .hash_one(var_expr!(1, 1, 1, "world").as_ref_var());
+        assert_eq!(hash, hash2);
         multi_set.extend(test_data.clone());
         let mut columnar: VariadicColumnMultiset<TestSchema> = Default::default();
         columnar.extend(test_data.clone());
@@ -649,24 +657,14 @@ mod test {
         assert_eq!(hash_set.len(), 4);
 
         assert!(test_data.iter().all(|t| hash_set.contains(t.as_ref_var())));
-        // hash value of get is 16254353334811099159 16396044455507064773
-        let bug = multi_set.contains(var_expr!(1, 1, 1, "world").as_ref_var());
-        multi_set.insert(var_expr!(1, 1, 1, "world"));
-        println!("{}", bug);
-        println!("multiset: {:?}", multi_set);
-        println!(
-            "{}",
-            test_data.iter().all(|t| multi_set.contains(t.as_ref_var()))
-        );
+        assert!(test_data.iter().all(|t| multi_set.contains(t.as_ref_var())));
         assert!(test_data.iter().all(|t| columnar.contains(t.as_ref_var())));
 
-        // multi_set
-        //     .clone()
-        //     .into_iter()
-        //     .for_each(|t| println!("row: {:?}", t));
-        // println!("multiset: {:?}", multi_set);
-        // columnar
-        //     .into_iter()
-        //     .for_each(|t| println!("columns: {:?}", t));
+        hash_set.drain();
+        multi_set.drain();
+        columnar.drain();
+        assert_eq!(hash_set.len(), 0);
+        assert_eq!(multi_set.len(), 0);
+        assert_eq!(columnar.len(), 0);
     }
 }
