@@ -301,6 +301,7 @@ declare_ops![
     source_stream::SOURCE_STREAM,
     source_stream_serde::SOURCE_STREAM_SERDE,
     state::STATE,
+    state_by::STATE_BY,
     tee::TEE,
     unique::UNIQUE,
     unzip::UNZIP,
