@@ -20,7 +20,7 @@ use crate::location::{
 use crate::{Cluster, ClusterSpec, Deploy, HfCompiled, Process, ProcessSpec};
 
 pub struct DeployFlow<'a, D: LocalDeploy<'a>> {
-    pub(super) ir: Vec<HfPlusLeaf<'a>>,
+    pub(super) ir: Vec<HfPlusLeaf>,
     pub(super) nodes: HashMap<usize, D::Process>,
     pub(super) externals: HashMap<usize, D::ExternalProcess>,
     pub(super) clusters: HashMap<usize, D::Cluster>,
@@ -69,7 +69,7 @@ impl<'a, D: Deploy<'a>> DeployFlow<'a, D> {
         self.used = true;
 
         let mut seen_tees: HashMap<_, _> = HashMap::new();
-        let mut ir_leaves_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
+        let mut flow_state_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
             .into_iter()
             .map(|leaf| {
                 leaf.compile_network::<D>(
@@ -85,7 +85,7 @@ impl<'a, D: Deploy<'a>> DeployFlow<'a, D> {
         let extra_stmts = self.extra_stmts(env);
 
         HfCompiled {
-            hydroflow_ir: build_inner(&mut ir_leaves_networked),
+            hydroflow_ir: build_inner(&mut flow_state_networked),
             extra_stmts,
             _phantom: PhantomData,
         }
@@ -132,7 +132,7 @@ impl<'a, D: Deploy<'a, CompileEnv = ()>> DeployFlow<'a, D> {
         self.used = true;
 
         let mut seen_tees_instantiate: HashMap<_, _> = HashMap::new();
-        let mut ir_leaves_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
+        let mut flow_state_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
             .into_iter()
             .map(|leaf| {
                 leaf.compile_network::<D>(
@@ -145,7 +145,7 @@ impl<'a, D: Deploy<'a, CompileEnv = ()>> DeployFlow<'a, D> {
             })
             .collect();
 
-        let mut compiled = build_inner(&mut ir_leaves_networked);
+        let mut compiled = build_inner(&mut flow_state_networked);
         let mut extra_stmts = self.extra_stmts(&());
         let mut meta = D::Meta::default();
 
@@ -201,7 +201,7 @@ impl<'a, D: Deploy<'a, CompileEnv = ()>> DeployFlow<'a, D> {
         }
 
         let mut seen_tees_connect = HashMap::new();
-        for leaf in ir_leaves_networked {
+        for leaf in flow_state_networked {
             leaf.connect_network(&mut seen_tees_connect);
         }
 
@@ -229,7 +229,7 @@ impl<'a, D: Deploy<'a>> DeployResult<'a, D> {
         self.processes.get(&id).unwrap()
     }
 
-    pub fn get_cluster<C>(&self, c: &Cluster<C>) -> &D::Cluster {
+    pub fn get_cluster<C>(&self, c: &Cluster<'a, C>) -> &D::Cluster {
         let id = match c.id() {
             LocationId::Cluster(id) => id,
             _ => panic!("Cluster ID expected"),

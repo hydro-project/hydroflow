@@ -4,7 +4,7 @@ use stageleft::*;
 
 pub fn first_ten(flow: &FlowBuilder) {
     let process = flow.process::<()>();
-    let numbers = flow.source_iter(&process, q!(0..10));
+    let numbers = process.source_iter(q!(0..10));
     numbers.for_each(q!(|n| println!("{}", n)));
 }
 
