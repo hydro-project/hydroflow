@@ -11,7 +11,7 @@ pub fn count_elems_generic<'a, T: 'a>(
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process::<()>();
 
-    let source = flow.source_stream(&process, input_stream);
+    let source = process.source_stream(input_stream);
     let count = source
         .map(q!(|_| 1))
         .tick_batch()

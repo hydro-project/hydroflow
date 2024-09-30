@@ -25,7 +25,7 @@ pub mod singleton;
 pub use singleton::{Optional, Singleton};
 
 pub mod location;
-pub use location::{Cluster, Process};
+pub use location::{Cluster, Location, Process};
 
 pub mod deploy;
 pub use deploy::{ClusterSpec, Deploy, ProcessSpec};

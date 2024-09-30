@@ -10,7 +10,7 @@ use crate::location::{Cluster, ExternalProcess, Process};
 use crate::HfCompiled;
 
 pub struct BuiltFlow<'a> {
-    pub(super) ir: Vec<HfPlusLeaf<'a>>,
+    pub(super) ir: Vec<HfPlusLeaf>,
     pub(super) processes: Vec<usize>,
     pub(super) clusters: Vec<usize>,
     pub(super) used: bool,
@@ -27,13 +27,13 @@ impl<'a> Drop for BuiltFlow<'a> {
 }
 
 impl<'a> BuiltFlow<'a> {
-    pub fn ir(&self) -> &Vec<HfPlusLeaf<'a>> {
+    pub fn ir(&self) -> &Vec<HfPlusLeaf> {
         &self.ir
     }
 
     pub fn optimize_with(
         mut self,
-        f: impl FnOnce(Vec<HfPlusLeaf<'a>>) -> Vec<HfPlusLeaf<'a>>,
+        f: impl FnOnce(Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf>,
     ) -> BuiltFlow<'a> {
         self.used = true;
         BuiltFlow {

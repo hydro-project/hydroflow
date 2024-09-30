@@ -4,11 +4,11 @@ use stageleft::*;
 pub struct P1 {}
 pub struct P2 {}
 
-pub fn first_ten_distributed(flow: &FlowBuilder) -> (Process<P1>, Process<P2>) {
+pub fn first_ten_distributed<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, P1>, Process<'a, P2>) {
     let process = flow.process::<P1>();
     let second_process = flow.process::<P2>();
 
-    let numbers = flow.source_iter(&process, q!(0..10));
+    let numbers = process.source_iter(q!(0..10));
     numbers
         .send_bincode(&second_process)
         .for_each(q!(|n| println!("{}", n)));
