@@ -576,10 +576,8 @@ where
     K: Eq + Hash + PartialEqVariadic,
     for<'a> K::AsRefVar<'a>: Hash,
 {
-    // #[cfg_attr(feature = "inline-more", inline)]
     fn extend<T: IntoIterator<Item = K>>(&mut self, iter: T) {
         let iter = iter.into_iter();
-        // self.table.reserve(reserve, hasher);
         iter.for_each(move |k| {
             self.insert(k);
         });

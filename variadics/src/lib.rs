@@ -191,14 +191,14 @@ pub trait VariadicExt: Variadic {
     where
         Self: 'static;
 
-    /// type for all elements of the variadic being wrapped in Option
+    /// type for all elements of the variadic being wrapped in `Option`
     type IntoOption;
-    /// wrap all elements of the variadic in Option
+    /// wrap all elements of the variadic in `Option``
     fn into_option(self) -> Self::IntoOption;
 
-    /// type for all elements of the variadic being wrapped in Vec
+    /// type for all elements of the variadic being wrapped in `Vec`
     type IntoVec: VecVariadic<UnVec = Self> + Default;
-    /// wrap all elements of the variadic in a Vec
+    /// wrap all elements of the variadic in a `Vec`
     fn into_singleton_vec(self) -> Self::IntoVec;
 }
 
@@ -350,7 +350,7 @@ pub trait EitherRefVariadic: VariadicExt {
     /// let un_ref: <var_type!(&u32, &String, &bool) as EitherRefVariadic>::UnRefVar =
     ///     var_expr!(1_u32, "Hello".to_owned(), false);
     /// ```
-    type UnRefVar: for<'a> VariadicExt;
+    type UnRefVar: VariadicExt;
 
     /// This type with all exclusive `&mut` references replaced with shared `&` references.
     ///
@@ -373,7 +373,7 @@ pub trait EitherRefVariadic: VariadicExt {
     /// Conversion from `&` to `&mut` is generally invalid, so a `ref_to_mut()` method does not exist.
     type MutVar: MutVariadic<UnRefVar = Self::UnRefVar, MutVar = Self::MutVar>;
 
-    /// convert entries to `<UnRefVar as VariadicExt>::AsRefVar`
+    /// convert entries to [`<UnRefVar as VariadicExt>::AsRefVar`](VariadicExt::AsRefVar)
     fn unref_ref(&self) -> <Self::UnRefVar as VariadicExt>::AsRefVar<'_>;
 }
 #[sealed]
@@ -506,7 +506,7 @@ impl CopyRefVariadic for () {
     fn copy_var(&self) -> Self::UnRefVar {}
 }
 
-/// Clone a variadic of references [`VariadicExt::AsRefVar`] into a variadic of owned values.
+/// Clone a variadic of references [`AsRefVar`](VariadicExt::AsRefVar) into a variadic of owned values.
 ///
 /// ```rust
 /// # use variadics::*;
@@ -519,7 +519,7 @@ impl CopyRefVariadic for () {
 /// ```
 #[sealed]
 pub trait CloneVariadic: VariadicExt + Clone {
-    /// Clone a variadic of references [`VariadicExt::AsRefVar`] into a variadic of owned values.
+    /// Clone a variadic of references [`AsRefVar`](VariadicExt::AsRefVar) into a variadic of owned values.
     fn clone_ref_var(this: Self::AsRefVar<'_>) -> Self;
 }
 #[sealed]
@@ -790,8 +790,6 @@ pub trait VecVariadic: VariadicExt {
 impl<Item, Rest> VecVariadic for (Vec<Item>, Rest)
 where
     Rest: VecVariadic,
-    // Item: 'static,
-    // Rest: 'static,
 {
     type UnVec = var_type!(Item, ...Rest::UnVec);
 
