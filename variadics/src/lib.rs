@@ -373,7 +373,7 @@ pub trait EitherRefVariadic: VariadicExt {
     /// Conversion from `&` to `&mut` is generally invalid, so a `ref_to_mut()` method does not exist.
     type MutVar: MutVariadic<UnRefVar = Self::UnRefVar, MutVar = Self::MutVar>;
 
-    /// convert entries to <UnRefVar as VariadicExt>::AsRefVar
+    /// convert entries to `<UnRefVar as VariadicExt>::AsRefVar`
     fn unref_ref(&self) -> <Self::UnRefVar as VariadicExt>::AsRefVar<'_>;
 }
 #[sealed]
@@ -506,7 +506,7 @@ impl CopyRefVariadic for () {
     fn copy_var(&self) -> Self::UnRefVar {}
 }
 
-/// Clone a variadic of references [`AsRefVar`] into a variadic of owned values.
+/// Clone a variadic of references [`VariadicExt::AsRefVar`] into a variadic of owned values.
 ///
 /// ```rust
 /// # use variadics::*;
@@ -519,7 +519,7 @@ impl CopyRefVariadic for () {
 /// ```
 #[sealed]
 pub trait CloneVariadic: VariadicExt + Clone {
-    /// Clone a variadic of references [`AsRefVar`] into a variadic of owned values.
+    /// Clone a variadic of references [`VariadicExt::AsRefVar`] into a variadic of owned values.
     fn clone_ref_var(this: Self::AsRefVar<'_>) -> Self;
 }
 #[sealed]
