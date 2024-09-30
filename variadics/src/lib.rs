@@ -866,14 +866,13 @@ mod test {
 
     type MyList = var_type!(u8, u16, u32, u64);
     type MyPrefix = var_type!(u8, u16);
-
+    #[expect(dead_code, reason = "compilation test")]
     type MySuffix = <MyList as Split<MyPrefix>>::Suffix;
 
-    #[allow(dead_code)]
     const _: MySuffix = var_expr!(0_u32, 0_u64);
 
     #[test]
-    #[allow(clippy::let_unit_value)]
+    // #[expect(clippy::let_unit_value, reason = "var_expr macro test")]
     fn test_basic_expr() {
         let _ = var_expr!();
         let _ = var_expr!(1);
@@ -882,11 +881,12 @@ mod test {
         let _ = var_expr!(false, true, 1 + 2);
     }
 
-    variadic_trait! {
-        /// Variaidic list of futures.
-        #[allow(dead_code)]
-        pub variadic<F> FuturesList where F: std::future::Future {}
-    }
+    // commented out because neither #[allow(dead_code)] nor #[expect(dead_code)] made clippy happy
+    // variadic_trait! {
+    //     /// Variaidic list of futures.
+    //     pub variadic<F> FuturesList where F: std::future::Future {
+    //     }
+    // }
 
     type _ListA = var_type!(u32, u8, i32);
     type _ListB = var_type!(..._ListA, bool, Option<()>);
