@@ -328,6 +328,7 @@ dependencies = [
  "criterion",
  "differential-dataflow-master",
  "hydroflow",
+ "nameof",
  "rand",
  "rand_distr",
  "seq-macro",
