@@ -734,7 +734,7 @@
     median_latency_window_size: usize,
     f: usize,
 ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (u32, ClientPayload), Unbounded, NoTick, Cluster&lt;Client&gt;&gt; {
-    <span class="kw">let </span>c_id = flow.cluster_self_id(clients);
+    <span class="kw">let </span>c_id = clients.self_id();
     <span class="comment">// r_to_clients_payload_applied.clone().inspect(q!(|payload: &amp;(u32, ReplicaPayload)| println!("Client received payload: {:?}", payload)));
     // Only keep the latest leader
     </span><span class="kw">let </span>c_max_leader_ballot = p_to_clients_leader_elected

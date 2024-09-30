@@ -98,10 +98,10 @@
 
     <span class="kw">let </span>numbers = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>));
     <span class="kw">let </span>ids = flow
-        .source_iter(<span class="kw-2">&amp;</span>process, flow.cluster_members(<span class="kw-2">&amp;</span>cluster))
+        .source_iter(<span class="kw-2">&amp;</span>process, cluster.members())
         .map(<span class="macro">q!</span>(|<span class="kw-2">&amp;</span>id| id));
 
-    <span class="kw">let </span>cluster_self_id = flow.cluster_self_id(<span class="kw-2">&amp;</span>cluster);
+    <span class="kw">let </span>cluster_self_id = cluster.self_id();
 
     ids.cross_product(numbers)
         .map(<span class="macro">q!</span>(|(id, n)| (id, (id, n))))

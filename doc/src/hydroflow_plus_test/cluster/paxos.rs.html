@@ -705,8 +705,6 @@
 <a href="#705" id="705">705</a>
 <a href="#706" id="706">706</a>
 <a href="#707" id="707">707</a>
-<a href="#708" id="708">708</a>
-<a href="#709" id="709">709</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::time::Duration;
 
@@ -805,7 +803,7 @@
     <span class="comment">// Proposers.
     </span>flow.source_iter(<span class="kw-2">&amp;</span>proposers, <span class="macro">q!</span>([<span class="string">"Proposers say hello"</span>]))
         .for_each(<span class="macro">q!</span>(|s| <span class="macro">println!</span>(<span class="string">"{}"</span>, s)));
-    <span class="kw">let </span>p_id = flow.cluster_self_id(<span class="kw-2">&amp;</span>proposers);
+    <span class="kw">let </span>p_id = proposers.self_id();
 
     <span class="kw">let </span>(p_to_proposers_i_am_leader_complete_cycle, p_to_proposers_i_am_leader) =
         flow.cycle::&lt;Stream&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;(<span class="kw-2">&amp;</span>proposers);
@@ -828,7 +826,6 @@
         p_ballot_calc(flow, <span class="kw-2">&amp;</span>proposers, p_received_max_ballot.latest_tick());
 
     <span class="kw">let </span>(p_is_leader, p_log_to_try_commit, p_max_slot, p_log_holes) = p_p1b(
-        flow,
         <span class="kw-2">&amp;</span>proposers,
         a_to_proposers_p1b.inspect(<span class="macro">q!</span>(|(<span class="kw">_</span>, p1b)| <span class="macro">println!</span>(<span class="string">"Proposer received P1b: {:?}"</span>, p1b))),
         p_ballot_num.clone(),
@@ -1122,7 +1119,7 @@
     Optional&lt;<span class="lifetime">'a</span>, i32, Bounded, Tick, Cluster&lt;Proposer&gt;&gt;,
     Stream&lt;<span class="lifetime">'a</span>, P2a&lt;P&gt;, Unbounded, NoTick, Cluster&lt;Acceptor&gt;&gt;,
 ) {
-    <span class="kw">let </span>p_id = flow.cluster_self_id(proposers);
+    <span class="kw">let </span>p_id = proposers.self_id();
     <span class="kw">let </span>(p_next_slot_complete_cycle, p_next_slot) =
         flow.tick_cycle::&lt;Optional&lt;i32, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;(proposers);
     <span class="kw">let </span>p_next_slot_after_reconciling_p1bs = p_max_slot
@@ -1182,7 +1179,6 @@
 <span class="comment">// Proposer logic for processing p1bs, determining if the proposer is now the leader, which uncommitted messages to commit, what the maximum slot is in the p1bs, and which no-ops to commit to fill log holes.
 </span><span class="attr">#[expect(clippy::type_complexity, reason = <span class="string">"internal paxos code // TODO"</span>)]
 </span><span class="kw">fn </span>p_p1b&lt;<span class="lifetime">'a</span>, P: PaxosPayload&gt;(
-    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
     proposers: <span class="kw-2">&amp;</span>Cluster&lt;Proposer&gt;,
     a_to_proposers_p1b: Stream&lt;<span class="lifetime">'a</span>, (u32, P1b&lt;P&gt;), Unbounded, NoTick, Cluster&lt;Proposer&gt;&gt;,
     p_ballot_num: Singleton&lt;<span class="lifetime">'a</span>, u32, Bounded, Tick, Cluster&lt;Proposer&gt;&gt;,
@@ -1194,7 +1190,7 @@
     Optional&lt;<span class="lifetime">'a</span>, i32, Bounded, Tick, Cluster&lt;Proposer&gt;&gt;,
     Stream&lt;<span class="lifetime">'a</span>, P2a&lt;P&gt;, Bounded, Tick, Cluster&lt;Proposer&gt;&gt;,
 ) {
-    <span class="kw">let </span>p_id = flow.cluster_self_id(proposers);
+    <span class="kw">let </span>p_id = proposers.self_id();
     <span class="kw">let </span>p_relevant_p1bs = a_to_proposers_p1b
         .clone()
         .tick_prefix()
@@ -1307,7 +1303,7 @@
     Singleton&lt;<span class="lifetime">'a</span>, u32, Bounded, Tick, Cluster&lt;Proposer&gt;&gt;,
     Optional&lt;<span class="lifetime">'a</span>, (Ballot, u32), Bounded, Tick, Cluster&lt;Proposer&gt;&gt;,
 ) {
-    <span class="kw">let </span>p_id = flow.cluster_self_id(proposers);
+    <span class="kw">let </span>p_id = proposers.self_id();
     <span class="kw">let </span>(p_ballot_num_complete_cycle, p_ballot_num) =
         flow.tick_cycle_with_initial(proposers, flow.singleton(proposers, <span class="macro">q!</span>(<span class="number">0</span>)).latest_tick());
 
@@ -1363,7 +1359,7 @@
     Stream&lt;<span class="lifetime">'a</span>, Ballot, Unbounded, NoTick, Cluster&lt;Proposer&gt;&gt;,
     Stream&lt;<span class="lifetime">'a</span>, P1a, Unbounded, NoTick, Cluster&lt;Acceptor&gt;&gt;,
 ) {
-    <span class="kw">let </span>p_id = flow.cluster_self_id(proposers);
+    <span class="kw">let </span>p_id = proposers.self_id();
     <span class="kw">let </span>p_to_proposers_i_am_leader_new = p_ballot_num
         .clone()
         .continue_if(

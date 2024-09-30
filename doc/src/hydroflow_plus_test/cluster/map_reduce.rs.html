@@ -76,7 +76,7 @@
         .source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="macro">vec!</span>[<span class="string">"abc"</span>, <span class="string">"abc"</span>, <span class="string">"xyz"</span>, <span class="string">"abc"</span>]))
         .map(<span class="macro">q!</span>(|s| s.to_string()));
 
-    <span class="kw">let </span>all_ids_vec = flow.cluster_members(<span class="kw-2">&amp;</span>cluster);
+    <span class="kw">let </span>all_ids_vec = cluster.members();
     <span class="kw">let </span>words_partitioned = words
         .tick_batch()
         .enumerate()

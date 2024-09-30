@@ -497,23 +497,6 @@
 <a href="#497" id="497">497</a>
 <a href="#498" id="498">498</a>
 <a href="#499" id="499">499</a>
-<a href="#500" id="500">500</a>
-<a href="#501" id="501">501</a>
-<a href="#502" id="502">502</a>
-<a href="#503" id="503">503</a>
-<a href="#504" id="504">504</a>
-<a href="#505" id="505">505</a>
-<a href="#506" id="506">506</a>
-<a href="#507" id="507">507</a>
-<a href="#508" id="508">508</a>
-<a href="#509" id="509">509</a>
-<a href="#510" id="510">510</a>
-<a href="#511" id="511">511</a>
-<a href="#512" id="512">512</a>
-<a href="#513" id="513">513</a>
-<a href="#514" id="514">514</a>
-<a href="#515" id="515">515</a>
-<a href="#516" id="516">516</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -574,9 +557,9 @@
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Quoted&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Vec&lt;u32&gt;&gt; <span class="kw">for </span>ClusterIds&lt;<span class="lifetime">'a</span>&gt; {}
 
 <span class="attr">#[derive(Copy, Clone)]
-</span><span class="kw">struct </span>ClusterSelfId&lt;<span class="lifetime">'a</span>&gt; {
-    id: usize,
-    _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>u32&gt;,
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>ClusterSelfId&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) id: usize,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>u32&gt;,
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; FreeVariable&lt;u32&gt; <span class="kw">for </span>ClusterSelfId&lt;<span class="lifetime">'a</span>&gt; {
@@ -712,23 +695,6 @@
 
     <span class="kw">pub fn </span>runtime_context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; RuntimeContext&lt;<span class="lifetime">'a</span>&gt; {
         RuntimeContext {
-            _phantom: PhantomData,
-        }
-    }
-
-    <span class="kw">pub fn </span>cluster_members&lt;C&gt;(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        cluster: <span class="kw-2">&amp;</span>Cluster&lt;C&gt;,
-    ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Vec&lt;u32&gt;&gt; + Copy + <span class="lifetime">'a </span>{
-        ClusterIds {
-            id: cluster.id,
-            _phantom: PhantomData,
-        }
-    }
-
-    <span class="kw">pub fn </span>cluster_self_id&lt;C&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, cluster: <span class="kw-2">&amp;</span>Cluster&lt;C&gt;) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, u32&gt; + Copy + <span class="lifetime">'a </span>{
-        ClusterSelfId {
-            id: cluster.id,
             _phantom: PhantomData,
         }
     }
