@@ -226,7 +226,7 @@ where
     fn reverse_ref(this: Self::AsRefVar<'_>) -> <Self::Reverse as VariadicExt>::AsRefVar<'_> {
         let (item, rest) = this;
         let out = Rest::reverse_ref(rest).extend((item, ()));
-        // TODO!!!
+        // TODO(mingwei): check if use of unsafe is necessary
         let out2 = unsafe { std::mem::transmute_copy(&out) };
         std::mem::forget(out);
         out2
