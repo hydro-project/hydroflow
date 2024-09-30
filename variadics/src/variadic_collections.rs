@@ -11,7 +11,7 @@ pub trait VariadicSet {
     /// The Schema (aka Variadic type) associated with tuples in this set
     type Schema: PartialEqVariadic;
 
-    /// Insert an element into the set
+    /// Insert an element into the set, return true if successful
     fn insert(&mut self, element: Self::Schema) -> bool;
 
     /// Iterate over the elements of the set
@@ -23,7 +23,7 @@ pub trait VariadicSet {
     /// Return true if empty
     fn is_empty(&self) -> bool;
 
-    /// iterate and drain items from the set
+    /// iterate and drain items from the set without deallocating the container
     fn drain(&mut self) -> impl Iterator<Item = Self::Schema>;
 
     /// Check for containment
@@ -86,7 +86,6 @@ where
 {
     type Schema = T;
 
-    /// insert a tuple
     fn insert(&mut self, element: T) -> bool {
         // let hash = Self::get_hash(&self.hasher, element.as_ref_var());
         let hash = self.hasher.hash_one(element.as_ref_var());
@@ -104,18 +103,14 @@ where
         }
     }
 
-    /// return the number of tuples in the set
     fn len(&self) -> usize {
         self.table.len()
     }
 
-    /// return the number of tuples in the set
     fn is_empty(&self) -> bool {
         self.table.len() == 0
     }
 
-    /// drain the set: iterate and remove the tuples without deallocating
-    // fn drain(&mut self) -> hashbrown::hash_table::Drain<'_, T> {
     fn drain(&mut self) -> impl Iterator<Item = Self::Schema> {
         self.table.drain()
     }
@@ -124,7 +119,6 @@ where
         self.get(value).is_some()
     }
 
-    /// iterate through the set
     fn iter(&self) -> impl Iterator<Item = T::AsRefVar<'_>> {
         self.table.iter().map(|item| item.as_ref_var())
     }
@@ -167,7 +161,6 @@ where
     S: BuildHasher,
     for<'a> K::AsRefVar<'a>: Hash,
 {
-    // #[cfg_attr(feature = "inline-more", inline)]
     fn extend<T: IntoIterator<Item = K>>(&mut self, iter: T) {
         // Keys may be already present or show multiple times in the iterator.
         // Reserve the entire hint lower bound if the map is empty.
@@ -180,6 +173,7 @@ where
         } else {
             (iter.size_hint().0 + 1) / 2
         };
+        // TODO figure out reserve!
         // let hasher = self.hasher.build_hasher();
         // self.table.reserve(reserve, hasher);
         iter.for_each(move |k| {
@@ -198,7 +192,6 @@ where
         if self.len() != other.len() {
             return false;
         }
-
         self.iter().all(|key| other.get(key).is_some())
     }
 }
@@ -220,30 +213,30 @@ where
 /// Trait for a multiset of Tuples
 #[sealed]
 pub trait VariadicMultiset {
-    /// The Schema (aka Variadic type) associated with tuples in this set
+    /// The Schema (aka Variadic type) associated with tuples in this multiset
     type Schema: PartialEqVariadic;
 
-    /// Insert an element into the set
-    fn insert(&mut self, element: Self::Schema);
+    /// Insert an element into the multiset; return true on success (should be always!)
+    fn insert(&mut self, element: Self::Schema) -> bool;
 
-    /// Iterate over the elements of the set
+    /// Iterate over the elements of the multiset
     fn iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>>;
 
-    /// Return number of elements in the set
+    /// Return number of elements in the multiset (including duplicates)
     fn len(&self) -> usize;
 
     /// Return true if empty
     fn is_empty(&self) -> bool;
 
-    /// iterate and drain items from the set
+    /// iterate and drain items from the multiset without deallocating container
     fn drain(&mut self) -> impl Iterator<Item = Self::Schema>;
 
     /// Check for containment
     fn contains(&self, value: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool;
 }
 
-/// HashMap keyed on Variadics of owned values but allows
-/// for lookups with RefVariadics as well
+/// HashMap keyed on Variadics of (owned value, count) pairs, allows
+/// for lookups with RefVariadics.
 #[derive(Clone)]
 pub struct VariadicCountedHashSet<K, S = RandomState>
 where
@@ -311,8 +304,7 @@ where
 {
     type Schema = K;
 
-    /// insert a tuple
-    fn insert(&mut self, element: K) {
+    fn insert(&mut self, element: K) -> bool {
         let hash = self.hasher.hash_one(element.as_ref_var());
         self.table
             .entry(
@@ -323,19 +315,17 @@ where
             .and_modify(|(_, count)| *count += 1)
             .or_insert((element, 1));
         self.len += 1;
+        true
     }
 
-    /// return the number of tuples in the multiset
     fn len(&self) -> usize {
         self.len
     }
 
-    /// return the number of tuples in the multiset
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    /// drain the multiset: iterate and remove the tuples without deallocating
     fn drain(&mut self) -> impl Iterator<Item = Self::Schema> {
         // TODO: this shouldn't clone the last copy of each k!
         // particularly bad when there's typically only 1 copy per item
@@ -349,7 +339,6 @@ where
         self.get(value).is_some()
     }
 
-    /// iterate through the multiset
     fn iter(&self) -> impl Iterator<Item = K::AsRefVar<'_>> {
         self.table
             .iter()
@@ -377,7 +366,6 @@ where
 pub struct DuplicateCounted<Iter, Item> {
     iter: Iter,
     state: Option<(Item, usize)>,
-    // count: usize,
 }
 impl<Iter, Item> Iterator for DuplicateCounted<Iter, Item>
 where
@@ -436,7 +424,6 @@ where
     S: BuildHasher,
     for<'a> K::AsRefVar<'a>: Hash,
 {
-    // #[cfg_attr(feature = "inline-more", inline)]
     fn extend<T: IntoIterator<Item = K>>(&mut self, iter: T) {
         // Keys may be already present or show multiple times in the iterator.
         // Reserve the entire hint lower bound if the map is empty.
@@ -495,7 +482,7 @@ where
 }
 
 /// Column storage for Variadic tuples of type Schema
-/// An alternative to VariadicHashSet
+/// An alternative to VariadicHashMultiset
 pub struct VariadicColumnMultiset<Schema>
 where
     Schema: VariadicExt,
@@ -508,7 +495,7 @@ impl<T> VariadicColumnMultiset<T>
 where
     T: VariadicExt,
 {
-    /// initialize an empty columnar set
+    /// initialize an empty columnar multiset
     pub fn new() -> Self {
         Self {
             columns: <T::IntoVec as Default>::default(),
@@ -533,32 +520,28 @@ where
 {
     type Schema = Schema;
 
-    /// Insert an element into the set
-    fn insert(&mut self, element: Schema) {
+    fn insert(&mut self, element: Schema) -> bool {
         if self.last_offset == 0 {
             self.columns = element.into_singleton_vec()
         } else {
             self.columns.push(element);
         }
         self.last_offset += 1;
+        true
     }
 
-    /// Iterate over the elements of the set
     fn iter(&self) -> impl Iterator<Item = <Schema as VariadicExt>::AsRefVar<'_>> {
         self.columns.zip_vecs()
     }
 
-    /// Return number of elements in the set
     fn len(&self) -> usize {
         self.last_offset
     }
 
-    /// Return true if empty
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    /// iterate and drain items from the set
     fn drain(&mut self) -> impl Iterator<Item = Self::Schema> {
         self.last_offset = 0;
         self.columns.drain(0..)
@@ -660,9 +643,9 @@ mod test {
         assert!(test_data.iter().all(|t| multi_set.contains(t.as_ref_var())));
         assert!(test_data.iter().all(|t| columnar.contains(t.as_ref_var())));
 
-        hash_set.drain();
-        multi_set.drain();
-        columnar.drain();
+        let _hs = hash_set.drain().collect::<Vec<_>>();
+        let _ms = multi_set.drain().collect::<Vec<_>>();
+        let _c = columnar.drain().collect::<Vec<_>>();
         assert_eq!(hash_set.len(), 0);
         assert_eq!(multi_set.len(), 0);
         assert_eq!(columnar.len(), 0);

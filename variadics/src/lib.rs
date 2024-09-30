@@ -650,33 +650,6 @@ where
     }
 }
 
-// #[sealed]
-// pub trait Suffix<Suf>: Variadic {
-//     fn suffix(self) -> Suf;
-// }
-// #[sealed]
-// impl<Item, Rest, PrefixRest> Suffix<PrefixRest> for (Item, Rest)
-// where
-//     PrefixRest: Variadic,
-//     Rest: Split<PrefixRest>,
-// {
-//     type Suffix = <Rest as Split<PrefixRest>>::Suffix;
-//     fn split(self) -> ((Item, PrefixRest), Self::Suffix) {
-//         let (item, rest) = self;
-//         let (prefix_rest, suffix) = rest.split();
-//         ((item, prefix_rest), suffix)
-//     }
-// }
-// #[sealed]
-// impl<Rest> Suffix<Rest> for Rest
-// where
-//     Rest: Variadic,
-// {
-//     fn suffix(self) -> Rest {
-//         self
-//     }
-// }
-
 /// Helper trait for splitting a variadic into two parts. `Prefix` is the first part, everything
 /// after is the `Suffix` or second part.
 ///
@@ -793,26 +766,7 @@ where
     }
 }
 
-// pub trait Split<Prefix>: VariadicExt
-// where
-//     Prefix: VariadicExt,
-// {
-//     /// The second part when splitting this variadic by `Prefix`.
-//     type Suffix: VariadicExt;
-//     /// Splits this variadic into two parts, first the `Prefix`, and second the `Suffix`.
-//     fn split(self) -> (Prefix, Self::Suffix);
-
-// impl<Item, Rest, PrefixRest> Split<(Item, PrefixRest)> for (Item, Rest)
-// where
-//     PrefixRest: VariadicExt,
-//     Rest: Split<PrefixRest>,
-// {
-//     /// The second part when splitting this variadic by `Prefix`.
-//     type Suffix = <Rest as Split<PrefixRest>>::Suffix;
-//     /// Splits this variadic into two parts, first the `Prefix`, and second the `Suffix`.
-//     fn split(self) -> ((Item, PrefixRest), Self::Suffix) {
-
-/// trait for Variadic of vecs, as formed by `VariadicExt::as_vec()`
+/// trait for Variadic of vecs, as formed by `VariadicExt::into_vec()`
 #[sealed]
 pub trait VecVariadic: VariadicExt {
     /// Individual variadic items without the Vec wrapper
@@ -836,7 +790,7 @@ pub trait VecVariadic: VariadicExt {
     type Drain<'a>: Iterator<Item = Self::UnVec>
     where
         Self: 'a;
-    /// Turns into a Drain of items `UnVec` -- i.e. rows (not columns!).
+    /// Turns into a Drain of items `UnVec` -- i.e. iterate through rows (not columns!).
     fn drain<R>(&mut self, range: R) -> Self::Drain<'_>
     where
         R: RangeBounds<usize> + Clone;
@@ -863,7 +817,6 @@ where
         rest_vecs.push(rest_cols);
     }
 
-    /// get the unvec'ed Variadic at position `index`
     fn get(&mut self, index: usize) -> Option<<Self::UnVec as VariadicExt>::AsRefVar<'_>> {
         let (this_vec, rest_vecs) = self;
         if let Some(rest) = VecVariadic::get(rest_vecs, index) {
@@ -874,11 +827,11 @@ where
     }
 
     type IntoZip = std::iter::Zip<std::vec::IntoIter<Item>, Rest::IntoZip>;
-    /// Turns into an iterator of items `UnVec` -- i.e. iterate through rows (not columns!).
     fn into_zip(self) -> Self::IntoZip {
         let (this, rest) = self;
         std::iter::zip(this, rest.into_zip())
     }
+
     type Drain<'a> = std::iter::Zip<std::vec::Drain<'a, Item>, Rest::Drain<'a>> where Self: 'a;
     fn drain<R>(&mut self, range: R) -> Self::Drain<'_>
     where
@@ -896,17 +849,18 @@ impl VecVariadic for var_type!() {
     fn zip_vecs(&self) -> impl Iterator<Item = <Self::UnVec as VariadicExt>::AsRefVar<'_>> {
         std::iter::repeat(var_expr!())
     }
+
     fn push(&mut self, _item: Self::UnVec) {}
-    /// get the unvec'ed Variadic at position `index`
+
     fn get(&mut self, _index: usize) -> Option<<Self::UnVec as VariadicExt>::AsRefVar<'_>> {
         Some(())
     }
 
     type IntoZip = std::iter::Repeat<var_type!()>;
-    // // type IntoIter = Iterator<Item = var_type!()>;
     fn into_zip(self) -> Self::IntoZip {
         std::iter::repeat(var_expr!())
     }
+
     type Drain<'a> = std::iter::Repeat<var_type!()> where Self: 'a;
     fn drain<R>(&mut self, _range: R) -> Self::Drain<'_>
     where
@@ -1010,7 +964,7 @@ mod test {
     }
 
     #[test]
-    fn test_as_vec() {
+    fn test_into_vec() {
         use crate::VecVariadic;
 
         type Item = var_type!(i32, String);
