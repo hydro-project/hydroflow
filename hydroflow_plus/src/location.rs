@@ -2,6 +2,9 @@ use std::marker::PhantomData;
 
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use stageleft::Quoted;
+
+use super::builder::{ClusterIds, ClusterSelfId};
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum LocationId {
@@ -74,6 +77,22 @@ impl<P> Location for Process<P> {
 pub struct Cluster<C> {
     pub(crate) id: usize,
     pub(crate) _phantom: PhantomData<C>,
+}
+
+impl<C> Cluster<C> {
+    pub fn self_id<'a>(&self) -> impl Quoted<'a, u32> + Copy + 'a {
+        ClusterSelfId {
+            id: self.id,
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn members<'a>(&self) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
+        ClusterIds {
+            id: self.id,
+            _phantom: PhantomData,
+        }
+    }
 }
 
 impl<C> Clone for Cluster<C> {

@@ -96,7 +96,7 @@ pub fn paxos_core<'a, P: PaxosPayload>(
     // Proposers.
     flow.source_iter(&proposers, q!(["Proposers say hello"]))
         .for_each(q!(|s| println!("{}", s)));
-    let p_id = flow.cluster_self_id(&proposers);
+    let p_id = proposers.self_id();
 
     let (p_to_proposers_i_am_leader_complete_cycle, p_to_proposers_i_am_leader) =
         flow.cycle::<Stream<_, _, _, _>>(&proposers);
@@ -119,7 +119,6 @@ pub fn paxos_core<'a, P: PaxosPayload>(
         p_ballot_calc(flow, &proposers, p_received_max_ballot.latest_tick());
 
     let (p_is_leader, p_log_to_try_commit, p_max_slot, p_log_holes) = p_p1b(
-        flow,
         &proposers,
         a_to_proposers_p1b.inspect(q!(|(_, p1b)| println!("Proposer received P1b: {:?}", p1b))),
         p_ballot_num.clone(),
@@ -413,7 +412,7 @@ fn p_p2a<'a, P: PaxosPayload>(
     Optional<'a, i32, Bounded, Tick, Cluster<Proposer>>,
     Stream<'a, P2a<P>, Unbounded, NoTick, Cluster<Acceptor>>,
 ) {
-    let p_id = flow.cluster_self_id(proposers);
+    let p_id = proposers.self_id();
     let (p_next_slot_complete_cycle, p_next_slot) =
         flow.tick_cycle::<Optional<i32, _, _, _>>(proposers);
     let p_next_slot_after_reconciling_p1bs = p_max_slot
@@ -473,7 +472,6 @@ fn p_p2a<'a, P: PaxosPayload>(
 // Proposer logic for processing p1bs, determining if the proposer is now the leader, which uncommitted messages to commit, what the maximum slot is in the p1bs, and which no-ops to commit to fill log holes.
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 fn p_p1b<'a, P: PaxosPayload>(
-    flow: &FlowBuilder<'a>,
     proposers: &Cluster<Proposer>,
     a_to_proposers_p1b: Stream<'a, (u32, P1b<P>), Unbounded, NoTick, Cluster<Proposer>>,
     p_ballot_num: Singleton<'a, u32, Bounded, Tick, Cluster<Proposer>>,
@@ -485,7 +483,7 @@ fn p_p1b<'a, P: PaxosPayload>(
     Optional<'a, i32, Bounded, Tick, Cluster<Proposer>>,
     Stream<'a, P2a<P>, Bounded, Tick, Cluster<Proposer>>,
 ) {
-    let p_id = flow.cluster_self_id(proposers);
+    let p_id = proposers.self_id();
     let p_relevant_p1bs = a_to_proposers_p1b
         .clone()
         .tick_prefix()
@@ -598,7 +596,7 @@ fn p_ballot_calc<'a>(
     Singleton<'a, u32, Bounded, Tick, Cluster<Proposer>>,
     Optional<'a, (Ballot, u32), Bounded, Tick, Cluster<Proposer>>,
 ) {
-    let p_id = flow.cluster_self_id(proposers);
+    let p_id = proposers.self_id();
     let (p_ballot_num_complete_cycle, p_ballot_num) =
         flow.tick_cycle_with_initial(proposers, flow.singleton(proposers, q!(0)).latest_tick());
 
@@ -654,7 +652,7 @@ fn p_p1a<'a>(
     Stream<'a, Ballot, Unbounded, NoTick, Cluster<Proposer>>,
     Stream<'a, P1a, Unbounded, NoTick, Cluster<Acceptor>>,
 ) {
-    let p_id = flow.cluster_self_id(proposers);
+    let p_id = proposers.self_id();
     let p_to_proposers_i_am_leader_new = p_ballot_num
         .clone()
         .continue_if(

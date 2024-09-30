@@ -7,10 +7,10 @@ pub fn simple_cluster(flow: &FlowBuilder) -> (Process<()>, Cluster<()>) {
 
     let numbers = flow.source_iter(&process, q!(0..5));
     let ids = flow
-        .source_iter(&process, flow.cluster_members(&cluster))
+        .source_iter(&process, cluster.members())
         .map(q!(|&id| id));
 
-    let cluster_self_id = flow.cluster_self_id(&cluster);
+    let cluster_self_id = cluster.self_id();
 
     ids.cross_product(numbers)
         .map(q!(|(id, n)| (id, (id, n))))
