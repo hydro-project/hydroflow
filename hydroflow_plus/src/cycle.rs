@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::builder::FlowLeaves;
+use crate::builder::FlowState;
 use crate::location::{Location, LocationId};
 use crate::{NoTick, Tick};
 
@@ -9,17 +9,17 @@ pub trait CycleComplete<'a, T> {
 }
 
 pub trait CycleCollection<'a, T>: CycleComplete<'a, T> {
-    type Location: Location;
+    type Location: Location<'a>;
 
-    fn create_source(ident: syn::Ident, ir_leaves: FlowLeaves<'a>, l: LocationId) -> Self;
+    fn create_source(ident: syn::Ident, flow_state: FlowState, l: LocationId) -> Self;
 }
 
 pub trait CycleCollectionWithInitial<'a, T>: CycleComplete<'a, T> {
-    type Location: Location;
+    type Location: Location<'a>;
 
     fn create_source(
         ident: syn::Ident,
-        ir_leaves: FlowLeaves<'a>,
+        flow_state: FlowState,
         initial: Self,
         l: LocationId,
     ) -> Self;

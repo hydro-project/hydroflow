@@ -65,8 +65,8 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p1_port: &Self::Port,
         _p2: &Self::Process,
         _p2_port: &Self::Port,
-    ) {
-        panic!()
+    ) -> Box<dyn FnOnce()> {
+        Box::new(|| panic!())
     }
 
     fn o2m_sink_source(
@@ -84,8 +84,8 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p1_port: &Self::Port,
         _c2: &Self::Cluster,
         _c2_port: &Self::Port,
-    ) {
-        panic!()
+    ) -> Box<dyn FnOnce()> {
+        Box::new(|| panic!())
     }
 
     fn m2o_sink_source(
@@ -103,8 +103,8 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _c1_port: &Self::Port,
         _p2: &Self::Process,
         _p2_port: &Self::Port,
-    ) {
-        panic!()
+    ) -> Box<dyn FnOnce()> {
+        Box::new(|| panic!())
     }
 
     fn m2m_sink_source(
@@ -122,8 +122,8 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _c1_port: &Self::Port,
         _c2: &Self::Cluster,
         _c2_port: &Self::Port,
-    ) {
-        panic!()
+    ) -> Box<dyn FnOnce()> {
+        Box::new(|| panic!())
     }
 
     fn e2o_source(
@@ -141,7 +141,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p1_port: &Self::Port,
         _p2: &Self::Process,
         _p2_port: &Self::Port,
-    ) {
+    ) -> Box<dyn FnOnce()> {
         panic!()
     }
 
@@ -160,7 +160,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p1_port: &Self::Port,
         _p2: &Self::ExternalProcess,
         _p2_port: &Self::Port,
-    ) {
+    ) -> Box<dyn FnOnce()> {
         panic!()
     }
 

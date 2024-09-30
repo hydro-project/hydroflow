@@ -42,12 +42,12 @@ impl std::fmt::Debug for DebugExpr {
     }
 }
 
-pub enum DebugInstantiate<'a> {
+pub enum DebugInstantiate {
     Building(),
-    Finalized(syn::Expr, syn::Expr, Box<dyn Fn() + 'a>),
+    Finalized(syn::Expr, syn::Expr, Option<Box<dyn FnOnce()>>),
 }
 
-impl<'a> std::fmt::Debug for DebugInstantiate<'a> {
+impl std::fmt::Debug for DebugInstantiate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "<network instantiate>")
     }
@@ -76,31 +76,31 @@ pub enum HfPlusSource {
 /// any downstream values. Traversals over the dataflow graph and
 /// generating Hydroflow IR start from leaves.
 #[derive(Debug)]
-pub enum HfPlusLeaf<'a> {
+pub enum HfPlusLeaf {
     ForEach {
         f: DebugExpr,
-        input: Box<HfPlusNode<'a>>,
+        input: Box<HfPlusNode>,
     },
     DestSink {
         sink: DebugExpr,
-        input: Box<HfPlusNode<'a>>,
+        input: Box<HfPlusNode>,
     },
     CycleSink {
         ident: syn::Ident,
         location_kind: LocationId,
-        input: Box<HfPlusNode<'a>>,
+        input: Box<HfPlusNode>,
     },
 }
 
-impl<'a> HfPlusLeaf<'a> {
-    pub fn compile_network<D: Deploy<'a> + 'a>(
+impl HfPlusLeaf {
+    pub fn compile_network<'a, D: Deploy<'a> + 'a>(
         self,
         compile_env: &D::CompileEnv,
-        seen_tees: &mut SeenTees<'a>,
+        seen_tees: &mut SeenTees,
         nodes: &HashMap<usize, D::Process>,
         clusters: &HashMap<usize, D::Cluster>,
         externals: &HashMap<usize, D::ExternalProcess>,
-    ) -> HfPlusLeaf<'a> {
+    ) -> HfPlusLeaf {
         self.transform_children(
             |n, s| {
                 n.compile_network::<D>(compile_env, s, nodes, clusters, externals);
@@ -109,7 +109,7 @@ impl<'a> HfPlusLeaf<'a> {
         )
     }
 
-    pub fn connect_network(self, seen_tees: &mut SeenTees<'a>) -> HfPlusLeaf<'a> {
+    pub fn connect_network(self, seen_tees: &mut SeenTees) -> HfPlusLeaf {
         self.transform_children(
             |n, s| {
                 n.connect_network(s);
@@ -120,9 +120,9 @@ impl<'a> HfPlusLeaf<'a> {
 
     pub fn transform_children(
         self,
-        mut transform: impl FnMut(&mut HfPlusNode<'a>, &mut SeenTees<'a>),
-        seen_tees: &mut SeenTees<'a>,
-    ) -> HfPlusLeaf<'a> {
+        mut transform: impl FnMut(&mut HfPlusNode, &mut SeenTees),
+        seen_tees: &mut SeenTees,
+    ) -> HfPlusLeaf {
         match self {
             HfPlusLeaf::ForEach { f, mut input } => {
                 transform(&mut input, seen_tees);
@@ -150,7 +150,7 @@ impl<'a> HfPlusLeaf<'a> {
     pub fn emit(
         &self,
         graph_builders: &mut BTreeMap<usize, FlatGraphBuilder>,
-        built_tees: &mut HashMap<*const RefCell<HfPlusNode<'a>>, (syn::Ident, usize)>,
+        built_tees: &mut HashMap<*const RefCell<HfPlusNode>, (syn::Ident, usize)>,
         next_stmt_id: &mut usize,
     ) {
         match self {
@@ -211,7 +211,7 @@ impl<'a> HfPlusLeaf<'a> {
 /// An intermediate node in a Hydroflow+ graph, which consumes data
 /// from upstream nodes and emits data to downstream nodes.
 #[derive(Debug)]
-pub enum HfPlusNode<'a> {
+pub enum HfPlusNode {
     Placeholder,
 
     Source {
@@ -225,65 +225,65 @@ pub enum HfPlusNode<'a> {
     },
 
     Tee {
-        inner: Rc<RefCell<HfPlusNode<'a>>>,
+        inner: Rc<RefCell<HfPlusNode>>,
     },
 
-    Persist(Box<HfPlusNode<'a>>),
-    Unpersist(Box<HfPlusNode<'a>>),
-    Delta(Box<HfPlusNode<'a>>),
+    Persist(Box<HfPlusNode>),
+    Unpersist(Box<HfPlusNode>),
+    Delta(Box<HfPlusNode>),
 
-    Union(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
-    CrossProduct(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
-    CrossSingleton(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
-    Join(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
-    Difference(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
-    AntiJoin(Box<HfPlusNode<'a>>, Box<HfPlusNode<'a>>),
+    Union(Box<HfPlusNode>, Box<HfPlusNode>),
+    CrossProduct(Box<HfPlusNode>, Box<HfPlusNode>),
+    CrossSingleton(Box<HfPlusNode>, Box<HfPlusNode>),
+    Join(Box<HfPlusNode>, Box<HfPlusNode>),
+    Difference(Box<HfPlusNode>, Box<HfPlusNode>),
+    AntiJoin(Box<HfPlusNode>, Box<HfPlusNode>),
 
     Map {
         f: DebugExpr,
-        input: Box<HfPlusNode<'a>>,
+        input: Box<HfPlusNode>,
     },
     FlatMap {
         f: DebugExpr,
-        input: Box<HfPlusNode<'a>>,
+        input: Box<HfPlusNode>,
     },
     Filter {
         f: DebugExpr,
-        input: Box<HfPlusNode<'a>>,
+        input: Box<HfPlusNode>,
     },
     FilterMap {
         f: DebugExpr,
-        input: Box<HfPlusNode<'a>>,
+        input: Box<HfPlusNode>,
     },
 
-    DeferTick(Box<HfPlusNode<'a>>),
-    Enumerate(Box<HfPlusNode<'a>>),
+    DeferTick(Box<HfPlusNode>),
+    Enumerate(Box<HfPlusNode>),
     Inspect {
         f: DebugExpr,
-        input: Box<HfPlusNode<'a>>,
+        input: Box<HfPlusNode>,
     },
 
-    Unique(Box<HfPlusNode<'a>>),
+    Unique(Box<HfPlusNode>),
 
-    Sort(Box<HfPlusNode<'a>>),
+    Sort(Box<HfPlusNode>),
     Fold {
         init: DebugExpr,
         acc: DebugExpr,
-        input: Box<HfPlusNode<'a>>,
+        input: Box<HfPlusNode>,
     },
     FoldKeyed {
         init: DebugExpr,
         acc: DebugExpr,
-        input: Box<HfPlusNode<'a>>,
+        input: Box<HfPlusNode>,
     },
 
     Reduce {
         f: DebugExpr,
-        input: Box<HfPlusNode<'a>>,
+        input: Box<HfPlusNode>,
     },
     ReduceKeyed {
         f: DebugExpr,
-        input: Box<HfPlusNode<'a>>,
+        input: Box<HfPlusNode>,
     },
 
     Network {
@@ -292,19 +292,19 @@ pub enum HfPlusNode<'a> {
         to_location: LocationId,
         to_key: Option<usize>,
         serialize_pipeline: Option<Pipeline>,
-        instantiate_fn: DebugInstantiate<'a>,
+        instantiate_fn: DebugInstantiate,
         deserialize_pipeline: Option<Pipeline>,
-        input: Box<HfPlusNode<'a>>,
+        input: Box<HfPlusNode>,
     },
 }
 
-pub type SeenTees<'a> = HashMap<*const RefCell<HfPlusNode<'a>>, Rc<RefCell<HfPlusNode<'a>>>>;
+pub type SeenTees = HashMap<*const RefCell<HfPlusNode>, Rc<RefCell<HfPlusNode>>>;
 
-impl<'a> HfPlusNode<'a> {
+impl<'a> HfPlusNode {
     pub fn compile_network<D: Deploy<'a> + 'a>(
         &mut self,
         compile_env: &D::CompileEnv,
-        seen_tees: &mut SeenTees<'a>,
+        seen_tees: &mut SeenTees,
         nodes: &HashMap<usize, D::Process>,
         clusters: &HashMap<usize, D::Cluster>,
         externals: &HashMap<usize, D::ExternalProcess>,
@@ -338,18 +338,18 @@ impl<'a> HfPlusNode<'a> {
                 DebugInstantiate::Finalized(_, _, _) => panic!("network already finalized"),
             };
 
-            *instantiate_fn = DebugInstantiate::Finalized(sink_expr, source_expr, connect_fn);
+            *instantiate_fn = DebugInstantiate::Finalized(sink_expr, source_expr, Some(connect_fn));
         }
     }
 
-    pub fn connect_network(&mut self, seen_tees: &mut SeenTees<'a>) {
+    pub fn connect_network(&mut self, seen_tees: &mut SeenTees) {
         self.transform_children(|n, s| n.connect_network(s), seen_tees);
         if let HfPlusNode::Network { instantiate_fn, .. } = self {
             match instantiate_fn {
                 DebugInstantiate::Building() => panic!("network not built"),
 
-                DebugInstantiate::Finalized(_, _, ref connect_fn) => {
-                    connect_fn();
+                DebugInstantiate::Finalized(_, _, connect_fn) => {
+                    connect_fn.take().unwrap()();
                 }
             }
         }
@@ -357,8 +357,8 @@ impl<'a> HfPlusNode<'a> {
 
     pub fn transform_bottom_up<C>(
         &mut self,
-        mut transform: impl FnMut(&mut HfPlusNode<'a>, &mut C) + Copy,
-        seen_tees: &mut SeenTees<'a>,
+        mut transform: impl FnMut(&mut HfPlusNode, &mut C) + Copy,
+        seen_tees: &mut SeenTees,
         ctx: &mut C,
     ) {
         self.transform_children(|n, s| n.transform_bottom_up(transform, s, ctx), seen_tees);
@@ -369,8 +369,8 @@ impl<'a> HfPlusNode<'a> {
     #[inline(always)]
     pub fn transform_children(
         &mut self,
-        mut transform: impl FnMut(&mut HfPlusNode<'a>, &mut SeenTees<'a>),
-        seen_tees: &mut SeenTees<'a>,
+        mut transform: impl FnMut(&mut HfPlusNode, &mut SeenTees),
+        seen_tees: &mut SeenTees,
     ) {
         match self {
             HfPlusNode::Placeholder => {
@@ -480,7 +480,7 @@ impl<'a> HfPlusNode<'a> {
     pub fn emit(
         &self,
         graph_builders: &mut BTreeMap<usize, FlatGraphBuilder>,
-        built_tees: &mut HashMap<*const RefCell<HfPlusNode<'a>>, (syn::Ident, usize)>,
+        built_tees: &mut HashMap<*const RefCell<HfPlusNode>, (syn::Ident, usize)>,
         next_stmt_id: &mut usize,
     ) -> (syn::Ident, usize) {
         match self {
@@ -1148,7 +1148,7 @@ fn instantiate_network<'a, D: Deploy<'a> + 'a>(
     clusters: &HashMap<usize, D::Cluster>,
     externals: &HashMap<usize, D::ExternalProcess>,
     compile_env: &D::CompileEnv,
-) -> (syn::Expr, syn::Expr, Box<dyn Fn() + 'a>) {
+) -> (syn::Expr, syn::Expr, Box<dyn FnOnce()>) {
     let ((sink, source), connect_fn) = match (from_location, to_location) {
         (LocationId::Process(from), LocationId::Process(to)) => {
             let from_node = nodes
@@ -1169,8 +1169,7 @@ fn instantiate_network<'a, D: Deploy<'a> + 'a>(
 
             (
                 D::o2o_sink_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
-                Box::new(move || D::o2o_connect(&from_node, &sink_port, &to_node, &source_port))
-                    as Box<dyn Fn() + 'a>,
+                D::o2o_connect(&from_node, &sink_port, &to_node, &source_port),
             )
         }
         (LocationId::Process(from), LocationId::Cluster(to)) => {
@@ -1192,8 +1191,7 @@ fn instantiate_network<'a, D: Deploy<'a> + 'a>(
 
             (
                 D::o2m_sink_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
-                Box::new(move || D::o2m_connect(&from_node, &sink_port, &to_node, &source_port))
-                    as Box<dyn Fn() + 'a>,
+                D::o2m_connect(&from_node, &sink_port, &to_node, &source_port),
             )
         }
         (LocationId::Cluster(from), LocationId::Process(to)) => {
@@ -1215,8 +1213,7 @@ fn instantiate_network<'a, D: Deploy<'a> + 'a>(
 
             (
                 D::m2o_sink_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
-                Box::new(move || D::m2o_connect(&from_node, &sink_port, &to_node, &source_port))
-                    as Box<dyn Fn() + 'a>,
+                D::m2o_connect(&from_node, &sink_port, &to_node, &source_port),
             )
         }
         (LocationId::Cluster(from), LocationId::Cluster(to)) => {
@@ -1238,8 +1235,7 @@ fn instantiate_network<'a, D: Deploy<'a> + 'a>(
 
             (
                 D::m2m_sink_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
-                Box::new(move || D::m2m_connect(&from_node, &sink_port, &to_node, &source_port))
-                    as Box<dyn Fn() + 'a>,
+                D::m2m_connect(&from_node, &sink_port, &to_node, &source_port),
             )
         }
         (LocationId::ExternalProcess(from), LocationId::Process(to)) => {
@@ -1270,8 +1266,7 @@ fn instantiate_network<'a, D: Deploy<'a> + 'a>(
                     parse_quote!(DUMMY),
                     D::e2o_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
                 ),
-                Box::new(move || D::e2o_connect(&from_node, &sink_port, &to_node, &source_port))
-                    as Box<dyn Fn() + 'a>,
+                D::e2o_connect(&from_node, &sink_port, &to_node, &source_port),
             )
         }
         (LocationId::ExternalProcess(_from), LocationId::Cluster(_to)) => {
@@ -1305,8 +1300,7 @@ fn instantiate_network<'a, D: Deploy<'a> + 'a>(
                     D::o2e_sink(compile_env, &from_node, &sink_port, &to_node, &source_port),
                     parse_quote!(DUMMY),
                 ),
-                Box::new(move || D::o2e_connect(&from_node, &sink_port, &to_node, &source_port))
-                    as Box<dyn Fn() + 'a>,
+                D::o2e_connect(&from_node, &sink_port, &to_node, &source_port),
             )
         }
         (LocationId::Cluster(_from), LocationId::ExternalProcess(_to)) => {

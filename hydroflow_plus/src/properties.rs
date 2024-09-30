@@ -51,10 +51,10 @@ impl PropertyDatabase {
 // Dataflow graph optimization rewrite rules based on algebraic property tags
 // TODO add a test that verifies the space of possible graphs after rewrites is correct for each property
 
-fn properties_optimize_node<'a>(
-    node: &mut HfPlusNode<'a>,
+fn properties_optimize_node(
+    node: &mut HfPlusNode,
     db: &PropertyDatabase,
-    seen_tees: &mut SeenTees<'a>,
+    seen_tees: &mut SeenTees,
 ) {
     node.transform_children(
         |node, seen_tees| properties_optimize_node(node, db, seen_tees),
@@ -68,10 +68,7 @@ fn properties_optimize_node<'a>(
     }
 }
 
-pub fn properties_optimize<'a>(
-    ir: Vec<HfPlusLeaf<'a>>,
-    db: &PropertyDatabase,
-) -> Vec<HfPlusLeaf<'a>> {
+pub fn properties_optimize(ir: Vec<HfPlusLeaf>, db: &PropertyDatabase) -> Vec<HfPlusLeaf> {
     let mut seen_tees = Default::default();
     ir.into_iter()
         .map(|l| {
@@ -87,6 +84,7 @@ pub fn properties_optimize<'a>(
 mod tests {
     use super::*;
     use crate::deploy::SingleProcessGraph;
+    use crate::location::Location;
     use crate::FlowBuilder;
 
     #[test]
@@ -110,7 +108,8 @@ mod tests {
         let counter_func = q!(|count: &mut i32, _| *count += 1);
         let _ = database.add_commutative_tag(counter_func);
 
-        flow.source_iter(&process, q!(vec![]))
+        process
+            .source_iter(q!(vec![]))
             .map(q!(|string: String| (string, ())))
             .tick_batch()
             .fold_keyed(q!(|| 0), counter_func)
