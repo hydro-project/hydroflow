@@ -11,6 +11,7 @@ pub trait VariadicCollection: Extend<Self::Schema> {
     type Schema: PartialEqVariadic;
 
     /// Insert an element into the set, return true if successful
+    /// Insert an element into the set, return true if successful
     fn insert(&mut self, element: Self::Schema) -> bool;
 
     /// Iterate over the elements of the set
