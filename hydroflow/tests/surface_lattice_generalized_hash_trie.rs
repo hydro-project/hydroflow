@@ -4,7 +4,7 @@ use hydroflow::lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism}
 use hydroflow::lattices::GhtType;
 use hydroflow::util::collect_ready;
 use hydroflow::variadics::{var_expr, var_type};
-use variadics::variadic_sets::VariadicCountedHashSet; // Import the Insert trait
+use variadics::variadic_collections::VariadicCountedHashSet; // Import the Insert trait
 
 #[test]
 fn test_basic() {

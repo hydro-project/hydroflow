@@ -6,7 +6,7 @@ use sealed::sealed;
 
 use crate::{PartialEqVariadic, VariadicExt, VecVariadic};
 
-/// Trait for a set of Tuples
+/// Trait for a set of Variadic Tuples
 pub trait VariadicSet {
     /// The Schema (aka Variadic type) associated with tuples in this set
     type Schema: PartialEqVariadic;

@@ -2,7 +2,7 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use sealed::sealed;
-use variadics::variadic_sets::VariadicMultiset;
+use variadics::variadic_collections::VariadicMultiset;
 use variadics::{
     var_args, var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt,
 };

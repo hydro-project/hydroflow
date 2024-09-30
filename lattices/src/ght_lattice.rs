@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use variadics::variadic_sets::VariadicMultiset;
+use variadics::variadic_collections::VariadicMultiset;
 use variadics::{var_expr, var_type, CloneVariadic, PartialEqVariadic, SplitBySuffix, VariadicExt};
 
 use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};

@@ -3,7 +3,7 @@ mod test {
     use std::collections::HashSet;
     use std::io::{self, Write};
 
-    use variadics::variadic_sets::{
+    use variadics::variadic_collections::{
         VariadicColumnMultiset, VariadicCountedHashSet, VariadicMultiset,
     };
     use variadics::{var_expr, var_type, VariadicExt};
@@ -311,10 +311,31 @@ mod test {
         type MyGht = GhtType!(u32, u64 => u16, &'static str: Row);
 
         let mut test_ght1 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
-        let mut test_ght2 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
+        let test_ght2 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
 
-        // no change on merge
-        assert!(!test_ght1.merge(test_ght2.clone()));
+        // merge contains duplicate copy of the tuple
+        assert_eq!(
+            test_ght1
+                .recursive_iter()
+                .collect::<Vec<var_type!(&u32, &u64, &u16, &&'static str)>>()
+                .len(),
+            1
+        );
+        test_ght1.merge(test_ght2.clone());
+        assert_eq!(
+            test_ght1
+                .recursive_iter()
+                .collect::<Vec<var_type!(&u32, &u64, &u16, &&'static str)>>()
+                .len(),
+            2
+        );
+        let mut iter = test_ght1.recursive_iter();
+        assert_eq!(iter.next(), iter.next());
+        // assert!(!test_ght1.merge(test_ght2.clone()));
+
+        let mut test_ght1 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
+        let mut test_ght2 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
+        test_ght1.merge(test_ght2.clone());
 
         test_ght1.insert(var_expr!(42, 314, 20, "goodbye"));
         test_ght2.insert(var_expr!(42, 314, 20, "again"));

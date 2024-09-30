@@ -4,7 +4,7 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use sealed::sealed;
-use variadics::variadic_sets::VariadicMultiset;
+use variadics::variadic_collections::VariadicMultiset;
 use variadics::{
     var_args, var_type, PartialEqVariadic, RefVariadic, Split, SplitBySuffix, VariadicExt,
 };
@@ -579,17 +579,17 @@ macro_rules! GhtRowTypeWithSchema {
 
     // Empty key (Leaf)
     (() => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ), $crate::variadics::variadic_sets::VariadicCountedHashSet<$schema> >
+        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ), $crate::variadics::variadic_collections::VariadicCountedHashSet<$schema> >
     );
 
     // Singleton key & Empty val (Inner over Leaf)
     ($a:ty => () => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, (), $crate::variadics::variadic_sets::VariadicCountedHashSet<$schema> >>
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, (), $crate::variadics::variadic_collections::VariadicCountedHashSet<$schema> >>
     );
 
     // Singleton key (Inner over Leaf)
     ($a:ty => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*), $crate::variadics::variadic_sets::VariadicCountedHashSet<$schema> >>
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*), $crate::variadics::variadic_collections::VariadicCountedHashSet<$schema> >>
     );
 
     // Recursive case with empty val
@@ -615,17 +615,17 @@ macro_rules! GhtColumnTypeWithSchema {
 
     // Empty key (Leaf)
     (() => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ), $crate::variadics::variadic_sets::VariadicColumnMultiset<$schema> >
+        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ), $crate::variadics::variadic_collections::VariadicColumnMultiset<$schema> >
     );
 
     // Singleton key & Empty val (Inner over Leaf)
     ($a:ty => () => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, (), $crate::variadics::variadic_sets::VariadicColumnMultiset<$schema> >>
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, (), $crate::variadics::variadic_collections::VariadicColumnMultiset<$schema> >>
     );
 
     // Singleton key (Inner over Leaf)
     ($a:ty => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*), $crate::variadics::variadic_sets::VariadicColumnMultiset<$schema> >>
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*), $crate::variadics::variadic_collections::VariadicColumnMultiset<$schema> >>
     );
 
     // Recursive case with empty val
@@ -672,7 +672,6 @@ macro_rules! GhtType {
         $crate::GhtRowTypeWithSchema!($( $b ),* => $( $z ),* => $crate::variadics::var_type!($( $b ),*, $( $z ),*))
     );
 
-    // Recursive case
     ($( $b:ty ),* => $( $z:ty ),*: Column) => (
         $crate::GhtColumnTypeWithSchema!($( $b ),* => $( $z ),* => $crate::variadics::var_type!($( $b ),*, $( $z ),*))
     );

@@ -11,8 +11,8 @@
 //! ## [`var_args!`]
 #![doc = include_str!("../var_args.md")]
 
-/// VariadicHashSet module
-pub mod variadic_sets;
+/// module of collection types for variadics
+pub mod variadic_collections;
 
 use std::any::Any;
 use std::ops::RangeBounds;

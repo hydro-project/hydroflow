@@ -8,7 +8,7 @@ use lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
 use lattices::GhtType;
 use multiplatform_test::multiplatform_test;
-use variadics::variadic_sets::VariadicCountedHashSet;
+use variadics::variadic_collections::VariadicCountedHashSet;
 use variadics::{var_expr, CloneVariadic};
 
 #[multiplatform_test]
