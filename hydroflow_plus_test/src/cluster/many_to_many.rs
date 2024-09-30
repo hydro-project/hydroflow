@@ -1,9 +1,10 @@
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn many_to_many(flow: &FlowBuilder) -> Cluster<()> {
+pub fn many_to_many<'a>(flow: &FlowBuilder<'a>) -> Cluster<'a, ()> {
     let cluster = flow.cluster();
-    flow.source_iter(&cluster, q!(0..2))
+    cluster
+        .source_iter(q!(0..2))
         .broadcast_bincode(&cluster)
         .for_each(q!(|n| println!("cluster received: {:?}", n)));
 

@@ -1,14 +1,12 @@
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn simple_cluster(flow: &FlowBuilder) -> (Process<()>, Cluster<()>) {
+pub fn simple_cluster<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, ()>, Cluster<'a, ()>) {
     let process = flow.process();
     let cluster = flow.cluster();
 
-    let numbers = flow.source_iter(&process, q!(0..5));
-    let ids = flow
-        .source_iter(&process, cluster.members())
-        .map(q!(|&id| id));
+    let numbers = process.source_iter(q!(0..5));
+    let ids = process.source_iter(cluster.members()).map(q!(|&id| id));
 
     let cluster_self_id = cluster.self_id();
 
