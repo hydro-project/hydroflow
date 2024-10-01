@@ -176,15 +176,14 @@ where
         // Otherwise reserve half the hint (rounded up), so the map
         // will only resize twice in the worst case.
         let iter = iter.into_iter();
-        // let reserve =
-        if self.is_empty() {
+        let reserve = if self.is_empty() {
             iter.size_hint().0
         } else {
             (iter.size_hint().0 + 1) / 2
         };
-        // TODO figure out reserve!
-        // let hasher = self.hasher.build_hasher();
-        // self.table.reserve(reserve, hasher);
+        self.table
+            .reserve(reserve, |item| self.hasher.hash_one(item));
+
         iter.for_each(move |k| {
             self.insert(k);
         });
@@ -424,15 +423,13 @@ where
         // Otherwise reserve half the hint (rounded up), so the map
         // will only resize twice in the worst case.
         let iter = iter.into_iter();
-        // let reserve =
-        if self.is_empty() {
+        let reserve = if self.is_empty() {
             iter.size_hint().0
         } else {
             (iter.size_hint().0 + 1) / 2
         };
-        // TODO: get reserve to work here
-        // let hasher = self.hasher.build_hasher();
-        // self.table.reserve(reserve, hasher);
+        self.table
+            .reserve(reserve, |item| self.hasher.hash_one(item));
         iter.for_each(move |key| {
             // TODO: super inefficient. Need a insert_with_count method
             self.insert(key);
