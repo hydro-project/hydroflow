@@ -11,3 +11,4 @@ pub mod parse;
 pub mod pretty_span;
 pub mod process_singletons;
 pub mod union_find;
+pub mod hydroflo2;

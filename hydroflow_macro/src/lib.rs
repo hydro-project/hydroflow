@@ -7,6 +7,7 @@ use std::path::PathBuf;
 
 use hydroflow_lang::diagnostic::{Diagnostic, Level};
 use hydroflow_lang::graph::{build_hfcode, partition_graph, FlatGraphBuilder};
+use hydroflow_lang::hydroflo2::build_hydroflo2;
 use hydroflow_lang::parse::HfCode;
 use proc_macro2::{Ident, Literal, Span};
 use quote::{format_ident, quote};
@@ -32,6 +33,13 @@ pub fn hydroflow_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 #[proc_macro]
 pub fn hydroflow_syntax_noemit(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     hydroflow_syntax_internal(input, None)
+}
+
+#[proc_macro]
+pub fn hydroflo2_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input as HfCode);
+    let output = build_hydroflo2(input);
+    output.into()
 }
 
 fn root() -> proc_macro2::TokenStream {

@@ -8,10 +8,10 @@ use proc_macro2::{Span, TokenStream};
 use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
-use syn::token::{Bracket, Paren};
+use syn::token::{Brace, Bracket, Paren};
 use syn::{
-    bracketed, parenthesized, AngleBracketedGenericArguments, Expr, ExprPath, GenericArgument,
-    Ident, ItemUse, LitInt, LitStr, Path, PathArguments, PathSegment, Token,
+    braced, bracketed, parenthesized, AngleBracketedGenericArguments, Expr, ExprPath,
+    GenericArgument, Ident, ItemUse, LitInt, LitStr, Path, PathArguments, PathSegment, Token,
 };
 
 use crate::process_singletons::preprocess_singletons;
@@ -40,24 +40,44 @@ pub enum HfStatement {
     Use(ItemUse),
     Named(NamedHfStatement),
     Pipeline(PipelineStatement),
+    Loop(LoopStatement),
 }
 impl Parse for HfStatement {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        if input.peek(Token![use]) {
+        let lookahead1 = input.lookahead1();
+        if lookahead1.peek(Token![use]) {
             Ok(Self::Use(ItemUse::parse(input)?))
-        } else if input.peek2(Token![=]) {
-            Ok(Self::Named(NamedHfStatement::parse(input)?))
-        } else {
+        }
+        else if lookahead1.peek(Paren) {
             Ok(Self::Pipeline(PipelineStatement::parse(input)?))
+        }
+        else if lookahead1.peek(Token![loop]) {
+            Ok(Self::Loop(LoopStatement::parse(input)?))
+        }
+        else if lookahead1.peek(Ident) {
+            let fork = input.fork();
+            let _: Path = fork.parse()?;
+            let lookahead2 = fork.lookahead1();
+            if lookahead2.peek(Token![=]) {
+                Ok(Self::Named(NamedHfStatement::parse(input)?))
+            } else if lookahead2.peek(Token![->]) || lookahead2.peek(Paren) || lookahead2.peek(Bracket) {
+                Ok(Self::Pipeline(PipelineStatement::parse(input)?))
+            } else {
+                Err(lookahead2.error())
+            }
+        }
+        else {
+            Err(lookahead1.error())
         }
     }
 }
 impl ToTokens for HfStatement {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
-            HfStatement::Use(x) => x.to_tokens(tokens),
-            HfStatement::Named(x) => x.to_tokens(tokens),
-            HfStatement::Pipeline(x) => x.to_tokens(tokens),
+            Self::Use(x) => x.to_tokens(tokens),
+            Self::Named(x) => x.to_tokens(tokens),
+            Self::Pipeline(x) => x.to_tokens(tokens),
+            Self::Loop(x) => x.to_tokens(tokens),
         }
     }
 }
@@ -197,13 +217,49 @@ impl Parse for Pipeline {
 impl ToTokens for Pipeline {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
-            Pipeline::Paren(x) => x.to_tokens(tokens),
-            Pipeline::Link(x) => x.to_tokens(tokens),
-            Pipeline::Name(x) => x.to_tokens(tokens),
-            Pipeline::Operator(x) => x.to_tokens(tokens),
-            Pipeline::ModuleBoundary(x) => x.to_tokens(tokens),
-            Pipeline::Import(x) => x.to_tokens(tokens),
+            Self::Paren(x) => x.to_tokens(tokens),
+            Self::Link(x) => x.to_tokens(tokens),
+            Self::Name(x) => x.to_tokens(tokens),
+            Self::Operator(x) => x.to_tokens(tokens),
+            Self::ModuleBoundary(x) => x.to_tokens(tokens),
+            Self::Import(x) => x.to_tokens(tokens),
         }
+    }
+}
+
+pub struct LoopStatement {
+    pub loop_token: Token![loop],
+    pub ident: Option<Ident>,
+    pub brace_token: Brace,
+    pub statements: Vec<HfStatement>,
+}
+impl Parse for LoopStatement {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let loop_token = input.parse()?;
+        let ident = input.parse()?;
+        let content;
+        let brace_token = braced!(content in input);
+        let mut statements = Vec::new();
+        while !content.is_empty() {
+            statements.push(content.parse()?);
+        }
+        Ok(Self {
+            loop_token,
+            ident,
+            brace_token,
+            statements,
+        })
+    }
+}
+impl ToTokens for LoopStatement {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.loop_token.to_tokens(tokens);
+        self.ident.to_tokens(tokens);
+        self.brace_token.surround(tokens, |tokens| {
+            for statement in self.statements.iter() {
+                statement.to_tokens(tokens);
+            }
+        });
     }
 }
 

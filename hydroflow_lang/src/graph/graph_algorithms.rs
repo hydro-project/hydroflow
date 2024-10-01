@@ -3,7 +3,7 @@
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 
-/// Computers the topological sort of the nodes of a possibly cyclic graph by ordering strongly
+/// Computes the topological sort of the nodes of a possibly cyclic graph by ordering strongly
 /// connected components together.
 pub fn topo_sort_scc<Id, NodesFn, NodeIds, PredsFn, SuccsFn, PredsIter, SuccsIter>(
     mut nodes_fn: NodesFn,
