@@ -12,8 +12,10 @@ const OUTPUT: usize = 5_123_595;
 static WORDS: LazyLock<String> = LazyLock::new(|| {
     let mut path = PathBuf::new();
     path.push(std::env::current_dir().unwrap());
+    path.pop();
+    path.push(file!());
+    path.pop();
     path.push("words_alpha.txt");
-    println!("{:?}", path);
     std::fs::read_to_string(path).unwrap()
 });
 fn words() -> impl Iterator<Item = String> + Clone {
