@@ -214,12 +214,12 @@
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
-    <span class="kw">let </span><span class="kw-2">mut </span>source = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>)).tick_batch();
+    <span class="kw">let </span><span class="kw-2">mut </span>source = process.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>)).tick_batch();
     <span class="kw">if </span>persist1 {
         source = source.persist();
     }
 
-    <span class="kw">let </span><span class="kw-2">mut </span>source2 = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">3</span>..<span class="number">6</span>)).tick_batch();
+    <span class="kw">let </span><span class="kw-2">mut </span>source2 = process.source_iter(<span class="macro">q!</span>(<span class="number">3</span>..<span class="number">6</span>)).tick_batch();
     <span class="kw">if </span>persist2 {
         source2 = source2.persist();
     }
@@ -241,15 +241,15 @@
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
-    <span class="kw">let </span><span class="kw-2">mut </span>source = flow
-        .source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>))
+    <span class="kw">let </span><span class="kw-2">mut </span>source = process
+        .source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>))
         .map(<span class="macro">q!</span>(|v| (v, v)))
         .tick_batch();
     <span class="kw">if </span>persist1 {
         source = source.persist();
     }
 
-    <span class="kw">let </span><span class="kw-2">mut </span>source2 = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">3</span>..<span class="number">6</span>)).tick_batch();
+    <span class="kw">let </span><span class="kw-2">mut </span>source2 = process.source_iter(<span class="macro">q!</span>(<span class="number">3</span>..<span class="number">6</span>)).tick_batch();
     <span class="kw">if </span>persist2 {
         source2 = source2.persist();
     }

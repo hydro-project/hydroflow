@@ -71,7 +71,7 @@
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
-    <span class="kw">let </span>source = flow.source_stream(<span class="kw-2">&amp;</span>process, input_stream);
+    <span class="kw">let </span>source = process.source_stream(input_stream);
     <span class="kw">let </span>count = source
         .map(<span class="macro">q!</span>(|<span class="kw">_</span>| <span class="number">1</span>))
         .tick_batch()

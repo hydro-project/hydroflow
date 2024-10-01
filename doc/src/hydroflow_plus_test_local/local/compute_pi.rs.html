@@ -55,11 +55,11 @@
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-<span class="kw">pub fn </span>compute_pi(flow: <span class="kw-2">&amp;</span>FlowBuilder, batch_size: RuntimeData&lt;usize&gt;) -&gt; Process&lt;()&gt; {
+<span class="kw">pub fn </span>compute_pi&lt;<span class="lifetime">'a</span>&gt;(flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt;, batch_size: RuntimeData&lt;usize&gt;) -&gt; Process&lt;<span class="lifetime">'a</span>, ()&gt; {
     <span class="kw">let </span>process = flow.process();
 
-    <span class="kw">let </span>trials = flow
-        .spin_batch(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(batch_size))
+    <span class="kw">let </span>trials = process
+        .spin_batch(<span class="macro">q!</span>(batch_size))
         .map(<span class="macro">q!</span>(|<span class="kw">_</span>| rand::random::&lt;(f64, f64)&gt;()))
         .map(<span class="macro">q!</span>(|(x, y)| x * x + y * y &lt; <span class="number">1.0</span>))
         .fold(

@@ -156,7 +156,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::HfCompiled;
 
 <span class="kw">pub struct </span>BuiltFlow&lt;<span class="lifetime">'a</span>&gt; {
-    <span class="kw">pub</span>(<span class="kw">super</span>) ir: Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;,
+    <span class="kw">pub</span>(<span class="kw">super</span>) ir: Vec&lt;HfPlusLeaf&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) processes: Vec&lt;usize&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) clusters: Vec&lt;usize&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) used: bool,
@@ -173,13 +173,13 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; BuiltFlow&lt;<span class="lifetime">'a</span>&gt; {
-    <span class="kw">pub fn </span>ir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt; {
+    <span class="kw">pub fn </span>ir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;HfPlusLeaf&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.ir
     }
 
     <span class="kw">pub fn </span>optimize_with(
         <span class="kw-2">mut </span><span class="self">self</span>,
-        f: <span class="kw">impl </span>FnOnce(Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;) -&gt; Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;,
+        f: <span class="kw">impl </span>FnOnce(Vec&lt;HfPlusLeaf&gt;) -&gt; Vec&lt;HfPlusLeaf&gt;,
     ) -&gt; BuiltFlow&lt;<span class="lifetime">'a</span>&gt; {
         <span class="self">self</span>.used = <span class="bool-val">true</span>;
         BuiltFlow {

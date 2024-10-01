@@ -103,23 +103,23 @@
 <span class="kw">pub struct </span>P1 {}
 <span class="kw">pub struct </span>P2 {}
 
-<span class="kw">pub fn </span>first_ten_distributed(
-    flow: <span class="kw-2">&amp;</span>FlowBuilder,
+<span class="kw">pub fn </span>first_ten_distributed&lt;<span class="lifetime">'a</span>&gt;(
+    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
 ) -&gt; (
-    ExternalProcess&lt;()&gt;,
+    ExternalProcess&lt;<span class="lifetime">'a</span>, ()&gt;,
     ExternalBincodeSink&lt;String&gt;,
-    Process&lt;P1&gt;,
-    Process&lt;P2&gt;,
+    Process&lt;<span class="lifetime">'a</span>, P1&gt;,
+    Process&lt;<span class="lifetime">'a</span>, P2&gt;,
 ) {
     <span class="kw">let </span>external_process = flow.external_process::&lt;()&gt;();
     <span class="kw">let </span>process = flow.process::&lt;P1&gt;();
     <span class="kw">let </span>second_process = flow.process::&lt;P2&gt;();
 
     <span class="kw">let </span>(numbers_external_port, numbers_external) =
-        flow.source_external_bincode(<span class="kw-2">&amp;</span>external_process, <span class="kw-2">&amp;</span>process);
+        external_process.source_external_bincode(<span class="kw-2">&amp;</span>process);
     numbers_external.for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"hi: {:?}"</span>, n)));
 
-    <span class="kw">let </span>numbers = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
+    <span class="kw">let </span>numbers = process.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
     numbers
         .map(<span class="macro">q!</span>(|n| SendOverNetwork { n }))
         .send_bincode(<span class="kw-2">&amp;</span>second_process)

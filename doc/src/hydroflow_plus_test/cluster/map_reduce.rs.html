@@ -68,12 +68,12 @@
 <span class="kw">pub struct </span>Leader {}
 <span class="kw">pub struct </span>Worker {}
 
-<span class="kw">pub fn </span>map_reduce(flow: <span class="kw-2">&amp;</span>FlowBuilder) -&gt; (Process&lt;Leader&gt;, Cluster&lt;Worker&gt;) {
+<span class="kw">pub fn </span>map_reduce&lt;<span class="lifetime">'a</span>&gt;(flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt;) -&gt; (Process&lt;<span class="lifetime">'a</span>, Leader&gt;, Cluster&lt;<span class="lifetime">'a</span>, Worker&gt;) {
     <span class="kw">let </span>process = flow.process();
     <span class="kw">let </span>cluster = flow.cluster();
 
-    <span class="kw">let </span>words = flow
-        .source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="macro">vec!</span>[<span class="string">"abc"</span>, <span class="string">"abc"</span>, <span class="string">"xyz"</span>, <span class="string">"abc"</span>]))
+    <span class="kw">let </span>words = process
+        .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>[<span class="string">"abc"</span>, <span class="string">"abc"</span>, <span class="string">"xyz"</span>, <span class="string">"abc"</span>]))
         .map(<span class="macro">q!</span>(|s| s.to_string()));
 
     <span class="kw">let </span>all_ids_vec = cluster.members();

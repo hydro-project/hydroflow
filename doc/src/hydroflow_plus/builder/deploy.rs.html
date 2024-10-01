@@ -315,7 +315,7 @@
 <span class="kw">use crate</span>::{Cluster, ClusterSpec, Deploy, HfCompiled, Process, ProcessSpec};
 
 <span class="kw">pub struct </span>DeployFlow&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">pub</span>(<span class="kw">super</span>) ir: Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;,
+    <span class="kw">pub</span>(<span class="kw">super</span>) ir: Vec&lt;HfPlusLeaf&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) nodes: HashMap&lt;usize, D::Process&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) externals: HashMap&lt;usize, D::ExternalProcess&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) clusters: HashMap&lt;usize, D::Cluster&gt;,
@@ -364,7 +364,7 @@
         <span class="self">self</span>.used = <span class="bool-val">true</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>seen_tees: HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt; = HashMap::new();
-        <span class="kw">let </span><span class="kw-2">mut </span>ir_leaves_networked: Vec&lt;HfPlusLeaf&gt; = std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.ir)
+        <span class="kw">let </span><span class="kw-2">mut </span>flow_state_networked: Vec&lt;HfPlusLeaf&gt; = std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.ir)
             .into_iter()
             .map(|leaf| {
                 leaf.compile_network::&lt;D&gt;(
@@ -380,7 +380,7 @@
         <span class="kw">let </span>extra_stmts = <span class="self">self</span>.extra_stmts(env);
 
         HfCompiled {
-            hydroflow_ir: build_inner(<span class="kw-2">&amp;mut </span>ir_leaves_networked),
+            hydroflow_ir: build_inner(<span class="kw-2">&amp;mut </span>flow_state_networked),
             extra_stmts,
             _phantom: PhantomData,
         }
@@ -427,7 +427,7 @@
         <span class="self">self</span>.used = <span class="bool-val">true</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>seen_tees_instantiate: HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt; = HashMap::new();
-        <span class="kw">let </span><span class="kw-2">mut </span>ir_leaves_networked: Vec&lt;HfPlusLeaf&gt; = std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.ir)
+        <span class="kw">let </span><span class="kw-2">mut </span>flow_state_networked: Vec&lt;HfPlusLeaf&gt; = std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.ir)
             .into_iter()
             .map(|leaf| {
                 leaf.compile_network::&lt;D&gt;(
@@ -440,7 +440,7 @@
             })
             .collect();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>compiled = build_inner(<span class="kw-2">&amp;mut </span>ir_leaves_networked);
+        <span class="kw">let </span><span class="kw-2">mut </span>compiled = build_inner(<span class="kw-2">&amp;mut </span>flow_state_networked);
         <span class="kw">let </span><span class="kw-2">mut </span>extra_stmts = <span class="self">self</span>.extra_stmts(<span class="kw-2">&amp;</span>());
         <span class="kw">let </span><span class="kw-2">mut </span>meta = D::Meta::default();
 
@@ -496,7 +496,7 @@
         }
 
         <span class="kw">let </span><span class="kw-2">mut </span>seen_tees_connect = HashMap::new();
-        <span class="kw">for </span>leaf <span class="kw">in </span>ir_leaves_networked {
+        <span class="kw">for </span>leaf <span class="kw">in </span>flow_state_networked {
             leaf.connect_network(<span class="kw-2">&amp;mut </span>seen_tees_connect);
         }
 
@@ -524,7 +524,7 @@
         <span class="self">self</span>.processes.get(<span class="kw-2">&amp;</span>id).unwrap()
     }
 
-    <span class="kw">pub fn </span>get_cluster&lt;C&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, c: <span class="kw-2">&amp;</span>Cluster&lt;C&gt;) -&gt; <span class="kw-2">&amp;</span>D::Cluster {
+    <span class="kw">pub fn </span>get_cluster&lt;C&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, c: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, C&gt;) -&gt; <span class="kw-2">&amp;</span>D::Cluster {
         <span class="kw">let </span>id = <span class="kw">match </span>c.id() {
             LocationId::Cluster(id) =&gt; id,
             <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Cluster ID expected"</span>),

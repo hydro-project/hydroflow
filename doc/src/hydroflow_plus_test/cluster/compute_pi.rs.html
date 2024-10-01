@@ -67,6 +67,9 @@
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
@@ -75,12 +78,15 @@
 <span class="kw">pub struct </span>Worker {}
 <span class="kw">pub struct </span>Leader {}
 
-<span class="kw">pub fn </span>compute_pi(flow: <span class="kw-2">&amp;</span>FlowBuilder, batch_size: usize) -&gt; (Cluster&lt;Worker&gt;, Process&lt;Leader&gt;) {
+<span class="kw">pub fn </span>compute_pi&lt;<span class="lifetime">'a</span>&gt;(
+    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
+    batch_size: usize,
+) -&gt; (Cluster&lt;<span class="lifetime">'a</span>, Worker&gt;, Process&lt;<span class="lifetime">'a</span>, Leader&gt;) {
     <span class="kw">let </span>cluster = flow.cluster();
     <span class="kw">let </span>process = flow.process();
 
-    <span class="kw">let </span>trials = flow
-        .spin_batch(<span class="kw-2">&amp;</span>cluster, <span class="macro">q!</span>(batch_size))
+    <span class="kw">let </span>trials = cluster
+        .spin_batch(<span class="macro">q!</span>(batch_size))
         .map(<span class="macro">q!</span>(|<span class="kw">_</span>| rand::random::&lt;(f64, f64)&gt;()))
         .map(<span class="macro">q!</span>(|(x, y)| x * x + y * y &lt; <span class="number">1.0</span>))
         .fold(

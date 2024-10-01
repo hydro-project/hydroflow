@@ -1309,12 +1309,6 @@
 <a href="#1309" id="1309">1309</a>
 <a href="#1310" id="1310">1310</a>
 <a href="#1311" id="1311">1311</a>
-<a href="#1312" id="1312">1312</a>
-<a href="#1313" id="1313">1313</a>
-<a href="#1314" id="1314">1314</a>
-<a href="#1315" id="1315">1315</a>
-<a href="#1316" id="1316">1316</a>
-<a href="#1317" id="1317">1317</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::panic;
 <span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap};
@@ -1359,12 +1353,12 @@
     }
 }
 
-<span class="kw">pub enum </span>DebugInstantiate&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">pub enum </span>DebugInstantiate {
     Building(),
-    Finalized(syn::Expr, syn::Expr, Box&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;),
+    Finalized(syn::Expr, syn::Expr, <span class="prelude-ty">Option</span>&lt;Box&lt;<span class="kw">dyn </span>FnOnce()&gt;&gt;),
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; std::fmt::Debug <span class="kw">for </span>DebugInstantiate&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>DebugInstantiate {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
         <span class="macro">write!</span>(f, <span class="string">"&lt;network instantiate&gt;"</span>)
     }
@@ -1393,31 +1387,31 @@
 /// any downstream values. Traversals over the dataflow graph and
 /// generating Hydroflow IR start from leaves.
 </span><span class="attr">#[derive(Debug)]
-</span><span class="kw">pub enum </span>HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt; {
+</span><span class="kw">pub enum </span>HfPlusLeaf {
     ForEach {
         f: DebugExpr,
-        input: Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
+        input: Box&lt;HfPlusNode&gt;,
     },
     DestSink {
         sink: DebugExpr,
-        input: Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
+        input: Box&lt;HfPlusNode&gt;,
     },
     CycleSink {
         ident: syn::Ident,
         location_kind: LocationId,
-        input: Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
+        input: Box&lt;HfPlusNode&gt;,
     },
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt; {
-    <span class="kw">pub fn </span>compile_network&lt;D: Deploy&lt;<span class="lifetime">'a</span>&gt; + <span class="lifetime">'a</span>&gt;(
+<span class="kw">impl </span>HfPlusLeaf {
+    <span class="kw">pub fn </span>compile_network&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt; + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         compile_env: <span class="kw-2">&amp;</span>D::CompileEnv,
-        seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;,
+        seen_tees: <span class="kw-2">&amp;mut </span>SeenTees,
         nodes: <span class="kw-2">&amp;</span>HashMap&lt;usize, D::Process&gt;,
         clusters: <span class="kw-2">&amp;</span>HashMap&lt;usize, D::Cluster&gt;,
         externals: <span class="kw-2">&amp;</span>HashMap&lt;usize, D::ExternalProcess&gt;,
-    ) -&gt; HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt; {
+    ) -&gt; HfPlusLeaf {
         <span class="self">self</span>.transform_children(
             |n, s| {
                 n.compile_network::&lt;D&gt;(compile_env, s, nodes, clusters, externals);
@@ -1426,7 +1420,7 @@
         )
     }
 
-    <span class="kw">pub fn </span>connect_network(<span class="self">self</span>, seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;) -&gt; HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">pub fn </span>connect_network(<span class="self">self</span>, seen_tees: <span class="kw-2">&amp;mut </span>SeenTees) -&gt; HfPlusLeaf {
         <span class="self">self</span>.transform_children(
             |n, s| {
                 n.connect_network(s);
@@ -1437,9 +1431,9 @@
 
     <span class="kw">pub fn </span>transform_children(
         <span class="self">self</span>,
-        <span class="kw-2">mut </span>transform: <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut </span>HfPlusNode&lt;<span class="lifetime">'a</span>&gt;, <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;),
-        seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;,
-    ) -&gt; HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt; {
+        <span class="kw-2">mut </span>transform: <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut </span>HfPlusNode, <span class="kw-2">&amp;mut </span>SeenTees),
+        seen_tees: <span class="kw-2">&amp;mut </span>SeenTees,
+    ) -&gt; HfPlusLeaf {
         <span class="kw">match </span><span class="self">self </span>{
             HfPlusLeaf::ForEach { f, <span class="kw-2">mut </span>input } =&gt; {
                 transform(<span class="kw-2">&amp;mut </span>input, seen_tees);
@@ -1467,7 +1461,7 @@
     <span class="kw">pub fn </span>emit(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         graph_builders: <span class="kw-2">&amp;mut </span>BTreeMap&lt;usize, FlatGraphBuilder&gt;,
-        built_tees: <span class="kw-2">&amp;mut </span>HashMap&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;, (syn::Ident, usize)&gt;,
+        built_tees: <span class="kw-2">&amp;mut </span>HashMap&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;, (syn::Ident, usize)&gt;,
         next_stmt_id: <span class="kw-2">&amp;mut </span>usize,
     ) {
         <span class="kw">match </span><span class="self">self </span>{
@@ -1528,7 +1522,7 @@
 <span class="doccomment">/// An intermediate node in a Hydroflow+ graph, which consumes data
 /// from upstream nodes and emits data to downstream nodes.
 </span><span class="attr">#[derive(Debug)]
-</span><span class="kw">pub enum </span>HfPlusNode&lt;<span class="lifetime">'a</span>&gt; {
+</span><span class="kw">pub enum </span>HfPlusNode {
     Placeholder,
 
     Source {
@@ -1542,65 +1536,65 @@
     },
 
     Tee {
-        inner: Rc&lt;RefCell&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;&gt;,
+        inner: Rc&lt;RefCell&lt;HfPlusNode&gt;&gt;,
     },
 
-    Persist(Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;),
-    Unpersist(Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;),
-    Delta(Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;),
+    Persist(Box&lt;HfPlusNode&gt;),
+    Unpersist(Box&lt;HfPlusNode&gt;),
+    Delta(Box&lt;HfPlusNode&gt;),
 
-    Union(Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;, Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;),
-    CrossProduct(Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;, Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;),
-    CrossSingleton(Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;, Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;),
-    Join(Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;, Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;),
-    Difference(Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;, Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;),
-    AntiJoin(Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;, Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;),
+    Union(Box&lt;HfPlusNode&gt;, Box&lt;HfPlusNode&gt;),
+    CrossProduct(Box&lt;HfPlusNode&gt;, Box&lt;HfPlusNode&gt;),
+    CrossSingleton(Box&lt;HfPlusNode&gt;, Box&lt;HfPlusNode&gt;),
+    Join(Box&lt;HfPlusNode&gt;, Box&lt;HfPlusNode&gt;),
+    Difference(Box&lt;HfPlusNode&gt;, Box&lt;HfPlusNode&gt;),
+    AntiJoin(Box&lt;HfPlusNode&gt;, Box&lt;HfPlusNode&gt;),
 
     Map {
         f: DebugExpr,
-        input: Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
+        input: Box&lt;HfPlusNode&gt;,
     },
     FlatMap {
         f: DebugExpr,
-        input: Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
+        input: Box&lt;HfPlusNode&gt;,
     },
     Filter {
         f: DebugExpr,
-        input: Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
+        input: Box&lt;HfPlusNode&gt;,
     },
     FilterMap {
         f: DebugExpr,
-        input: Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
+        input: Box&lt;HfPlusNode&gt;,
     },
 
-    DeferTick(Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;),
-    Enumerate(Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;),
+    DeferTick(Box&lt;HfPlusNode&gt;),
+    Enumerate(Box&lt;HfPlusNode&gt;),
     Inspect {
         f: DebugExpr,
-        input: Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
+        input: Box&lt;HfPlusNode&gt;,
     },
 
-    Unique(Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;),
+    Unique(Box&lt;HfPlusNode&gt;),
 
-    Sort(Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;),
+    Sort(Box&lt;HfPlusNode&gt;),
     Fold {
         init: DebugExpr,
         acc: DebugExpr,
-        input: Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
+        input: Box&lt;HfPlusNode&gt;,
     },
     FoldKeyed {
         init: DebugExpr,
         acc: DebugExpr,
-        input: Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
+        input: Box&lt;HfPlusNode&gt;,
     },
 
     Reduce {
         f: DebugExpr,
-        input: Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
+        input: Box&lt;HfPlusNode&gt;,
     },
     ReduceKeyed {
         f: DebugExpr,
-        input: Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
+        input: Box&lt;HfPlusNode&gt;,
     },
 
     Network {
@@ -1609,19 +1603,19 @@
         to_location: LocationId,
         to_key: <span class="prelude-ty">Option</span>&lt;usize&gt;,
         serialize_pipeline: <span class="prelude-ty">Option</span>&lt;Pipeline&gt;,
-        instantiate_fn: DebugInstantiate&lt;<span class="lifetime">'a</span>&gt;,
+        instantiate_fn: DebugInstantiate,
         deserialize_pipeline: <span class="prelude-ty">Option</span>&lt;Pipeline&gt;,
-        input: Box&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;,
+        input: Box&lt;HfPlusNode&gt;,
     },
 }
 
-<span class="kw">pub type </span>SeenTees&lt;<span class="lifetime">'a</span>&gt; = HashMap&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;, Rc&lt;RefCell&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;&gt;&gt;;
+<span class="kw">pub type </span>SeenTees = HashMap&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;, Rc&lt;RefCell&lt;HfPlusNode&gt;&gt;&gt;;
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; HfPlusNode&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; HfPlusNode {
     <span class="kw">pub fn </span>compile_network&lt;D: Deploy&lt;<span class="lifetime">'a</span>&gt; + <span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         compile_env: <span class="kw-2">&amp;</span>D::CompileEnv,
-        seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;,
+        seen_tees: <span class="kw-2">&amp;mut </span>SeenTees,
         nodes: <span class="kw-2">&amp;</span>HashMap&lt;usize, D::Process&gt;,
         clusters: <span class="kw-2">&amp;</span>HashMap&lt;usize, D::Cluster&gt;,
         externals: <span class="kw-2">&amp;</span>HashMap&lt;usize, D::ExternalProcess&gt;,
@@ -1655,18 +1649,18 @@
                 DebugInstantiate::Finalized(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">"network already finalized"</span>),
             };
 
-            <span class="kw-2">*</span>instantiate_fn = DebugInstantiate::Finalized(sink_expr, source_expr, connect_fn);
+            <span class="kw-2">*</span>instantiate_fn = DebugInstantiate::Finalized(sink_expr, source_expr, <span class="prelude-val">Some</span>(connect_fn));
         }
     }
 
-    <span class="kw">pub fn </span>connect_network(<span class="kw-2">&amp;mut </span><span class="self">self</span>, seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;) {
+    <span class="kw">pub fn </span>connect_network(<span class="kw-2">&amp;mut </span><span class="self">self</span>, seen_tees: <span class="kw-2">&amp;mut </span>SeenTees) {
         <span class="self">self</span>.transform_children(|n, s| n.connect_network(s), seen_tees);
         <span class="kw">if let </span>HfPlusNode::Network { instantiate_fn, .. } = <span class="self">self </span>{
             <span class="kw">match </span>instantiate_fn {
                 DebugInstantiate::Building() =&gt; <span class="macro">panic!</span>(<span class="string">"network not built"</span>),
 
-                DebugInstantiate::Finalized(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw-2">ref </span>connect_fn) =&gt; {
-                    connect_fn();
+                DebugInstantiate::Finalized(<span class="kw">_</span>, <span class="kw">_</span>, connect_fn) =&gt; {
+                    connect_fn.take().unwrap()();
                 }
             }
         }
@@ -1674,8 +1668,8 @@
 
     <span class="kw">pub fn </span>transform_bottom_up&lt;C&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        <span class="kw-2">mut </span>transform: <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut </span>HfPlusNode&lt;<span class="lifetime">'a</span>&gt;, <span class="kw-2">&amp;mut </span>C) + Copy,
-        seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;,
+        <span class="kw-2">mut </span>transform: <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut </span>HfPlusNode, <span class="kw-2">&amp;mut </span>C) + Copy,
+        seen_tees: <span class="kw-2">&amp;mut </span>SeenTees,
         ctx: <span class="kw-2">&amp;mut </span>C,
     ) {
         <span class="self">self</span>.transform_children(|n, s| n.transform_bottom_up(transform, s, ctx), seen_tees);
@@ -1686,8 +1680,8 @@
     <span class="attr">#[inline(always)]
     </span><span class="kw">pub fn </span>transform_children(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        <span class="kw-2">mut </span>transform: <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut </span>HfPlusNode&lt;<span class="lifetime">'a</span>&gt;, <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;),
-        seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;,
+        <span class="kw-2">mut </span>transform: <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut </span>HfPlusNode, <span class="kw-2">&amp;mut </span>SeenTees),
+        seen_tees: <span class="kw-2">&amp;mut </span>SeenTees,
     ) {
         <span class="kw">match </span><span class="self">self </span>{
             HfPlusNode::Placeholder =&gt; {
@@ -1797,7 +1791,7 @@
     <span class="kw">pub fn </span>emit(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         graph_builders: <span class="kw-2">&amp;mut </span>BTreeMap&lt;usize, FlatGraphBuilder&gt;,
-        built_tees: <span class="kw-2">&amp;mut </span>HashMap&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;, (syn::Ident, usize)&gt;,
+        built_tees: <span class="kw-2">&amp;mut </span>HashMap&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;, (syn::Ident, usize)&gt;,
         next_stmt_id: <span class="kw-2">&amp;mut </span>usize,
     ) -&gt; (syn::Ident, usize) {
         <span class="kw">match </span><span class="self">self </span>{
@@ -2465,7 +2459,7 @@
     clusters: <span class="kw-2">&amp;</span>HashMap&lt;usize, D::Cluster&gt;,
     externals: <span class="kw-2">&amp;</span>HashMap&lt;usize, D::ExternalProcess&gt;,
     compile_env: <span class="kw-2">&amp;</span>D::CompileEnv,
-) -&gt; (syn::Expr, syn::Expr, Box&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;) {
+) -&gt; (syn::Expr, syn::Expr, Box&lt;<span class="kw">dyn </span>FnOnce()&gt;) {
     <span class="kw">let </span>((sink, source), connect_fn) = <span class="kw">match </span>(from_location, to_location) {
         (LocationId::Process(from), LocationId::Process(to)) =&gt; {
             <span class="kw">let </span>from_node = nodes
@@ -2486,8 +2480,7 @@
 
             (
                 D::o2o_sink_source(compile_env, <span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port),
-                Box::new(<span class="kw">move </span>|| D::o2o_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port))
-                    <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;,
+                D::o2o_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port),
             )
         }
         (LocationId::Process(from), LocationId::Cluster(to)) =&gt; {
@@ -2509,8 +2502,7 @@
 
             (
                 D::o2m_sink_source(compile_env, <span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port),
-                Box::new(<span class="kw">move </span>|| D::o2m_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port))
-                    <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;,
+                D::o2m_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port),
             )
         }
         (LocationId::Cluster(from), LocationId::Process(to)) =&gt; {
@@ -2532,8 +2524,7 @@
 
             (
                 D::m2o_sink_source(compile_env, <span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port),
-                Box::new(<span class="kw">move </span>|| D::m2o_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port))
-                    <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;,
+                D::m2o_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port),
             )
         }
         (LocationId::Cluster(from), LocationId::Cluster(to)) =&gt; {
@@ -2555,8 +2546,7 @@
 
             (
                 D::m2m_sink_source(compile_env, <span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port),
-                Box::new(<span class="kw">move </span>|| D::m2m_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port))
-                    <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;,
+                D::m2m_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port),
             )
         }
         (LocationId::ExternalProcess(from), LocationId::Process(to)) =&gt; {
@@ -2587,8 +2577,7 @@
                     <span class="macro">parse_quote!</span>(DUMMY),
                     D::e2o_source(compile_env, <span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port),
                 ),
-                Box::new(<span class="kw">move </span>|| D::e2o_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port))
-                    <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;,
+                D::e2o_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port),
             )
         }
         (LocationId::ExternalProcess(_from), LocationId::Cluster(_to)) =&gt; {
@@ -2622,8 +2611,7 @@
                     D::o2e_sink(compile_env, <span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port),
                     <span class="macro">parse_quote!</span>(DUMMY),
                 ),
-                Box::new(<span class="kw">move </span>|| D::o2e_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port))
-                    <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>Fn() + <span class="lifetime">'a</span>&gt;,
+                D::o2e_connect(<span class="kw-2">&amp;</span>from_node, <span class="kw-2">&amp;</span>sink_port, <span class="kw-2">&amp;</span>to_node, <span class="kw-2">&amp;</span>source_port),
             )
         }
         (LocationId::Cluster(_from), LocationId::ExternalProcess(_to)) =&gt; {

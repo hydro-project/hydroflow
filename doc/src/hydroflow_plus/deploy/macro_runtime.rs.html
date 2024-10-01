@@ -383,8 +383,8 @@
         _p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         _p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
         _p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
-    ) {
-        <span class="macro">panic!</span>()
+    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce()&gt; {
+        Box::new(|| <span class="macro">panic!</span>())
     }
 
     <span class="kw">fn </span>o2m_sink_source(
@@ -402,8 +402,8 @@
         _p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         _c2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster,
         _c2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
-    ) {
-        <span class="macro">panic!</span>()
+    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce()&gt; {
+        Box::new(|| <span class="macro">panic!</span>())
     }
 
     <span class="kw">fn </span>m2o_sink_source(
@@ -421,8 +421,8 @@
         _c1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         _p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
         _p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
-    ) {
-        <span class="macro">panic!</span>()
+    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce()&gt; {
+        Box::new(|| <span class="macro">panic!</span>())
     }
 
     <span class="kw">fn </span>m2m_sink_source(
@@ -440,8 +440,8 @@
         _c1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         _c2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster,
         _c2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
-    ) {
-        <span class="macro">panic!</span>()
+    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce()&gt; {
+        Box::new(|| <span class="macro">panic!</span>())
     }
 
     <span class="kw">fn </span>e2o_source(
@@ -459,7 +459,7 @@
         _p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         _p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
         _p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
-    ) {
+    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce()&gt; {
         <span class="macro">panic!</span>()
     }
 
@@ -478,7 +478,7 @@
         _p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         _p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::ExternalProcess,
         _p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
-    ) {
+    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce()&gt; {
         <span class="macro">panic!</span>()
     }
 

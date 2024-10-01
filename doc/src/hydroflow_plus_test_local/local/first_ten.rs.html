@@ -29,7 +29,7 @@
 
 <span class="kw">pub fn </span>first_ten(flow: <span class="kw-2">&amp;</span>FlowBuilder) {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
-    <span class="kw">let </span>numbers = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
+    <span class="kw">let </span>numbers = process.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
     numbers.for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n)));
 }
 

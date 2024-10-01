@@ -186,14 +186,16 @@
 <a href="#186" id="186">186</a>
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashSet;
 
 <span class="kw">use </span><span class="kw">crate</span>::ir::<span class="kw-2">*</span>;
 
-<span class="kw">fn </span>persist_pullup_node&lt;<span class="lifetime">'a</span>&gt;(
-    node: <span class="kw-2">&amp;mut </span>HfPlusNode&lt;<span class="lifetime">'a</span>&gt;,
-    persist_pulled_tees: <span class="kw-2">&amp;mut </span>HashSet&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;&gt;,
+<span class="kw">fn </span>persist_pullup_node(
+    node: <span class="kw-2">&amp;mut </span>HfPlusNode,
+    persist_pulled_tees: <span class="kw-2">&amp;mut </span>HashSet&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;&gt;,
 ) {
     <span class="kw-2">*</span>node = <span class="kw">match </span>std::mem::replace(node, HfPlusNode::Placeholder) {
         HfPlusNode::Unpersist(<span class="kw">box </span>HfPlusNode::Persist(<span class="kw">box </span>behind_persist)) =&gt; behind_persist,
@@ -201,12 +203,12 @@
         HfPlusNode::Delta(<span class="kw">box </span>HfPlusNode::Persist(<span class="kw">box </span>behind_persist)) =&gt; behind_persist,
 
         HfPlusNode::Tee { inner } =&gt; {
-            <span class="kw">if </span>persist_pulled_tees.contains(<span class="kw-2">&amp;</span>(inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;)) {
+            <span class="kw">if </span>persist_pulled_tees.contains(<span class="kw-2">&amp;</span>(inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;)) {
                 HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
                     inner: inner.clone(),
                 }))
             } <span class="kw">else if </span><span class="macro">matches!</span>(<span class="kw-2">*</span>inner.borrow(), HfPlusNode::Persist(<span class="kw">_</span>)) {
-                persist_pulled_tees.insert(inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&lt;<span class="lifetime">'a</span>&gt;&gt;);
+                persist_pulled_tees.insert(inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;);
                 <span class="kw">if let </span>HfPlusNode::Persist(<span class="kw">box </span>behind_persist) =
                     inner.replace(HfPlusNode::Placeholder)
                 {
@@ -316,13 +318,15 @@
     <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
     <span class="kw">use </span><span class="kw">crate</span>::deploy::MultiGraph;
+    <span class="kw">use </span><span class="kw">crate</span>::location::Location;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>persist_pullup_through_map() {
         <span class="kw">let </span>flow = <span class="kw">crate</span>::builder::FlowBuilder::new();
         <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
-        flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
+        process
+            .source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
             .map(<span class="macro">q!</span>(|v| v + <span class="number">1</span>))
             .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n)));
 
@@ -345,7 +349,7 @@
         <span class="kw">let </span>flow = <span class="kw">crate</span>::builder::FlowBuilder::new();
         <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
-        <span class="kw">let </span>before_tee = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>)).tick_batch().persist();
+        <span class="kw">let </span>before_tee = process.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>)).tick_batch().persist();
 
         before_tee
             .clone()

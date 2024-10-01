@@ -49,7 +49,7 @@
 <a href="#49" id="49">49</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">use </span><span class="kw">crate</span>::builder::FlowLeaves;
+<span class="kw">use </span><span class="kw">crate</span>::builder::FlowState;
 <span class="kw">use </span><span class="kw">crate</span>::location::{Location, LocationId};
 <span class="kw">use crate</span>::{NoTick, Tick};
 
@@ -58,17 +58,17 @@
 }
 
 <span class="kw">pub trait </span>CycleCollection&lt;<span class="lifetime">'a</span>, T&gt;: CycleComplete&lt;<span class="lifetime">'a</span>, T&gt; {
-    <span class="kw">type </span>Location: Location;
+    <span class="kw">type </span>Location: Location&lt;<span class="lifetime">'a</span>&gt;;
 
-    <span class="kw">fn </span>create_source(ident: syn::Ident, ir_leaves: FlowLeaves&lt;<span class="lifetime">'a</span>&gt;, l: LocationId) -&gt; <span class="self">Self</span>;
+    <span class="kw">fn </span>create_source(ident: syn::Ident, flow_state: FlowState, l: LocationId) -&gt; <span class="self">Self</span>;
 }
 
 <span class="kw">pub trait </span>CycleCollectionWithInitial&lt;<span class="lifetime">'a</span>, T&gt;: CycleComplete&lt;<span class="lifetime">'a</span>, T&gt; {
-    <span class="kw">type </span>Location: Location;
+    <span class="kw">type </span>Location: Location&lt;<span class="lifetime">'a</span>&gt;;
 
     <span class="kw">fn </span>create_source(
         ident: syn::Ident,
-        ir_leaves: FlowLeaves&lt;<span class="lifetime">'a</span>&gt;,
+        flow_state: FlowState,
         initial: <span class="self">Self</span>,
         l: LocationId,
     ) -&gt; <span class="self">Self</span>;

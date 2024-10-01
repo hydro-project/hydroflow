@@ -132,9 +132,6 @@
 <a href="#132" id="132">132</a>
 <a href="#133" id="133">133</a>
 <a href="#134" id="134">134</a>
-<a href="#135" id="135">135</a>
-<a href="#136" id="136">136</a>
-<a href="#137" id="137">137</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
 <span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
@@ -151,11 +148,8 @@
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
-    <span class="kw">let </span>users = flow
-        .source_stream(<span class="kw-2">&amp;</span>process, users_stream)
-        .tick_batch()
-        .persist();
-    <span class="kw">let </span>messages = flow.source_stream(<span class="kw-2">&amp;</span>process, messages);
+    <span class="kw">let </span>users = process.source_stream(users_stream).tick_batch().persist();
+    <span class="kw">let </span>messages = process.source_stream(messages);
     <span class="kw">let </span>messages = <span class="kw">if </span>replay_messages {
         messages.tick_batch().persist()
     } <span class="kw">else </span>{

@@ -110,6 +110,8 @@
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
 <a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 
 <span class="kw">use </span>hydroflow::futures::channel::mpsc::UnboundedSender;
@@ -128,12 +130,12 @@
 
 <span class="doccomment">/// Add a profiling node before each node to count the cardinality of its input
 </span><span class="kw">fn </span>add_profiling_node&lt;<span class="lifetime">'a</span>&gt;(
-    node: <span class="kw-2">&amp;mut </span>HfPlusNode&lt;<span class="lifetime">'a</span>&gt;,
+    node: <span class="kw-2">&amp;mut </span>HfPlusNode,
     _context: RuntimeContext&lt;<span class="lifetime">'a</span>&gt;,
     counters: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;u64&gt;&gt;&gt;,
     counter_queue: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;UnboundedSender&lt;(usize, u64)&gt;&gt;&gt;,
     id: <span class="kw-2">&amp;mut </span>u32,
-    seen_tees: <span class="kw-2">&amp;mut </span>SeenTees&lt;<span class="lifetime">'a</span>&gt;,
+    seen_tees: <span class="kw-2">&amp;mut </span>SeenTees,
 ) {
     <span class="kw">let </span>my_id = <span class="kw-2">*</span>id;
     <span class="kw-2">*</span>id += <span class="number">1</span>;
@@ -165,11 +167,11 @@
 
 <span class="doccomment">/// Count the cardinality of each input and periodically output to a file
 </span><span class="kw">pub fn </span>profiling&lt;<span class="lifetime">'a</span>&gt;(
-    ir: Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt;,
+    ir: Vec&lt;HfPlusLeaf&gt;,
     context: RuntimeContext&lt;<span class="lifetime">'a</span>&gt;,
     counters: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;u64&gt;&gt;&gt;,
     counter_queue: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;UnboundedSender&lt;(usize, u64)&gt;&gt;&gt;,
-) -&gt; Vec&lt;HfPlusLeaf&lt;<span class="lifetime">'a</span>&gt;&gt; {
+) -&gt; Vec&lt;HfPlusLeaf&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>id = <span class="number">0</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>seen_tees = Default::default();
     ir.into_iter()
@@ -189,13 +191,15 @@
     <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
     <span class="kw">use </span><span class="kw">crate</span>::deploy::MultiGraph;
+    <span class="kw">use </span><span class="kw">crate</span>::location::Location;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>profiler_wrapping_all_operators() {
         <span class="kw">let </span>flow = <span class="kw">crate</span>::builder::FlowBuilder::new();
         <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
-        flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
+        process
+            .source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
             .map(<span class="macro">q!</span>(|v| v + <span class="number">1</span>))
             .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n)));
 

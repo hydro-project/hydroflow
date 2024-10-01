@@ -67,12 +67,14 @@
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-<span class="kw">pub fn </span>many_to_many(flow: <span class="kw-2">&amp;</span>FlowBuilder) -&gt; Cluster&lt;()&gt; {
+<span class="kw">pub fn </span>many_to_many&lt;<span class="lifetime">'a</span>&gt;(flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt;) -&gt; Cluster&lt;<span class="lifetime">'a</span>, ()&gt; {
     <span class="kw">let </span>cluster = flow.cluster();
-    flow.source_iter(<span class="kw-2">&amp;</span>cluster, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">2</span>))
+    cluster
+        .source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">2</span>))
         .broadcast_bincode(<span class="kw-2">&amp;</span>cluster)
         .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"cluster received: {:?}"</span>, n)));
 

@@ -258,8 +258,6 @@
 <a href="#258" id="258">258</a>
 <a href="#259" id="259">259</a>
 <a href="#260" id="260">260</a>
-<a href="#261" id="261">261</a>
-<a href="#262" id="262">262</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::io::Error;
 <span class="kw">use </span>std::pin::Pin;
@@ -358,7 +356,7 @@
         p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
         p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
-    );
+    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce()&gt;;
 
     <span class="kw">fn </span>o2m_sink_source(
         compile_env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv,
@@ -372,7 +370,7 @@
         p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         c2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster,
         c2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
-    );
+    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce()&gt;;
 
     <span class="kw">fn </span>m2o_sink_source(
         compile_env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv,
@@ -386,7 +384,7 @@
         c1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
         p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
-    );
+    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce()&gt;;
 
     <span class="kw">fn </span>m2m_sink_source(
         compile_env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv,
@@ -400,7 +398,7 @@
         c1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         c2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster,
         c2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
-    );
+    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce()&gt;;
 
     <span class="kw">fn </span>e2o_source(
         compile_env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv,
@@ -409,13 +407,12 @@
         p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
         p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
     ) -&gt; syn::Expr;
-
     <span class="kw">fn </span>e2o_connect(
         p1: <span class="kw-2">&amp;</span><span class="self">Self</span>::ExternalProcess,
         p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
         p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
-    );
+    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce()&gt;;
 
     <span class="kw">fn </span>o2e_sink(
         compile_env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv,
@@ -424,13 +421,12 @@
         p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::ExternalProcess,
         p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
     ) -&gt; syn::Expr;
-
     <span class="kw">fn </span>o2e_connect(
         p1: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
         p1_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
         p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::ExternalProcess,
         p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
-    );
+    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce()&gt;;
 
     <span class="kw">fn </span>cluster_ids(
         env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv,
