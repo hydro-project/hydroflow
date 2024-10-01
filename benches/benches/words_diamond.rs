@@ -25,7 +25,8 @@ fn words() -> impl Iterator<Item = String> + Clone {
         .map(|s| s.to_owned())
 }
 fn hash_code(s: &str) -> u32 {
-    s.bytes().fold(0, |n, c| (n * 31).wrapping_add(c as u32))
+    s.bytes()
+        .fold(0, |n, c| n.wrapping_mul(31).wrapping_add(c as u32))
 }
 
 fn hydroflow_diamond(c: &mut Criterion) {
