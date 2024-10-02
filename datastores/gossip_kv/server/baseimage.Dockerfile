@@ -1,6 +1,13 @@
-FROM rustlang/rust:nightly as builder
+FROM rustlang/rust:nightly AS builder
 WORKDIR /usr/src/gossip-kv-server-base-image
 COPY . .
+
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3.11-dev \
+    libpython3.11 \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 ## Build everything, including dependencies. The built dependencies will be cached, so only changing the server
 ## code requires lesser build time.
