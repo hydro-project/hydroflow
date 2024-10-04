@@ -10,10 +10,14 @@ pub struct Coordinator {}
 
 pub struct Client {}
 
-pub fn two_pc(
-    flow: &FlowBuilder,
+pub fn two_pc<'a>(
+    flow: &FlowBuilder<'a>,
     num_participants: u32,
-) -> (Process<Coordinator>, Cluster<Participants>, Process<Client>) {
+) -> (
+    Process<'a, Coordinator>,
+    Cluster<'a, Participants>,
+    Process<'a, Client>,
+) {
     // Assume single client.
     let client = flow.process::<Client>();
 
@@ -24,7 +28,7 @@ pub fn two_pc(
     let participants = flow.cluster::<Participants>();
 
     // assume 3 transactions are generated from 0 to 3
-    let client_transaction = flow.source_iter(&client, q!(0..3));
+    let client_transaction = client.source_iter(q!(0..3));
 
     let c_receive_client_transactions = client_transaction.send_bincode(&coordinator);
     c_receive_client_transactions
@@ -86,36 +90,4 @@ pub fn two_pc(
         id, t
     )));
     (coordinator, participants, client)
-}
-
-#[cfg(test)]
-mod tests {
-    use hydro_deploy::Deployment;
-    use hydroflow_plus::deploy::TrybuildHost;
-
-    #[tokio::test]
-    async fn two_pc() {
-        let mut deployment = Deployment::new();
-
-        let builder: hydroflow_plus::FlowBuilder<'_> = hydroflow_plus::FlowBuilder::new();
-        let num_participants: u32 = 3;
-        let (coordinator, participants, client) = super::two_pc(&builder, num_participants);
-        let built = builder.with_default_optimize();
-        let nodes = built
-            .with_process(&coordinator, TrybuildHost::new(deployment.Localhost()))
-            .with_cluster(
-                &participants,
-                (0..num_participants)
-                    .map(|_| TrybuildHost::new(deployment.Localhost()))
-                    .collect::<Vec<_>>(),
-            )
-            .with_process(&client, TrybuildHost::new(deployment.Localhost()))
-            .deploy(&mut deployment);
-        // println!("{:?}", built.ir());
-        deployment.deploy().await.unwrap();
-
-        deployment.start().await.unwrap();
-
-        tokio::signal::ctrl_c().await.unwrap();
-    }
 }

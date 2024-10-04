@@ -14,7 +14,7 @@ use serde::Serialize;
 use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
 
-use crate::builder::{self, ClusterIds, FlowLeaves, FlowState};
+use crate::builder::{self, ClusterIds, FlowState};
 use crate::cycle::{CycleCollection, CycleComplete};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{
@@ -692,22 +692,18 @@ pub(super) fn deserialize_bincode<T: DeserializeOwned>(tagged: bool) -> Pipeline
 impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
     pub fn decouple_process<P2>(
         self,
-        other: &Process<P2>,
-    ) -> Stream<'a, T, Unbounded, NoTick, Process<P2>>
+        other: &Process<'a, P2>,
+    ) -> Stream<T, Unbounded, NoTick, Process<'a, P2>>
     where
-        N: CanSend<Process<P2>, In<T> = T, Out<T> = T>,
+        N: CanSend<'a, Process<'a, P2>, In<T> = T, Out<T> = T>,
         T: Clone + Serialize + DeserializeOwned,
     {
-        match self.location_kind {
-            LocationId::Process(_) => (),
-            _ => panic!("decouple_process must be called on a process"),
-        };
-        self.send_bincode::<Process<P2>, T>(other)
+        self.send_bincode::<Process<'a, P2>, T>(other)
     }
 
     pub fn decouple_cluster<C2>(
         self,
-        other: &Cluster<C2>,
+        other: &Cluster<'a, C2>,
     ) -> Stream<N::Out<T>, Unbounded, NoTick, Cluster<'a, C2>>
     where
         N: CanSend<'a, Cluster<'a, C2>, In<T> = (u32, T)>,
@@ -883,10 +879,8 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
         N: CanSend<'a, Cluster<'a, C2>, In<T> = (u32, T)>,
         T: Clone + Serialize + DeserializeOwned,
     {
-        let ids = ClusterIds::<'a> {
-            id: other.id,
-            _phantom: PhantomData,
-        };
+        let ids = other.members();
+
         self.flat_map(q!(|b| ids.iter().map(move |id| (
             ::std::clone::Clone::clone(id),
             ::std::clone::Clone::clone(&b)

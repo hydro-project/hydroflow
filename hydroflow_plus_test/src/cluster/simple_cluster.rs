@@ -1,11 +1,12 @@
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn decouple_cluster(flow: &FlowBuilder) -> (Cluster<()>, Cluster<()>) {
+pub fn decouple_cluster<'a>(flow: &FlowBuilder<'a>) -> (Cluster<'a, ()>, Cluster<'a, ()>) {
     let cluster1 = flow.cluster();
     let cluster2 = flow.cluster();
-    let cluster_self_id = flow.cluster_self_id(&cluster2);
-    flow.source_iter(&cluster1, q!(0..2))
+    let cluster_self_id = cluster2.self_id();
+    cluster1
+        .source_iter(q!(0..1))
         .decouple_cluster(&cluster2)
         .for_each(q!(move |(id, message)| println!(
             "I received from {}, my self id is {}, my message is {}",
@@ -14,16 +15,17 @@ pub fn decouple_cluster(flow: &FlowBuilder) -> (Cluster<()>, Cluster<()>) {
     (cluster1, cluster2)
 }
 
-pub fn decouple_process(flow: &FlowBuilder) -> (Process<()>, Process<()>) {
+pub fn decouple_process<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, ()>, Process<'a, ()>) {
     let process1 = flow.process();
     let process2 = flow.process();
-    flow.source_iter(&process1, q!(0..3))
+    process1
+        .source_iter(q!(0..3))
         .decouple_process(&process2)
         .for_each(q!(|message| println!("I received message is {}", message)));
     (process1, process2)
 }
 
-pub fn simple_cluster(flow: &FlowBuilder) -> (Process<()>, Cluster<()>) {
+pub fn simple_cluster<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, ()>, Cluster<'a, ()>) {
     let process = flow.process();
     let cluster = flow.cluster();
 
@@ -52,51 +54,6 @@ mod tests {
     use hydro_deploy::Deployment;
     use hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
 
-    #[tokio::test]
-    async fn decouple_cluster() {
-        let mut deployment = Deployment::new();
-
-        let builder = hydroflow_plus::FlowBuilder::new();
-        let (cluster1, cluster2) = super::decouple_cluster(&builder);
-        let built = builder.with_default_optimize();
-
-        let nodes = built
-            .with_cluster(
-                &cluster1,
-                (0..3)
-                    .map(|_| TrybuildHost::new(deployment.Localhost()))
-                    .collect::<Vec<_>>(),
-            )
-            .with_cluster(
-                &cluster2,
-                (0..3)
-                    .map(|_| TrybuildHost::new(deployment.Localhost()))
-                    .collect::<Vec<_>>(),
-            )
-            .deploy(&mut deployment);
-
-        deployment.deploy().await.unwrap();
-
-        deployment.start().await.unwrap();
-    }
-
-    #[tokio::test]
-    async fn decouple_process() {
-        let mut deployment = Deployment::new();
-
-        let builder = hydroflow_plus::FlowBuilder::new();
-        let (process1, process2) = super::decouple_process(&builder);
-        let built = builder.with_default_optimize();
-
-        let _nodes = built
-            .with_process(&process1, TrybuildHost::new(deployment.Localhost()))
-            .with_process(&process2, TrybuildHost::new(deployment.Localhost()))
-            .deploy(&mut deployment);
-
-        deployment.deploy().await.unwrap();
-
-        deployment.start().await.unwrap();
-    }
     #[tokio::test]
     async fn simple_cluster() {
         let mut deployment = Deployment::new();
@@ -151,6 +108,75 @@ mod tests {
                 n,
                 format!("node received: ({}, ({}, {}))", i / 5, i / 5, i % 5)
             );
+        }
+    }
+
+    #[tokio::test]
+    async fn decouple_process() {
+        let mut deployment = Deployment::new();
+
+        let builder = hydroflow_plus::FlowBuilder::new();
+        let (process1, process2) = super::decouple_process(&builder);
+        let built = builder.with_default_optimize();
+
+        let nodes = built
+            .with_process(&process1, TrybuildHost::new(deployment.Localhost()))
+            .with_process(&process2, TrybuildHost::new(deployment.Localhost()))
+            .deploy(&mut deployment);
+
+        deployment.deploy().await.unwrap();
+        let mut process2_stdout = nodes.get_process(&process2).stdout().await;
+        deployment.start().await.unwrap();
+        for i in 0..3 {
+            let expected_message = format!("I received message is {}", i);
+            assert_eq!(process2_stdout.recv().await.unwrap(), expected_message);
+        }
+    }
+
+    #[tokio::test]
+    async fn decouple_cluster() {
+        let mut deployment = Deployment::new();
+
+        let builder = hydroflow_plus::FlowBuilder::new();
+        let (cluster1, cluster2) = super::decouple_cluster(&builder);
+        let built = builder.with_default_optimize();
+
+        let nodes = built
+            .with_cluster(
+                &cluster1,
+                (0..3)
+                    .map(|_| TrybuildHost::new(deployment.Localhost()))
+                    .collect::<Vec<_>>(),
+            )
+            .with_cluster(
+                &cluster2,
+                (0..3)
+                    .map(|_| TrybuildHost::new(deployment.Localhost()))
+                    .collect::<Vec<_>>(),
+            )
+            .deploy(&mut deployment);
+
+        deployment.deploy().await.unwrap();
+
+        let cluster2_stdouts = futures::future::join_all(
+            nodes
+                .get_cluster(&cluster2)
+                .members()
+                .iter()
+                .map(|node| node.stdout()),
+        )
+        .await;
+
+        deployment.start().await.unwrap();
+
+        for (i, mut stdout) in cluster2_stdouts.into_iter().enumerate() {
+            for j in 0..1 {
+                let expected_message = format!(
+                    "I received from {}, my self id is {}, my message is {}",
+                    i, i, j
+                );
+                assert_eq!(stdout.recv().await.unwrap(), expected_message);
+            }
         }
     }
 }
