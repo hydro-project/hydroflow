@@ -9,10 +9,11 @@ use gossip_protocol::membership::{MemberDataBuilder, Protocol};
 use gossip_protocol::{ClientRequest, GossipMessage};
 use hydroflow::futures::{SinkExt, StreamExt};
 use hydroflow::tokio_stream::wrappers::ReceiverStream;
-use hydroflow::util::bind_udp_bytes;
+use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use hydroflow::{bincode, tokio};
-use tracing::{error, info};
+use tracing::{error, info, trace};
 
+use crate::config::{setup_settings_watch, SeedNodeSettings};
 use crate::membership::member_name;
 use crate::server::{server, SeedNode};
 
@@ -33,12 +34,18 @@ struct Opts {
     client_port: u16,
 }
 
+fn make_seed_node(settings: &SeedNodeSettings) -> SeedNode<SocketAddr> {
+    SeedNode {
+        id: settings.id.clone(),
+        address: ipv4_resolve(&settings.address).unwrap(),
+    }
+}
+
 #[hydroflow::main]
 async fn main() {
     tracing_subscriber::fmt::init();
 
     let opts: Opts = Opts::parse();
-    let settings = config::ServerSettings::new().unwrap();
 
     // Setup protocol information in the member metadata.
     let client_protocol_address =
@@ -119,19 +126,21 @@ async fn main() {
         };
         ready(mapped)
     });
-
-    // Configure seed nodes for gossip protocol.
-    let seed_nodes = settings
-        .seed_nodes
-        .iter()
-        .map(|node| SeedNode {
-            id: node.id.clone(),
-            address: SocketAddr::new(node.ip.parse().unwrap(), node.port),
-        })
-        .collect();
-
     // TODO: Trigger gossip every X (configurable number of seconds)
     let (_gossip_tx, gossip_rx) = tokio::sync::mpsc::channel::<()>(20 /* Configure size */);
+
+    let (_watcher, server_settings, settings_stream) = setup_settings_watch();
+
+    let seed_nodes = server_settings
+        .seed_nodes
+        .iter()
+        .map(make_seed_node)
+        .collect::<Vec<_>>();
+
+    let seed_node_stream = settings_stream.map(|settings| {
+        trace!("Settings updated. Reloading seed nodes");
+        settings.seed_nodes.iter().map(make_seed_node).collect()
+    });
 
     // Create and run the server
     let mut server = server(
@@ -142,6 +151,7 @@ async fn main() {
         ReceiverStream::new(gossip_rx),
         member_data,
         seed_nodes,
+        seed_node_stream,
     );
 
     server.run_async().await;

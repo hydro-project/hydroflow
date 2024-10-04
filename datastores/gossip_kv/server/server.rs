@@ -55,7 +55,17 @@ pub type MessageId = String;
 /// -- `client_outputs`: The output sink of client responses for the client protocol.
 /// -- `member_info`: The membership information of the server.
 /// -- `seed_nodes`: A list of seed nodes that can be used to bootstrap the gossip cluster.
-pub fn server<ClientInput, ClientOutput, GossipInput, GossipOutput, GossipTrigger, Addr, E>(
+#[expect(clippy::too_many_arguments)]
+pub fn server<
+    ClientInput,
+    ClientOutput,
+    GossipInput,
+    GossipOutput,
+    GossipTrigger,
+    SeedNodeStream,
+    Addr,
+    E,
+>(
     client_inputs: ClientInput,
     client_outputs: ClientOutput,
     gossip_inputs: GossipInput,
@@ -63,6 +73,7 @@ pub fn server<ClientInput, ClientOutput, GossipInput, GossipOutput, GossipTrigge
     gossip_trigger: GossipTrigger,
     member_info: MemberData<Addr>,
     seed_nodes: Vec<SeedNode<Addr>>,
+    seed_node_stream: SeedNodeStream,
 ) -> Hydroflow<'static>
 where
     ClientInput: Stream<Item = (ClientRequest, Addr)> + Unpin + 'static,
@@ -70,6 +81,7 @@ where
     GossipInput: Stream<Item = (GossipMessage, Addr)> + Unpin + 'static,
     GossipOutput: Sink<(GossipMessage, Addr), Error = E> + Unpin + 'static,
     GossipTrigger: Stream<Item = ()> + Unpin + 'static,
+    SeedNodeStream: Stream<Item = Vec<SeedNode<Addr>>> + Unpin + 'static,
     Addr: Address + DeserializeOwned + 'static,
     E: Debug + 'static,
 {
@@ -84,6 +96,12 @@ where
 
         on_start = initialize() -> tee();
         on_start -> for_each(|_| info!("{:?}: Transducer started.", context.current_tick()));
+
+        seed_nodes = source_stream(seed_node_stream)
+            -> fold::<'static>(|| Box::new(seed_nodes), |last_seed_nodes, new_seed_nodes: Vec<SeedNode<Addr>>| {
+                **last_seed_nodes = new_seed_nodes;
+                info!("Updated seed nodes: {:?}", **last_seed_nodes);
+            });
 
         // Setup member metadata for this process.
         on_start -> map(|_| upsert_row(Clock::new(0), Namespace::System, "members".to_string(), my_member_id.clone(), serde_json::to_string(&member_info).unwrap()))
@@ -271,6 +289,7 @@ where
                 peer_names.insert(row_key.clone());
             });
 
+            let seed_nodes = &#seed_nodes;
             seed_nodes.iter().for_each(|seed_node| {
                 peer_names.insert(seed_node.id.clone());
             });
@@ -311,6 +330,7 @@ mod tests {
     use std::collections::HashSet;
 
     use gossip_protocol::membership::{MemberDataBuilder, Protocol};
+    use hydroflow::tokio_stream::empty;
     use hydroflow::util::simulation::{Address, Fleet, Hostname};
 
     use super::*;
@@ -353,6 +373,7 @@ mod tests {
                 gossip_trigger_rx,
                 member_data,
                 vec![],
+                empty(),
             )
         });
 
@@ -457,6 +478,7 @@ mod tests {
                 gossip_trigger_rx,
                 member_data,
                 vec![],
+                empty(),
             )
         });
 
@@ -607,6 +629,7 @@ mod tests {
                 gossip_trigger_rx_a,
                 member_data,
                 seed_nodes_clone,
+                empty(),
             )
         });
 
@@ -639,6 +662,7 @@ mod tests {
                 gossip_trigger_rx_b,
                 member_data,
                 seed_nodes_clone,
+                empty(),
             )
         });
 

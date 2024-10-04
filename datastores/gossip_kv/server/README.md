@@ -22,9 +22,14 @@ Speeds up code changes by caching build dependencies.
 docker build -t "hydroflow/gossip-kv-server-base-image:latest" -f datastores/gossip_kv/server/baseimage.Dockerfile . 
 ```
 
-## Build Docker Server Image
+## Build Docker Image for Gossip Server
 ```shell
 docker build -t "hydroflow/gossip-kv-server:latest" -f datastores/gossip_kv/server/Dockerfile .
+```
+
+## Build Docker Image for Gossip CLI
+```shell
+docker build -t "hydroflow/gossip-kv-cli:latest" -f datastores/gossip_kv/cli/Dockerfile .
 ```
 
 ## Check if minikube has the image

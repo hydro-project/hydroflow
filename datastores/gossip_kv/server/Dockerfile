@@ -7,7 +7,8 @@ RUN cargo build --release --workspace -p gossip_kv
 FROM rustlang/rust:nightly-slim
 COPY --from=builder /usr/src/gossip-kv-server/target/release/gossip_server /usr/local/bin/gossip_server
 
+RUN  mkdir -p /config/static
 # Don't skip the trailing slash in the destination directory
-COPY datastores/gossip_kv/server/config/*.toml /config/
+COPY datastores/gossip_kv/server/config/static/*.toml /config/static/
 CMD ["gossip_server"]
 # ENTRYPOINT ["tail", "-f", "/dev/null"]

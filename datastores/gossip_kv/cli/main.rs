@@ -10,7 +10,7 @@ use tracing::error;
 #[derive(Debug, Parser)]
 struct Opts {
     #[clap(short, long, help = "Server address to connect to.")]
-    server_address: Option<SocketAddr>,
+    server_address: Option<String>,
 }
 
 /// Dummy app for using clap to process commands for interactive CLI.
@@ -87,12 +87,13 @@ async fn main() {
     let opts = Opts::parse();
 
     // Bind to OS-assigned port on localhost.
-    let address = ipv4_resolve("localhost:0").unwrap();
+    let address = ipv4_resolve("0.0.0.0:0").unwrap();
 
     // Default to localhost:3000 if not provided.
-    let server_address = opts
-        .server_address
-        .unwrap_or_else(|| ipv4_resolve("localhost:3001").unwrap());
+    let server_address = opts.server_address.map_or_else(
+        || ipv4_resolve("localhost:3001").unwrap(),
+        |s| ipv4_resolve(&s).unwrap(),
+    );
 
     // Setup UDP sockets for communication.
     let (outbound, inbound, _) = bind_udp_bytes(address).await;
