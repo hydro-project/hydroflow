@@ -25,7 +25,7 @@ pub mod singleton;
 pub use singleton::{Optional, Singleton};
 
 pub mod location;
-pub use location::{Cluster, Location, Process};
+pub use location::{Cluster, ClusterId, Location, Process};
 
 pub mod deploy;
 pub use deploy::{ClusterSpec, Deploy, ProcessSpec};
@@ -42,6 +42,8 @@ pub mod persist_pullup;
 pub mod profiler;
 
 pub mod properties;
+
+mod staging_util;
 
 #[derive(Clone)]
 pub struct RuntimeContext<'a> {
