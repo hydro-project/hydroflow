@@ -2,12 +2,12 @@ use std::cell::RefCell;
 use std::pin::Pin;
 use std::rc::Rc;
 
+use hydroflow::util::deploy::DeployPorts;
 use stageleft::{Quoted, RuntimeData};
 
 use super::HydroflowPlusMeta;
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
 use crate::lang::graph::HydroflowGraph;
-use crate::util::deploy::DeployPorts;
 
 pub struct DeployRuntime {}
 

@@ -1,3 +1,5 @@
+use std::fmt::{Debug, Display};
+use std::hash::Hash;
 use std::marker::PhantomData;
 use std::time::Duration;
 
@@ -6,8 +8,8 @@ use hydroflow::futures::stream::Stream as FuturesStream;
 use hydroflow::{tokio, tokio_stream};
 use proc_macro2::Span;
 use serde::de::DeserializeOwned;
-use serde::Serialize;
-use stageleft::{q, Quoted};
+use serde::{Deserialize, Serialize};
+use stageleft::{q, quote_type, Quoted};
 
 use super::builder::{ClusterIds, ClusterSelfId, FlowState};
 use crate::cycle::{CycleCollection, CycleCollectionWithInitial};
@@ -366,7 +368,7 @@ impl<'a, P> ExternalProcess<'a, P> {
                     to_key: None,
                     serialize_pipeline: None,
                     instantiate_fn: crate::ir::DebugInstantiate::Building(),
-                    deserialize_pipeline: Some(crate::stream::deserialize_bincode::<T>(false)),
+                    deserialize_pipeline: Some(crate::stream::deserialize_bincode::<T>(None)),
                     input: Box::new(HfPlusNode::Source {
                         source: HfPlusSource::ExternalNetwork(),
                         location_kind: LocationId::ExternalProcess(self.id),
@@ -403,6 +405,101 @@ impl<'a, P> Location<'a> for Process<'a, P> {
     }
 }
 
+#[repr(transparent)]
+pub struct ClusterId<C> {
+    pub id: u32,
+    pub(crate) _phantom: PhantomData<C>,
+}
+
+impl<C> Debug for ClusterId<C> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ClusterId::<{}>({})",
+            std::any::type_name::<C>(),
+            self.id
+        )
+    }
+}
+
+impl<C> Display for ClusterId<C> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ClusterId::<{}>({})",
+            std::any::type_name::<C>(),
+            self.id
+        )
+    }
+}
+
+impl<C> Clone for ClusterId<C> {
+    fn clone(&self) -> Self {
+        ClusterId {
+            id: self.id,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<C> Copy for ClusterId<C> {}
+
+impl<C> Serialize for ClusterId<C> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        self.id.serialize(serializer)
+    }
+}
+
+impl<'de, C> Deserialize<'de> for ClusterId<C> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::de::Deserializer<'de>,
+    {
+        u32::deserialize(deserializer).map(|id| ClusterId {
+            id,
+            _phantom: PhantomData,
+        })
+    }
+}
+
+impl<C> PartialEq for ClusterId<C> {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl<C> Eq for ClusterId<C> {}
+
+impl<C> PartialOrd for ClusterId<C> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.id.partial_cmp(&other.id)
+    }
+}
+
+impl<C> Ord for ClusterId<C> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
+impl<C> Hash for ClusterId<C> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state)
+    }
+}
+
+impl<C> ClusterId<C> {
+    pub fn from_raw(id: u32) -> Self {
+        ClusterId {
+            id,
+            _phantom: PhantomData,
+        }
+    }
+}
+
 pub struct Cluster<'a, C> {
     pub(crate) id: usize,
     pub(crate) flow_state: FlowState,
@@ -410,14 +507,14 @@ pub struct Cluster<'a, C> {
 }
 
 impl<'a, C> Cluster<'a, C> {
-    pub fn self_id(&self) -> impl Quoted<'a, u32> + Copy + 'a {
+    pub fn self_id(&self) -> impl Quoted<'a, ClusterId<C>> + Copy + 'a {
         ClusterSelfId {
             id: self.id,
             _phantom: PhantomData,
         }
     }
 
-    pub fn members(&self) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
+    pub fn members(&self) -> impl Quoted<'a, &'a Vec<ClusterId<C>>> + Copy + 'a {
         ClusterIds {
             id: self.id,
             _phantom: PhantomData,
@@ -450,7 +547,7 @@ pub trait CanSend<'a, To: Location<'a>>: Location<'a> {
     type Out<T>;
 
     fn is_demux() -> bool;
-    fn is_tagged() -> bool;
+    fn tagged_type() -> Option<syn::Type>;
 }
 
 impl<'a, P1, P2> CanSend<'a, Process<'a, P2>> for Process<'a, P1> {
@@ -461,47 +558,47 @@ impl<'a, P1, P2> CanSend<'a, Process<'a, P2>> for Process<'a, P1> {
         false
     }
 
-    fn is_tagged() -> bool {
-        false
+    fn tagged_type() -> Option<syn::Type> {
+        None
     }
 }
 
 impl<'a, P1, C2> CanSend<'a, Cluster<'a, C2>> for Process<'a, P1> {
-    type In<T> = (u32, T);
+    type In<T> = (ClusterId<C2>, T);
     type Out<T> = T;
 
     fn is_demux() -> bool {
         true
     }
 
-    fn is_tagged() -> bool {
-        false
+    fn tagged_type() -> Option<syn::Type> {
+        None
     }
 }
 
 impl<'a, C1, P2> CanSend<'a, Process<'a, P2>> for Cluster<'a, C1> {
     type In<T> = T;
-    type Out<T> = (u32, T);
+    type Out<T> = (ClusterId<C1>, T);
 
     fn is_demux() -> bool {
         false
     }
 
-    fn is_tagged() -> bool {
-        true
+    fn tagged_type() -> Option<syn::Type> {
+        Some(quote_type::<C1>())
     }
 }
 
 impl<'a, C1, C2> CanSend<'a, Cluster<'a, C2>> for Cluster<'a, C1> {
-    type In<T> = (u32, T);
-    type Out<T> = (u32, T);
+    type In<T> = (ClusterId<C2>, T);
+    type Out<T> = (ClusterId<C1>, T);
 
     fn is_demux() -> bool {
         true
     }
 
-    fn is_tagged() -> bool {
-        true
+    fn tagged_type() -> Option<syn::Type> {
+        Some(quote_type::<C1>())
     }
 }
 
@@ -513,7 +610,7 @@ impl<'a, P1, E2> CanSend<'a, ExternalProcess<'a, E2>> for Process<'a, P1> {
         false
     }
 
-    fn is_tagged() -> bool {
-        false
+    fn tagged_type() -> Option<syn::Type> {
+        None
     }
 }

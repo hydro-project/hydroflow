@@ -21,11 +21,11 @@ pub trait PaxosPayload:
 pub struct Ballot {
     // Note: Important that num comes before id, since Ord is defined lexicographically
     pub num: u32,
-    pub id: u32,
+    pub id: ClusterId<Proposer>,
 }
 
 impl LeaderElected for Ballot {
-    fn leader_id(&self) -> u32 {
+    fn leader_id(&self) -> ClusterId<Proposer> {
         self.id
     }
 }
@@ -64,12 +64,12 @@ struct P2b<P> {
 }
 
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
-pub fn paxos_core<'a, P: PaxosPayload>(
+pub fn paxos_core<'a, P: PaxosPayload, R>(
     flow: &FlowBuilder<'a>,
     r_to_acceptors_checkpoint: impl FnOnce(
         &Cluster<'a, Acceptor>,
     ) -> Stream<
-        (u32, i32),
+        (ClusterId<R>, i32),
         Unbounded,
         NoTick,
         Cluster<'a, Acceptor>,
@@ -184,16 +184,21 @@ pub fn paxos_core<'a, P: PaxosPayload>(
 }
 
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
-fn acceptor<'a, P: PaxosPayload>(
+fn acceptor<'a, P: PaxosPayload, R>(
     p_to_acceptors_p1a: Stream<P1a, Unbounded, NoTick, Cluster<'a, Acceptor>>,
     p_to_acceptors_p2a: Stream<P2a<P>, Unbounded, NoTick, Cluster<'a, Acceptor>>,
-    r_to_acceptors_checkpoint: Stream<(u32, i32), Unbounded, NoTick, Cluster<'a, Acceptor>>,
+    r_to_acceptors_checkpoint: Stream<
+        (ClusterId<R>, i32),
+        Unbounded,
+        NoTick,
+        Cluster<'a, Acceptor>,
+    >,
     proposers: &Cluster<'a, Proposer>,
     acceptors: &Cluster<'a, Acceptor>,
     f: usize,
 ) -> (
-    Stream<(u32, P1b<P>), Unbounded, NoTick, Cluster<'a, Proposer>>,
-    Stream<(u32, P2b<P>), Unbounded, NoTick, Cluster<'a, Proposer>>,
+    Stream<(ClusterId<Acceptor>, P1b<P>), Unbounded, NoTick, Cluster<'a, Proposer>>,
+    Stream<(ClusterId<Acceptor>, P2b<P>), Unbounded, NoTick, Cluster<'a, Proposer>>,
 ) {
     // Get the latest checkpoint sequence per replica
     let a_checkpoint_largest_seqs =
@@ -222,7 +227,10 @@ fn acceptor<'a, P: PaxosPayload>(
             min_seq,
             P2a {
                 // Create tuple with checkpoint number and dummy p2a
-                ballot: Ballot { num: 0, id: 0 },
+                ballot: Ballot {
+                    num: 0,
+                    id: ClusterId::from_raw(0)
+                },
                 slot: -1,
                 value: Default::default()
             }
@@ -233,7 +241,10 @@ fn acceptor<'a, P: PaxosPayload>(
         .clone()
         .map(q!(|p1a| p1a.ballot))
         .max()
-        .unwrap_or(acceptors.singleton(q!(Ballot { num: 0, id: 0 })));
+        .unwrap_or(acceptors.singleton(q!(Ballot {
+            num: 0,
+            id: ClusterId::from_raw(0)
+        })));
     let a_p2as_to_place_in_log = p_to_acceptors_p2a
         .clone()
         .tick_batch()
@@ -320,7 +331,12 @@ fn acceptor<'a, P: PaxosPayload>(
 
 fn p_p2b<'a, P: PaxosPayload>(
     proposers: &Cluster<'a, Proposer>,
-    a_to_proposers_p2b: Stream<(u32, P2b<P>), Unbounded, NoTick, Cluster<'a, Proposer>>,
+    a_to_proposers_p2b: Stream<
+        (ClusterId<Acceptor>, P2b<P>),
+        Unbounded,
+        NoTick,
+        Cluster<'a, Proposer>,
+    >,
     f: usize,
 ) -> Stream<(i32, P), Unbounded, NoTick, Cluster<'a, Proposer>> {
     let (p_broadcasted_p2b_slots_complete_cycle, p_broadcasted_p2b_slots) = proposers.tick_cycle();
@@ -341,8 +357,14 @@ fn p_p2b<'a, P: PaxosPayload>(
             q!(|| (
                 0,
                 P2b {
-                    ballot: Ballot { num: 0, id: 0 },
-                    max_ballot: Ballot { num: 0, id: 0 },
+                    ballot: Ballot {
+                        num: 0,
+                        id: ClusterId::from_raw(0)
+                    },
+                    max_ballot: Ballot {
+                        num: 0,
+                        id: ClusterId::from_raw(0)
+                    },
                     slot: 0,
                     value: Default::default()
                 }
@@ -466,7 +488,12 @@ fn p_p2a<'a, P: PaxosPayload>(
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 fn p_p1b<'a, P: PaxosPayload>(
     proposers: &Cluster<'a, Proposer>,
-    a_to_proposers_p1b: Stream<(u32, P1b<P>), Unbounded, NoTick, Cluster<'a, Proposer>>,
+    a_to_proposers_p1b: Stream<
+        (ClusterId<Acceptor>, P1b<P>),
+        Unbounded,
+        NoTick,
+        Cluster<'a, Proposer>,
+    >,
     p_ballot_num: Singleton<u32, Bounded, Tick, Cluster<'a, Proposer>>,
     p_has_largest_ballot: Optional<(Ballot, u32), Bounded, Tick, Cluster<'a, Proposer>>,
     f: usize,
@@ -501,7 +528,7 @@ fn p_p1b<'a, P: PaxosPayload>(
     let p_p1b_highest_entries_and_count = p_relevant_p1bs
         .clone()
         .flat_map(q!(|((_, p1b), _)| p1b.accepted.into_iter())) // Convert HashMap log back to stream
-        .fold_keyed(q!(|| (0, LogValue { ballot: Ballot { num: 0, id: 0 }, value: Default::default() })), q!(|curr_entry, new_entry| {
+        .fold_keyed(q!(|| (0, LogValue { ballot: Ballot { num: 0, id: ClusterId::from_raw(0) }, value: Default::default() })), q!(|curr_entry, new_entry| {
             let same_values = new_entry.value == curr_entry.1.value;
             let higher_ballot = new_entry.ballot > curr_entry.1.ballot;
             // Increment count if the values are the same
@@ -561,8 +588,18 @@ fn p_p1b<'a, P: PaxosPayload>(
 // Proposer logic to calculate the largest ballot received so far.
 fn p_max_ballot<'a, P: PaxosPayload>(
     proposers: &Cluster<'a, Proposer>,
-    a_to_proposers_p1b: Stream<(u32, P1b<P>), Unbounded, NoTick, Cluster<'a, Proposer>>,
-    a_to_proposers_p2b: Stream<(u32, P2b<P>), Unbounded, NoTick, Cluster<'a, Proposer>>,
+    a_to_proposers_p1b: Stream<
+        (ClusterId<Acceptor>, P1b<P>),
+        Unbounded,
+        NoTick,
+        Cluster<'a, Proposer>,
+    >,
+    a_to_proposers_p2b: Stream<
+        (ClusterId<Acceptor>, P2b<P>),
+        Unbounded,
+        NoTick,
+        Cluster<'a, Proposer>,
+    >,
     p_to_proposers_i_am_leader: Stream<Ballot, Unbounded, NoTick, Cluster<'a, Proposer>>,
 ) -> Singleton<Ballot, Unbounded, NoTick, Cluster<'a, Proposer>> {
     let p_received_p1b_ballots = a_to_proposers_p1b
@@ -575,7 +612,10 @@ fn p_max_ballot<'a, P: PaxosPayload>(
         .union(p_received_p2b_ballots)
         .union(p_to_proposers_i_am_leader)
         .max()
-        .unwrap_or(proposers.singleton(q!(Ballot { num: 0, id: 0 })))
+        .unwrap_or(proposers.singleton(q!(Ballot {
+            num: 0,
+            id: ClusterId::from_raw(0)
+        })))
 }
 
 // Proposer logic to calculate the next ballot number. Expects p_received_max_ballot, the largest ballot received so far. Outputs streams: ballot_num, and has_largest_ballot, which only contains a value if we have the largest ballot.
@@ -666,7 +706,7 @@ fn p_p1a<'a>(
         }),
     );
     // Add random delay depending on node ID so not everyone sends p1a at the same time
-    let p_leader_expired = proposers.source_interval_delayed(q!(Duration::from_secs((p_id * i_am_leader_check_timeout_delay_multiplier as u32).into())), q!(Duration::from_secs(i_am_leader_check_timeout)))
+    let p_leader_expired = proposers.source_interval_delayed(q!(Duration::from_secs((p_id.id * i_am_leader_check_timeout_delay_multiplier as u32).into())), q!(Duration::from_secs(i_am_leader_check_timeout)))
         .cross_singleton(p_latest_received_i_am_leader.clone())
         .latest_tick()
         // .inspect(q!(|v| println!("Proposer checking if leader expired")))
