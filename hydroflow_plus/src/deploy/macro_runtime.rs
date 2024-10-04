@@ -7,7 +7,7 @@ use stageleft::{Quoted, RuntimeData};
 use super::HydroflowPlusMeta;
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
 use crate::lang::graph::HydroflowGraph;
-use crate::util::deploy::DeployPorts;
+use hydroflow::util::deploy::DeployPorts;
 
 pub struct DeployRuntime {}
 

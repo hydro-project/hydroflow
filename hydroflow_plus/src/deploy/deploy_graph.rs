@@ -14,7 +14,7 @@ use hydro_deploy::hydroflow_crate::tracing_options::TracingOptions;
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{CustomService, Deployment, Host, HydroflowCrate};
 use hydroflow::futures::StreamExt;
-use hydroflow::util::deploy::ConnectedSource;
+use hydroflow::util::deploy::{ConnectedSink, ConnectedSource};
 use nameof::name_of;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -29,7 +29,6 @@ use super::trybuild::{compile_graph_trybuild, create_trybuild};
 use super::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
 use crate::futures::SinkExt;
 use crate::lang::graph::HydroflowGraph;
-use crate::util::deploy::ConnectedSink;
 
 pub struct HydroDeploy {}
 

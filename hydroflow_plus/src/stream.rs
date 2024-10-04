@@ -7,8 +7,6 @@ use std::rc::Rc;
 use hydroflow::bytes::Bytes;
 use hydroflow::futures::Sink;
 use hydroflow_lang::parse::Pipeline;
-use proc_macro2::{Span, TokenStream};
-use quote::quote;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use stageleft::{q, IntoQuotedMut, Quoted};
@@ -20,7 +18,8 @@ use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{
     CanSend, ExternalBincodeStream, ExternalBytesPort, ExternalProcess, Location, LocationId,
 };
-use crate::{Cluster, Optional, Singleton};
+use crate::staging_util::get_this_crate;
+use crate::{Cluster, ClusterId, Optional, Singleton};
 
 /// Marks the stream as being unbounded, which means that it is not
 /// guaranteed to be complete in finite time.
@@ -636,18 +635,6 @@ impl<'a, K: Eq + Hash, V, N: Location<'a>> Stream<(K, V), Bounded, Tick, N> {
     }
 }
 
-fn get_this_crate() -> TokenStream {
-    let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
-        .expect("hydroflow_plus should be present in `Cargo.toml`");
-    match hydroflow_crate {
-        proc_macro_crate::FoundCrate::Itself => quote! { hydroflow_plus },
-        proc_macro_crate::FoundCrate::Name(name) => {
-            let ident = syn::Ident::new(&name, Span::call_site());
-            quote! { #ident }
-        }
-    }
-}
-
 fn serialize_bincode<T: Serialize>(is_demux: bool) -> Pipeline {
     let root = get_this_crate();
 
@@ -656,7 +643,7 @@ fn serialize_bincode<T: Serialize>(is_demux: bool) -> Pipeline {
     if is_demux {
         parse_quote! {
             map(|(id, data)| {
-                (id, #root::runtime_support::bincode::serialize::<#t_type>(&data).unwrap().into())
+                (id.id, #root::runtime_support::bincode::serialize::<#t_type>(&data).unwrap().into())
             })
         }
     } else {
@@ -668,16 +655,16 @@ fn serialize_bincode<T: Serialize>(is_demux: bool) -> Pipeline {
     }
 }
 
-pub(super) fn deserialize_bincode<T: DeserializeOwned>(tagged: bool) -> Pipeline {
+pub(super) fn deserialize_bincode<T: DeserializeOwned>(tagged: Option<syn::Type>) -> Pipeline {
     let root = get_this_crate();
 
     let t_type: syn::Type = stageleft::quote_type::<T>();
 
-    if tagged {
+    if let Some(c_type) = tagged {
         parse_quote! {
             map(|res| {
                 let (id, b) = res.unwrap();
-                (id, #root::runtime_support::bincode::deserialize::<#t_type>(&b).unwrap())
+                (#root::ClusterId::<#c_type>::from_raw(id), #root::runtime_support::bincode::deserialize::<#t_type>(&b).unwrap())
             })
         }
     } else {
@@ -700,7 +687,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
     {
         let serialize_pipeline = Some(serialize_bincode::<CoreType>(N::is_demux()));
 
-        let deserialize_pipeline = Some(deserialize_bincode::<CoreType>(N::is_tagged()));
+        let deserialize_pipeline = Some(deserialize_bincode::<CoreType>(N::tagged_type()));
 
         Stream::new(
             other.id(),
@@ -766,6 +753,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
     where
         N: CanSend<'a, N2, In<Bytes> = T>,
     {
+        let root = get_this_crate();
         Stream::new(
             other.id(),
             self.flow_state,
@@ -776,8 +764,8 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
                 to_key: None,
                 serialize_pipeline: None,
                 instantiate_fn: DebugInstantiate::Building(),
-                deserialize_pipeline: if N::is_tagged() {
-                    Some(parse_quote!(map(|(id, b)| (id, b.unwrap().freeze()))))
+                deserialize_pipeline: if let Some(c_type) = N::tagged_type() {
+                    Some(parse_quote!(map(|(id, b)| (#root::ClusterId<#c_type>::from_raw(id), b.unwrap().freeze()))))
                 } else {
                     Some(parse_quote!(map(|b| b.unwrap().freeze())))
                 },
@@ -844,7 +832,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
         other: &Cluster<'a, C2>,
     ) -> Stream<N::Out<T>, Unbounded, NoTick, Cluster<'a, C2>>
     where
-        N: CanSend<'a, Cluster<'a, C2>, In<T> = (u32, T)>,
+        N: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T)>,
         T: Clone + Serialize + DeserializeOwned,
     {
         let ids = other.members();
@@ -861,7 +849,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
         other: &Cluster<'a, C2>,
     ) -> Stream<T, Unbounded, NoTick, Cluster<'a, C2>>
     where
-        N: CanSend<'a, Cluster<'a, C2>, In<T> = (u32, T), Out<T> = (Tag, T)> + 'a,
+        N: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T), Out<T> = (Tag, T)> + 'a,
         T: Clone + Serialize + DeserializeOwned,
     {
         self.broadcast_bincode(other).map(q!(|(_, b)| b))
@@ -872,7 +860,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
         other: &Cluster<'a, C2>,
     ) -> Stream<N::Out<Bytes>, Unbounded, NoTick, Cluster<'a, C2>>
     where
-        N: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (u32, T)> + 'a,
+        N: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (ClusterId<C2>, T)> + 'a,
         T: Clone,
     {
         let ids = other.members();
@@ -889,7 +877,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
         other: &Cluster<'a, C2>,
     ) -> Stream<Bytes, Unbounded, NoTick, Cluster<'a, C2>>
     where
-        N: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (u32, T), Out<Bytes> = (Tag, Bytes)> + 'a,
+        N: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (ClusterId<C2>, T), Out<Bytes> = (Tag, Bytes)> + 'a,
         T: Clone,
     {
         self.broadcast_bytes(other).map(q!(|(_, b)| b))

@@ -16,7 +16,7 @@ pub fn map_reduce<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, Leader>, Cluster<'
     let words_partitioned = words
         .tick_batch()
         .enumerate()
-        .map(q!(|(i, w)| ((i % all_ids_vec.len()) as u32, w)))
+        .map(q!(|(i, w)| ((ClusterId::from_raw((i % all_ids_vec.len()) as u32), w))))
         .all_ticks();
 
     words_partitioned
