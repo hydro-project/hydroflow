@@ -12,7 +12,7 @@ expression: built.ir()
                     f: stageleft :: runtime_support :: fn2_borrow_mut_type_hint :: < (u64 , u64) , (u64 , u64) , () > ({ use crate :: __staged :: cluster :: compute_pi :: * ; | (inside , total) , (inside_batch , total_batch) | { * inside += inside_batch ; * total += total_batch ; } }),
                     input: Persist(
                         Map {
-                            f: stageleft :: runtime_support :: fn1_type_hint :: < (u32 , (u64 , u64)) , (u64 , u64) > ({ use hydroflow_plus :: __staged :: stream :: * ; | (_ , b) | b }),
+                            f: stageleft :: runtime_support :: fn1_type_hint :: < (hydroflow_plus :: location :: ClusterId < hydroflow_plus_test :: cluster :: compute_pi :: Worker > , (u64 , u64)) , (u64 , u64) > ({ use hydroflow_plus :: __staged :: stream :: * ; | (_ , b) | b }),
                             input: Network {
                                 from_location: Cluster(
                                     0,
@@ -38,7 +38,7 @@ expression: built.ir()
                                         Operator {
                                             path: "map",
                                             args: [
-                                                "| res | { let (id , b) = res . unwrap () ; (id , hydroflow_plus :: runtime_support :: bincode :: deserialize :: < (u64 , u64) > (& b) . unwrap ()) }",
+                                                "| res | { let (id , b) = res . unwrap () ; (hydroflow_plus :: ClusterId :: < hydroflow_plus_test :: cluster :: compute_pi :: Worker > :: from_raw (id) , hydroflow_plus :: runtime_support :: bincode :: deserialize :: < (u64 , u64) > (& b) . unwrap ()) }",
                                             ],
                                         },
                                     ),

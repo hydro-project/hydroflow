@@ -10,7 +10,7 @@ use stageleft::*;
 use super::paxos::{paxos_core, Acceptor, Ballot, PaxosPayload, Proposer};
 
 pub trait LeaderElected: Ord + Clone {
-    fn leader_id(&self) -> u32;
+    fn leader_id(&self) -> ClusterId<Proposer>;
 }
 
 pub struct Replica {}
@@ -97,7 +97,12 @@ pub fn paxos_bench<'a>(
 fn paxos_with_replica<'a>(
     flow: &FlowBuilder<'a>,
     replicas: &Cluster<'a, Replica>,
-    c_to_proposers: Stream<(u32, ClientPayload), Unbounded, NoTick, Cluster<'a, Client>>,
+    c_to_proposers: Stream<
+        (ClusterId<Proposer>, ClientPayload),
+        Unbounded,
+        NoTick,
+        Cluster<'a, Client>,
+    >,
     f: usize,
     i_am_leader_send_timeout: u64,
     i_am_leader_check_timeout: u64,
@@ -107,7 +112,7 @@ fn paxos_with_replica<'a>(
     Cluster<'a, Proposer>,
     Cluster<'a, Acceptor>,
     Stream<Ballot, Unbounded, NoTick, Cluster<'a, Proposer>>,
-    Stream<(u32, ReplicaPayload), Unbounded, NoTick, Cluster<'a, Replica>>,
+    Stream<(ClusterId<Client>, ReplicaPayload), Unbounded, NoTick, Cluster<'a, Replica>>,
 ) {
     let (r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
         replicas.cycle::<Stream<_, _, _, _>>();
@@ -152,7 +157,7 @@ pub fn replica<'a>(
     checkpoint_frequency: usize,
 ) -> (
     Stream<i32, Unbounded, NoTick, Cluster<'a, Replica>>,
-    Stream<(u32, ReplicaPayload), Unbounded, NoTick, Cluster<'a, Replica>>,
+    Stream<(ClusterId<Client>, ReplicaPayload), Unbounded, NoTick, Cluster<'a, Replica>>,
 ) {
     let (r_buffered_payloads_complete_cycle, r_buffered_payloads) = replicas.tick_cycle();
     // p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
@@ -239,7 +244,7 @@ pub fn replica<'a>(
 
     // Tell clients that the payload has been committed. All ReplicaPayloads contain the client's machine ID (to string) as value.
     let r_to_clients = p_to_replicas.map(q!(|payload| (
-        payload.value.parse::<u32>().unwrap(),
+        ClusterId::from_raw(payload.value.parse::<u32>().unwrap()),
         payload
     )));
     (r_checkpoint_seq_new.all_ticks(), r_to_clients)
@@ -250,7 +255,7 @@ fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
     clients: &Cluster<'a, Client>,
     p_to_clients_leader_elected: Stream<B, Unbounded, NoTick, Cluster<'a, Client>>,
     r_to_clients_payload_applied: Stream<
-        (u32, ReplicaPayload),
+        (ClusterId<Replica>, ReplicaPayload),
         Unbounded,
         NoTick,
         Cluster<'a, Client>,
@@ -258,7 +263,7 @@ fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
     num_clients_per_node: usize,
     median_latency_window_size: usize,
     f: usize,
-) -> Stream<(u32, ClientPayload), Unbounded, NoTick, Cluster<'a, Client>> {
+) -> Stream<(ClusterId<Proposer>, ClientPayload), Unbounded, NoTick, Cluster<'a, Client>> {
     let c_id = clients.self_id();
     // r_to_clients_payload_applied.clone().inspect(q!(|payload: &(u32, ReplicaPayload)| println!("Client received payload: {:?}", payload)));
     // Only keep the latest leader
@@ -278,7 +283,7 @@ fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
                     leader_ballot.leader_id(),
                     ClientPayload {
                         key: i as u32,
-                        value: c_id.to_string()
+                        value: c_id.raw_id.to_string()
                     }
                 )
             )));
@@ -318,7 +323,7 @@ fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
             leader_ballot.leader_id(),
             ClientPayload {
                 key,
-                value: c_id.to_string()
+                value: c_id.raw_id.to_string()
             }
         )));
     let c_to_proposers = c_new_payloads_when_leader_elected
