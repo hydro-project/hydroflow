@@ -6,20 +6,20 @@ MINIKUBE_CPUS=16
 MINIKUBE_MEMORY=32768
 
 # Docker Image Tags
-BASE_IMAGE_TAG=hydroflow/gossip-kv-server-base-image:latest
+BASE_IMAGE_TAG=hydroflow/gossip-kv-base-image:latest
 SERVER_IMAGE_TAG=hydroflow/gossip-kv-server:latest
 CLI_IMAGE_TAG=hydroflow/gossip-kv-cli:latest
+DUMMY_IMAGE_TAG=hydroflow/gossip-kv-dummy:latest
 
 # Default target when you run 'make'
 
 # Target to start Minikube with specific options
 start_minikube:
 	minikube start --disk-size=$(MINIKUBE_DISK_SIZE) --cpus=$(MINIKUBE_CPUS) --memory=$(MINIKUBE_MEMORY)
-	eval $$(minikube docker-env)
+	@echo "Please run 'eval \$$(minikube docker-env)' to use the Minikube Docker daemon"
 
 # Target to build the Docker images
 build_docker_images: build_base_image build_server_image build_cli_image
-
 
 build_base_image:
 	docker build -t "$(BASE_IMAGE_TAG)" -f ../../datastores/gossip_kv/server/baseimage.Dockerfile ../..

@@ -5,7 +5,7 @@ metadata:
   labels:
     app: gossip-kv-seed-nodes
 spec:
-  replicas: 1
+  replicas: 3
   serviceName: gossip-kv-seed-nodes
   selector:
     matchLabels:
@@ -15,6 +15,7 @@ spec:
       labels:
         app: gossip-kv-seed-nodes
     spec:
+      terminationGracePeriodSeconds: 5 # Really aggressive, but makes teardown faster. Not recommended beyond benchmarking.
       containers:
         - name: gossip-kv-server
           image: docker.io/hydroflow/gossip-kv-server:latest
@@ -54,6 +55,7 @@ spec:
       labels:
         app: gossip-kv-cli
     spec:
+      terminationGracePeriodSeconds: 5 # Really aggressive, but makes teardown faster. Not recommended beyond benchmarking.
       containers:
         - name: gossip-kv-cli
           image: docker.io/hydroflow/gossip-kv-cli:latest
