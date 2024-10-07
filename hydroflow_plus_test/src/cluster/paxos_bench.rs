@@ -45,8 +45,8 @@ impl PaxosPayload for ClientPayload {}
 // Important: By convention, all relations that represent booleans either have a single "true" value or nothing.
 // This allows us to use the continue_if_exists() and continue_if_empty() operators as if they were if (true) and if (false) statements.
 #[expect(clippy::too_many_arguments, reason = "internal paxos code // TODO")]
-pub fn paxos_bench(
-    flow: &FlowBuilder,
+pub fn paxos_bench<'a>(
+    flow: &FlowBuilder<'a>,
     f: usize,
     num_clients_per_node: usize,
     median_latency_window_size: usize, /* How many latencies to keep in the window for calculating the median */
@@ -55,15 +55,15 @@ pub fn paxos_bench(
     i_am_leader_check_timeout: u64,    // How often to check if heartbeat expired
     i_am_leader_check_timeout_delay_multiplier: usize, /* Initial delay, multiplied by proposer pid, to stagger proposers checking for timeouts */
 ) -> (
-    Cluster<Proposer>,
-    Cluster<Acceptor>,
-    Cluster<Client>,
-    Cluster<Replica>,
+    Cluster<'a, Proposer>,
+    Cluster<'a, Acceptor>,
+    Cluster<'a, Client>,
+    Cluster<'a, Replica>,
 ) {
     let clients = flow.cluster::<Client>();
     let replicas = flow.cluster::<Replica>();
 
-    let (c_to_proposers_complete_cycle, c_to_proposers) = flow.cycle(&clients);
+    let (c_to_proposers_complete_cycle, c_to_proposers) = clients.cycle();
 
     let (proposers, acceptors, p_to_clients_new_leader_elected, r_new_processed_payloads) =
         paxos_with_replica(
@@ -81,7 +81,6 @@ pub fn paxos_bench(
         &clients,
         p_to_clients_new_leader_elected.broadcast_bincode_interleaved(&clients),
         r_new_processed_payloads.send_bincode(&clients),
-        flow,
         num_clients_per_node,
         median_latency_window_size,
         f,
@@ -97,21 +96,21 @@ pub fn paxos_bench(
 )]
 fn paxos_with_replica<'a>(
     flow: &FlowBuilder<'a>,
-    replicas: &Cluster<Replica>,
-    c_to_proposers: Stream<'a, (u32, ClientPayload), Unbounded, NoTick, Cluster<Client>>,
+    replicas: &Cluster<'a, Replica>,
+    c_to_proposers: Stream<(u32, ClientPayload), Unbounded, NoTick, Cluster<'a, Client>>,
     f: usize,
     i_am_leader_send_timeout: u64,
     i_am_leader_check_timeout: u64,
     i_am_leader_check_timeout_delay_multiplier: usize,
     checkpoint_frequency: usize,
 ) -> (
-    Cluster<Proposer>,
-    Cluster<Acceptor>,
-    Stream<'a, Ballot, Unbounded, NoTick, Cluster<Proposer>>,
-    Stream<'a, (u32, ReplicaPayload), Unbounded, NoTick, Cluster<Replica>>,
+    Cluster<'a, Proposer>,
+    Cluster<'a, Acceptor>,
+    Stream<Ballot, Unbounded, NoTick, Cluster<'a, Proposer>>,
+    Stream<(u32, ReplicaPayload), Unbounded, NoTick, Cluster<'a, Replica>>,
 ) {
     let (r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
-        flow.cycle::<Stream<_, _, _, _>>(replicas);
+        replicas.cycle::<Stream<_, _, _, _>>();
 
     let (proposers, acceptors, p_to_clients_new_leader_elected, p_to_replicas) = paxos_core(
         flow,
@@ -124,7 +123,6 @@ fn paxos_with_replica<'a>(
     );
 
     let (r_to_acceptors_checkpoint_new, r_new_processed_payloads) = replica(
-        flow,
         replicas,
         p_to_replicas
             .map(q!(|(slot, data)| ReplicaPayload {
@@ -149,15 +147,14 @@ fn paxos_with_replica<'a>(
 // Replicas. All relations for replicas will be prefixed with r. Expects ReplicaPayload on p_to_replicas, outputs a stream of (client address, ReplicaPayload) after processing.
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 pub fn replica<'a>(
-    flow: &FlowBuilder<'a>,
-    replicas: &Cluster<Replica>,
-    p_to_replicas: Stream<'a, ReplicaPayload, Unbounded, NoTick, Cluster<Replica>>,
+    replicas: &Cluster<'a, Replica>,
+    p_to_replicas: Stream<ReplicaPayload, Unbounded, NoTick, Cluster<'a, Replica>>,
     checkpoint_frequency: usize,
 ) -> (
-    Stream<'a, i32, Unbounded, NoTick, Cluster<Replica>>,
-    Stream<'a, (u32, ReplicaPayload), Unbounded, NoTick, Cluster<Replica>>,
+    Stream<i32, Unbounded, NoTick, Cluster<'a, Replica>>,
+    Stream<(u32, ReplicaPayload), Unbounded, NoTick, Cluster<'a, Replica>>,
 ) {
-    let (r_buffered_payloads_complete_cycle, r_buffered_payloads) = flow.tick_cycle(replicas);
+    let (r_buffered_payloads_complete_cycle, r_buffered_payloads) = replicas.tick_cycle();
     // p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
     let r_sorted_payloads = p_to_replicas
         .clone()
@@ -166,8 +163,8 @@ pub fn replica<'a>(
         .sort();
     // Create a cycle since we'll use this seq before we define it
     let (r_highest_seq_complete_cycle, r_highest_seq) =
-        flow.tick_cycle::<Optional<'a, i32, _, _, _>>(replicas);
-    let empty_slot = flow.singleton_first_tick(replicas, q!(-1));
+        replicas.tick_cycle::<Optional<i32, _, _, _>>();
+    let empty_slot = replicas.singleton_first_tick(q!(-1));
     // Either the max sequence number executed so far or -1. Need to union otherwise r_highest_seq is empty and joins with it will fail
     let r_highest_seq_with_default = r_highest_seq.union(empty_slot);
     // Find highest the sequence number of any payload that can be processed in this tick. This is the payload right before a hole.
@@ -222,11 +219,11 @@ pub fn replica<'a>(
 
     // Send checkpoints to the acceptors when we've processed enough payloads
     let (r_checkpointed_seqs_complete_cycle, r_checkpointed_seqs) =
-        flow.tick_cycle::<Optional<'a, i32, _, _, _>>(replicas);
+        replicas.tick_cycle::<Optional<i32, _, _, _>>();
     let r_max_checkpointed_seq = r_checkpointed_seqs
         .persist()
         .max()
-        .unwrap_or(flow.singleton(replicas, q!(-1)).latest_tick());
+        .unwrap_or(replicas.singleton(q!(-1)).latest_tick());
     let r_checkpoint_seq_new = r_max_checkpointed_seq
         .cross_singleton(r_new_highest_seq)
         .filter_map(q!(
@@ -250,21 +247,19 @@ pub fn replica<'a>(
 
 // Clients. All relations for clients will be prefixed with c. All ClientPayloads will contain the virtual client number as key and the client's machine ID (to string) as value. Expects p_to_clients_leader_elected containing Ballots whenever the leader is elected, and r_to_clients_payload_applied containing ReplicaPayloads whenever a payload is committed. Outputs (leader address, ClientPayload) when a new leader is elected or when the previous payload is committed.
 fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
-    clients: &Cluster<Client>,
-    p_to_clients_leader_elected: Stream<'a, B, Unbounded, NoTick, Cluster<Client>>,
+    clients: &Cluster<'a, Client>,
+    p_to_clients_leader_elected: Stream<B, Unbounded, NoTick, Cluster<'a, Client>>,
     r_to_clients_payload_applied: Stream<
-        'a,
         (u32, ReplicaPayload),
         Unbounded,
         NoTick,
-        Cluster<Client>,
+        Cluster<'a, Client>,
     >,
-    flow: &FlowBuilder<'a>,
     num_clients_per_node: usize,
     median_latency_window_size: usize,
     f: usize,
-) -> Stream<'a, (u32, ClientPayload), Unbounded, NoTick, Cluster<Client>> {
-    let c_id = flow.cluster_self_id(clients);
+) -> Stream<(u32, ClientPayload), Unbounded, NoTick, Cluster<'a, Client>> {
+    let c_id = clients.self_id();
     // r_to_clients_payload_applied.clone().inspect(q!(|payload: &(u32, ReplicaPayload)| println!("Client received payload: {:?}", payload)));
     // Only keep the latest leader
     let c_max_leader_ballot = p_to_clients_leader_elected
@@ -289,7 +284,7 @@ fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
             )));
     // Whenever replicas confirm that a payload was committed, collected it and wait for a quorum
     let (c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) =
-        flow.tick_cycle(clients);
+        clients.tick_cycle();
     let c_received_payloads = r_to_clients_payload_applied
         .tick_batch()
         .map(q!(|(sender, replica_payload)| (
@@ -332,7 +327,7 @@ fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
 
     // Track statistics
     let (c_timers_complete_cycle, c_timers) =
-        flow.tick_cycle::<Stream<'a, (usize, SystemTime), _, _, _>>(clients);
+        clients.tick_cycle::<Stream<(usize, SystemTime), _, _, _>>();
     let c_new_timers_when_leader_elected = c_new_leader_ballot
         .map(q!(|_| SystemTime::now()))
         .flat_map(q!(
@@ -352,7 +347,7 @@ fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
         }));
     c_timers_complete_cycle.complete_next_tick(c_new_timers);
 
-    let c_stats_output_timer = flow.source_interval(clients, q!(Duration::from_secs(1)));
+    let c_stats_output_timer = clients.source_interval(q!(Duration::from_secs(1)));
 
     let c_latency_reset = c_stats_output_timer
         .clone()

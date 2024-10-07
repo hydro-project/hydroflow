@@ -19,7 +19,7 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
     let node_zero = flow.process::<N0>();
     let node_one = flow.process::<N1>();
 
-    let source = flow.source_stream(&node_zero, input_stream).tick_batch();
+    let source = node_zero.source_stream(input_stream).tick_batch();
     let map1 = source.clone().map(q!(|v| (v + 1, ())));
     let map2 = source.map(q!(|v| (v - 1, ())));
 
@@ -35,7 +35,7 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
         }));
     }
 
-    let source_node_id_1 = flow.source_iter(&node_one, q!(0..5));
+    let source_node_id_1 = node_one.source_iter(q!(0..5));
     source_node_id_1.for_each(q!(|v| {
         output.send(v).unwrap();
     }));

@@ -96,7 +96,7 @@ pub trait Deploy<'a> {
         p1_port: &Self::Port,
         p2: &Self::Process,
         p2_port: &Self::Port,
-    );
+    ) -> Box<dyn FnOnce()>;
 
     fn o2m_sink_source(
         compile_env: &Self::CompileEnv,
@@ -110,7 +110,7 @@ pub trait Deploy<'a> {
         p1_port: &Self::Port,
         c2: &Self::Cluster,
         c2_port: &Self::Port,
-    );
+    ) -> Box<dyn FnOnce()>;
 
     fn m2o_sink_source(
         compile_env: &Self::CompileEnv,
@@ -124,7 +124,7 @@ pub trait Deploy<'a> {
         c1_port: &Self::Port,
         p2: &Self::Process,
         p2_port: &Self::Port,
-    );
+    ) -> Box<dyn FnOnce()>;
 
     fn m2m_sink_source(
         compile_env: &Self::CompileEnv,
@@ -138,7 +138,7 @@ pub trait Deploy<'a> {
         c1_port: &Self::Port,
         c2: &Self::Cluster,
         c2_port: &Self::Port,
-    );
+    ) -> Box<dyn FnOnce()>;
 
     fn e2o_source(
         compile_env: &Self::CompileEnv,
@@ -147,13 +147,12 @@ pub trait Deploy<'a> {
         p2: &Self::Process,
         p2_port: &Self::Port,
     ) -> syn::Expr;
-
     fn e2o_connect(
         p1: &Self::ExternalProcess,
         p1_port: &Self::Port,
         p2: &Self::Process,
         p2_port: &Self::Port,
-    );
+    ) -> Box<dyn FnOnce()>;
 
     fn o2e_sink(
         compile_env: &Self::CompileEnv,
@@ -162,13 +161,12 @@ pub trait Deploy<'a> {
         p2: &Self::ExternalProcess,
         p2_port: &Self::Port,
     ) -> syn::Expr;
-
     fn o2e_connect(
         p1: &Self::Process,
         p1_port: &Self::Port,
         p2: &Self::ExternalProcess,
         p2_port: &Self::Port,
-    );
+    ) -> Box<dyn FnOnce()>;
 
     fn cluster_ids(
         env: &Self::CompileEnv,

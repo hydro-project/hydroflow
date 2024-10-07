@@ -4,11 +4,11 @@ use hydroflow_plus::deploy::SingleProcessGraph;
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn compute_pi(flow: &FlowBuilder, batch_size: RuntimeData<usize>) -> Process<()> {
+pub fn compute_pi<'a>(flow: &FlowBuilder<'a>, batch_size: RuntimeData<usize>) -> Process<'a, ()> {
     let process = flow.process();
 
-    let trials = flow
-        .spin_batch(&process, q!(batch_size))
+    let trials = process
+        .spin_batch(q!(batch_size))
         .map(q!(|_| rand::random::<(f64, f64)>()))
         .map(q!(|(x, y)| x * x + y * y < 1.0))
         .fold(
