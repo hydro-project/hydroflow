@@ -3966,7 +3966,7 @@ checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
 name = "variadics"
 version = "0.0.6"
 dependencies = [
- "hashbrown",
+ "hashbrown 0.14.5",
  "sealed",
  "trybuild",
 ]
