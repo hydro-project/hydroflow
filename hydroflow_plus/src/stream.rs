@@ -14,7 +14,7 @@ use serde::Serialize;
 use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
 
-use crate::builder::{self, ClusterIds, FlowState};
+use crate::builder::{self, FlowState};
 use crate::cycle::{CycleCollection, CycleComplete};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{
