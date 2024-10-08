@@ -15,7 +15,7 @@ use syn::parse_quote;
 use super::staging_util::get_this_crate;
 use crate::builder::{self, FlowState};
 use crate::cycle::{CycleCollection, CycleComplete, DeferTick};
-use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource};
+use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource, TeeNode};
 use crate::location::{
     CanSend, ExternalBincodeStream, ExternalBytesPort, ExternalProcess, Location, LocationId,
 };
@@ -130,7 +130,7 @@ impl<'a, T: Clone, W, C, N: Location<'a>> Clone for Stream<T, W, C, N> {
         if !matches!(self.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
             let orig_ir_node = self.ir_node.replace(HfPlusNode::Placeholder);
             *self.ir_node.borrow_mut() = HfPlusNode::Tee {
-                inner: Rc::new(RefCell::new(orig_ir_node)),
+                inner: TeeNode(Rc::new(RefCell::new(orig_ir_node))),
             };
         }
 
@@ -139,7 +139,7 @@ impl<'a, T: Clone, W, C, N: Location<'a>> Clone for Stream<T, W, C, N> {
                 location_kind: self.location_kind,
                 flow_state: self.flow_state.clone(),
                 ir_node: HfPlusNode::Tee {
-                    inner: inner.clone(),
+                    inner: TeeNode(inner.0.clone()),
                 }
                 .into(),
                 _phantom: PhantomData,

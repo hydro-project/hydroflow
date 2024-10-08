@@ -10,22 +10,20 @@ expression: built.ir()
                 Map {
                     f: stageleft :: runtime_support :: fn1_type_hint :: < i32 , i32 > ({ use crate :: __staged :: persist_pullup :: tests :: * ; | v | v + 1 }),
                     input: Tee {
-                        inner: RefCell {
-                            value: Persist(
-                                Unpersist(
-                                    Persist(
-                                        Source {
-                                            source: Iter(
-                                                { use crate :: __staged :: persist_pullup :: tests :: * ; 0 .. 10 },
-                                            ),
-                                            location_kind: Process(
-                                                0,
-                                            ),
-                                        },
-                                    ),
+                        inner: <tee>: Persist(
+                            Unpersist(
+                                Persist(
+                                    Source {
+                                        source: Iter(
+                                            { use crate :: __staged :: persist_pullup :: tests :: * ; 0 .. 10 },
+                                        ),
+                                        location_kind: Process(
+                                            0,
+                                        ),
+                                    },
                                 ),
                             ),
-                        },
+                        ),
                     },
                 },
             ),
@@ -38,22 +36,20 @@ expression: built.ir()
                 Map {
                     f: stageleft :: runtime_support :: fn1_type_hint :: < i32 , i32 > ({ use crate :: __staged :: persist_pullup :: tests :: * ; | v | v + 1 }),
                     input: Tee {
-                        inner: RefCell {
-                            value: Persist(
-                                Unpersist(
-                                    Persist(
-                                        Source {
-                                            source: Iter(
-                                                { use crate :: __staged :: persist_pullup :: tests :: * ; 0 .. 10 },
-                                            ),
-                                            location_kind: Process(
-                                                0,
-                                            ),
-                                        },
-                                    ),
+                        inner: <tee>: Persist(
+                            Unpersist(
+                                Persist(
+                                    Source {
+                                        source: Iter(
+                                            { use crate :: __staged :: persist_pullup :: tests :: * ; 0 .. 10 },
+                                        ),
+                                        location_kind: Process(
+                                            0,
+                                        ),
+                                    },
                                 ),
                             ),
-                        },
+                        ),
                     },
                 },
             ),
