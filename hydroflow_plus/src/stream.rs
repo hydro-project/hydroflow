@@ -14,7 +14,7 @@ use syn::parse_quote;
 
 use super::staging_util::get_this_crate;
 use crate::builder::{self, FlowState};
-use crate::cycle::{CycleCollection, CycleComplete};
+use crate::cycle::{CycleCollection, CycleComplete, DeferTick};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{
     CanSend, ExternalBincodeStream, ExternalBytesPort, ExternalProcess, Location, LocationId,
@@ -54,13 +54,18 @@ pub struct Stream<T, W, C, N> {
     _phantom: PhantomData<(T, N, W, C)>,
 }
 
+impl<'a, T, N: Location<'a>> DeferTick for Stream<T, Bounded, Tick, N> {
+    fn defer_tick(self) -> Self {
+        Stream::defer_tick(self)
+    }
+}
+
 impl<'a, T, N: Location<'a>> CycleComplete<'a, Tick> for Stream<T, Bounded, Tick, N> {
     fn complete(self, ident: syn::Ident) {
-        let me = self.defer_tick();
-        me.flow_state.borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
+        self.flow_state.borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
             ident,
-            location_kind: me.location_kind,
-            input: Box::new(me.ir_node.into_inner()),
+            location_kind: self.location_kind,
+            input: Box::new(self.ir_node.into_inner()),
         });
     }
 }
