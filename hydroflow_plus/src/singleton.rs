@@ -6,7 +6,7 @@ use std::rc::Rc;
 use stageleft::{q, IntoQuotedMut, Quoted};
 
 use crate::builder::FlowState;
-use crate::cycle::{CycleCollection, CycleCollectionWithInitial, CycleComplete};
+use crate::cycle::{CycleCollection, CycleCollectionWithInitial, CycleComplete, DeferTick};
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{Location, LocationId};
 use crate::stream::{Bounded, NoTick, Tick, Unbounded};
@@ -128,6 +128,12 @@ impl<'a, T, C, N: Location<'a>> From<Singleton<T, Bounded, C, N>>
     }
 }
 
+impl<'a, T, N: Location<'a>> DeferTick for Singleton<T, Bounded, Tick, N> {
+    fn defer_tick(self) -> Self {
+        Singleton::defer_tick(self)
+    }
+}
+
 impl<'a, T, N: Location<'a>> CycleComplete<'a, Tick> for Singleton<T, Bounded, Tick, N> {
     fn complete(self, ident: syn::Ident) {
         self.flow_state.borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
@@ -135,6 +141,21 @@ impl<'a, T, N: Location<'a>> CycleComplete<'a, Tick> for Singleton<T, Bounded, T
             location_kind: self.location_kind,
             input: Box::new(self.ir_node.into_inner()),
         });
+    }
+}
+
+impl<'a, T, N: Location<'a>> CycleCollection<'a, Tick> for Singleton<T, Bounded, Tick, N> {
+    type Location = N;
+
+    fn create_source(ident: syn::Ident, flow_state: FlowState, l: LocationId) -> Self {
+        Singleton::new(
+            l,
+            flow_state,
+            HfPlusNode::CycleSource {
+                ident,
+                location_kind: l,
+            },
+        )
     }
 }
 
@@ -403,13 +424,18 @@ impl<'a, T, W, C, N: Location<'a>> Optional<T, W, C, N> {
     }
 }
 
+impl<'a, T, N: Location<'a>> DeferTick for Optional<T, Bounded, Tick, N> {
+    fn defer_tick(self) -> Self {
+        Optional::defer_tick(self)
+    }
+}
+
 impl<'a, T, N: Location<'a>> CycleComplete<'a, Tick> for Optional<T, Bounded, Tick, N> {
     fn complete(self, ident: syn::Ident) {
-        let me = self.defer_tick();
-        me.flow_state.borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
+        self.flow_state.borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
             ident,
-            location_kind: me.location_kind,
-            input: Box::new(me.ir_node.into_inner()),
+            location_kind: self.location_kind,
+            input: Box::new(self.ir_node.into_inner()),
         });
     }
 }
