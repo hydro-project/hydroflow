@@ -4,7 +4,7 @@ use hydroflow_plus::deploy::TrybuildHost;
 #[tokio::main]
 async fn main() {
     let mut deployment = Deployment::new();
-    let localhost = deployment.Localhost();
+    let _localhost = deployment.Localhost();
 
     let builder = hydroflow_plus::FlowBuilder::new();
     let num_participants: u32 = 3;
@@ -12,7 +12,7 @@ async fn main() {
     let (coordinator, participants, client) =
         hydroflow_plus_test::cluster::two_pc::two_pc(&builder, num_participants);
 
-    let rustflags = "-C opt-level=3 -C codegen-units=1 -C strip=none -C debuginfo=2 -C lto=off";
+    let _rustflags = "-C opt-level=3 -C codegen-units=1 -C strip=none -C debuginfo=2 -C lto=off";
 
     let _nodes = builder
         .with_default_optimize()
