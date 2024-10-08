@@ -580,6 +580,10 @@ impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick, N> {
             .map(q!(|(d, _signal)| d))
     }
 
+    pub fn then<U>(self, value: Singleton<U, Bounded, Tick, N>) -> Optional<U, Bounded, Tick, N> {
+        value.continue_if(self)
+    }
+
     pub fn continue_unless<U>(
         self,
         other: Optional<U, Bounded, Tick, N>,
