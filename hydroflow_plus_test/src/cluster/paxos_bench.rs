@@ -63,7 +63,7 @@ pub fn paxos_bench<'a>(
     let clients = flow.cluster::<Client>();
     let replicas = flow.cluster::<Replica>();
 
-    let (c_to_proposers_complete_cycle, c_to_proposers) = clients.cycle();
+    let (c_to_proposers_complete_cycle, c_to_proposers) = clients.forward_ref();
 
     let (proposers, acceptors, p_to_clients_new_leader_elected, r_new_processed_payloads) =
         paxos_with_replica(
@@ -115,7 +115,7 @@ fn paxos_with_replica<'a>(
     Stream<(ClusterId<Client>, ReplicaPayload), Unbounded, NoTick, Cluster<'a, Replica>>,
 ) {
     let (r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
-        replicas.cycle::<Stream<_, _, _, _>>();
+        replicas.forward_ref::<Stream<_, _, _, _>>();
 
     let (proposers, acceptors, p_to_clients_new_leader_elected, p_to_replicas) = paxos_core(
         flow,
