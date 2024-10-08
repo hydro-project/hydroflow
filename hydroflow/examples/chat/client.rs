@@ -62,6 +62,7 @@ pub(crate) async fn run_client(opts: Opts) {
     };
 
     // optionally print the dataflow graph
+    #[cfg(feature = "debugging")]
     if let Some(graph) = opts.graph {
         let serde_graph = hf
             .meta_graph()

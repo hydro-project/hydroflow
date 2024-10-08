@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::net::SocketAddr;
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use hydroflow_cli_integration::ServerBindConfig;
+use hydroflow_crate::tracing_options::TracingOptions;
+use hydroflow_deploy_integration::ServerBindConfig;
 
 pub mod deployment;
 pub use deployment::Deployment;
@@ -74,18 +74,21 @@ pub struct ResourceResult {
 pub trait LaunchedBinary: Send + Sync {
     fn stdin(&self) -> mpsc::UnboundedSender<String>;
 
-    /// Provides a oneshot channel for the CLI to handshake with the binary,
-    /// with the guarantee that as long as the CLI is holding on
+    /// Provides a oneshot channel to handshake with the binary,
+    /// with the guarantee that as long as deploy is holding on
     /// to a handle, none of the messages will also be broadcast
     /// to the user-facing [`LaunchedBinary::stdout`] channel.
-    fn cli_stdout(&self) -> oneshot::Receiver<String>;
+    fn deploy_stdout(&self) -> oneshot::Receiver<String>;
 
     fn stdout(&self) -> mpsc::UnboundedReceiver<String>;
     fn stderr(&self) -> mpsc::UnboundedReceiver<String>;
 
     fn exit_code(&self) -> Option<i32>;
 
-    async fn wait(&mut self) -> Option<i32>;
+    /// Wait for the process to stop on its own. Returns the exit code.
+    async fn wait(&mut self) -> Result<i32>;
+    /// If the process is still running, force stop it. Then run post-run tasks.
+    async fn stop(&mut self) -> Result<()>;
 }
 
 #[async_trait]
@@ -101,7 +104,7 @@ pub trait LaunchedHost: Send + Sync {
         id: String,
         binary: &BuildOutput,
         args: &[String],
-        perf: Option<PathBuf>,
+        perf: Option<TracingOptions>,
     ) -> Result<Box<dyn LaunchedBinary>>;
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr>;

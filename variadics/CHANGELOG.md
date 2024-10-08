@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.0.6 (2024-08-30)
+
+### Chore
+
+ - <csr-id-11af32828bab6e4a4264d2635ff71a12bb0bb778/> lower min dependency versions where possible, update `Cargo.lock`
+   Moved from #1418
+   
+   ---------
+
+### Bug Fixes
+
+ - <csr-id-43ff49d72789d78535717d2db04cf595cc511274/> allow `PartialEqVariadic::eq_ref` to take `AsRefVar`s with different lifetimes
+   Bug found while working on GHTs
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 2 unique issues were worked on: [#1367](https://github.com/hydro-project/hydroflow/issues/1367), [#1423](https://github.com/hydro-project/hydroflow/issues/1423)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1367](https://github.com/hydro-project/hydroflow/issues/1367)**
+    - Allow `PartialEqVariadic::eq_ref` to take `AsRefVar`s with different lifetimes ([`43ff49d`](https://github.com/hydro-project/hydroflow/commit/43ff49d72789d78535717d2db04cf595cc511274))
+ * **[#1423](https://github.com/hydro-project/hydroflow/issues/1423)**
+    - Lower min dependency versions where possible, update `Cargo.lock` ([`11af328`](https://github.com/hydro-project/hydroflow/commit/11af32828bab6e4a4264d2635ff71a12bb0bb778))
+</details>
+
 ## 0.0.5 (2024-07-23)
 
 ### New Features
@@ -30,8 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release over the course of 53 calendar days.
- - 143 days passed between releases.
+ - 6 commits contributed to the release.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 5 unique issues were worked on: [#1241](https://github.com/hydro-project/hydroflow/issues/1241), [#1245](https://github.com/hydro-project/hydroflow/issues/1245), [#1324](https://github.com/hydro-project/hydroflow/issues/1324), [#1325](https://github.com/hydro-project/hydroflow/issues/1325), [#1352](https://github.com/hydro-project/hydroflow/issues/1352)
 
@@ -51,6 +84,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Fix `HomogenousVariadic` `get` and `get_mut` only returning `None` ([`c70114d`](https://github.com/hydro-project/hydroflow/commit/c70114d836e5bc36e2104188867e548e90ab38f4))
  * **[#1352](https://github.com/hydro-project/hydroflow/issues/1352)**
     - `EitherRefVariadic` is `Variadic` ([`bbef070`](https://github.com/hydro-project/hydroflow/commit/bbef0705d509831415d3bb5ce003116af06b6ffb))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.8.0, hydroflow_datalog_core v0.8.0, hydroflow_datalog v0.8.0, hydroflow_macro v0.8.0, lattices_macro v0.5.5, lattices v0.5.6, variadics v0.0.5, pusherator v0.0.7, hydroflow v0.8.0, hydroflow_plus v0.8.0, hydro_deploy v0.8.0, hydro_cli v0.8.0, hydroflow_plus_cli_integration v0.8.0, safety bump 7 crates ([`ca6c16b`](https://github.com/hydro-project/hydroflow/commit/ca6c16b4a7ce35e155fe7fc6c7d1676c37c9e4de))
 </details>
 
 ## 0.0.4 (2024-03-02)
@@ -72,8 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release over the course of 3 calendar days.
- - 31 days passed between releases.
+ - 4 commits contributed to the release.
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -114,8 +148,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release over the course of 37 calendar days.
- - 253 days passed between releases.
+ - 3 commits contributed to the release.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#974](https://github.com/hydro-project/hydroflow/issues/974)
 
@@ -145,7 +178,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 2 commits contributed to the release.
- - 24 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#660](https://github.com/hydro-project/hydroflow/issues/660)
 
@@ -161,13 +193,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Release hydroflow_cli_integration v0.0.1, hydroflow_lang v0.0.1, hydroflow_datalog_core v0.0.1, hydroflow_datalog v0.0.1, hydroflow_macro v0.0.1, lattices v0.1.0, variadics v0.0.2, pusherator v0.0.1, hydroflow v0.0.2 ([`809395a`](https://github.com/hydro-project/hydroflow/commit/809395acddb78949d7a2bf036e1a94972f23b1ad))
 </details>
 
-## 0.0.1 (2023-04-26)
+## 0.0.1 (2023-04-25)
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release over the course of 133 calendar days.
+ - 4 commits contributed to the release.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#617](https://github.com/hydro-project/hydroflow/issues/617)
 

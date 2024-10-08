@@ -4,11 +4,11 @@ use hydroflow::lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism}
 use hydroflow::lattices::GhtType;
 use hydroflow::util::collect_ready;
 use hydroflow::variadics::{var_expr, var_type};
-use variadics::variadic_collections::VariadicCountedHashSet; // Import the Insert trait
+use variadics::variadic_collections::VariadicHashSet; // Import the Insert trait
 
 #[test]
 fn test_basic() {
-    type MyGht = GhtType!(u16, u32 => u64: Row);
+    type MyGht = GhtType!(u16, u32 => u64: Set);
     type FlatTup = var_type!(u16, u32, u64);
     let input: Vec<FlatTup> = vec![
         var_expr!(42, 314, 43770),
@@ -34,8 +34,8 @@ fn test_basic() {
 
 #[test]
 fn test_join() {
-    type MyGht = GhtType!(u8 => u16: Row);
-    type ResultGht = GhtType!(u8 => u16, u16: Row);
+    type MyGht = GhtType!(u8 => u16: Set);
+    type ResultGht = GhtType!(u8 => u16, u16: Set);
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
     let r = vec![
@@ -47,7 +47,7 @@ fn test_join() {
     let s = vec![var_expr!(1, 10), var_expr!(5, 50)];
 
     type MyNodeBim = <(MyGht, MyGht) as DeepJoinLatticeBimorphism<
-        VariadicCountedHashSet<var_type!(u8, u16, u16)>,
+        VariadicHashSet<var_type!(u8, u16, u16)>,
     >>::DeepJoinLatticeBimorphism;
     type MyBim = GhtBimorphism<MyNodeBim>;
 

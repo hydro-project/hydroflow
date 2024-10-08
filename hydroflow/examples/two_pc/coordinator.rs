@@ -127,6 +127,7 @@ pub(crate) async fn run_coordinator(outbound: UdpSink, inbound: UdpStream, opts:
         // Handler for ended acknowledgments not necessary; we just print them
     };
 
+    #[cfg(feature = "debugging")]
     if let Some(graph) = opts.graph {
         let serde_graph = df
             .meta_graph()

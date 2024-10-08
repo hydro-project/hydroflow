@@ -3,15 +3,16 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
-use futures_core::Future;
-use hydroflow_cli_integration::{InitConfig, ServerPort};
+use futures::Future;
+use hydroflow_deploy_integration::{InitConfig, ServerPort};
 use serde::Serialize;
 use tokio::sync::{mpsc, RwLock};
 
 use super::build::{build_crate_memoized, BuildError, BuildOutput, BuildParams};
 use super::ports::{self, HydroflowPortConfig, HydroflowSink, SourcePath};
+use super::tracing_options::TracingOptions;
 use crate::progress::ProgressTracker;
 use crate::{
     Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
@@ -21,7 +22,7 @@ pub struct HydroflowCrateService {
     id: usize,
     pub(super) on: Arc<dyn Host>,
     build_params: BuildParams,
-    perf: Option<PathBuf>,
+    tracing: Option<TracingOptions>,
     args: Option<Vec<String>>,
     display_id: Option<String>,
     external_ports: Vec<u16>,
@@ -46,7 +47,7 @@ pub struct HydroflowCrateService {
 }
 
 impl HydroflowCrateService {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments, reason = "internal code")]
     pub fn new(
         id: usize,
         src: PathBuf,
@@ -54,7 +55,10 @@ impl HydroflowCrateService {
         bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
-        perf: Option<PathBuf>,
+        rustflags: Option<String>,
+        target_dir: Option<PathBuf>,
+        no_default_features: bool,
+        tracing: Option<TracingOptions>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,
@@ -62,13 +66,23 @@ impl HydroflowCrateService {
     ) -> Self {
         let target_type = on.target_type();
 
-        let build_params = BuildParams::new(src, bin, example, profile, target_type, features);
+        let build_params = BuildParams::new(
+            src,
+            bin,
+            example,
+            profile,
+            rustflags,
+            target_dir,
+            no_default_features,
+            target_type,
+            features,
+        );
 
         Self {
             id,
             on,
             build_params,
-            perf,
+            tracing,
             args,
             display_id,
             external_ports,
@@ -183,13 +197,12 @@ impl Service for HydroflowCrateService {
         }
 
         ProgressTracker::with_group(
-            &self
-                .display_id
+            self.display_id
                 .clone()
                 .unwrap_or_else(|| format!("service/{}", self.id)),
             None,
             || async {
-                let built = self.build().await?;
+                let built = ProgressTracker::leaf("build", self.build()).await?;
 
                 let host = &self.on;
                 let launched = host.provision(resource_result);
@@ -209,8 +222,7 @@ impl Service for HydroflowCrateService {
         }
 
         ProgressTracker::with_group(
-            &self
-                .display_id
+            self.display_id
                 .clone()
                 .unwrap_or_else(|| format!("service/{}", self.id)),
             None,
@@ -227,7 +239,7 @@ impl Service for HydroflowCrateService {
                             .unwrap_or_else(|| format!("service/{}", self.id)),
                         built,
                         &args,
-                        self.perf.clone(),
+                        self.tracing.clone(),
                     )
                     .await?;
 
@@ -240,15 +252,17 @@ impl Service for HydroflowCrateService {
                     serde_json::to_string::<InitConfig>(&(bind_config, self.meta.clone())).unwrap();
 
                 // request stdout before sending config so we don't miss the "ready" response
-                let stdout_receiver = binary.cli_stdout();
+                let stdout_receiver = binary.deploy_stdout();
 
                 binary.stdin().send(format!("{formatted_bind_config}\n"))?;
 
                 let ready_line = ProgressTracker::leaf(
-                    "waiting for ready".to_string(),
+                    "waiting for ready",
                     tokio::time::timeout(Duration::from_secs(60), stdout_receiver),
                 )
-                .await??;
+                .await
+                .context("Timed out waiting for ready")?
+                .context("Program unexpectedly quit")?;
                 if ready_line.starts_with("ready: ") {
                     *self.server_defns.try_write().unwrap() =
                         serde_json::from_str(ready_line.trim_start_matches("ready: ")).unwrap();
@@ -276,7 +290,7 @@ impl Service for HydroflowCrateService {
 
         let formatted_defns = serde_json::to_string(&sink_ports).unwrap();
 
-        let stdout_receiver = self.launched_binary.as_ref().unwrap().cli_stdout();
+        let stdout_receiver = self.launched_binary.as_ref().unwrap().deploy_stdout();
 
         self.launched_binary
             .as_ref()
@@ -286,7 +300,10 @@ impl Service for HydroflowCrateService {
             .unwrap();
 
         let start_ack_line = ProgressTracker::leaf(
-            "waiting for ack start".to_string(),
+            self.display_id
+                .clone()
+                .unwrap_or_else(|| format!("service/{}", self.id))
+                + " / waiting for ack start",
             tokio::time::timeout(Duration::from_secs(60), stdout_receiver),
         )
         .await??;
@@ -299,14 +316,30 @@ impl Service for HydroflowCrateService {
     }
 
     async fn stop(&mut self) -> Result<()> {
-        self.launched_binary
-            .as_ref()
-            .unwrap()
-            .stdin()
-            .send("stop\n".to_string())?;
+        ProgressTracker::with_group(
+            self.display_id
+                .clone()
+                .unwrap_or_else(|| format!("service/{}", self.id)),
+            None,
+            || async {
+                let launched_binary = self.launched_binary.as_mut().unwrap();
+                launched_binary.stdin().send("stop\n".to_string())?;
 
-        self.launched_binary.as_mut().unwrap().wait().await;
+                let timeout_result = ProgressTracker::leaf(
+                    "waiting for exit",
+                    tokio::time::timeout(Duration::from_secs(60), launched_binary.wait()),
+                )
+                .await;
+                match timeout_result {
+                    Err(_timeout) => {} // `wait()` timed out, but stop will force quit.
+                    Ok(Err(unexpected_error)) => return Err(unexpected_error), // `wait()` errored.
+                    Ok(Ok(_exit_status)) => {}
+                }
+                launched_binary.stop().await?;
 
-        Ok(())
+                Ok(())
+            },
+        )
+        .await
     }
 }

@@ -4,9 +4,49 @@ expression: built.ir()
 ---
 [
     ForEach {
-        f: { use crate :: __staged :: distributed :: first_ten :: * ; | n : SendOverNetwork | println ! ("{}" , n . n) },
+        f: stageleft :: runtime_support :: fn1_type_hint :: < std :: string :: String , () > ({ use crate :: __staged :: distributed :: first_ten :: * ; | n | println ! ("hi: {:?}" , n) }),
         input: Network {
-            to_location: 1,
+            from_location: ExternalProcess(
+                0,
+            ),
+            from_key: Some(
+                0,
+            ),
+            to_location: Process(
+                1,
+            ),
+            to_key: None,
+            serialize_pipeline: None,
+            instantiate_fn: <network instantiate>,
+            deserialize_pipeline: Some(
+                Operator(
+                    Operator {
+                        path: "map",
+                        args: [
+                            "| res | { hydroflow_plus :: runtime_support :: bincode :: deserialize :: < std :: string :: String > (& res . unwrap ()) . unwrap () }",
+                        ],
+                    },
+                ),
+            ),
+            input: Source {
+                source: ExternalNetwork,
+                location_kind: ExternalProcess(
+                    0,
+                ),
+            },
+        },
+    },
+    ForEach {
+        f: stageleft :: runtime_support :: fn1_type_hint :: < hydroflow_plus_test :: distributed :: first_ten :: SendOverNetwork , () > ({ use crate :: __staged :: distributed :: first_ten :: * ; | n | println ! ("{}" , n . n) }),
+        input: Network {
+            from_location: Process(
+                1,
+            ),
+            from_key: None,
+            to_location: Process(
+                2,
+            ),
+            to_key: None,
             serialize_pipeline: Some(
                 Operator(
                     Operator {
@@ -17,8 +57,7 @@ expression: built.ir()
                     },
                 ),
             ),
-            sink_expr: null,
-            source_expr: null,
+            instantiate_fn: <network instantiate>,
             deserialize_pipeline: Some(
                 Operator(
                     Operator {
@@ -30,12 +69,14 @@ expression: built.ir()
                 ),
             ),
             input: Map {
-                f: { use crate :: __staged :: distributed :: first_ten :: * ; | n | SendOverNetwork { n } },
+                f: stageleft :: runtime_support :: fn1_type_hint :: < u32 , hydroflow_plus_test :: distributed :: first_ten :: SendOverNetwork > ({ use crate :: __staged :: distributed :: first_ten :: * ; | n | SendOverNetwork { n } }),
                 input: Source {
                     source: Iter(
                         { use crate :: __staged :: distributed :: first_ten :: * ; 0 .. 10 },
                     ),
-                    location_id: 0,
+                    location_kind: Process(
+                        1,
+                    ),
                 },
             },
         },

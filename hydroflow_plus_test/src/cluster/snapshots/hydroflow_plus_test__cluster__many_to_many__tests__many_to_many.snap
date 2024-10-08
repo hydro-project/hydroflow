@@ -1,12 +1,19 @@
 ---
 source: hydroflow_plus_test/src/cluster/many_to_many.rs
-expression: builder.extract().ir()
+expression: built.ir()
 ---
 [
     ForEach {
-        f: { use crate :: __staged :: cluster :: many_to_many :: * ; | n | println ! ("cluster received: {:?}" , n) },
+        f: stageleft :: runtime_support :: fn1_type_hint :: < (u32 , i32) , () > ({ use crate :: __staged :: cluster :: many_to_many :: * ; | n | println ! ("cluster received: {:?}" , n) }),
         input: Network {
-            to_location: 0,
+            from_location: Cluster(
+                0,
+            ),
+            from_key: None,
+            to_location: Cluster(
+                0,
+            ),
+            to_key: None,
             serialize_pipeline: Some(
                 Operator(
                     Operator {
@@ -17,8 +24,7 @@ expression: builder.extract().ir()
                     },
                 ),
             ),
-            sink_expr: null,
-            source_expr: null,
+            instantiate_fn: <network instantiate>,
             deserialize_pipeline: Some(
                 Operator(
                     Operator {
@@ -29,25 +35,17 @@ expression: builder.extract().ir()
                     },
                 ),
             ),
-            input: CrossProduct(
-                Persist(
-                    Map {
-                        f: { use hydroflow_plus :: __staged :: stream :: * ; | d | d . clone () },
-                        input: Source {
-                            source: Iter(
-                                { use hydroflow_plus_cli_integration :: __staged :: deploy :: * ; panic ! () },
-                            ),
-                            location_id: 0,
-                        },
-                    },
-                ),
-                Source {
+            input: FlatMap {
+                f: stageleft :: runtime_support :: fn1_type_hint :: < i32 , std :: iter :: Map < std :: slice :: Iter < u32 > , _ > > ({ use hydroflow_plus :: __staged :: stream :: * ; let ids = __hydroflow_plus_cluster_ids_0 ; | b | ids . iter () . map (move | id | (:: std :: clone :: Clone :: clone (id) , :: std :: clone :: Clone :: clone (& b))) }),
+                input: Source {
                     source: Iter(
                         { use crate :: __staged :: cluster :: many_to_many :: * ; 0 .. 2 },
                     ),
-                    location_id: 0,
+                    location_kind: Cluster(
+                        0,
+                    ),
                 },
-            ),
+            },
         },
     },
 ]

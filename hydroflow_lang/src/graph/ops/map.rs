@@ -1,7 +1,7 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     WriteContextArgs, RANGE_0, RANGE_1,
 };
 
@@ -35,11 +35,7 @@ pub const MAP: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
-        // Preserve input flow properties.
-        Ok(vec![flow_props_in[0]])
-    }),
-    write_fn: |wc @ &WriteContextArgs {
+    write_fn: |&WriteContextArgs {
                    root,
                    op_span,
                    ident,
@@ -50,10 +46,11 @@ pub const MAP: OperatorConstraints = OperatorConstraints {
                    ..
                },
                _| {
-        let func = wc.wrap_check_func_arg(&arguments[0]);
+        let func = &arguments[0];
         let write_iterator = if is_pull {
             let input = &inputs[0];
             quote_spanned! {op_span=>
+                #[allow(clippy::map_clone, reason = "hydroflow has no explicit `cloned`/`copied` operator")]
                 let #ident = #input.map(#func);
             }
         } else {

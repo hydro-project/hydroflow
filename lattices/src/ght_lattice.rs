@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use variadics::variadic_collections::VariadicMultiset;
+use variadics::variadic_collections::VariadicSet;
 use variadics::{var_expr, var_type, CloneVariadic, PartialEqVariadic, SplitBySuffix, VariadicExt};
 
 use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
@@ -16,13 +16,14 @@ use crate::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
 impl<Head, Node> Merge<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
     Node: GeneralizedHashTrieNode + Merge<Node>,
+    Node::Storage: VariadicSet<Schema = Node::Schema>, // multiset is not a lattice!
     Self: GeneralizedHashTrieNode,
     Head: Hash + Eq + Clone,
 {
     fn merge(&mut self, other: GhtInner<Head, Node>) -> bool {
         let mut changed = false;
 
-        for (k, v) in other.children.into_iter() {
+        for (k, v) in other.children {
             match self.children.entry(k) {
                 std::collections::hash_map::Entry::Occupied(mut occupied) => {
                     changed |= occupied.get_mut().merge(v)
@@ -41,7 +42,7 @@ impl<Schema, ValType, Storage> Merge<GhtLeaf<Schema, ValType, Storage>>
     for GhtLeaf<Schema, ValType, Storage>
 where
     Schema: Eq + Hash,
-    Storage: VariadicMultiset<Schema = Schema> + Extend<Schema> + IntoIterator<Item = Schema>,
+    Storage: VariadicSet<Schema = Schema> + Extend<Schema> + IntoIterator<Item = Schema>,
 {
     fn merge(&mut self, other: GhtLeaf<Schema, ValType, Storage>) -> bool {
         let old_len = self.elements.len();
@@ -54,6 +55,7 @@ impl<Head, Node> PartialEq<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
     Head: Hash + Eq + 'static + Clone,
     Node: GeneralizedHashTrieNode + 'static + PartialEq,
+    Node::Storage: VariadicSet<Schema = Node::Schema>, // multiset is not a lattice!
     Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
     GhtInner<Head, Node>: GhtGet,
     <GhtInner<Head, Node> as GhtGet>::Get: PartialEq,
@@ -84,6 +86,7 @@ impl<Head, Node> PartialOrd<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
     Head: Hash + Eq + 'static + Clone,
     Node: 'static + GeneralizedHashTrieNode + PartialEq + PartialOrd,
+    Node::Storage: VariadicSet<Schema = Node::Schema>, // multiset is not a lattice!
     Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
 {
     fn partial_cmp(&self, other: &GhtInner<Head, Node>) -> Option<Ordering> {
@@ -138,7 +141,7 @@ impl<Schema, SuffixSchema, Storage> PartialOrd<GhtLeaf<Schema, SuffixSchema, Sto
 where
     Schema: Eq + Hash + PartialEqVariadic,
     SuffixSchema: Eq + Hash,
-    Storage: VariadicMultiset<Schema = Schema> + PartialEq,
+    Storage: VariadicSet<Schema = Schema> + PartialEq,
 {
     fn partial_cmp(&self, other: &GhtLeaf<Schema, SuffixSchema, Storage>) -> Option<Ordering> {
         match self.elements.len().cmp(&other.elements.len()) {
@@ -180,6 +183,7 @@ where
     Self: PartialOrd<GhtInner<Head, Node>>,
     Head: Clone,
     Node: GeneralizedHashTrieNode,
+    Node::Storage: VariadicSet<Schema = Node::Schema>, // multiset is not a lattice!
 {
 }
 impl<Schema, SuffixSchema, Storage> LatticeOrd<GhtLeaf<Schema, SuffixSchema, Storage>>
@@ -187,7 +191,7 @@ impl<Schema, SuffixSchema, Storage> LatticeOrd<GhtLeaf<Schema, SuffixSchema, Sto
 where
     Schema: Eq + Hash + PartialEqVariadic,
     SuffixSchema: Eq + Hash,
-    Storage: VariadicMultiset<Schema = Schema> + PartialEq,
+    Storage: VariadicSet<Schema = Schema> + PartialEq,
 {
 }
 
@@ -205,7 +209,7 @@ impl<Schema, SuffixSchema, Storage> IsBot for GhtLeaf<Schema, SuffixSchema, Stor
 where
     Schema: Eq + Hash,
     SuffixSchema: Eq + Hash,
-    Storage: VariadicMultiset<Schema = Schema>,
+    Storage: VariadicSet<Schema = Schema>,
 {
     fn is_bot(&self) -> bool {
         self.elements.is_empty()
@@ -216,6 +220,7 @@ impl<Head, Node> IsTop for GhtInner<Head, Node>
 where
     Head: Clone,
     Node: GeneralizedHashTrieNode,
+    Node::Storage: VariadicSet<Schema = Node::Schema>, // multiset is not a lattice!
 {
     fn is_top(&self) -> bool {
         false
@@ -226,7 +231,7 @@ impl<Schema, SuffixSchema, Storage> IsTop for GhtLeaf<Schema, SuffixSchema, Stor
 where
     Schema: Eq + Hash,
     SuffixSchema: Eq + Hash,
-    Storage: VariadicMultiset<Schema = Schema>,
+    Storage: VariadicSet<Schema = Schema>,
 {
     fn is_top(&self) -> bool {
         false
@@ -234,9 +239,12 @@ where
 }
 
 //////////////////////////
-/// BiMorphisms for GHT
-//////////////////////////
-/// Bimorphism for the cartesian product of two GHT *subtries*. Output is a set of all possible pairs of
+// BiMorphisms for GHT
+//
+
+/// Bimorphism for the cartesian product of two GHT *subtries*. 
+/// 
+/// Output is a set of all possible pairs of
 /// *suffixes* from the two subtries. If you use this at the root of a GHT, it's a full cross-product.
 /// If you use this at an internal node, it provides a 'factorized' representation with only the suffix
 /// cross-products expanded.
@@ -254,7 +262,9 @@ impl<'a, 'b, GhtA, GhtB, GhtOut> LatticeBimorphism<&'a GhtA, &'b GhtB>
     for GhtCartesianProductBimorphism<GhtOut>
 where
     GhtA: GeneralizedHashTrieNode,
+    GhtA::Storage: VariadicSet<Schema = GhtA::Schema>, // multiset is not a lattice!
     GhtB: GeneralizedHashTrieNode,
+    GhtB::Storage: VariadicSet<Schema = GhtB::Schema>, // multiset is not a lattice!
     GhtOut: FromIterator<var_type!(...GhtA::SuffixSchema, ...GhtB::SuffixSchema)>,
     GhtA::SuffixSchema: CloneVariadic,
     GhtB::SuffixSchema: CloneVariadic,
@@ -268,7 +278,7 @@ where
                 .recursive_iter()
                 .map(move |b| {
                     let (_b_prefix, b_suffix) = <GhtB::Schema as SplitBySuffix<GhtB::SuffixSchema>>::split_by_suffix_ref(b);
-                    var_expr!(...<GhtA::SuffixSchema as CloneVariadic>::clone_var_ref(a_suffix), ...<GhtB::SuffixSchema as CloneVariadic>::clone_var_ref(b_suffix))
+                    var_expr!(...<GhtA::SuffixSchema as CloneVariadic>::clone_ref_var(a_suffix), ...<GhtB::SuffixSchema as CloneVariadic>::clone_ref_var(b_suffix))
                 })
         }).collect()
     }
@@ -289,8 +299,10 @@ impl<GhtOut> Default for GhtValTypeProductBimorphism<GhtOut> {
 impl<'a, 'b, GhtA, GhtB, GhtOut> LatticeBimorphism<&'a GhtA, &'b GhtB>
     for GhtValTypeProductBimorphism<GhtOut>
 where
-    GhtA: GeneralizedHashTrieNode,
-    GhtB: GeneralizedHashTrieNode,
+GhtA: GeneralizedHashTrieNode,
+GhtA::Storage: VariadicSet<Schema = GhtA::Schema>, // multiset is not a lattice!
+GhtB: GeneralizedHashTrieNode,
+GhtB::Storage: VariadicSet<Schema = GhtB::Schema>, // multiset is not a lattice!
     GhtOut: FromIterator<var_type!(...GhtA::Schema, ...GhtB::ValType)>,
     GhtA::Schema: Eq + Hash + CloneVariadic,
     GhtB::Schema: Eq + Hash + SplitBySuffix<GhtB::ValType>,
@@ -305,7 +317,7 @@ where
                 .map(move |b| {
                     let (_prefix_b, suffix_b)
                         = <GhtB::Schema as SplitBySuffix<GhtB::ValType>>::split_by_suffix_ref(b);
-                    var_expr!(...<GhtA::Schema as CloneVariadic>::clone_var_ref(a), ...<GhtB::ValType as CloneVariadic>::clone_var_ref(suffix_b))
+                    var_expr!(...<GhtA::Schema as CloneVariadic>::clone_ref_var(a), ...<GhtB::ValType as CloneVariadic>::clone_ref_var(suffix_b))
                 }
             )
         }).collect()
@@ -332,9 +344,10 @@ impl<Bimorphism> GhtBimorphism<Bimorphism> {
 
 impl<GhtA, GhtB, ValFunc, GhtOut> LatticeBimorphism<GhtA, GhtB> for GhtBimorphism<ValFunc>
 where
-    GhtA: GeneralizedHashTrieNode,
-    // GhtA::Head: Clone,
-    GhtB: GeneralizedHashTrieNode,
+GhtA: GeneralizedHashTrieNode,
+GhtA::Storage: VariadicSet<Schema = GhtA::Schema>, // multiset is not a lattice!
+GhtB: GeneralizedHashTrieNode,
+GhtB::Storage: VariadicSet<Schema = GhtB::Schema>, // multiset is not a lattice!
     GhtOut: GeneralizedHashTrieNode, // FromIterator<var_type!(...GhtA::Schema, ...GhtB::ValType)>,
     for<'a, 'b> ValFunc: LatticeBimorphism<&'a GhtA, &'b GhtB, Output = GhtOut>,
 {
@@ -367,6 +380,8 @@ where
     ValFunc::Output: GeneralizedHashTrieNode,
     GhtA: GeneralizedHashTrieNode<Head = Head> + GhtGet,
     GhtB: GeneralizedHashTrieNode<Head = Head, Schema = GhtA::Schema> + GhtGet,
+    GhtA::Storage: VariadicSet<Schema = GhtA::Schema>, // multiset is not a lattice!
+        GhtB::Storage: VariadicSet<Schema = GhtB::Schema>, // multiset is not a lattice!
     <GhtA::SuffixSchema as VariadicExt>::AsRefVar<'a>: CloneVariadic,
     <GhtB::SuffixSchema as VariadicExt>::AsRefVar<'b>: CloneVariadic,
 {
@@ -398,8 +413,10 @@ where
     Head: 'static + Hash + Eq + Clone,
     NodeA: 'static + GeneralizedHashTrieNode,
     NodeB: 'static + GeneralizedHashTrieNode,
+    NodeA::Storage: VariadicSet<Schema = NodeA::Schema>, // multiset is not a lattice!
+    NodeB::Storage: VariadicSet<Schema = NodeB::Schema>, // multiset is not a lattice!
     (NodeA, NodeB): DeepJoinLatticeBimorphism<Storage>,
-    Storage: VariadicMultiset<Schema = var_type!(...NodeA::Schema, ...NodeB::ValType)>,
+    Storage: VariadicSet<Schema = var_type!(...NodeA::Schema, ...NodeB::ValType)>,
 {
     type DeepJoinLatticeBimorphism = GhtNodeKeyedBimorphism<
         <(NodeA, NodeB) as DeepJoinLatticeBimorphism<Storage>>::DeepJoinLatticeBimorphism,
@@ -416,9 +433,9 @@ where
     ValTypeA: 'static + VariadicExt + Eq + Hash, // + AsRefVariadicPartialEq
     SchemaB: 'static + VariadicExt + Eq + Hash + SplitBySuffix<ValTypeB>, /* + AsRefVariadicPartialEq */
     ValTypeB: 'static + VariadicExt + Eq + Hash, // + AsRefVariadicPartialEq
-    StorageA: VariadicMultiset<Schema = SchemaA>,
-    StorageB: VariadicMultiset<Schema = SchemaB>,
-    StorageOut: VariadicMultiset<Schema = var_type!(...SchemaA, ...ValTypeB)>,
+    StorageA: VariadicSet<Schema = SchemaA>,
+    StorageB: VariadicSet<Schema = SchemaB>,
+    StorageOut: VariadicSet<Schema = var_type!(...SchemaA, ...ValTypeB)>,
     for<'x> SchemaA::AsRefVar<'x>: CloneVariadic,
     for<'x> SchemaB::AsRefVar<'x>: CloneVariadic,
     var_type!(...SchemaA, ...ValTypeB): Eq + Hash,

@@ -2,12 +2,11 @@ use std::fmt;
 use std::hash::{BuildHasher, Hash, RandomState};
 
 use hashbrown::hash_table::{Entry, HashTable};
-use sealed::sealed;
 
 use crate::{PartialEqVariadic, VariadicExt, VecVariadic};
 
 /// Trait for a set of Variadic Tuples
-pub trait VariadicSet {
+pub trait VariadicCollection {
     /// The Schema (aka Variadic type) associated with tuples in this set
     type Schema: PartialEqVariadic;
 
@@ -29,6 +28,9 @@ pub trait VariadicSet {
     /// Check for containment
     fn contains(&self, value: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool;
 }
+
+/// trait for sets or multisets of variadics
+pub trait VariadicSet: VariadicCollection {}
 
 /// HashSet that stores Variadics of owned values but allows
 /// for lookups with RefVariadics as well
@@ -78,7 +80,7 @@ where
         })
     }
 }
-impl<T, S> VariadicSet for VariadicHashSet<T, S>
+impl<T, S> VariadicCollection for VariadicHashSet<T, S>
 where
     T: VariadicExt + PartialEqVariadic,
     for<'a> T::AsRefVar<'a>: Hash,
@@ -122,6 +124,13 @@ where
     fn iter(&self) -> impl Iterator<Item = T::AsRefVar<'_>> {
         self.table.iter().map(|item| item.as_ref_var())
     }
+}
+impl<T, S> VariadicSet for VariadicHashSet<T, S>
+where
+    T: VariadicExt + PartialEqVariadic,
+    for<'a> T::AsRefVar<'a>: Hash,
+    S: BuildHasher,
+{
 }
 
 impl<T, S> IntoIterator for VariadicHashSet<T, S>
@@ -167,15 +176,14 @@ where
         // Otherwise reserve half the hint (rounded up), so the map
         // will only resize twice in the worst case.
         let iter = iter.into_iter();
-        // let reserve =
-        if self.is_empty() {
+        let reserve = if self.is_empty() {
             iter.size_hint().0
         } else {
             (iter.size_hint().0 + 1) / 2
         };
-        // TODO figure out reserve!
-        // let hasher = self.hasher.build_hasher();
-        // self.table.reserve(reserve, hasher);
+        self.table
+            .reserve(reserve, |item| self.hasher.hash_one(item));
+
         iter.for_each(move |k| {
             self.insert(k);
         });
@@ -211,29 +219,7 @@ where
 }
 
 /// Trait for a multiset of Tuples
-#[sealed]
-pub trait VariadicMultiset {
-    /// The Schema (aka Variadic type) associated with tuples in this multiset
-    type Schema: PartialEqVariadic;
-
-    /// Insert an element into the multiset; return true on success (should be always!)
-    fn insert(&mut self, element: Self::Schema) -> bool;
-
-    /// Iterate over the elements of the multiset
-    fn iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>>;
-
-    /// Return number of elements in the multiset (including duplicates)
-    fn len(&self) -> usize;
-
-    /// Return true if empty
-    fn is_empty(&self) -> bool;
-
-    /// iterate and drain items from the multiset without deallocating container
-    fn drain(&mut self) -> impl Iterator<Item = Self::Schema>;
-
-    /// Check for containment
-    fn contains(&self, value: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool;
-}
+pub trait VariadicMultiset: VariadicCollection {}
 
 /// HashMap keyed on Variadics of (owned value, count) pairs, allows
 /// for lookups with RefVariadics.
@@ -295,8 +281,7 @@ where
     }
 }
 
-#[sealed]
-impl<K, S> VariadicMultiset for VariadicCountedHashSet<K, S>
+impl<K, S> VariadicCollection for VariadicCountedHashSet<K, S>
 where
     K: VariadicExt + PartialEqVariadic + Hash + Clone,
     for<'a> K::AsRefVar<'a>: Hash,
@@ -344,6 +329,14 @@ where
             .iter()
             .flat_map(|(k, num)| (0..*num).map(move |_i| k.as_ref_var()))
     }
+}
+
+impl<K, S> VariadicMultiset for VariadicCountedHashSet<K, S>
+where
+    K: VariadicExt + PartialEqVariadic + Hash + Clone,
+    for<'a> K::AsRefVar<'a>: Hash,
+    S: BuildHasher,
+{
 }
 
 impl<T> IntoIterator for VariadicCountedHashSet<T>
@@ -430,15 +423,13 @@ where
         // Otherwise reserve half the hint (rounded up), so the map
         // will only resize twice in the worst case.
         let iter = iter.into_iter();
-        // let reserve =
-        if self.is_empty() {
+        let reserve = if self.is_empty() {
             iter.size_hint().0
         } else {
             (iter.size_hint().0 + 1) / 2
         };
-        // TODO: get reserve to work here
-        // let hasher = self.hasher.build_hasher();
-        // self.table.reserve(reserve, hasher);
+        self.table
+            .reserve(reserve, |item| self.hasher.hash_one(item));
         iter.for_each(move |key| {
             // TODO: super inefficient. Need a insert_with_count method
             self.insert(key);
@@ -513,8 +504,7 @@ where
     }
 }
 
-#[sealed]
-impl<Schema> VariadicMultiset for VariadicColumnMultiset<Schema>
+impl<Schema> VariadicCollection for VariadicColumnMultiset<Schema>
 where
     Schema: PartialEqVariadic,
 {
@@ -553,6 +543,8 @@ where
     }
 }
 
+impl<Schema> VariadicMultiset for VariadicColumnMultiset<Schema> where Schema: PartialEqVariadic {}
+
 impl<T> fmt::Debug for VariadicColumnMultiset<T>
 where
     T: fmt::Debug + VariadicExt + PartialEqVariadic,
@@ -581,10 +573,8 @@ where
     K: Eq + Hash + PartialEqVariadic,
     for<'a> K::AsRefVar<'a>: Hash,
 {
-    // #[cfg_attr(feature = "inline-more", inline)]
     fn extend<T: IntoIterator<Item = K>>(&mut self, iter: T) {
         let iter = iter.into_iter();
-        // self.table.reserve(reserve, hasher);
         iter.for_each(move |k| {
             self.insert(k);
         });

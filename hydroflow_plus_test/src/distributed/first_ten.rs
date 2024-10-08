@@ -1,4 +1,5 @@
 use hydroflow_plus::*;
+use location::{ExternalBincodeSink, ExternalProcess};
 use serde::{Deserialize, Serialize};
 use stageleft::*;
 
@@ -7,69 +8,82 @@ struct SendOverNetwork {
     pub n: u32,
 }
 
-pub fn first_ten_distributed<'a, D: Deploy<'a>>(
-    flow: &FlowBuilder<'a, D>,
-    process_spec: &impl ProcessSpec<'a, D>,
-) -> D::Process {
-    let process = flow.process(process_spec);
-    let second_process = flow.process(process_spec);
+pub struct P1 {}
+pub struct P2 {}
 
-    let numbers = flow.source_iter(&process, q!(0..10));
+pub fn first_ten_distributed<'a>(
+    flow: &FlowBuilder<'a>,
+) -> (
+    ExternalProcess<'a, ()>,
+    ExternalBincodeSink<String>,
+    Process<'a, P1>,
+    Process<'a, P2>,
+) {
+    let external_process = flow.external_process::<()>();
+    let process = flow.process::<P1>();
+    let second_process = flow.process::<P2>();
+
+    let (numbers_external_port, numbers_external) =
+        external_process.source_external_bincode(&process);
+    numbers_external.for_each(q!(|n| println!("hi: {:?}", n)));
+
+    let numbers = process.source_iter(q!(0..10));
     numbers
         .map(q!(|n| SendOverNetwork { n }))
         .send_bincode(&second_process)
-        .for_each(q!(|n: SendOverNetwork| println!("{}", n.n))); // TODO(shadaj): why is the explicit type required here?
+        .for_each(q!(|n| println!("{}", n.n)));
 
-    second_process
+    (
+        external_process,
+        numbers_external_port,
+        process,
+        second_process,
+    )
 }
 
-use hydroflow_plus::util::cli::HydroCLI;
-use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
-
-#[stageleft::entry]
-pub fn first_ten_distributed_runtime<'a>(
-    flow: FlowBuilder<'a, CLIRuntime>,
-    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = first_ten_distributed(&flow, &cli);
-    flow.extract()
-        .optimize_default()
-        .with_dynamic_id(q!(cli.meta.subgraph_id))
-}
-
-#[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use hydro_deploy::{Deployment, HydroflowCrate};
-    use hydroflow_plus_cli_integration::{DeployCrateWrapper, DeployProcessSpec};
+    use std::sync::Arc;
+
+    use futures::SinkExt;
+    use hydro_deploy::{Deployment, Host};
+    use hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
 
     #[tokio::test]
     async fn first_ten_distributed() {
         let mut deployment = Deployment::new();
-        let localhost = deployment.Localhost();
 
         let builder = hydroflow_plus::FlowBuilder::new();
-        let second_node = super::first_ten_distributed(
-            &builder,
-            &DeployProcessSpec::new(|| {
-                deployment.add_service(
-                    HydroflowCrate::new(".", localhost.clone())
-                        .bin("first_ten_distributed")
-                        .profile("dev"),
-                )
-            }),
-        );
+        let (external_process, external_port, first_node, second_node) =
+            super::first_ten_distributed(&builder);
 
-        // if we drop this, we drop the references to the deployment nodes
-        let built = builder.extract();
+        let built = builder.with_default_optimize();
 
         insta::assert_debug_snapshot!(built.ir());
 
+        let nodes = built
+            .with_process(&first_node, TrybuildHost::new(deployment.Localhost()))
+            .with_process(&second_node, TrybuildHost::new(deployment.Localhost()))
+            .with_external(&external_process, deployment.Localhost() as Arc<dyn Host>)
+            .deploy(&mut deployment);
+
         deployment.deploy().await.unwrap();
 
-        let mut second_node_stdout = second_node.stdout().await;
+        let mut external_port = nodes.connect_sink_bincode(external_port).await;
+
+        let mut first_node_stdout = nodes.get_process(&first_node).stdout().await;
+        let mut second_node_stdout = nodes.get_process(&second_node).stdout().await;
 
         deployment.start().await.unwrap();
+
+        external_port
+            .send("this is some string".to_string())
+            .await
+            .unwrap();
+        assert_eq!(
+            first_node_stdout.recv().await.unwrap(),
+            "hi: \"this is some string\""
+        );
 
         for i in 0..10 {
             assert_eq!(second_node_stdout.recv().await.unwrap(), i.to_string());

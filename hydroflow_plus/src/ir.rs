@@ -1,3 +1,4 @@
+use core::panic;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::ops::Deref;
@@ -8,6 +9,9 @@ use hydroflow_lang::parse::Pipeline;
 use proc_macro2::{Span, TokenStream};
 use quote::ToTokens;
 use syn::parse_quote;
+
+use crate::deploy::{Deploy, RegisterPort};
+use crate::location::LocationId;
 
 #[derive(Clone)]
 pub struct DebugExpr(pub syn::Expr);
@@ -38,6 +42,17 @@ impl std::fmt::Debug for DebugExpr {
     }
 }
 
+pub enum DebugInstantiate {
+    Building(),
+    Finalized(syn::Expr, syn::Expr, Option<Box<dyn FnOnce()>>),
+}
+
+impl std::fmt::Debug for DebugInstantiate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<network instantiate>")
+    }
+}
+
 #[derive(Clone)]
 pub struct DebugPipelineFn(pub Rc<dyn Fn() -> Pipeline + 'static>);
 
@@ -48,9 +63,10 @@ impl std::fmt::Debug for DebugPipelineFn {
 }
 
 /// A source in a Hydroflow+ graph, where data enters the graph.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum HfPlusSource {
     Stream(DebugExpr),
+    ExternalNetwork(),
     Iter(DebugExpr),
     Interval(DebugExpr),
     Spin(),
@@ -59,7 +75,7 @@ pub enum HfPlusSource {
 /// An leaf in a Hydroflow+ graph, which is an pipeline that doesn't emit
 /// any downstream values. Traversals over the dataflow graph and
 /// generating Hydroflow IR start from leaves.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum HfPlusLeaf {
     ForEach {
         f: DebugExpr,
@@ -71,40 +87,68 @@ pub enum HfPlusLeaf {
     },
     CycleSink {
         ident: syn::Ident,
-        location_id: usize,
+        location_kind: LocationId,
         input: Box<HfPlusNode>,
     },
 }
 
 impl HfPlusLeaf {
+    pub fn compile_network<'a, D: Deploy<'a> + 'a>(
+        self,
+        compile_env: &D::CompileEnv,
+        seen_tees: &mut SeenTees,
+        nodes: &HashMap<usize, D::Process>,
+        clusters: &HashMap<usize, D::Cluster>,
+        externals: &HashMap<usize, D::ExternalProcess>,
+    ) -> HfPlusLeaf {
+        self.transform_children(
+            |n, s| {
+                n.compile_network::<D>(compile_env, s, nodes, clusters, externals);
+            },
+            seen_tees,
+        )
+    }
+
+    pub fn connect_network(self, seen_tees: &mut SeenTees) -> HfPlusLeaf {
+        self.transform_children(
+            |n, s| {
+                n.connect_network(s);
+            },
+            seen_tees,
+        )
+    }
+
     pub fn transform_children(
         self,
-        mut transform: impl FnMut(HfPlusNode, &mut SeenTees) -> HfPlusNode,
+        mut transform: impl FnMut(&mut HfPlusNode, &mut SeenTees),
         seen_tees: &mut SeenTees,
     ) -> HfPlusLeaf {
         match self {
-            HfPlusLeaf::ForEach { f, input } => HfPlusLeaf::ForEach {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
-            },
-            HfPlusLeaf::DestSink { sink, input } => HfPlusLeaf::DestSink {
-                sink,
-                input: Box::new(transform(*input, seen_tees)),
-            },
+            HfPlusLeaf::ForEach { f, mut input } => {
+                transform(&mut input, seen_tees);
+                HfPlusLeaf::ForEach { f, input }
+            }
+            HfPlusLeaf::DestSink { sink, mut input } => {
+                transform(&mut input, seen_tees);
+                HfPlusLeaf::DestSink { sink, input }
+            }
             HfPlusLeaf::CycleSink {
                 ident,
-                location_id,
-                input,
-            } => HfPlusLeaf::CycleSink {
-                ident,
-                location_id,
-                input: Box::new(transform(*input, seen_tees)),
-            },
+                location_kind,
+                mut input,
+            } => {
+                transform(&mut input, seen_tees);
+                HfPlusLeaf::CycleSink {
+                    ident,
+                    location_kind,
+                    input,
+                }
+            }
         }
     }
 
     pub fn emit(
-        self,
+        &self,
         graph_builders: &mut BTreeMap<usize, FlatGraphBuilder>,
         built_tees: &mut HashMap<*const RefCell<HfPlusNode>, (syn::Ident, usize)>,
         next_stmt_id: &mut usize,
@@ -136,19 +180,25 @@ impl HfPlusLeaf {
 
             HfPlusLeaf::CycleSink {
                 ident,
-                location_id,
+                location_kind,
                 input,
             } => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
+                let location_id = match location_kind {
+                    LocationId::Process(id) => id,
+                    LocationId::Cluster(id) => id,
+                    LocationId::ExternalProcess(_) => panic!(),
+                };
+
                 assert_eq!(
-                    input_location_id, location_id,
+                    input_location_id, *location_id,
                     "cycle_sink location mismatch"
                 );
 
                 graph_builders
-                    .entry(location_id)
+                    .entry(*location_id)
                     .or_default()
                     .add_statement(parse_quote! {
                         #ident = #input_ident;
@@ -160,18 +210,18 @@ impl HfPlusLeaf {
 
 /// An intermediate node in a Hydroflow+ graph, which consumes data
 /// from upstream nodes and emits data to downstream nodes.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum HfPlusNode {
     Placeholder,
 
     Source {
         source: HfPlusSource,
-        location_id: usize,
+        location_kind: LocationId,
     },
 
     CycleSource {
         ident: syn::Ident,
-        location_id: usize,
+        location_kind: LocationId,
     },
 
     Tee {
@@ -179,10 +229,12 @@ pub enum HfPlusNode {
     },
 
     Persist(Box<HfPlusNode>),
+    Unpersist(Box<HfPlusNode>),
     Delta(Box<HfPlusNode>),
 
     Union(Box<HfPlusNode>, Box<HfPlusNode>),
     CrossProduct(Box<HfPlusNode>, Box<HfPlusNode>),
+    CrossSingleton(Box<HfPlusNode>, Box<HfPlusNode>),
     Join(Box<HfPlusNode>, Box<HfPlusNode>),
     Difference(Box<HfPlusNode>, Box<HfPlusNode>),
     AntiJoin(Box<HfPlusNode>, Box<HfPlusNode>),
@@ -203,6 +255,8 @@ pub enum HfPlusNode {
         f: DebugExpr,
         input: Box<HfPlusNode>,
     },
+
+    DeferTick(Box<HfPlusNode>),
     Enumerate(Box<HfPlusNode>),
     Inspect {
         f: DebugExpr,
@@ -211,6 +265,7 @@ pub enum HfPlusNode {
 
     Unique(Box<HfPlusNode>),
 
+    Sort(Box<HfPlusNode>),
     Fold {
         init: DebugExpr,
         acc: DebugExpr,
@@ -232,10 +287,12 @@ pub enum HfPlusNode {
     },
 
     Network {
-        to_location: usize,
+        from_location: LocationId,
+        from_key: Option<usize>,
+        to_location: LocationId,
+        to_key: Option<usize>,
         serialize_pipeline: Option<Pipeline>,
-        sink_expr: DebugExpr,
-        source_expr: DebugExpr,
+        instantiate_fn: DebugInstantiate,
         deserialize_pipeline: Option<Pipeline>,
         input: Box<HfPlusNode>,
     },
@@ -243,140 +300,185 @@ pub enum HfPlusNode {
 
 pub type SeenTees = HashMap<*const RefCell<HfPlusNode>, Rc<RefCell<HfPlusNode>>>;
 
-impl HfPlusNode {
-    pub fn transform_children(
-        self,
-        mut transform: impl FnMut(HfPlusNode, &mut SeenTees) -> HfPlusNode,
+impl<'a> HfPlusNode {
+    pub fn compile_network<D: Deploy<'a> + 'a>(
+        &mut self,
+        compile_env: &D::CompileEnv,
         seen_tees: &mut SeenTees,
-    ) -> HfPlusNode {
-        match self {
-            HfPlusNode::Placeholder => HfPlusNode::Placeholder,
+        nodes: &HashMap<usize, D::Process>,
+        clusters: &HashMap<usize, D::Cluster>,
+        externals: &HashMap<usize, D::ExternalProcess>,
+    ) {
+        self.transform_children(
+            |n, s| n.compile_network::<D>(compile_env, s, nodes, clusters, externals),
+            seen_tees,
+        );
 
-            HfPlusNode::Source {
-                source,
-                location_id,
-            } => HfPlusNode::Source {
-                source,
-                location_id,
-            },
+        if let HfPlusNode::Network {
+            from_location,
+            from_key,
+            to_location,
+            to_key,
+            instantiate_fn,
+            ..
+        } = self
+        {
+            let (sink_expr, source_expr, connect_fn) = match instantiate_fn {
+                DebugInstantiate::Building() => instantiate_network::<D>(
+                    from_location,
+                    *from_key,
+                    to_location,
+                    *to_key,
+                    nodes,
+                    clusters,
+                    externals,
+                    compile_env,
+                ),
 
-            HfPlusNode::CycleSource { ident, location_id } => {
-                HfPlusNode::CycleSource { ident, location_id }
+                DebugInstantiate::Finalized(_, _, _) => panic!("network already finalized"),
+            };
+
+            *instantiate_fn = DebugInstantiate::Finalized(sink_expr, source_expr, Some(connect_fn));
+        }
+    }
+
+    pub fn connect_network(&mut self, seen_tees: &mut SeenTees) {
+        self.transform_children(|n, s| n.connect_network(s), seen_tees);
+        if let HfPlusNode::Network { instantiate_fn, .. } = self {
+            match instantiate_fn {
+                DebugInstantiate::Building() => panic!("network not built"),
+
+                DebugInstantiate::Finalized(_, _, connect_fn) => {
+                    connect_fn.take().unwrap()();
+                }
             }
+        }
+    }
+
+    pub fn transform_bottom_up<C>(
+        &mut self,
+        mut transform: impl FnMut(&mut HfPlusNode, &mut C) + Copy,
+        seen_tees: &mut SeenTees,
+        ctx: &mut C,
+    ) {
+        self.transform_children(|n, s| n.transform_bottom_up(transform, s, ctx), seen_tees);
+
+        transform(self, ctx)
+    }
+
+    #[inline(always)]
+    pub fn transform_children(
+        &mut self,
+        mut transform: impl FnMut(&mut HfPlusNode, &mut SeenTees),
+        seen_tees: &mut SeenTees,
+    ) {
+        match self {
+            HfPlusNode::Placeholder => {
+                panic!();
+            }
+
+            HfPlusNode::Source { .. } => {}
+
+            HfPlusNode::CycleSource { .. } => {}
 
             HfPlusNode::Tee { inner } => {
                 if let Some(transformed) =
                     seen_tees.get(&(inner.as_ref() as *const RefCell<HfPlusNode>))
                 {
-                    HfPlusNode::Tee {
-                        inner: transformed.clone(),
-                    }
+                    *inner = transformed.clone();
                 } else {
                     let transformed_cell = Rc::new(RefCell::new(HfPlusNode::Placeholder));
                     seen_tees.insert(
                         inner.as_ref() as *const RefCell<HfPlusNode>,
                         transformed_cell.clone(),
                     );
-                    let orig = inner.borrow().clone();
-                    *transformed_cell.borrow_mut() = transform(orig, seen_tees);
-                    HfPlusNode::Tee {
-                        inner: transformed_cell,
-                    }
+                    let mut orig = inner.replace(HfPlusNode::Placeholder);
+                    transform(&mut orig, seen_tees);
+                    *transformed_cell.borrow_mut() = orig;
+                    *inner = transformed_cell;
                 }
             }
 
-            HfPlusNode::Persist(inner) => {
-                HfPlusNode::Persist(Box::new(transform(*inner, seen_tees)))
+            HfPlusNode::Persist(inner) => transform(inner.as_mut(), seen_tees),
+            HfPlusNode::Unpersist(inner) => transform(inner.as_mut(), seen_tees),
+            HfPlusNode::Delta(inner) => transform(inner.as_mut(), seen_tees),
+
+            HfPlusNode::Union(left, right) => {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
             }
-            HfPlusNode::Delta(inner) => HfPlusNode::Delta(Box::new(transform(*inner, seen_tees))),
+            HfPlusNode::CrossProduct(left, right) => {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            }
+            HfPlusNode::CrossSingleton(left, right) => {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            }
+            HfPlusNode::Join(left, right) => {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            }
+            HfPlusNode::Difference(left, right) => {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            }
+            HfPlusNode::AntiJoin(left, right) => {
+                transform(left.as_mut(), seen_tees);
+                transform(right.as_mut(), seen_tees);
+            }
 
-            HfPlusNode::Union(left, right) => HfPlusNode::Union(
-                Box::new(transform(*left, seen_tees)),
-                Box::new(transform(*right, seen_tees)),
-            ),
-            HfPlusNode::CrossProduct(left, right) => HfPlusNode::CrossProduct(
-                Box::new(transform(*left, seen_tees)),
-                Box::new(transform(*right, seen_tees)),
-            ),
-            HfPlusNode::Join(left, right) => HfPlusNode::Join(
-                Box::new(transform(*left, seen_tees)),
-                Box::new(transform(*right, seen_tees)),
-            ),
-            HfPlusNode::Difference(left, right) => HfPlusNode::Difference(
-                Box::new(transform(*left, seen_tees)),
-                Box::new(transform(*right, seen_tees)),
-            ),
-            HfPlusNode::AntiJoin(left, right) => HfPlusNode::AntiJoin(
-                Box::new(transform(*left, seen_tees)),
-                Box::new(transform(*right, seen_tees)),
-            ),
-
-            HfPlusNode::Map { f, input } => HfPlusNode::Map {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
-            },
-            HfPlusNode::FlatMap { f, input } => HfPlusNode::FlatMap {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
-            },
-            HfPlusNode::Filter { f, input } => HfPlusNode::Filter {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
-            },
-            HfPlusNode::FilterMap { f, input } => HfPlusNode::FilterMap {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
-            },
+            HfPlusNode::Map { input, .. } => {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::FlatMap { input, .. } => {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::Filter { input, .. } => {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::FilterMap { input, .. } => {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::Sort(input) => {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::DeferTick(input) => {
+                transform(input.as_mut(), seen_tees);
+            }
             HfPlusNode::Enumerate(input) => {
-                HfPlusNode::Enumerate(Box::new(transform(*input, seen_tees)))
+                transform(input.as_mut(), seen_tees);
             }
-            HfPlusNode::Inspect { f, input } => HfPlusNode::Inspect {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
-            },
+            HfPlusNode::Inspect { input, .. } => {
+                transform(input.as_mut(), seen_tees);
+            }
 
-            HfPlusNode::Unique(input) => HfPlusNode::Unique(Box::new(transform(*input, seen_tees))),
+            HfPlusNode::Unique(input) => {
+                transform(input.as_mut(), seen_tees);
+            }
 
-            HfPlusNode::Fold { init, acc, input } => HfPlusNode::Fold {
-                init,
-                acc,
-                input: Box::new(transform(*input, seen_tees)),
-            },
-            HfPlusNode::FoldKeyed { init, acc, input } => HfPlusNode::FoldKeyed {
-                init,
-                acc,
-                input: Box::new(transform(*input, seen_tees)),
-            },
+            HfPlusNode::Fold { input, .. } => {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::FoldKeyed { input, .. } => {
+                transform(input.as_mut(), seen_tees);
+            }
 
-            HfPlusNode::Reduce { f, input } => HfPlusNode::Reduce {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
-            },
-            HfPlusNode::ReduceKeyed { f, input } => HfPlusNode::ReduceKeyed {
-                f,
-                input: Box::new(transform(*input, seen_tees)),
-            },
+            HfPlusNode::Reduce { input, .. } => {
+                transform(input.as_mut(), seen_tees);
+            }
+            HfPlusNode::ReduceKeyed { input, .. } => {
+                transform(input.as_mut(), seen_tees);
+            }
 
-            HfPlusNode::Network {
-                to_location,
-                serialize_pipeline,
-                sink_expr,
-                source_expr,
-                deserialize_pipeline,
-                input,
-            } => HfPlusNode::Network {
-                to_location,
-                serialize_pipeline,
-                sink_expr,
-                source_expr,
-                deserialize_pipeline,
-                input: Box::new(transform(*input, seen_tees)),
-            },
+            HfPlusNode::Network { input, .. } => {
+                transform(input.as_mut(), seen_tees);
+            }
         }
     }
 
     pub fn emit(
-        self,
+        &self,
         graph_builders: &mut BTreeMap<usize, FlatGraphBuilder>,
         built_tees: &mut HashMap<*const RefCell<HfPlusNode>, (syn::Ident, usize)>,
         next_stmt_id: &mut usize,
@@ -403,6 +505,10 @@ impl HfPlusNode {
                 (persist_ident, location)
             }
 
+            HfPlusNode::Unpersist(_) => {
+                panic!("Unpersist is a marker node and should have been optimized away. This is likely a compiler bug.")
+            }
+
             HfPlusNode::Delta(inner) => {
                 let (inner_ident, location) = inner.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -422,57 +528,83 @@ impl HfPlusNode {
 
             HfPlusNode::Source {
                 source,
-                location_id,
+                location_kind,
             } => {
-                let source_id = *next_stmt_id;
-                *next_stmt_id += 1;
-
-                let source_ident =
-                    syn::Ident::new(&format!("stream_{}", source_id), Span::call_site());
-
-                let source_stmt = match source {
-                    HfPlusSource::Stream(expr) => {
-                        parse_quote! {
-                            #source_ident = source_stream(#expr);
-                        }
-                    }
-
-                    HfPlusSource::Iter(expr) => {
-                        parse_quote! {
-                            #source_ident = source_iter(#expr);
-                        }
-                    }
-
-                    HfPlusSource::Interval(expr) => {
-                        parse_quote! {
-                            #source_ident = source_interval(#expr);
-                        }
-                    }
-
-                    HfPlusSource::Spin() => {
-                        parse_quote! {
-                            #source_ident = spin();
-                        }
-                    }
+                let location_id = match location_kind {
+                    LocationId::Process(id) => id,
+                    LocationId::Cluster(id) => id,
+                    LocationId::ExternalProcess(id) => id,
                 };
 
-                graph_builders
-                    .entry(location_id)
-                    .or_default()
-                    .add_statement(source_stmt);
+                if let HfPlusSource::ExternalNetwork() = source {
+                    (syn::Ident::new("DUMMY", Span::call_site()), *location_id)
+                } else {
+                    let source_id = *next_stmt_id;
+                    *next_stmt_id += 1;
 
-                (source_ident, location_id)
+                    let source_ident =
+                        syn::Ident::new(&format!("stream_{}", source_id), Span::call_site());
+
+                    let source_stmt = match source {
+                        HfPlusSource::Stream(expr) => {
+                            parse_quote! {
+                                #source_ident = source_stream(#expr);
+                            }
+                        }
+
+                        HfPlusSource::ExternalNetwork() => {
+                            unreachable!()
+                        }
+
+                        HfPlusSource::Iter(expr) => {
+                            parse_quote! {
+                                #source_ident = source_iter(#expr);
+                            }
+                        }
+
+                        HfPlusSource::Interval(expr) => {
+                            parse_quote! {
+                                #source_ident = source_interval(#expr);
+                            }
+                        }
+
+                        HfPlusSource::Spin() => {
+                            parse_quote! {
+                                #source_ident = spin();
+                            }
+                        }
+                    };
+
+                    graph_builders
+                        .entry(*location_id)
+                        .or_default()
+                        .add_statement(source_stmt);
+
+                    (source_ident, *location_id)
+                }
             }
 
-            HfPlusNode::CycleSource { ident, location_id } => (ident.clone(), location_id),
+            HfPlusNode::CycleSource {
+                ident,
+                location_kind,
+            } => {
+                let location_id = match location_kind {
+                    LocationId::Process(id) => id,
+                    LocationId::Cluster(id) => id,
+                    LocationId::ExternalProcess(_) => panic!(),
+                };
+
+                (ident.clone(), *location_id)
+            }
 
             HfPlusNode::Tee { inner } => {
                 if let Some(ret) = built_tees.get(&(inner.as_ref() as *const RefCell<HfPlusNode>)) {
                     ret.clone()
                 } else {
-                    let (inner_ident, inner_location_id) = inner
-                        .replace(HfPlusNode::Placeholder)
-                        .emit(graph_builders, built_tees, next_stmt_id);
+                    let (inner_ident, inner_location_id) =
+                        inner
+                            .borrow()
+                            .emit(graph_builders, built_tees, next_stmt_id);
 
                     let tee_id = *next_stmt_id;
                     *next_stmt_id += 1;
@@ -527,11 +659,44 @@ impl HfPlusNode {
                 (union_ident, left_location_id)
             }
 
+            HfPlusNode::CrossSingleton(left, right) => {
+                let (left_ident, left_location_id) =
+                    left.emit(graph_builders, built_tees, next_stmt_id);
+                let (right_ident, right_location_id) =
+                    right.emit(graph_builders, built_tees, next_stmt_id);
+
+                assert_eq!(
+                    left_location_id, right_location_id,
+                    "cross_singleton inputs must be in the same location"
+                );
+
+                let union_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let cross_ident =
+                    syn::Ident::new(&format!("stream_{}", union_id), Span::call_site());
+
+                let builder = graph_builders.entry(left_location_id).or_default();
+                builder.add_statement(parse_quote! {
+                    #cross_ident = cross_singleton();
+                });
+
+                builder.add_statement(parse_quote! {
+                    #left_ident -> [input]#cross_ident;
+                });
+
+                builder.add_statement(parse_quote! {
+                    #right_ident -> [single]#cross_ident;
+                });
+
+                (cross_ident, left_location_id)
+            }
+
             HfPlusNode::CrossProduct(..) | HfPlusNode::Join(..) => {
                 let operator: syn::Ident = if matches!(self, HfPlusNode::CrossProduct(..)) {
-                    parse_quote!(cross_join)
+                    parse_quote!(cross_join_multiset)
                 } else {
-                    parse_quote!(join)
+                    parse_quote!(join_multiset)
                 };
 
                 let (HfPlusNode::CrossProduct(left, right) | HfPlusNode::Join(left, right)) = self
@@ -539,17 +704,19 @@ impl HfPlusNode {
                     unreachable!()
                 };
 
-                let (left_inner, left_was_persist) = if let HfPlusNode::Persist(left) = *left {
-                    (left, true)
-                } else {
-                    (left, false)
-                };
+                let (left_inner, left_was_persist) =
+                    if let HfPlusNode::Persist(left) = left.as_ref() {
+                        (left, true)
+                    } else {
+                        (left, false)
+                    };
 
-                let (right_inner, right_was_persist) = if let HfPlusNode::Persist(right) = *right {
-                    (right, true)
-                } else {
-                    (right, false)
-                };
+                let (right_inner, right_was_persist) =
+                    if let HfPlusNode::Persist(right) = right.as_ref() {
+                        (right, true)
+                    } else {
+                        (right, false)
+                    };
 
                 let (left_ident, left_location_id) =
                     left_inner.emit(graph_builders, built_tees, next_stmt_id);
@@ -605,9 +772,9 @@ impl HfPlusNode {
 
             HfPlusNode::Difference(..) | HfPlusNode::AntiJoin(..) => {
                 let operator: syn::Ident = if matches!(self, HfPlusNode::Difference(..)) {
-                    parse_quote!(difference)
+                    parse_quote!(difference_multiset)
                 } else {
-                    parse_quote!(anti_join)
+                    parse_quote!(anti_join_multiset)
                 };
 
                 let (HfPlusNode::Difference(left, right) | HfPlusNode::AntiJoin(left, right)) =
@@ -616,7 +783,8 @@ impl HfPlusNode {
                     unreachable!()
                 };
 
-                let (right, right_was_persist) = if let HfPlusNode::Persist(right) = *right {
+                let (right, right_was_persist) = if let HfPlusNode::Persist(right) = right.as_ref()
+                {
                     (right, true)
                 } else {
                     (right, false)
@@ -732,6 +900,41 @@ impl HfPlusNode {
                 (filter_map_ident, input_location_id)
             }
 
+            HfPlusNode::Sort(input) => {
+                let (input_ident, input_location_id) =
+                    input.emit(graph_builders, built_tees, next_stmt_id);
+
+                let sort_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let sort_ident = syn::Ident::new(&format!("stream_{}", sort_id), Span::call_site());
+
+                let builder = graph_builders.entry(input_location_id).or_default();
+                builder.add_statement(parse_quote! {
+                    #sort_ident = #input_ident -> sort();
+                });
+
+                (sort_ident, input_location_id)
+            }
+
+            HfPlusNode::DeferTick(input) => {
+                let (input_ident, input_location_id) =
+                    input.emit(graph_builders, built_tees, next_stmt_id);
+
+                let defer_tick_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let defer_tick_ident =
+                    syn::Ident::new(&format!("stream_{}", defer_tick_id), Span::call_site());
+
+                let builder = graph_builders.entry(input_location_id).or_default();
+                builder.add_statement(parse_quote! {
+                    #defer_tick_ident = #input_ident -> defer_tick_lazy();
+                });
+
+                (defer_tick_ident, input_location_id)
+            }
+
             HfPlusNode::Enumerate(input) => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
@@ -799,7 +1002,8 @@ impl HfPlusNode {
                     unreachable!()
                 };
 
-                let (input, input_was_persist) = if let HfPlusNode::Persist(input) = *input {
+                let (input, input_was_persist) = if let HfPlusNode::Persist(input) = input.as_ref()
+                {
                     (input, true)
                 } else {
                     (input, false)
@@ -840,7 +1044,8 @@ impl HfPlusNode {
                     unreachable!()
                 };
 
-                let (input, input_was_persist) = if let HfPlusNode::Persist(input) = *input {
+                let (input, input_was_persist) = if let HfPlusNode::Persist(input) = input.as_ref()
+                {
                     (input, true)
                 } else {
                     (input, false)
@@ -870,13 +1075,25 @@ impl HfPlusNode {
             }
 
             HfPlusNode::Network {
+                from_location: _,
+                from_key: _,
                 to_location,
+                to_key: _,
                 serialize_pipeline,
-                sink_expr,
-                source_expr,
+                instantiate_fn,
                 deserialize_pipeline,
                 input,
             } => {
+                let (sink_expr, source_expr, _connect_fn) = match instantiate_fn {
+                    DebugInstantiate::Building() => {
+                        panic!("Expected the network to be finalized")
+                    }
+
+                    DebugInstantiate::Finalized(sink, source, connect_fn) => {
+                        (sink, source, connect_fn)
+                    }
+                };
+
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -892,7 +1109,13 @@ impl HfPlusNode {
                     });
                 }
 
-                let receiver_builder = graph_builders.entry(to_location).or_default();
+                let to_id = match to_location {
+                    LocationId::Process(id) => id,
+                    LocationId::Cluster(id) => id,
+                    LocationId::ExternalProcess(id) => id,
+                };
+
+                let receiver_builder = graph_builders.entry(*to_id).or_default();
                 let receiver_stream_id = *next_stmt_id;
                 *next_stmt_id += 1;
 
@@ -909,8 +1132,180 @@ impl HfPlusNode {
                     });
                 }
 
-                (receiver_stream_ident, to_location)
+                (receiver_stream_ident, *to_id)
             }
         }
     }
+}
+
+#[expect(clippy::too_many_arguments, reason = "networking internals")]
+fn instantiate_network<'a, D: Deploy<'a> + 'a>(
+    from_location: &mut LocationId,
+    from_key: Option<usize>,
+    to_location: &mut LocationId,
+    to_key: Option<usize>,
+    nodes: &HashMap<usize, D::Process>,
+    clusters: &HashMap<usize, D::Cluster>,
+    externals: &HashMap<usize, D::ExternalProcess>,
+    compile_env: &D::CompileEnv,
+) -> (syn::Expr, syn::Expr, Box<dyn FnOnce()>) {
+    let ((sink, source), connect_fn) = match (from_location, to_location) {
+        (LocationId::Process(from), LocationId::Process(to)) => {
+            let from_node = nodes
+                .get(from)
+                .unwrap_or_else(|| {
+                    panic!("A process used in the graph was not instantiated: {}", from)
+                })
+                .clone();
+            let to_node = nodes
+                .get(to)
+                .unwrap_or_else(|| {
+                    panic!("A process used in the graph was not instantiated: {}", to)
+                })
+                .clone();
+
+            let sink_port = D::allocate_process_port(&from_node);
+            let source_port = D::allocate_process_port(&to_node);
+
+            (
+                D::o2o_sink_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
+                D::o2o_connect(&from_node, &sink_port, &to_node, &source_port),
+            )
+        }
+        (LocationId::Process(from), LocationId::Cluster(to)) => {
+            let from_node = nodes
+                .get(from)
+                .unwrap_or_else(|| {
+                    panic!("A process used in the graph was not instantiated: {}", from)
+                })
+                .clone();
+            let to_node = clusters
+                .get(to)
+                .unwrap_or_else(|| {
+                    panic!("A cluster used in the graph was not instantiated: {}", to)
+                })
+                .clone();
+
+            let sink_port = D::allocate_process_port(&from_node);
+            let source_port = D::allocate_cluster_port(&to_node);
+
+            (
+                D::o2m_sink_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
+                D::o2m_connect(&from_node, &sink_port, &to_node, &source_port),
+            )
+        }
+        (LocationId::Cluster(from), LocationId::Process(to)) => {
+            let from_node = clusters
+                .get(from)
+                .unwrap_or_else(|| {
+                    panic!("A cluster used in the graph was not instantiated: {}", from)
+                })
+                .clone();
+            let to_node = nodes
+                .get(to)
+                .unwrap_or_else(|| {
+                    panic!("A process used in the graph was not instantiated: {}", to)
+                })
+                .clone();
+
+            let sink_port = D::allocate_cluster_port(&from_node);
+            let source_port = D::allocate_process_port(&to_node);
+
+            (
+                D::m2o_sink_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
+                D::m2o_connect(&from_node, &sink_port, &to_node, &source_port),
+            )
+        }
+        (LocationId::Cluster(from), LocationId::Cluster(to)) => {
+            let from_node = clusters
+                .get(from)
+                .unwrap_or_else(|| {
+                    panic!("A cluster used in the graph was not instantiated: {}", from)
+                })
+                .clone();
+            let to_node = clusters
+                .get(to)
+                .unwrap_or_else(|| {
+                    panic!("A cluster used in the graph was not instantiated: {}", to)
+                })
+                .clone();
+
+            let sink_port = D::allocate_cluster_port(&from_node);
+            let source_port = D::allocate_cluster_port(&to_node);
+
+            (
+                D::m2m_sink_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
+                D::m2m_connect(&from_node, &sink_port, &to_node, &source_port),
+            )
+        }
+        (LocationId::ExternalProcess(from), LocationId::Process(to)) => {
+            let from_node = externals
+                .get(from)
+                .unwrap_or_else(|| {
+                    panic!(
+                        "A external used in the graph was not instantiated: {}",
+                        from
+                    )
+                })
+                .clone();
+
+            let to_node = nodes
+                .get(to)
+                .unwrap_or_else(|| {
+                    panic!("A process used in the graph was not instantiated: {}", to)
+                })
+                .clone();
+
+            let sink_port = D::allocate_external_port(&from_node);
+            let source_port = D::allocate_process_port(&to_node);
+
+            from_node.register(from_key.unwrap(), sink_port.clone());
+
+            (
+                (
+                    parse_quote!(DUMMY),
+                    D::e2o_source(compile_env, &from_node, &sink_port, &to_node, &source_port),
+                ),
+                D::e2o_connect(&from_node, &sink_port, &to_node, &source_port),
+            )
+        }
+        (LocationId::ExternalProcess(_from), LocationId::Cluster(_to)) => {
+            todo!("NYI")
+        }
+        (LocationId::ExternalProcess(_), LocationId::ExternalProcess(_)) => {
+            panic!("Cannot send from external to external")
+        }
+        (LocationId::Process(from), LocationId::ExternalProcess(to)) => {
+            let from_node = nodes
+                .get(from)
+                .unwrap_or_else(|| {
+                    panic!("A process used in the graph was not instantiated: {}", from)
+                })
+                .clone();
+
+            let to_node = externals
+                .get(to)
+                .unwrap_or_else(|| {
+                    panic!("A external used in the graph was not instantiated: {}", to)
+                })
+                .clone();
+
+            let sink_port = D::allocate_process_port(&from_node);
+            let source_port = D::allocate_external_port(&to_node);
+
+            to_node.register(to_key.unwrap(), source_port.clone());
+
+            (
+                (
+                    D::o2e_sink(compile_env, &from_node, &sink_port, &to_node, &source_port),
+                    parse_quote!(DUMMY),
+                ),
+                D::o2e_connect(&from_node, &sink_port, &to_node, &source_port),
+            )
+        }
+        (LocationId::Cluster(_from), LocationId::ExternalProcess(_to)) => {
+            todo!("NYI")
+        }
+    };
+    (sink, source, connect_fn)
 }

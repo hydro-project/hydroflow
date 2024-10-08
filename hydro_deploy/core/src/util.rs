@@ -3,8 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use anyhow::Result;
-use futures::{Future, StreamExt};
-use futures_core::Stream;
+use futures::{Future, Stream, StreamExt};
 use tokio::sync::{mpsc, oneshot};
 
 pub async fn async_retry<T, F: Future<Output = Result<T>>>(
@@ -41,15 +40,15 @@ pub fn prioritized_broadcast<T: Stream<Item = io::Result<String>> + Send + Unpin
 
     tokio::spawn(async move {
         while let Some(Result::Ok(line)) = lines.next().await {
-            if let Some(cli_receivers) = weak_priority_receivers.upgrade() {
-                let mut cli_receivers = cli_receivers.lock().unwrap();
+            if let Some(deploy_receivers) = weak_priority_receivers.upgrade() {
+                let mut deploy_receivers = deploy_receivers.lock().unwrap();
 
-                let successful_send = if let Some(r) = cli_receivers.take() {
+                let successful_send = if let Some(r) = deploy_receivers.take() {
                     r.send(line.clone()).is_ok()
                 } else {
                     false
                 };
-                drop(cli_receivers);
+                drop(deploy_receivers);
 
                 if successful_send {
                     continue;
@@ -72,9 +71,9 @@ pub fn prioritized_broadcast<T: Stream<Item = io::Result<String>> + Send + Unpin
             }
         }
 
-        if let Some(cli_receivers) = weak_priority_receivers.upgrade() {
-            let mut cli_receivers = cli_receivers.lock().unwrap();
-            drop(cli_receivers.take());
+        if let Some(deploy_receivers) = weak_priority_receivers.upgrade() {
+            let mut deploy_receivers = deploy_receivers.lock().unwrap();
+            drop(deploy_receivers.take());
         }
 
         if let Some(receivers) = weak_receivers.upgrade() {

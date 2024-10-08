@@ -1,10 +1,10 @@
-use hydroflow::util::cli::{ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource};
+use hydroflow::util::deploy::{ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 use hydroflow_datalog::datalog;
 
 #[hydroflow::main]
 async fn main() {
-    let ports = hydroflow::util::cli::init::<()>().await;
+    let ports = hydroflow::util::deploy::init::<()>().await;
     let vote_to_participant_source = ports
         .port("vote_to_participant")
         .connect::<ConnectedDirect>()

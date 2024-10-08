@@ -1,8 +1,8 @@
 use quote::quote_spanned;
 
 use super::{
-    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints,
-    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
 
@@ -48,7 +48,6 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
-    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,
@@ -144,12 +143,8 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
                 };
             }
         };
-        let write_iterator_after = if Persistence::Static == persistence {
-            quote_spanned! {op_span=>
-                #context.schedule_subgraph(#context.current_subgraph(), false);
-            }
-        } else {
-            Default::default()
+        let write_iterator_after = quote_spanned! {op_span=>
+            #context.schedule_subgraph(#context.current_subgraph(), false);
         };
 
         Ok(OperatorWriteOutput {

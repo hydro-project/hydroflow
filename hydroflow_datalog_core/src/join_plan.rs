@@ -189,7 +189,6 @@ fn gen_predicate_value_expr(
     )
 }
 
-#[allow(clippy::too_many_arguments)]
 /// Processes an extract expression to generate a Hydroflow pipeline that reads the input
 /// data from the IDB/EDB.
 ///
@@ -201,6 +200,7 @@ fn gen_predicate_value_expr(
 /// This function returns the number of elements in the tuple that will be emitted by the
 /// extraction of the `ExtractExpr`. So for a single variable, it will return `1`, for a
 /// tuple, it will return sum of the number of elements emitted by its children.
+#[expect(clippy::too_many_arguments, reason = "internal code")]
 fn process_extract(
     extract: &ExtractExpr,
     variable_mapping: &mut BTreeMap<String, usize>,

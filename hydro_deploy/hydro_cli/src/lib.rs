@@ -1,17 +1,19 @@
-// TODO(mingwei): For pyo3 generated code.
-#![allow(unused_qualifications, non_local_definitions)]
+#![expect(
+    unused_qualifications,
+    non_local_definitions,
+    reason = "for pyo3 generated code"
+)]
 
 use core::hydroflow_crate::ports::HydroflowSource;
 use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::{Arc, OnceLock};
 
 use bytes::Bytes;
 use futures::{Future, SinkExt, StreamExt};
-use hydroflow_cli_integration::{
+use hydroflow_deploy_integration::{
     ConnectedDirect, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
 };
 use pyo3::exceptions::{PyException, PyStopAsyncIteration};
@@ -24,8 +26,8 @@ use tokio::sync::oneshot::Sender;
 use tokio::sync::{Mutex, RwLock};
 
 mod cli;
-use hydro_deploy as core;
 use hydro_deploy::ssh::LaunchedSshHost;
+use hydro_deploy::{self as core};
 
 static TOKIO_RUNTIME: std::sync::RwLock<Option<tokio::runtime::Runtime>> =
     std::sync::RwLock::new(None);
@@ -156,13 +158,13 @@ impl Deployment {
     #[new]
     fn new() -> Self {
         Deployment {
-            underlying: Arc::new(RwLock::new(core::Deployment::default())),
+            underlying: Arc::new(RwLock::new(core::Deployment::new())),
         }
     }
 
-    #[allow(non_snake_case)]
+    #[expect(non_snake_case, reason = "pymethods")]
     fn Localhost(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let arc = self.underlying.blocking_write().Localhost();
+        let arc = self.underlying.blocking_read().Localhost();
 
         Ok(Py::new(
             py,
@@ -174,7 +176,7 @@ impl Deployment {
         .into_py(py))
     }
 
-    #[allow(non_snake_case, clippy::too_many_arguments)]
+    #[expect(non_snake_case, clippy::too_many_arguments, reason = "pymethods")]
     fn GcpComputeEngineHost(
         &self,
         py: Python<'_>,
@@ -184,6 +186,7 @@ impl Deployment {
         region: String,
         network: GcpNetwork,
         user: Option<String>,
+        startup_script: Option<String>,
     ) -> PyResult<Py<PyAny>> {
         let arc = self.underlying.blocking_write().add_host(|id| {
             core::GcpComputeEngineHost::new(
@@ -194,6 +197,7 @@ impl Deployment {
                 region,
                 network.underlying,
                 user,
+                startup_script,
             )
         });
 
@@ -207,7 +211,7 @@ impl Deployment {
         .into_py(py))
     }
 
-    #[allow(non_snake_case, clippy::too_many_arguments)]
+    #[expect(non_snake_case, clippy::too_many_arguments, reason = "pymethods")]
     fn AzureHost(
         &self,
         py: Python<'_>,
@@ -232,7 +236,7 @@ impl Deployment {
         .into_py(py))
     }
 
-    #[allow(non_snake_case)]
+    #[expect(non_snake_case, reason = "pymethods")]
     fn CustomService(
         &self,
         py: Python<'_>,
@@ -256,7 +260,7 @@ impl Deployment {
         .into_py(py))
     }
 
-    #[allow(non_snake_case, clippy::too_many_arguments)]
+    #[expect(non_snake_case, clippy::too_many_arguments, reason = "pymethods")]
     fn HydroflowCrate(
         &self,
         py: Python<'_>,
@@ -265,7 +269,6 @@ impl Deployment {
         bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
-        perf: Option<PathBuf>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,
@@ -279,7 +282,10 @@ impl Deployment {
                 bin,
                 example,
                 profile,
-                perf,
+                None,  // Python API doesn't support rustflags
+                None,  // Python API doesn't support target_dir
+                false, // Python API doesn't support no_default_features
+                None,  // Python API doesn't support perf
                 features,
                 args,
                 display_id,
@@ -707,7 +713,7 @@ fn null(py: Python<'_>) -> PyResult<Py<PyAny>> {
 
 #[pyclass]
 struct ServerPort {
-    underlying: hydroflow_cli_integration::ServerPort,
+    underlying: hydroflow_deploy_integration::ServerPort,
 }
 
 fn with_tokio_runtime<T>(f: impl Fn() -> T) -> T {
@@ -722,7 +728,7 @@ impl ServerPort {
         pythonize(py, &self.underlying).unwrap()
     }
 
-    #[allow(clippy::wrong_self_convention)]
+    #[expect(clippy::wrong_self_convention, reason = "pymethods")]
     fn into_source<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let realized = with_tokio_runtime(|| ServerOrBound::Server((&self.underlying).into()));
 
@@ -735,7 +741,7 @@ impl ServerPort {
         })
     }
 
-    #[allow(clippy::wrong_self_convention)]
+    #[expect(clippy::wrong_self_convention, reason = "pymethods")]
     fn into_sink<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let realized = with_tokio_runtime(|| ServerOrBound::Server((&self.underlying).into()));
 

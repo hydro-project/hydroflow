@@ -3,8 +3,7 @@ use std::ops::Deref;
 
 use hydroflow_lang::diagnostic::{Diagnostic, Level};
 use hydroflow_lang::graph::{
-    eliminate_extra_unions_tees, partition_graph, propagate_flow_props, FlatGraphBuilder,
-    HydroflowGraph,
+    eliminate_extra_unions_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,
 };
 use hydroflow_lang::parse::{
     HfStatement, IndexInt, Indexing, Pipeline, PipelineLink, PipelineStatement, PortIndex,
@@ -326,14 +325,10 @@ fn handle_errors(
 }
 
 pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -> TokenStream {
-    let mut partitioned_graph =
+    let partitioned_graph =
         partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
 
     let mut diagnostics = Vec::new();
-    // Propagate flow properties throughout the graph.
-    // TODO(mingwei): Should this be done at a flat graph stage instead?
-    let _ = propagate_flow_props::propagate_flow_props(&mut partitioned_graph, &mut diagnostics);
-
     let code_tokens = partitioned_graph.as_code(&root, true, quote::quote!(), &mut diagnostics);
     assert_eq!(
         0,
@@ -344,7 +339,7 @@ pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream)
     code_tokens
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments, reason = "internal code")]
 fn generate_rule(
     plan: JoinPlan<'_>,
     rule: &rust_sitter::Spanned<Rule>,
@@ -833,7 +828,7 @@ mod tests {
 
             let flat_graph_ref = &flat_graph;
             insta::with_settings!({snapshot_suffix => "surface_graph"}, {
-                insta::assert_display_snapshot!(flat_graph_ref.surface_syntax_string());
+                insta::assert_snapshot!(flat_graph_ref.surface_syntax_string());
             });
 
             let tokens = hydroflow_graph_to_program(flat_graph, quote::quote! { hydroflow });
@@ -845,7 +840,7 @@ mod tests {
             };
 
             insta::with_settings!({snapshot_suffix => "datalog_program"}, {
-                insta::assert_display_snapshot!(
+                insta::assert_snapshot!(
                     prettyplease::unparse(&wrapped)
                 );
             });

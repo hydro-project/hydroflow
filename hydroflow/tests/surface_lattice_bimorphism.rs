@@ -8,7 +8,7 @@ use lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
 use lattices::GhtType;
 use multiplatform_test::multiplatform_test;
-use variadics::variadic_collections::VariadicCountedHashSet;
+use variadics::variadic_collections::VariadicHashSet;
 use variadics::{var_expr, CloneVariadic};
 
 #[multiplatform_test]
@@ -16,10 +16,10 @@ pub fn test_cartesian_product() {
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
     let mut df = hydroflow_syntax! {
-        lhs = source_iter_delta(0..3)
+        lhs = source_iter(0..3)
             -> map(SetUnionSingletonSet::new_from)
             -> state::<'static, SetUnionHashSet<u32>>();
-        rhs = source_iter_delta(3..5)
+        rhs = source_iter(3..5)
             -> map(SetUnionSingletonSet::new_from)
             -> state::<'static, SetUnionHashSet<u32>>();
 
@@ -52,10 +52,10 @@ pub fn test_join() {
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
     let mut df = hydroflow_syntax! {
-        lhs = source_iter_delta([(7, 1), (7, 2)])
+        lhs = source_iter([(7, 1), (7, 2)])
             -> map(|(k, v)| MapUnionSingletonMap::new_from((k, SetUnionSingletonSet::new_from(v))))
             -> state::<'static, MapUnionHashMap<usize, SetUnionHashSet<usize>>>();
-        rhs = source_iter_delta([(7, 0), (7, 1), (7, 2)])
+        rhs = source_iter([(7, 0), (7, 1), (7, 2)])
             -> map(|(k, v)| MapUnionSingletonMap::new_from((k, SetUnionSingletonSet::new_from(v))))
             -> state::<'static, MapUnionHashMap<usize, SetUnionHashSet<usize>>>();
 
@@ -146,18 +146,18 @@ fn test_ght_join_bimorphism() {
     // type MyGhtB = GhtType!(u32, u64, u16 => &'static str);
     // type MyGhtATrie = <MyGhtA as GeneralizedHashTrie>::Trie;
     // type MyGhtBTrie = <MyGhtB as GeneralizedHashTrie>::Trie;
-    type MyGhtATrie = GhtType!(u32, u64, u16 => &'static str: Row);
-    type MyGhtBTrie = GhtType!(u32, u64, u16 => &'static str: Row);
+    type MyGhtATrie = GhtType!(u32, u64, u16 => &'static str: Set);
+    type MyGhtBTrie = GhtType!(u32, u64, u16 => &'static str: Set);
 
     type Output = variadics::var_type!(u32, u64, u16, &'static str, &'static str);
 
     type MyNodeBim = <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism<
-        VariadicCountedHashSet<Output>,
+        VariadicHashSet<Output>,
     >>::DeepJoinLatticeBimorphism;
     type MyBim = GhtBimorphism<MyNodeBim>;
 
     let mut hf = hydroflow_syntax! {
-        lhs = source_iter_delta([
+        lhs = source_iter([
                 var_expr!(123, 2, 5, "hello"),
                 var_expr!(50, 1, 1, "hi"),
                 var_expr!(5, 1, 7, "hi"),
@@ -165,7 +165,7 @@ fn test_ght_join_bimorphism() {
             ])
             -> map(|row| MyGhtATrie::new_from([row]))
             -> state::<'tick, MyGhtATrie>();
-        rhs = source_iter_delta([
+        rhs = source_iter([
                 var_expr!(5, 1, 8, "hi"),
                 var_expr!(5, 1, 7, "world"),
                 var_expr!(5, 1, 7, "folks"),
@@ -183,7 +183,7 @@ fn test_ght_join_bimorphism() {
             -> lattice_reduce()
             -> enumerate()
             -> inspect(|x| println!("{:?} {:#?}", context.current_tick(), x))
-            -> flat_map(|(_num, ght)| ght.recursive_iter().map(<Output as CloneVariadic>::clone_var_ref).collect::<Vec<_>>())
+            -> flat_map(|(_num, ght)| ght.recursive_iter().map(<Output as CloneVariadic>::clone_ref_var).collect::<Vec<_>>())
             -> null();
             // -> for_each(|x| println!("{:#?}\n", x));
     };

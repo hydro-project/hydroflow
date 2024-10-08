@@ -25,6 +25,9 @@ pub struct BuildParams {
     example: Option<String>,
     /// `--profile` parameter.
     profile: Option<String>,
+    rustflags: Option<String>,
+    target_dir: Option<PathBuf>,
+    no_default_features: bool,
     /// `--target <linux>` if cross-compiling for linux ([`HostTargetType::Linux`]).
     target_type: HostTargetType,
     /// `--features` flags, will be comma-delimited.
@@ -32,11 +35,15 @@ pub struct BuildParams {
 }
 impl BuildParams {
     /// Creates a new `BuildParams` and canonicalizes the `src` path.
+    #[expect(clippy::too_many_arguments, reason = "internal code")]
     pub fn new(
         src: impl AsRef<Path>,
         bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
+        rustflags: Option<String>,
+        target_dir: Option<PathBuf>,
+        no_default_features: bool,
         target_type: HostTargetType,
         features: Option<Vec<String>>,
     ) -> Self {
@@ -53,6 +60,9 @@ impl BuildParams {
             bin,
             example,
             profile,
+            rustflags,
+            target_dir,
+            no_default_features,
             target_type,
             features,
         }
@@ -77,14 +87,14 @@ pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildO
         .get_or_init(MemoMap::new)
         .get_or_insert(&params, Default::default)
         .get_or_try_init(move || {
-            ProgressTracker::rich_leaf("build".to_string(), move |_, set_msg| async move {
+            ProgressTracker::rich_leaf("build", move |set_msg| async move {
                 tokio::task::spawn_blocking(move || {
                     let mut command = Command::new("cargo");
-                    command.args([
-                        "build",
-                        "--profile",
-                        params.profile.as_deref().unwrap_or("release"),
-                    ]);
+                    command.args(["build"]);
+
+                    if let Some(profile) = params.profile.as_ref() {
+                        command.args(["--profile", profile]);
+                    }
 
                     if let Some(bin) = params.bin.as_ref() {
                         command.args(["--bin", bin]);
@@ -101,11 +111,23 @@ pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildO
                         }
                     }
 
+                    if params.no_default_features {
+                        command.arg("--no-default-features");
+                    }
+
                     if let Some(features) = params.features {
                         command.args(["--features", &features.join(",")]);
                     }
 
                     command.arg("--message-format=json-diagnostic-rendered-ansi");
+
+                    if let Some(rustflags) = params.rustflags.as_ref() {
+                        command.env("RUSTFLAGS", rustflags);
+                    }
+
+                    if let Some(target_dir) = params.target_dir.as_ref() {
+                        command.env("CARGO_TARGET_DIR", target_dir);
+                    }
 
                     let mut spawned = command
                         .current_dir(&params.src)

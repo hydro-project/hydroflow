@@ -615,8 +615,8 @@ impl<'a> Hydroflow<'a> {
         let sg_id = SubgraphId(self.subgraphs.len());
 
         let (mut subgraph_preds, mut subgraph_succs) = Default::default();
-        recv_ports.set_graph_meta(&mut *self.handoffs, &mut subgraph_preds, sg_id, true);
-        send_ports.set_graph_meta(&mut *self.handoffs, &mut subgraph_succs, sg_id, false);
+        recv_ports.set_graph_meta(&mut self.handoffs, &mut subgraph_preds, sg_id, true);
+        send_ports.set_graph_meta(&mut self.handoffs, &mut subgraph_succs, sg_id, false);
 
         let subgraph = move |context: &mut Context, handoffs: &mut Vec<HandoffData>| {
             let recv = recv_ports.make_ctx(&*handoffs);
@@ -828,7 +828,6 @@ impl<'a> Drop for Hydroflow<'a> {
 #[doc(hidden)]
 pub struct HandoffData {
     /// A friendly name for diagnostics.
-    #[allow(dead_code)] // TODO(mingwei): remove attr once used.
     pub(super) name: Cow<'static, str>,
     /// Crate-visible to crate for `handoff_list` internals.
     pub(super) handoff: Box<dyn HandoffMeta>,
@@ -883,13 +882,13 @@ impl HandoffData {
 /// structure and scheduled state.
 pub(super) struct SubgraphData<'a> {
     /// A friendly name for diagnostics.
-    #[allow(dead_code)] // TODO(mingwei): remove attr once used.
     pub(super) name: Cow<'static, str>,
     /// This subgraph's stratum number.
     pub(super) stratum: usize,
     /// The actual execution code of the subgraph.
     subgraph: Box<dyn Subgraph + 'a>,
-    #[allow(dead_code)]
+
+    #[expect(dead_code, reason = "may be useful in the future")]
     preds: Vec<HandoffId>,
     succs: Vec<HandoffId>,
 

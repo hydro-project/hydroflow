@@ -88,10 +88,11 @@ jobs:
           ${{ inputs.execute && '--execute' || '--no-publish' }}
           hydroflow hydroflow_lang hydroflow_macro hydroflow_plus
           hydroflow_datalog hydroflow_datalog_core
-          hydro_deploy hydro_cli hydroflow_cli_integration
-          hydroflow_plus_cli_integration
+          hydro_deploy hydro_cli hydroflow_deploy_integration
           stageleft stageleft_macro stageleft_tool
           multiplatform_test
         env:
           # Make sure to set this so the `gh` CLI works using our token.
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          # Show `cargo-smart-release`'s stack trace on error.
+          RUST_BACKTRACE: 1

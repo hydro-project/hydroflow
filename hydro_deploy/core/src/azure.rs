@@ -44,14 +44,16 @@ impl LaunchedSshHost for LaunchedVirtualMachine {
 }
 
 pub struct AzureHost {
-    pub id: usize,
-    pub project: String,
-    pub os_type: String, // linux or windows
-    pub machine_size: String,
-    pub image: Option<HashMap<String, String>>,
-    pub region: String,
-    pub user: Option<String>,
-    pub launched: OnceLock<Arc<LaunchedVirtualMachine>>,
+    /// ID from [`crate::Deployment::add_host`].
+    id: usize,
+
+    project: String,
+    os_type: String, // linux or windows
+    machine_size: String,
+    image: Option<HashMap<String, String>>,
+    region: String,
+    user: Option<String>,
+    pub launched: OnceLock<Arc<LaunchedVirtualMachine>>, // TODO(mingwei): fix pub
     external_ports: Mutex<Vec<u16>>,
 }
 
