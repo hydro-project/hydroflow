@@ -14,13 +14,13 @@ use serde::Serialize;
 use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
 
-use crate::builder::FlowState;
+use crate::builder::{self, FlowState};
 use crate::cycle::{CycleCollection, CycleComplete};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{
     CanSend, ExternalBincodeStream, ExternalBytesPort, ExternalProcess, Location, LocationId,
 };
-use crate::{Cluster, Optional, Singleton};
+use crate::{Cluster, Optional, Process, Singleton};
 
 /// Marks the stream as being unbounded, which means that it is not
 /// guaranteed to be complete in finite time.
@@ -690,6 +690,37 @@ pub(super) fn deserialize_bincode<T: DeserializeOwned>(tagged: bool) -> Pipeline
 }
 
 impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
+    pub fn decouple_process<P2>(
+        self,
+        other: &Process<'a, P2>,
+    ) -> Stream<T, Unbounded, NoTick, Process<'a, P2>>
+    where
+        N: CanSend<'a, Process<'a, P2>, In<T> = T, Out<T> = T>,
+        T: Clone + Serialize + DeserializeOwned,
+    {
+        self.send_bincode::<Process<'a, P2>, T>(other)
+    }
+
+    pub fn decouple_cluster<C2>(
+        self,
+        other: &Cluster<'a, C2>,
+    ) -> Stream<T, Unbounded, NoTick, Cluster<'a, C2>>
+    where
+        N: CanSend<'a, Cluster<'a, C2>, In<T> = (u32, T), Out<T> = (u32, T)>,
+        T: Clone + Serialize + DeserializeOwned,
+    {
+        let self_node_id = match self.location_kind {
+            LocationId::Cluster(cluster_id) => builder::ClusterSelfId {
+                id: cluster_id,
+                _phantom: PhantomData,
+            },
+            _ => panic!("decouple_cluster must be called on a cluster"),
+        };
+
+        self.map(q!(move |b| (self_node_id, b.clone())))
+            .send_bincode_interleaved(other)
+    }
+
     pub fn send_bincode<N2: Location<'a>, CoreType>(
         self,
         other: &N2,
