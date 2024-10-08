@@ -7,7 +7,7 @@ use stageleft::{q, IntoQuotedMut, Quoted};
 
 use crate::builder::FlowState;
 use crate::cycle::{CycleCollection, CycleCollectionWithInitial, CycleComplete};
-use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
+use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource, TeeNode};
 use crate::location::{Location, LocationId};
 use crate::stream::{Bounded, NoTick, Tick, Unbounded};
 use crate::Stream;
@@ -168,7 +168,7 @@ impl<'a, T: Clone, W, C, N: Location<'a>> Clone for Singleton<T, W, C, N> {
         if !matches!(self.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
             let orig_ir_node = self.ir_node.replace(HfPlusNode::Placeholder);
             *self.ir_node.borrow_mut() = HfPlusNode::Tee {
-                inner: Rc::new(RefCell::new(orig_ir_node)),
+                inner: TeeNode(Rc::new(RefCell::new(orig_ir_node))),
             };
         }
 
@@ -177,7 +177,7 @@ impl<'a, T: Clone, W, C, N: Location<'a>> Clone for Singleton<T, W, C, N> {
                 location_kind: self.location_kind,
                 flow_state: self.flow_state.clone(),
                 ir_node: HfPlusNode::Tee {
-                    inner: inner.clone(),
+                    inner: TeeNode(inner.0.clone()),
                 }
                 .into(),
                 _phantom: PhantomData,
@@ -465,7 +465,7 @@ impl<'a, T: Clone, W, C, N: Location<'a>> Clone for Optional<T, W, C, N> {
         if !matches!(self.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
             let orig_ir_node = self.ir_node.replace(HfPlusNode::Placeholder);
             *self.ir_node.borrow_mut() = HfPlusNode::Tee {
-                inner: Rc::new(RefCell::new(orig_ir_node)),
+                inner: TeeNode(Rc::new(RefCell::new(orig_ir_node))),
             };
         }
 
@@ -474,7 +474,7 @@ impl<'a, T: Clone, W, C, N: Location<'a>> Clone for Optional<T, W, C, N> {
                 location_kind: self.location_kind,
                 flow_state: self.flow_state.clone(),
                 ir_node: HfPlusNode::Tee {
-                    inner: inner.clone(),
+                    inner: TeeNode(inner.0.clone()),
                 }
                 .into(),
                 _phantom: PhantomData,
