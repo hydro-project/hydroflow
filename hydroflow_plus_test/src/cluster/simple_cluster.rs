@@ -95,7 +95,7 @@ mod tests {
             for j in 0..5 {
                 assert_eq!(
                     stdout.recv().await.unwrap(),
-                    format!("cluster received: ({}, {}) (self cluster id: {})", i, j, i)
+                    format!("cluster received: (ClusterId::<()>({}), {}) (self cluster id: ClusterId::<()>({}))", i, j, i)
                 );
             }
         }
@@ -109,7 +109,12 @@ mod tests {
         for (i, n) in node_outs.into_iter().enumerate() {
             assert_eq!(
                 n,
-                format!("node received: ({}, ({}, {}))", i / 5, i / 5, i % 5)
+                format!(
+                    "node received: (ClusterId::<()>({}), (ClusterId::<()>({}), {}))",
+                    i / 5,
+                    i / 5,
+                    i % 5
+                )
             );
         }
     }
@@ -174,7 +179,10 @@ mod tests {
 
         for (i, mut stdout) in cluster2_stdouts.into_iter().enumerate() {
             for _j in 0..1 {
-                let expected_message = format!("My self id is {}, my message is {}", i, i);
+                let expected_message = format!(
+                    "My self id is ClusterId::<()>({}), my message is ClusterId::<()>({})",
+                    i, i
+                );
                 assert_eq!(stdout.recv().await.unwrap(), expected_message);
             }
         }

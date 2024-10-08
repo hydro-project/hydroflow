@@ -9,7 +9,7 @@ expression: built.ir()
             f: stageleft :: runtime_support :: fn2_borrow_mut_type_hint :: < i32 , i32 , () > ({ use crate :: __staged :: cluster :: map_reduce :: * ; | total , count | * total += count }),
             input: Persist(
                 Map {
-                    f: stageleft :: runtime_support :: fn1_type_hint :: < (u32 , (std :: string :: String , i32)) , (std :: string :: String , i32) > ({ use hydroflow_plus :: __staged :: stream :: * ; | (_ , b) | b }),
+                    f: stageleft :: runtime_support :: fn1_type_hint :: < (hydroflow_plus :: location :: ClusterId < hydroflow_plus_test :: cluster :: map_reduce :: Worker > , (std :: string :: String , i32)) , (std :: string :: String , i32) > ({ use hydroflow_plus :: __staged :: stream :: * ; | (_ , b) | b }),
                     input: Network {
                         from_location: Cluster(
                             1,
@@ -35,7 +35,7 @@ expression: built.ir()
                                 Operator {
                                     path: "map",
                                     args: [
-                                        "| res | { let (id , b) = res . unwrap () ; (id , hydroflow_plus :: runtime_support :: bincode :: deserialize :: < (std :: string :: String , i32) > (& b) . unwrap ()) }",
+                                        "| res | { let (id , b) = res . unwrap () ; (hydroflow_plus :: ClusterId :: < hydroflow_plus_test :: cluster :: map_reduce :: Worker > :: from_raw (id) , hydroflow_plus :: runtime_support :: bincode :: deserialize :: < (std :: string :: String , i32) > (& b) . unwrap ()) }",
                                     ],
                                 },
                             ),
@@ -61,7 +61,7 @@ expression: built.ir()
                                                 Operator {
                                                     path: "map",
                                                     args: [
-                                                        "| (id , data) | { (id , hydroflow_plus :: runtime_support :: bincode :: serialize :: < std :: string :: String > (& data) . unwrap () . into ()) }",
+                                                        "| (id , data) : (hydroflow_plus :: ClusterId < _ > , std :: string :: String) | { (id . raw_id , hydroflow_plus :: runtime_support :: bincode :: serialize :: < std :: string :: String > (& data) . unwrap () . into ()) }",
                                                     ],
                                                 },
                                             ),
@@ -78,7 +78,7 @@ expression: built.ir()
                                             ),
                                         ),
                                         input: Map {
-                                            f: stageleft :: runtime_support :: fn1_type_hint :: < (usize , std :: string :: String) , (u32 , std :: string :: String) > ({ use crate :: __staged :: cluster :: map_reduce :: * ; let all_ids_vec = __hydroflow_plus_cluster_ids_1 ; | (i , w) | ((i % all_ids_vec . len ()) as u32 , w) }),
+                                            f: stageleft :: runtime_support :: fn1_type_hint :: < (usize , std :: string :: String) , (hydroflow_plus :: location :: ClusterId < hydroflow_plus_test :: cluster :: map_reduce :: Worker > , std :: string :: String) > ({ use crate :: __staged :: cluster :: map_reduce :: * ; let all_ids_vec = unsafe { :: std :: mem :: transmute :: < _ , & :: std :: vec :: Vec < hydroflow_plus :: ClusterId < hydroflow_plus_test :: cluster :: map_reduce :: Worker > > > (__hydroflow_plus_cluster_ids_1) } ; | (i , w) | (ClusterId :: from_raw ((i % all_ids_vec . len ()) as u32) , w) }),
                                             input: Enumerate(
                                                 Map {
                                                     f: stageleft :: runtime_support :: fn1_type_hint :: < & str , std :: string :: String > ({ use crate :: __staged :: cluster :: map_reduce :: * ; | s | s . to_string () }),
