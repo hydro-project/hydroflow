@@ -5,12 +5,15 @@ pub fn decouple_cluster<'a>(flow: &FlowBuilder<'a>) -> (Cluster<'a, ()>, Cluster
     let cluster1 = flow.cluster();
     let cluster2 = flow.cluster();
     let cluster_self_id = cluster2.self_id();
+    let cluster1_self_id = cluster1.self_id();
     cluster1
-        .source_iter(q!(0..1))
+        .source_iter(q!(vec!(cluster1_self_id)))
+        // .for_each(q!(|message| println!("hey, {}", message)))
+        .inspect(q!(|message| println!("Cluster1 node sending message: {}", message)))
         .decouple_cluster(&cluster2)
-        .for_each(q!(move |(id, message)| println!(
-            "I received from {}, my self id is {}, my message is {}",
-            id, cluster_self_id, message
+        .for_each(q!(move |message| println!(
+            "My self id is {}, my message is {}",
+            cluster_self_id, message
         )));
     (cluster1, cluster2)
 }
@@ -172,8 +175,8 @@ mod tests {
         for (i, mut stdout) in cluster2_stdouts.into_iter().enumerate() {
             for j in 0..1 {
                 let expected_message = format!(
-                    "I received from {}, my self id is {}, my message is {}",
-                    i, i, j
+                    "My self id is {}, my message is {}",
+                    i, i
                 );
                 assert_eq!(stdout.recv().await.unwrap(), expected_message);
             }

@@ -704,12 +704,11 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
     pub fn decouple_cluster<C2>(
         self,
         other: &Cluster<'a, C2>,
-    ) -> Stream<N::Out<T>, Unbounded, NoTick, Cluster<'a, C2>>
+    ) -> Stream<T, Unbounded, NoTick, Cluster<'a, C2>>
     where
-        N: CanSend<'a, Cluster<'a, C2>, In<T> = (u32, T)>,
+        N: CanSend<'a, Cluster<'a, C2>, In<T> = (u32, T), Out<T> = (u32, T)>,
         T: Clone + Serialize + DeserializeOwned,
     {
-        // Get the self node ID within the cluster
         let self_node_id = match self.location_kind {
             LocationId::Cluster(cluster_id) => builder::ClusterSelfId {
                 id: cluster_id,
@@ -717,10 +716,12 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
             },
             _ => panic!("decouple_cluster must be called on a cluster"),
         };
-
-        self.map(q!(move |b| (self_node_id, b.clone(),)))
-            .send_bincode(other)
+    
+        self
+            .map(q!(move |b| (self_node_id, b.clone())))
+            .send_bincode_interleaved(other)
     }
+    
 
     pub fn send_bincode<N2: Location<'a>, CoreType>(
         self,
