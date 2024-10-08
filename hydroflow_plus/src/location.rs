@@ -115,6 +115,16 @@ pub trait Location<'a> {
         )
     }
 
+    fn singleton_each_tick<T: Clone>(
+        &self,
+        e: impl Quoted<'a, T>,
+    ) -> Singleton<T, Bounded, Tick, Self>
+    where
+        Self: Sized,
+    {
+        self.singleton(e).latest_tick()
+    }
+
     fn singleton_first_tick<T: Clone>(
         &self,
         e: impl Quoted<'a, T>,
