@@ -716,12 +716,10 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
             },
             _ => panic!("decouple_cluster must be called on a cluster"),
         };
-    
-        self
-            .map(q!(move |b| (self_node_id, b.clone())))
+
+        self.map(q!(move |b| (self_node_id, b.clone())))
             .send_bincode_interleaved(other)
     }
-    
 
     pub fn send_bincode<N2: Location<'a>, CoreType>(
         self,

@@ -174,10 +174,7 @@ mod tests {
 
         for (i, mut stdout) in cluster2_stdouts.into_iter().enumerate() {
             for j in 0..1 {
-                let expected_message = format!(
-                    "My self id is {}, my message is {}",
-                    i, i
-                );
+                let expected_message = format!("My self id is {}, my message is {}", i, i);
                 assert_eq!(stdout.recv().await.unwrap(), expected_message);
             }
         }
