@@ -31,7 +31,7 @@ pub mod deploy;
 pub use deploy::{ClusterSpec, Deploy, ProcessSpec};
 
 pub mod cycle;
-pub use cycle::HfCycle;
+pub use cycle::HfForwardRef;
 
 pub mod builder;
 pub use builder::FlowBuilder;
