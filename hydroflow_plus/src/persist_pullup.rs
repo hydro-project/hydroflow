@@ -13,22 +13,22 @@ fn persist_pullup_node(
         HfPlusNode::Delta(box HfPlusNode::Persist(box behind_persist)) => behind_persist,
 
         HfPlusNode::Tee { inner } => {
-            if persist_pulled_tees.contains(&(inner.as_ref() as *const RefCell<HfPlusNode>)) {
+            if persist_pulled_tees.contains(&(inner.0.as_ref() as *const RefCell<HfPlusNode>)) {
                 HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
-                    inner: inner.clone(),
+                    inner: TeeNode(inner.0.clone()),
                 }))
-            } else if matches!(*inner.borrow(), HfPlusNode::Persist(_)) {
-                persist_pulled_tees.insert(inner.as_ref() as *const RefCell<HfPlusNode>);
+            } else if matches!(*inner.0.borrow(), HfPlusNode::Persist(_)) {
+                persist_pulled_tees.insert(inner.0.as_ref() as *const RefCell<HfPlusNode>);
                 if let HfPlusNode::Persist(box behind_persist) =
-                    inner.replace(HfPlusNode::Placeholder)
+                    inner.0.replace(HfPlusNode::Placeholder)
                 {
-                    *inner.borrow_mut() = behind_persist;
+                    *inner.0.borrow_mut() = behind_persist;
                 } else {
                     unreachable!()
                 }
 
                 HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
-                    inner: inner.clone(),
+                    inner: TeeNode(inner.0.clone()),
                 }))
             } else {
                 HfPlusNode::Tee { inner }
