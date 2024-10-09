@@ -12,17 +12,24 @@ libfuzzer-sys = "0.4"
 lattices = { path = "../" }  # Adjust if necessary
 rand = "0.8"  # or the latest version
 chrono = "0.4" 
+afl = "0.15.10"
+url = "*"
 
 [profile.dev]
 opt-level = 1
 overflow-checks = true
 debug = true
+lto = true
+codegen-units = 1
+panic = "abort"
 
 [profile.release]
 opt-level = 2
 overflow-checks = true
 debug = true
 lto = true 
+codegen-units = 1
+panic = "abort"
 
 [[bin]] 
 name = "all_fuzz"
@@ -32,6 +39,15 @@ doc = false
 bench = false
 
 
+[build]
+target = "aarch64-apple-darwin"
+
+[target.aarch64-apple-darwin]
+linker = "clang"
+rustflags = [
+    "-C", "link-arg=-mmacosx-version-min=14.0",
+    "-C", "link-arg=-lafl"  # Link against the AFL library
+]
  
 
 [workspace]

@@ -7,8 +7,8 @@ use lattices::algebra::linearity_single;
 pub fn fuzz_target(
     data: &[u8],
     f: fn(u8, u8) -> u8,       
-    q: fn(u8) -> f64,  
-    g: fn(f64, f64) -> f64,     
+    q: fn(u8) -> u8,  
+    g: fn(u8, u8) -> u8,     
 ) {
     if data.len() < 3 {
         println!("Not enough data for linearity test.");
