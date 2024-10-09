@@ -67,7 +67,7 @@ spec:
             - name: RUST_LOG
               value: "info"
 ---
-apiVersion: v1
+apiVersion: vw1
 kind: Service
 metadata:
   name: gossip-kv-seed-nodes
