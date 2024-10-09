@@ -1,5 +1,6 @@
 [package]
 name = "lattices"
+path = "src/lib.rs" 
 publish = true
 version = "0.5.4"
 edition = "2021"
@@ -11,7 +12,10 @@ description = "Lattice data types for simplifying distributed state by providing
 default = []
 serde = ["dep:serde"]
 
+ 
 [dependencies]
 cc-traits = "2.0.0"
 sealed = "0.5"
 serde = { version = "1.0.160", features = ["derive"], optional = true }
+
+ 

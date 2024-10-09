@@ -9,10 +9,8 @@ pub fn monoid<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     zero: S, // zero is the identity element of f
-) -> Result<(), &'static str> {
-    semigroup(items, f)?;
-    identity(items, f, zero)?;
-    Ok(())
+) -> bool {
+    return semigroup(items, f) && identity(items, f, zero);
 }
 
 /// Defines a semigroup structure.
@@ -20,9 +18,8 @@ pub fn monoid<S: Debug + PartialEq + Clone, const N: usize>(
 pub fn semigroup<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
-) -> Result<(), &'static str> {
-    associativity(items, f)?;
-    Ok(())
+) -> bool {
+    return associativity(items, f);
 }
 
 /// Defines a semiring structure.
@@ -36,15 +33,10 @@ pub fn semiring<S: Debug + PartialEq + Clone, const N: usize>(
     g: &impl Fn(S, S) -> S,
     zero: S, // zero is the identity element of f
     one: S,  // one is the identity element of g
-) -> Result<(), &'static str> {
-    commutative_monoid(items, f, zero.clone())?;
-    monoid(items, g, one.clone())?;
-
-    absorbing_element(items, g, zero)?;
-
-    distributive(items, f, g)?;
-
-    Ok(())
+) -> bool {
+    return commutative_monoid(items, f, zero.clone()) && monoid(items, g, one.clone()) &&
+    absorbing_element(items, g, zero) && 
+    distributive(items, f, g);
 }
 
 /// Defines a ring structure.
@@ -56,10 +48,8 @@ pub fn ring<S: Debug + PartialEq + Clone, const N: usize>(
     zero: S, // zero is the identity element of f
     one: S,  // one is the identity element of g
     b: &impl Fn(S) -> S,
-) -> Result<(), &'static str> {
-    semiring(items, f, g, zero.clone(), one)?;
-    inverse(items, f, zero, b)?;
-    Ok(())
+) -> bool {
+    return semiring(items, f, g, zero.clone(), one) && inverse(items, f, zero, b);
 }
 
 /// Defines an integral domain structure.
@@ -71,10 +61,9 @@ pub fn integral_domain<S: Debug + PartialEq + Clone, const N: usize>(
     zero: S,                     // zero is the identity element of f
     one: S,                      // one is the identity element of g
     inverse_f: &impl Fn(S) -> S, /* the function to compute the inverse element of an element with respect to f */
-) -> Result<(), &'static str> {
-    commutative_ring(items, f, g, zero.clone(), one, inverse_f)?;
-    no_nonzero_zero_divisors(items, g, zero)?;
-    Ok(())
+) -> bool {
+    return commutative_ring(items, f, g, zero.clone(), one, inverse_f) &&
+    no_nonzero_zero_divisors(items, g, zero);
 }
 
 /// Defines a no-nonzero-zero-divisors property.
@@ -83,20 +72,20 @@ pub fn no_nonzero_zero_divisors<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     zero: S,
-) -> Result<(), &'static str> {
+) -> bool {
     for a in items {
         for b in items {
             if *a != zero && *b != zero {
                 if f(a.clone(), b.clone()) == zero {
-                    return Err("No nonzero zero divisors check failed.");
+                    return false;
                 };
                 if f(b.clone(), a.clone()) == zero {
-                    return Err("No nonzero zero divisors check failed.");
+                    return false;
                 };
             }
         }
     }
-    Ok(())
+    true
 }
 
 /// Defines a commutative ring structure.
@@ -108,11 +97,10 @@ pub fn commutative_ring<S: Debug + PartialEq + Clone, const N: usize>(
     zero: S,                // zero is the identity element of f
     one: S,                 // one is the identity element of g
     inverse_f: &impl Fn(S) -> S,
-) -> Result<(), &'static str> {
-    semiring(items, f, g, zero.clone(), one)?;
-    inverse(items, f, zero, inverse_f)?;
-    commutativity(items, g)?;
-    Ok(())
+) -> bool {
+    return semiring(items, f, g, zero.clone(), one) && 
+    inverse(items, f, zero, inverse_f) &&
+    commutativity(items, g);
 }
 
 /// Defines a field structure.
@@ -125,10 +113,9 @@ pub fn field<S: Debug + PartialEq + Clone, const N: usize>(
     one: S,                      // one is the identity element of g
     inverse_f: &impl Fn(S) -> S, /* inverse_f is the function that given x computes x' such that f(x,x') = zero. */
     inverse_g: &impl Fn(S) -> S, /* //inverse_g is the function that given x computes x' such that g(x,x') = one. */
-) -> Result<(), &'static str> {
-    commutative_ring(items, f, g, zero.clone(), one.clone(), inverse_f)?;
-    nonzero_inverse(items, g, one, zero, inverse_g)?;
-    Ok(())
+) -> bool {
+    return commutative_ring(items, f, g, zero.clone(), one.clone(), inverse_f) &&
+    nonzero_inverse(items, g, one, zero, inverse_g);
 }
 
 /// Defines a commutative monoid structure.
@@ -137,10 +124,8 @@ pub fn commutative_monoid<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     zero: S,
-) -> Result<(), &'static str> {
-    monoid(items, f, zero)?;
-    commutativity(items, f)?;
-    Ok(())
+) -> bool {
+    return monoid(items, f, zero) && commutativity(items, f);
 }
 
 /// Defines a group structure.
@@ -152,10 +137,8 @@ pub fn group<S: Debug + PartialEq + Clone, const N: usize>(
     f: &impl Fn(S, S) -> S,
     zero: S,             // zero is the identity element of f
     b: &impl Fn(S) -> S, /* b is the function to compute the inverse element of an element with respect to f */
-) -> Result<(), &'static str> {
-    monoid(items, f, zero.clone())?;
-    inverse(items, f, zero, b)?;
-    Ok(())
+) -> bool {
+    return monoid(items, f, zero.clone()) && inverse(items, f, zero, b);
 }
 
 /// Defines an abelian group structure.
@@ -165,10 +148,8 @@ pub fn abelian_group<S: Debug + PartialEq + Clone, const N: usize>(
     f: &impl Fn(S, S) -> S,
     zero: S,
     b: &impl Fn(S) -> S, /* b is the function to compute the inverse element of an element with respect to f */
-) -> Result<(), &'static str> {
-    group(items, f, zero, b)?;
-    commutativity(items, f)?;
-    Ok(())
+) -> bool {
+    return group(items, f, zero, b) && commutativity(items, f);
 }
 
 // Algebraic Properties
@@ -177,29 +158,60 @@ pub fn abelian_group<S: Debug + PartialEq + Clone, const N: usize>(
 /// and (b+c)a = ba + ca
 pub fn distributive<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
-    f: &impl Fn(S, S) -> S,
-    g: &impl Fn(S, S) -> S,
-) -> Result<(), &'static str> {
-    left_distributes(items, f, g)?;
-    right_distributes(items, f, g)?;
-    Ok(())
+    f: impl Fn(S, S) -> S,
+    g: impl Fn(S, S) -> S,
+) -> bool {
+    for [a, b, c] in cartesian_power(items) {
+        if distributive_single(a.clone(), b.clone(), c.clone(), &f, &g) == false {
+            return false;
+        }
+    }
+    true
 }
 
+/// Defines the distributive property over just 3 items.
+/// This checks both left and right distributive properties.
+/// a(b+c) = ab + ac
+/// (b+c)a = ba + ca
+pub fn distributive_single<S: Debug + PartialEq + Clone>(
+    a: S,
+    b: S,
+    c: S,
+    f: impl Fn(S, S) -> S,
+    g: impl Fn(S, S) -> S,
+) -> bool {
+    let left = g(a.clone(), f(b.clone(), c.clone())) == f(g(a.clone(), b.clone()), g(a.clone(), c.clone()));
+    let right = g(f(b.clone(), c.clone()), a.clone()) == f(g(b.clone(), a.clone()), g(c.clone(), a.clone()));
+    left == right
+}
+
+ 
 /// Defines the left distributive property
 /// a(b+c) = ab + ac
 pub fn left_distributes<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
     g: impl Fn(S, S) -> S,
-) -> Result<(), &'static str> {
+) -> bool {
     for [a, b, c] in cartesian_power(items) {
-        if g(a.clone(), f(b.clone(), c.clone()))
-            != f(g(a.clone(), b.clone()), g(a.clone(), c.clone()))
+        if left_distributes_single(a.clone(), b.clone(), c.clone(), &f, &g) == false
         {
-            return Err("Left distributive property check failed.");
+            return false;
         }
     }
-    Ok(())
+    true
+}
+
+/// Defines the left distributive over just 3 items
+pub fn left_distributes_single<S: Debug + PartialEq + Clone> (
+    a: S,
+    b: S,
+    c: S,
+    f: impl Fn(S, S) -> S,
+    g: impl Fn(S, S) -> S
+) -> bool {
+        g(a.clone(), f(b.clone(), c.clone())) == // g(a, f(b, c)) 
+        f(g(a.clone(), b.clone()), g(a.clone(), c.clone()))  // f(g(a, b), g(a, c)) 
 }
 
 /// Defines the right distributive property.
@@ -208,15 +220,26 @@ pub fn right_distributes<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
     g: impl Fn(S, S) -> S,
-) -> Result<(), &'static str> {
+) -> bool {
     for [a, b, c] in cartesian_power(items) {
-        if g(f(b.clone(), c.clone()), a.clone())
-            != f(g(b.clone(), a.clone()), g(c.clone(), a.clone()))
+        if right_distributes_single(a.clone(), b.clone(), c.clone(), &f, &g) == false
         {
-            return Err("Right distributive property check failed.");
+            return false;
         }
     }
-    Ok(())
+    true
+}
+
+/// Defines the right distributive over just 3 items
+pub fn right_distributes_single<S: Debug + PartialEq + Clone> (
+    a: S,
+    b: S,
+    c: S,
+    f: impl Fn(S, S) -> S,
+    g: impl Fn(S, S) -> S
+) -> bool {
+        g(f(b.clone(), c.clone()), a.clone()) == // g(f(b, c), a) 
+        f(g(b.clone(), a.clone()), g(c.clone(), a.clone()))  // f(g(b, a), g(c, a)) 
 }
 
 /// Defines the absorbing_element property.
@@ -224,21 +247,35 @@ pub fn right_distributes<S: Debug + PartialEq + Clone, const N: usize>(
 pub fn absorbing_element<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
-    z: S, // absorbing element (anything multiplied by z is z e.g. 0 in integers)
-) -> Result<(), &'static str> {
+    z: S, // absorbing element
+) -> bool {
     for a in items {
-        // az = z
-        if f(a.clone(), z.clone()) != z.clone() {
-            return Err("Absorbing element property check failed.");
-        }
-
-        // za = z
-        if f(z.clone(), a.clone()) != z.clone() {
-            return Err("Absorbing element property check failed.");
+        if !absorbing_element_single(a.clone(), &f, z.clone()) {
+            // return Err("Absorbing element check failed.");
+            return false
         }
     }
-    Ok(())
+    return true
 }
+
+/// Checks if a single element `z` is an absorbing element with respect to the operation `f`
+/// for a given element `a`.
+pub fn absorbing_element_single<S: Debug + PartialEq + Clone>(
+    a: S,
+    f: impl Fn(S, S) -> S,
+    z: S, // absorbing element
+) -> bool {
+    // az = z
+    if f(a.clone(), z.clone()) != z.clone() {
+        return false
+    }
+    // za = z
+    if f(z.clone(), a.clone()) != z.clone() {
+        return false
+    }
+    return true
+}
+
 
 /// Defines the inverse property.
 /// An element b is the inverse of a if ab = e and ba = e for some identity element e.
@@ -247,17 +284,36 @@ pub fn inverse<S: Debug + PartialEq + Clone, const N: usize>(
     f: impl Fn(S, S) -> S,
     e: S,               // e is the identity element of f
     b: impl Fn(S) -> S, /* b is the function to compute the inverse element of an element with respect to f */
-) -> Result<(), &'static str> {
+) -> bool {
     // ∃b: ab = e, ba = e
     for a in items {
         if f(a.clone(), b(a.clone())) != e {
-            return Err("Inverse check failed.");
+            return false;
         }
         if f(b(a.clone()), a.clone()) != e {
-            return Err("Inverse check failed.");
+            return false;
         }
     }
-    Ok(())
+    return true
+}
+
+
+/// Defines the inverse property.
+/// An element b is the inverse of a if ab = e and ba = e for some identity element e.
+pub fn inverse_single<S: Debug + PartialEq + Clone>(
+    a: S,
+    f: impl Fn(S, S) -> S,
+    e: S,               // e is the identity element of f
+    b: impl Fn(S) -> S, /* b is the function to compute the inverse element of an element with respect to f */
+) -> bool {
+    // ∃b: ab = e, ba = e
+    if f(a.clone(), b(a.clone())) != e {
+        return false
+    }
+    if f(b(a.clone()), a.clone()) != e {
+        return false
+    }
+    return true
 }
 
 /// Defines the non_zero inverse property.
@@ -265,41 +321,59 @@ pub fn inverse<S: Debug + PartialEq + Clone, const N: usize>(
 pub fn nonzero_inverse<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
-    e: S,
-    zero: S,
+    e: S,    // identity element
+    zero: S, // zero element
     b: impl Fn(S) -> S,
-) -> Result<(), &'static str> {
-    // ∃b: ab = e, ba = e
+) -> bool {
     for a in items {
         if *a != zero {
-            if f(a.clone(), b(a.clone())) != e {
-                return Err("Nonzero inverse check failed.");
-            }
-            if f(b(a.clone()), a.clone()) != e {
-                return Err("Nonzero inverse check failed.");
+            if !nonzero_inverse_single(a.clone(), &f, e.clone(), zero.clone(), &b) {
+                return false
             }
         }
     }
-    Ok(())
+    return true
 }
 
+/// Checks if the element a has an inverse with respect to the operation f.
+pub fn nonzero_inverse_single<S: Debug + PartialEq + Clone>(
+    a: S,
+    f: impl Fn(S, S) -> S,
+    e: S,        // identity element
+    zero: S,    // zero element
+    b: impl Fn(S) -> S, // function to compute the inverse
+) -> bool {
+    if a == zero {
+        return true // No inverse check for zero, consider it valid
+    }
+    if f(a.clone(), b(a.clone())) != e {
+        return false
+    }
+    if f(b(a.clone()), a.clone()) != e {
+        return false
+    }
+    true
+}
+
+
 /// Defines the identity property.
+///
 /// An element e is the identity of f if ae = a and ea = a for all a.
 pub fn identity<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
     e: S,
-) -> Result<(), &'static str> {
+) -> bool {
     // ea = a, ae = a
     for a in items {
         if f(e.clone(), a.clone()) != a.clone() {
-            return Err("Left Identity check failed.");
+            return false
         }
         if f(a.clone(), e.clone()) != a.clone() {
-            return Err("Right Identity check failed.");
+            return false
         }
     }
-    Ok(())
+    true
 }
 
 /// Defines the associativity property.
@@ -307,46 +381,87 @@ pub fn identity<S: Debug + PartialEq + Clone, const N: usize>(
 pub fn associativity<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
-) -> Result<(), &'static str> {
+) -> bool {
     for [a, b, c] in cartesian_power(items) {
-        if f(a.clone(), f(b.clone(), c.clone())) != // f(a, f(b,c)) ie a + (b + c)
-            f(f(a.clone(), b.clone()), c.clone())
-        // f(f(a,b),c) ie (a + b) + c
+        if associativity_single(a.clone(), b.clone(), c.clone(), &f) == false
         {
-            return Err("Associativity check failed.");
+            return false;
         }
     }
-    Ok(())
+    true
 }
+
+/// Defines associativity over just 3 items
+pub fn associativity_single<S: Debug + PartialEq + Clone> (
+    a: S,
+    b: S,
+    c: S,
+    f: impl Fn(S, S) -> S
+) -> bool {
+        f(a.clone(), f(b.clone(), c.clone())) == // f(a, f(b,c)) ie a + (b + c)
+        f(f(a.clone(), b.clone()), c.clone())  // f(f(a,b),c) ie (a + b) + c
+} 
 
 /// Defines the commutativity property.
 /// xy = yx
 pub fn commutativity<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
-) -> Result<(), &'static str> {
-    for [x, y] in cartesian_power(items) {
-        if f(x.clone(), y.clone()) != f(y.clone(), x.clone()) {
+) -> bool {
+    for [a, b] in cartesian_power(items) {
+        if commutativity_single(a.clone(), b.clone(), &f) == false {
             // a + b = b + a
-            return Err("Commutativity check failed.");
+            return false;
         }
     }
-    Ok(())
+    true
 }
+
+/// Defines commutativity over just 3 items
+pub fn commutativity_single<S: Debug + PartialEq + Clone> (
+    a: S,
+    b: S,
+    f: impl Fn(S, S) -> S
+) -> bool {
+        f(a.clone(), b.clone()) == // f(a, b) ie a + b
+        f(b.clone(), a.clone())  // f(b, a) ie b + a
+}
+
 
 /// Defines the idempotency property.
 /// xx = x
 pub fn idempotency<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
-) -> Result<(), &'static str> {
-    for x in items {
-        if f(x.clone(), x.clone()) != x.clone() {
-            return Err("Idempotency check failed.");
+) -> bool {
+    for a in items {
+        if idempotency_single(a.clone(), &f) == false {
+            return false;
         }
     }
-    Ok(())
+    true
 }
+
+/// Defines commutativity over just 3 items
+pub fn idempotency_single<S: Debug + PartialEq + Clone> (
+    a: S,
+    f: impl Fn(S, S) -> S
+) -> bool {
+    f(a.clone(), a.clone()) == a.clone()
+}
+
+
+/// Defines commutativity over just 3 items
+pub fn idempotency_single_err<S: Debug + PartialEq + Clone> (
+    a: S,
+    f: impl Fn(S, S) -> S
+) -> bool {
+    if f(a.clone(), a.clone()) != a.clone() {
+        return false;
+    }
+    true
+}
+
 
 /// Defines the linearity property
 /// q is linear with respect to some group operation + if q(a+b) = q(a) + q(b)
@@ -360,15 +475,33 @@ pub fn linearity<S: Debug + PartialEq + Clone, R: Debug + PartialEq + Clone>(
     f: impl Fn(S, S) -> S,
     g: impl Fn(R, R) -> R,
     q: impl Fn(S) -> R,
-) -> Result<(), &'static str> {
+) -> bool {
     for [a, b] in cartesian_power(items) {
-        if q(f(a.clone(), b.clone())) != g(q(b.clone()), q(a.clone())) {
-            // q(f(a,b)) = f(q(a), q(b))
-            return Err("Linearity check failed.");
+        if !linearity_single(a.clone(), b.clone(), &f, &q, &g) {
+            // q(f(a,b)) != g(q(a), q(b)
+            // return Err("Linearity check failed.");
+            return false;
         }
     }
-    Ok(())
+    return true;
 }
+
+
+/// Defines linearity over just 3 items
+pub fn linearity_single<S: Debug + PartialEq + Clone, R: Debug + PartialEq + Clone>(
+    a: S,
+    b: S,
+    f: impl Fn(S, S) -> S,  
+    q: impl Fn(S) -> R,    
+    g: impl Fn(R, R) -> R,   
+) -> bool {
+
+    let lhs = q(f(a.clone(), b.clone()));  // q applied to f(a, b)
+    let rhs = g(q(a.clone()), q(b.clone())); // g applied to q(a) and q(b)
+
+    lhs == rhs
+}
+
 
 /// Defines the bilinearity property
 /// q is bilinear with respect to + if q(a + b, c) = q(a,c) + q(b,c) and q(a,c + d) = q(a,c) + q(a,d)
@@ -406,6 +539,82 @@ pub fn bilinearity<
     Ok(())
 }
 
+// // check monotonicity across all pairs.
+// pub fn monotonicity(items: &[S; N], f: impl Fn(T) -> T) -> bool { 
+//     for [a, b] in cartesian_power(items) {
+//         if !is_monotonic_single(a.clone(), b.clone(), &f) {
+//             return false;
+//         }
+//     }
+//     return true; 
+// }
+
+
+// Monotonic is defined as x <= y implies f(x) <= f(y)
+pub fn is_monotonic_single<T: PartialOrd + Clone>(x: T, y: T, f: impl Fn(T) -> T) -> bool {
+    if x <= y {
+        f(x.clone()) <= f(y.clone())
+    } else {
+        true // If x > y, monotonicity doesn't apply.
+    }
+} 
+ 
+// Helper function to check unary inflationary property 
+pub fn is_inflationary_unary<T: PartialOrd + Clone + std::fmt::Debug>(
+    f: impl Fn(T) -> T,
+    x: T,
+) -> bool {
+    let result = f(x.clone());
+    if result >= x {
+        true
+    } else {
+        false
+    }
+} 
+
+
+// Helper function to check binary inflationary property
+pub fn is_inflationary_binary<T: PartialOrd + Clone + std::fmt::Debug>(
+    f: impl Fn(T, T) -> T,
+    x: T,
+    y: T,
+) -> bool {
+    let result = f(x.clone(), y.clone());
+    if result >= x && result >= y {
+        true
+    } else {
+        false
+    }
+} 
+ 
+
+// Main function to check inflationary property for unary and binary functions
+pub fn is_inflationary_single<T: PartialOrd + Clone + std::fmt::Debug>(
+    f_unary: Option<impl Fn(T) -> T>,
+    f_binary: Option<impl Fn(T, T) -> T>,
+    x: T,
+    y: Option<T>,
+) {
+    if let Some(f) = f_unary {
+        // Check if it's inflationary for a unary function
+        is_inflationary_unary(f, x.clone());
+    }
+
+    if let Some(f) = f_binary {
+        // Check if it's inflationary for a binary function
+        if let Some(y_value) = y {
+            is_inflationary_binary(f, x.clone(), y_value);
+        } else {
+            println!("Binary function requires two arguments.");
+        }
+    }
+} 
+
+
+ 
+
+
+
 // Functions for testing out whether user defined code satisfies different properties
 
 // A list of algebraic properties of a single function that we support
@@ -432,22 +641,22 @@ pub fn get_single_function_properties<S: Debug + PartialEq + Clone, const N: usi
     let mut properties_satisfied: Vec<String> = Vec::new();
 
     // TODO make this a loop through the SINGLE_FUNCTION_PROPERTIES array
-    if associativity(items, &f).is_ok() {
+    if associativity(items, &f) {
         properties_satisfied.push("associativity".to_string());
     }
-    if commutativity(items, &f).is_ok() {
+    if commutativity(items, &f) {
         properties_satisfied.push("commutativity".to_string());
     }
-    if idempotency(items, &f).is_ok() {
+    if idempotency(items, &f) {
         properties_satisfied.push("idempotency".to_string());
     }
-    if identity(items, &f, e.clone()).is_ok() {
+    if identity(items, &f, e.clone()) {
         properties_satisfied.push("identity".to_string());
     }
-    if inverse(items, &f, e.clone(), b).is_ok() {
+    if inverse(items, &f, e.clone(), b) {
         properties_satisfied.push("inverse".to_string());
     }
-    if absorbing_element(items, &f, z).is_ok() {
+    if absorbing_element(items, &f, z) {
         properties_satisfied.push("absorbing_element".to_string());
     }
 
@@ -457,10 +666,10 @@ pub fn get_single_function_properties<S: Debug + PartialEq + Clone, const N: usi
 // TODO write a function to take in a set of functions and check which pairs satisfy different pairwise properties (e.g. distributivity
 
 // Tests
-
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
+    use std::{any::Any, collections::{HashMap, HashSet}};
+use std::hash::{Hash, Hasher};
 
     use crate::algebra::*;
 
@@ -472,24 +681,24 @@ mod test {
     #[test]
     fn test_associativity() {
         // Test that max() is associative and exponentiation isn't
-        assert!(associativity(TEST_ITEMS, u32::max).is_ok());
-        assert!(associativity(TEST_ITEMS, u32::wrapping_pow).is_err());
+        assert!(associativity(TEST_ITEMS, u32::max));
+        assert!(associativity(TEST_ITEMS, u32::wrapping_pow));
     }
 
     #[test]
     fn test_left_distributes() {
         // Test that multiplication and subtraction are left distributive  a(b-c) = ab - ac.
         // but exponentiation and subtraction isn't since a^(b-c) != a^b - a^c.
-        assert!(left_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_mul).is_ok());
-        assert!(left_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_pow).is_err());
+        assert!(left_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_mul));
+        assert!(left_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_pow));
     }
 
     #[test]
     fn test_right_distributes() {
         // Test that multiplication and subtraction are right distributive (b-c)a = ba - ca.
         // but exponentiation and subtraction isn't since (b-c)^a != b^a - c^a.
-        assert!(right_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_mul).is_ok());
-        assert!(right_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_pow).is_err());
+        assert!(right_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_mul));
+        assert!(right_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_pow));
     }
 
     #[test]
@@ -497,14 +706,12 @@ mod test {
         // Test that addition and subtraction has a nonzero inverse and that multiplication does not.
         assert!(nonzero_inverse(TEST_ITEMS, u32::wrapping_add, 0, 0, |x| {
             0u32.wrapping_sub(x)
-        })
-        .is_ok());
+        }));
         assert!(nonzero_inverse(TEST_ITEMS, u32::wrapping_sub, 0, 0, |x| {
             0u32.wrapping_add(x)
-        })
-        .is_ok());
+        }));
         assert!(
-            right_distributes(TEST_ITEMS_NONZERO, u32::wrapping_div, u32::wrapping_mul).is_err()
+            right_distributes(TEST_ITEMS_NONZERO, u32::wrapping_div, u32::wrapping_mul)
         );
     }
 
@@ -519,8 +726,8 @@ mod test {
     #[test]
     fn test_commutativity() {
         // Test that max() is commutative and division is non-commutative
-        assert!(commutativity(TEST_ITEMS, u32::max).is_ok());
-        assert!(commutativity(TEST_ITEMS_NONZERO, u32::wrapping_div).is_err());
+        assert!(commutativity(TEST_ITEMS, u32::max));
+        assert!(commutativity(TEST_ITEMS_NONZERO, u32::wrapping_div));
         // Test items non-zero to avoid a divide by zero exception
     }
 
@@ -534,8 +741,7 @@ mod test {
             0,
             1,
             &|x| 0u32.wrapping_sub(x),
-        )
-        .is_ok());
+        ));
 
         // Test that (Z, +, ^) is not a commutative ring.
         assert!(commutative_ring(
@@ -545,8 +751,7 @@ mod test {
             0,
             1,
             &|x| 0u32.wrapping_sub(x),
-        )
-        .is_err());
+        ));
 
         // Test that matrix multiplication is not a commutative ring.
         assert!(commutative_ring(
@@ -583,42 +788,41 @@ mod test {
                     ],
                 ]
             },
-        )
-        .is_err());
+        ));
     }
 
     #[test]
     fn test_commutative_monoid() {
         // Test that (Z, +) is commutative monoid since every abelian group is commutative monoid.
-        assert!(commutative_monoid(TEST_ITEMS, &u32::wrapping_add, 0).is_ok());
+        assert!(commutative_monoid(TEST_ITEMS, &u32::wrapping_add, 0));
 
         // Test that  set of natural numbers N = {0, 1, 2, ...} is a commutative monoid under addition (identity element 0) or multiplication (identity element 1).
-        assert!(commutative_monoid(TEST_ITEMS, &u32::wrapping_mul, 1).is_ok());
-        assert!(commutative_monoid(TEST_ITEMS, &u32::wrapping_add, 0).is_ok());
+        assert!(commutative_monoid(TEST_ITEMS, &u32::wrapping_mul, 1));
+        assert!(commutative_monoid(TEST_ITEMS, &u32::wrapping_add, 0));
 
         // Test that ({true, false}, ∧) is a commutative monoid with identity element true.
-        assert!(commutative_monoid(TEST_BOOLS, &|a, b| a & b, true).is_ok()); // logical AND
+        assert!(commutative_monoid(TEST_BOOLS, &|a, b| a & b, true)); // logical AND
 
         // Test that (Z, -) is not a commutative monoid.
-        assert!(commutative_monoid(TEST_ITEMS, &u32::wrapping_sub, 0).is_err());
+        assert!(commutative_monoid(TEST_ITEMS, &u32::wrapping_sub, 0));
 
         // Test that (N, +) is not a commutative monoid since it doesn't have an identity element (0 is missing).
-        assert!(commutative_monoid(TEST_ITEMS_NONZERO, &u32::wrapping_add, 1).is_err()); // Note that 1 is an arbitrary identity element in TEST_ITEMS_NONZERO since it doesn't have an identity element 0.
+        assert!(commutative_monoid(TEST_ITEMS_NONZERO, &u32::wrapping_add, 1)); // Note that 1 is an arbitrary identity element in TEST_ITEMS_NONZERO since it doesn't have an identity element 0.
 
         // Test that (Z, ^) is not a commutative monoid.
-        assert!(commutative_monoid(TEST_ITEMS, &u32::wrapping_pow, 3).is_err());
+        assert!(commutative_monoid(TEST_ITEMS, &u32::wrapping_pow, 3));
     }
 
     #[test]
     fn test_semigroup() {
         // Test that N := {1, 2, . . .} together with addition is a semigroup.
-        assert!(semigroup(TEST_ITEMS_NONZERO, &u32::wrapping_add).is_ok());
+        assert!(semigroup(TEST_ITEMS_NONZERO, &u32::wrapping_add));
         // Test that set of all natural numbers N = {0, 1, 2, ...} is a semigroup under addition.
-        assert!(semigroup(TEST_ITEMS, &u32::wrapping_add).is_ok());
+        assert!(semigroup(TEST_ITEMS, &u32::wrapping_add));
         // Test that set of all natural numbers N = {0, 1, 2, ...} is a semigroup under multiplication.
-        assert!(semigroup(TEST_ITEMS, &u32::wrapping_mul).is_ok());
+        assert!(semigroup(TEST_ITEMS, &u32::wrapping_mul));
         // Test that ({true, false}, ∧) is a semigroup.
-        assert!(semigroup(TEST_BOOLS, &|a, b| a & b).is_ok()); // logical AND
+        assert!(semigroup(TEST_BOOLS, &|a, b| a & b)); // logical AND
                                                                // Test that matrix multiplication is a semigroup.
         assert!(semigroup(
             &[[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
@@ -634,33 +838,32 @@ mod test {
                     ],
                 ]
             },
-        )
-        .is_ok());
+        ));
         // Test that set of all natural numbers N = {0, 1, 2, ...} is not a semigroup under exponentiation.
-        assert!(semigroup(TEST_ITEMS, &u32::wrapping_pow).is_err());
+        assert!(semigroup(TEST_ITEMS, &u32::wrapping_pow));
     }
 
     #[test]
     fn test_identity() {
         // Test that 0 is the identity for addition and 5 is not
-        assert!(identity(TEST_ITEMS, u32::wrapping_add, 0).is_ok());
+        assert!(identity(TEST_ITEMS, u32::wrapping_add, 0));
 
-        assert!(identity(TEST_ITEMS, u32::wrapping_add, 5).is_err());
+        assert!(identity(TEST_ITEMS, u32::wrapping_add, 5));
     }
 
     #[test]
     fn test_inverse() {
         // Test that subtraction is the inverse of addition and that addition is not the inverse of addition
-        assert!(inverse(TEST_ITEMS, u32::wrapping_add, 0, |x| 0u32.wrapping_sub(x)).is_ok());
+        assert!(inverse(TEST_ITEMS, u32::wrapping_add, 0, |x| 0u32.wrapping_sub(x)));
 
-        assert!(inverse(TEST_ITEMS, u32::wrapping_add, 0, |x| 0u32.wrapping_add(x)).is_err());
+        assert!(inverse(TEST_ITEMS, u32::wrapping_add, 0, |x| 0u32.wrapping_add(x)));
     }
 
     #[test]
     fn test_distributive() {
         // Test that addition and multiplication are distributive and that addition and max() are not
-        assert!(distributive(TEST_ITEMS, &u32::wrapping_add, &u32::wrapping_mul).is_ok());
-        assert!(distributive(TEST_ITEMS, &u32::wrapping_add, &u32::max).is_err());
+        assert!(distributive(TEST_ITEMS, &u32::wrapping_add, &u32::wrapping_mul));
+        assert!(distributive(TEST_ITEMS, &u32::wrapping_add, &u32::max));
     }
 
     #[test]
@@ -708,30 +911,28 @@ mod test {
     #[test]
     fn test_group() {
         // Test that (Z, +) form a group.
-        assert!(group(TEST_ITEMS, &u32::wrapping_add, 0, &|x| 0u32.wrapping_sub(x)).is_ok());
+        assert!(group(TEST_ITEMS, &u32::wrapping_add, 0, &|x| 0u32.wrapping_sub(x)));
         // Test that (Z/7Z, +) form a group.
-        assert!(group(TEST_MOD_PRIME_7, &modulo_add_7, 0, &modulo_sub_7).is_ok());
+        assert!(group(TEST_MOD_PRIME_7, &modulo_add_7, 0, &modulo_sub_7));
         // Test that (Z/14Z, +) form a group.
-        assert!(group(TEST_ITEMS, &modulo_add_14, 0, &modulo_sub_14).is_ok());
+        assert!(group(TEST_ITEMS, &modulo_add_14, 0, &modulo_sub_14));
         // Test that (Z, *) do not form a group since it has no inverse.
         assert!(group(TEST_ITEMS_NONZERO, &u32::wrapping_mul, 1, &|x| 1u32
-            .wrapping_div(x))
-        .is_err());
+            .wrapping_div(x)));
     }
 
     #[test]
     fn test_abelian_group() {
         // Test that (Z, +) form an abelian group.
         assert!(
-            abelian_group(TEST_ITEMS, &u32::wrapping_add, 0, &|x| 0u32.wrapping_sub(x)).is_ok()
+            abelian_group(TEST_ITEMS, &u32::wrapping_add, 0, &|x| 0u32.wrapping_sub(x))
         );
         // Test that (Z/7Z, +) form an abelian group.
-        assert!(abelian_group(TEST_MOD_PRIME_7, &modulo_add_7, 0, &modulo_sub_7).is_ok());
+        assert!(abelian_group(TEST_MOD_PRIME_7, &modulo_add_7, 0, &modulo_sub_7));
         // Test that (Z, *) do not form an abelian group.
         assert!(
             abelian_group(TEST_ITEMS_NONZERO, &u32::wrapping_mul, 1, &|x| 1u32
                 .wrapping_div(x))
-            .is_err()
         );
         // Test that matrix multiplication is not an abelian group.
         assert!(abelian_group(
@@ -761,17 +962,16 @@ mod test {
                     ],
                 ]
             },
-        )
-        .is_err());
+        ));
     }
 
     #[test]
     fn test_monoid() {
         // Test that N = {0, 1, 2, . . .} is a monoid with respect to addition
-        assert!(monoid(TEST_ITEMS, &u32::wrapping_add, 0).is_ok());
+        assert!(monoid(TEST_ITEMS, &u32::wrapping_add, 0));
         // Test that N+ = N − {0} and N are both monoids with respect to multiplication
-        assert!(monoid(TEST_ITEMS_NONZERO, &u32::wrapping_mul, 1).is_ok());
-        assert!(monoid(TEST_ITEMS, &u32::wrapping_mul, 1).is_ok());
+        assert!(monoid(TEST_ITEMS_NONZERO, &u32::wrapping_mul, 1));
+        assert!(monoid(TEST_ITEMS, &u32::wrapping_mul, 1));
         // Test that the set of nxn matrix with matrix multiplication is a monoid.
         assert!(monoid(
             &[[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
@@ -788,17 +988,16 @@ mod test {
                 ]
             },
             [[1, 0], [0, 1]],
-        )
-        .is_ok());
+        ));
         // Test that N+ = N − {0} is not a monoid with respect to addition since it doesn't have an identity element (0 is missing).
-        assert!(monoid(TEST_ITEMS_NONZERO, &u32::wrapping_add, 1).is_err());
+        assert!(monoid(TEST_ITEMS_NONZERO, &u32::wrapping_add, 1));
     }
 
     #[test]
     fn test_absorbing() {
         // Test that 0 is absorbing for multiplication and 5 is not
-        assert!(absorbing_element(TEST_ITEMS, u32::wrapping_mul, 0).is_ok());
-        assert!(absorbing_element(TEST_ITEMS, u32::wrapping_mul, 5).is_err());
+        assert!(absorbing_element(TEST_ITEMS, u32::wrapping_mul, 0));
+        assert!(absorbing_element(TEST_ITEMS, u32::wrapping_mul, 5));
     }
 
     // Performs addition modulo 7, ensuring the result remains within the range of 0 to 6.
@@ -874,9 +1073,9 @@ mod test {
     #[test]
     fn test_no_nonzero_zero_divisors() {
         // The ring of integer mod prime number has no nonzero zero divisors.
-        assert!(no_nonzero_zero_divisors(TEST_MOD_PRIME_7, &modulo_mult_7, 0).is_ok());
+        assert!(no_nonzero_zero_divisors(TEST_MOD_PRIME_7, &modulo_mult_7, 0));
         // The ring of integers with multiplication mod prime number has nonzero zero divisors. (e.g. 1 * 7 = 0 mod 7)
-        assert!(no_nonzero_zero_divisors(TEST_ITEMS, &modulo_mult_7, 0).is_err());
+        assert!(no_nonzero_zero_divisors(TEST_ITEMS, &modulo_mult_7, 0));
     }
 
     #[test]
@@ -889,8 +1088,7 @@ mod test {
             0,
             1,
             &modulo_sub_7,
-        )
-        .is_ok());
+        ));
         // The ring of integers modulo a composite number is not an integral domain.
         assert!(integral_domain(
             TEST_ITEMS,
@@ -899,8 +1097,7 @@ mod test {
             0,
             1,
             &modulo_sub_14,
-        )
-        .is_err());
+        ));
     }
 
     #[test]
@@ -917,8 +1114,7 @@ mod test {
             &|x| x, // XOR(x,x) = false, the identity for XOR
             &|_x| true /* AND(x,true) = true, the identity for AND. Note that the inverse doesn't need to work for the additive identity (false)
                         */
-        )
-        .is_ok());
+        ));
 
         assert!(field(
             TEST_ITEMS,
@@ -928,8 +1124,7 @@ mod test {
             1,
             &|x| 0u32.wrapping_sub(x),
             &|x| 0u32.wrapping_sub(x) //Note there is no valid inverse function for multiplication over the integers so we just pick some function
-        )
-        .is_err());
+        ));
     }
 
     #[test]
@@ -942,8 +1137,7 @@ mod test {
             0,
             1,
             &|x| 0u32.wrapping_sub(x),
-        )
-        .is_ok());
+        ));
         assert!(ring(
             TEST_ITEMS,
             &u32::wrapping_add,
@@ -951,17 +1145,16 @@ mod test {
             0,
             5,
             &|x| 0u32.wrapping_sub(x),
-        )
-        .is_err());
+        ));
     }
 
     #[test]
     fn test_semiring() {
         // Test +, x is a semiring
-        assert!(semiring(TEST_ITEMS, &u32::wrapping_add, &u32::wrapping_mul, 0, 1).is_ok());
+        assert!(semiring(TEST_ITEMS, &u32::wrapping_add, &u32::wrapping_mul, 0, 1));
 
         // Test boolean semiring with AND as + and OR as x
-        assert!(semiring(&[false, true], &|x, y| x | y, &|x, y| x & y, false, true).is_ok());
+        assert!(semiring(&[false, true], &|x, y| x | y, &|x, y| x & y, false, true));
 
         // Test min plus semiring. + is min and x is plus. Also known as the "tropical semiring"
         assert!(semiring(
@@ -970,8 +1163,7 @@ mod test {
             &|x, y| x + y,
             f64::INFINITY,
             0.0,
-        )
-        .is_ok());
+        ));
 
         // Test max plus semiring. + is max and x is plus.
         assert!(semiring(
@@ -980,8 +1172,7 @@ mod test {
             &|x, y| x + y,
             f64::NEG_INFINITY,
             0.0,
-        )
-        .is_ok());
+        ));
 
         // Test sets of strings semiring with union as + and concatenation as x
         assert!(semiring(
@@ -1007,8 +1198,7 @@ mod test {
             },
             HashSet::from([]),
             HashSet::from(["".to_owned()]),
-        )
-        .is_ok());
+        ));
     }
 
     #[test]
@@ -1052,5 +1242,128 @@ mod test {
             get_single_function_properties(TEST_ITEMS, f, 0, |x| 0u32.wrapping_sub(x), 0);
         let correct_properties = vec!["associativity".to_string(), "idempotency".to_string()];
         assert_eq!(test_properties_satisfied, correct_properties);
+    }
+
+
+
+
+    struct ZsetTuple{
+        columns: Vec<i32>,
+        zvalue: i32
+    }
+
+    #[derive(Debug, PartialEq, Clone)]
+    struct Zset{
+        map: HashMap<Vec<i32>, i32>
+    }
+
+    fn zset_tuple_insertion(my_zset: Zset, incoming_tuple:ZsetTuple)-> Zset{
+        let mut output_zset = my_zset;
+        output_zset.map.insert(incoming_tuple.columns, incoming_tuple.zvalue);
+        return output_zset;
+    }
+
+    fn zset_merge(left_zset: Zset, right_zset: Zset) -> Zset {
+        // Create a new Zset to store the result
+        let mut result = left_zset;
+        // Iterate over the elements in the right z-set and merge them into the left one
+        for (key, value) in right_zset.map {
+            if result.map.contains_key(&key) {
+                result.map.get_mut(&key).map(|v| *v += value);
+                if result.map[&key] == 0 {
+                    result.map.remove(&key).take();
+                }
+            } else {
+                result.map.insert(key, value);
+            }
+        }
+        result
+    }
+
+    fn inverse_zset_tuple(a: ZsetTuple) -> ZsetTuple {
+        let output_tuple = ZsetTuple {
+            columns: a.columns,
+            zvalue: -a.zvalue,
+        };
+        return output_tuple;
+    }
+
+    fn inverse_zset(input_zset: Zset) -> Zset {
+        let mut output_zset = Zset {
+            map: HashMap::new(),
+        };
+
+        for (key, value) in input_zset.map {
+            output_zset.map.insert(key, -value);
+        }
+        return output_zset;
+    }
+
+
+    #[test]
+    fn test_zset() {
+
+        // create a zset tuple that is a tuple with a single column and a z-value
+        let mut ZSET_TUPLE_1: ZsetTuple = ZsetTuple {
+            columns: vec![1],
+            zvalue: 1,
+        };
+
+        let mut ZSET_TUPLE_2: ZsetTuple = ZsetTuple {
+            columns: vec![2],
+            zvalue: 1,
+        };
+
+        let mut ZSET_TUPLE_3: ZsetTuple = ZsetTuple {
+            columns: vec![3],
+            zvalue: 1,
+        };
+
+        let mut ZSET_TUPLE_4: ZsetTuple = ZsetTuple {
+            columns: vec![4],
+            zvalue: 1,
+        };
+
+        let mut ZSET_TUPLE_5: ZsetTuple = ZsetTuple {
+            columns: vec![5],
+            zvalue: 1,
+        };
+
+        let mut TEST_ZSET = Zset {
+            map: HashMap::new(),
+        };
+
+        TEST_ZSET = zset_tuple_insertion(TEST_ZSET, ZSET_TUPLE_1);
+        TEST_ZSET = zset_tuple_insertion(TEST_ZSET, ZSET_TUPLE_2);
+        TEST_ZSET = zset_tuple_insertion(TEST_ZSET, ZSET_TUPLE_3);
+        TEST_ZSET = zset_tuple_insertion(TEST_ZSET, ZSET_TUPLE_4);
+        TEST_ZSET = zset_tuple_insertion(TEST_ZSET, ZSET_TUPLE_5);
+        
+        let mut EMPTY_ZSET = Zset {
+            map: HashMap::new(),
+        };
+        
+        // TODO assert that the operator is a group
+
+        //TODO define the select "is-joe" operator over the z-set
+
+        //TODO assert the linearity of this operator over the z-set
+
+        //TODO define the incremental way to compute "is-joe"
+
+        //TODO define the non-incremental way to compute "is-joe"
+
+        //TODO measure the size of the z-set strucutre as a function of the number of tuples
+
+        //TODO define the lattice wrapper for the z-set
+
+        //TODO assert that the lattice wrapper is a semi-lattice
+
+        //TODO define the delta-lattice-wrapper for the z-set
+
+        //TODO assert that the delta-lattice wrapper is a semi-lattice
+
+        assert!(group(&[TEST_ZSET], &zset_merge, EMPTY_ZSET, &|x| inverse_zset(x)));
+
     }
 }
