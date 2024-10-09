@@ -737,7 +737,7 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::builder::FlowState;
 <span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleCollectionWithInitial, CycleComplete};
-<span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
+<span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource, TeeNode};
 <span class="kw">use </span><span class="kw">crate</span>::location::{Location, LocationId};
 <span class="kw">use </span><span class="kw">crate</span>::stream::{Bounded, NoTick, Tick, Unbounded};
 <span class="kw">use </span><span class="kw">crate</span>::Stream;
@@ -898,7 +898,7 @@
         <span class="kw">if </span>!<span class="macro">matches!</span>(<span class="self">self</span>.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
             <span class="kw">let </span>orig_ir_node = <span class="self">self</span>.ir_node.replace(HfPlusNode::Placeholder);
             <span class="kw-2">*</span><span class="self">self</span>.ir_node.borrow_mut() = HfPlusNode::Tee {
-                inner: Rc::new(RefCell::new(orig_ir_node)),
+                inner: TeeNode(Rc::new(RefCell::new(orig_ir_node))),
             };
         }
 
@@ -907,7 +907,7 @@
                 location_kind: <span class="self">self</span>.location_kind,
                 flow_state: <span class="self">self</span>.flow_state.clone(),
                 ir_node: HfPlusNode::Tee {
-                    inner: inner.clone(),
+                    inner: TeeNode(inner.<span class="number">0</span>.clone()),
                 }
                 .into(),
                 _phantom: PhantomData,
@@ -1195,7 +1195,7 @@
         <span class="kw">if </span>!<span class="macro">matches!</span>(<span class="self">self</span>.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
             <span class="kw">let </span>orig_ir_node = <span class="self">self</span>.ir_node.replace(HfPlusNode::Placeholder);
             <span class="kw-2">*</span><span class="self">self</span>.ir_node.borrow_mut() = HfPlusNode::Tee {
-                inner: Rc::new(RefCell::new(orig_ir_node)),
+                inner: TeeNode(Rc::new(RefCell::new(orig_ir_node))),
             };
         }
 
@@ -1204,7 +1204,7 @@
                 location_kind: <span class="self">self</span>.location_kind,
                 flow_state: <span class="self">self</span>.flow_state.clone(),
                 ir_node: HfPlusNode::Tee {
-                    inner: inner.clone(),
+                    inner: TeeNode(inner.<span class="number">0</span>.clone()),
                 }
                 .into(),
                 _phantom: PhantomData,

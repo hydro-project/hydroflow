@@ -1309,9 +1309,66 @@
 <a href="#1309" id="1309">1309</a>
 <a href="#1310" id="1310">1310</a>
 <a href="#1311" id="1311">1311</a>
+<a href="#1312" id="1312">1312</a>
+<a href="#1313" id="1313">1313</a>
+<a href="#1314" id="1314">1314</a>
+<a href="#1315" id="1315">1315</a>
+<a href="#1316" id="1316">1316</a>
+<a href="#1317" id="1317">1317</a>
+<a href="#1318" id="1318">1318</a>
+<a href="#1319" id="1319">1319</a>
+<a href="#1320" id="1320">1320</a>
+<a href="#1321" id="1321">1321</a>
+<a href="#1322" id="1322">1322</a>
+<a href="#1323" id="1323">1323</a>
+<a href="#1324" id="1324">1324</a>
+<a href="#1325" id="1325">1325</a>
+<a href="#1326" id="1326">1326</a>
+<a href="#1327" id="1327">1327</a>
+<a href="#1328" id="1328">1328</a>
+<a href="#1329" id="1329">1329</a>
+<a href="#1330" id="1330">1330</a>
+<a href="#1331" id="1331">1331</a>
+<a href="#1332" id="1332">1332</a>
+<a href="#1333" id="1333">1333</a>
+<a href="#1334" id="1334">1334</a>
+<a href="#1335" id="1335">1335</a>
+<a href="#1336" id="1336">1336</a>
+<a href="#1337" id="1337">1337</a>
+<a href="#1338" id="1338">1338</a>
+<a href="#1339" id="1339">1339</a>
+<a href="#1340" id="1340">1340</a>
+<a href="#1341" id="1341">1341</a>
+<a href="#1342" id="1342">1342</a>
+<a href="#1343" id="1343">1343</a>
+<a href="#1344" id="1344">1344</a>
+<a href="#1345" id="1345">1345</a>
+<a href="#1346" id="1346">1346</a>
+<a href="#1347" id="1347">1347</a>
+<a href="#1348" id="1348">1348</a>
+<a href="#1349" id="1349">1349</a>
+<a href="#1350" id="1350">1350</a>
+<a href="#1351" id="1351">1351</a>
+<a href="#1352" id="1352">1352</a>
+<a href="#1353" id="1353">1353</a>
+<a href="#1354" id="1354">1354</a>
+<a href="#1355" id="1355">1355</a>
+<a href="#1356" id="1356">1356</a>
+<a href="#1357" id="1357">1357</a>
+<a href="#1358" id="1358">1358</a>
+<a href="#1359" id="1359">1359</a>
+<a href="#1360" id="1360">1360</a>
+<a href="#1361" id="1361">1361</a>
+<a href="#1362" id="1362">1362</a>
+<a href="#1363" id="1363">1363</a>
+<a href="#1364" id="1364">1364</a>
+<a href="#1365" id="1365">1365</a>
+<a href="#1366" id="1366">1366</a>
+<a href="#1367" id="1367">1367</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::panic;
 <span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap};
+<span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::ops::Deref;
 <span class="kw">use </span>std::rc::Rc;
 
@@ -1347,7 +1404,7 @@
     }
 }
 
-<span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>DebugExpr {
+<span class="kw">impl </span>Debug <span class="kw">for </span>DebugExpr {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
         <span class="macro">write!</span>(f, <span class="string">"{}"</span>, <span class="self">self</span>.<span class="number">0</span>.to_token_stream())
     }
@@ -1358,7 +1415,7 @@
     Finalized(syn::Expr, syn::Expr, <span class="prelude-ty">Option</span>&lt;Box&lt;<span class="kw">dyn </span>FnOnce()&gt;&gt;),
 }
 
-<span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>DebugInstantiate {
+<span class="kw">impl </span>Debug <span class="kw">for </span>DebugInstantiate {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
         <span class="macro">write!</span>(f, <span class="string">"&lt;network instantiate&gt;"</span>)
     }
@@ -1367,7 +1424,7 @@
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>DebugPipelineFn(<span class="kw">pub </span>Rc&lt;<span class="kw">dyn </span>Fn() -&gt; Pipeline + <span class="lifetime">'static</span>&gt;);
 
-<span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>DebugPipelineFn {
+<span class="kw">impl </span>Debug <span class="kw">for </span>DebugPipelineFn {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
         <span class="macro">write!</span>(f, <span class="string">"&lt;function&gt;"</span>)
     }
@@ -1519,6 +1576,59 @@
     }
 }
 
+<span class="kw">type </span>PrintedTees = RefCell&lt;<span class="prelude-ty">Option</span>&lt;(usize, HashMap&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;, usize&gt;)&gt;&gt;;
+<span class="macro">thread_local!</span> {
+    <span class="kw">static </span>PRINTED_TEES: PrintedTees = <span class="kw">const </span>{ RefCell::new(<span class="prelude-val">None</span>) };
+}
+
+<span class="kw">pub fn </span>dbg_dedup_tee&lt;T&gt;(f: <span class="kw">impl </span>FnOnce() -&gt; T) -&gt; T {
+    PRINTED_TEES.with(|printed_tees| {
+        <span class="kw">let </span><span class="kw-2">mut </span>printed_tees_mut = printed_tees.borrow_mut();
+        <span class="kw-2">*</span>printed_tees_mut = <span class="prelude-val">Some</span>((<span class="number">0</span>, HashMap::new()));
+        drop(printed_tees_mut);
+
+        <span class="kw">let </span>ret = f();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>printed_tees_mut = printed_tees.borrow_mut();
+        <span class="kw-2">*</span>printed_tees_mut = <span class="prelude-val">None</span>;
+
+        ret
+    })
+}
+
+<span class="kw">pub struct </span>TeeNode(<span class="kw">pub </span>Rc&lt;RefCell&lt;HfPlusNode&gt;&gt;);
+
+<span class="kw">impl </span>Debug <span class="kw">for </span>TeeNode {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+        PRINTED_TEES.with(|printed_tees| {
+            <span class="kw">let </span><span class="kw-2">mut </span>printed_tees_mut_borrow = printed_tees.borrow_mut();
+            <span class="kw">let </span>printed_tees_mut = printed_tees_mut_borrow.as_mut();
+
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(printed_tees_mut) = printed_tees_mut {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(existing) = printed_tees_mut
+                    .<span class="number">1
+                    </span>.get(<span class="kw-2">&amp;</span>(<span class="self">self</span>.<span class="number">0</span>.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;))
+                {
+                    <span class="macro">write!</span>(f, <span class="string">"&lt;tee {}&gt;"</span>, existing)
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>next_id = printed_tees_mut.<span class="number">0</span>;
+                    printed_tees_mut.<span class="number">0 </span>+= <span class="number">1</span>;
+                    printed_tees_mut
+                        .<span class="number">1
+                        </span>.insert(<span class="self">self</span>.<span class="number">0</span>.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;, next_id);
+                    drop(printed_tees_mut_borrow);
+                    <span class="macro">write!</span>(f, <span class="string">"&lt;tee {}&gt;: "</span>, next_id)<span class="question-mark">?</span>;
+                    Debug::fmt(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>.borrow(), f)
+                }
+            } <span class="kw">else </span>{
+                drop(printed_tees_mut_borrow);
+                <span class="macro">write!</span>(f, <span class="string">"&lt;tee&gt;: "</span>)<span class="question-mark">?</span>;
+                Debug::fmt(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>.borrow(), f)
+            }
+        })
+    }
+}
+
 <span class="doccomment">/// An intermediate node in a Hydroflow+ graph, which consumes data
 /// from upstream nodes and emits data to downstream nodes.
 </span><span class="attr">#[derive(Debug)]
@@ -1536,7 +1646,7 @@
     },
 
     Tee {
-        inner: Rc&lt;RefCell&lt;HfPlusNode&gt;&gt;,
+        inner: TeeNode,
     },
 
     Persist(Box&lt;HfPlusNode&gt;),
@@ -1694,19 +1804,19 @@
 
             HfPlusNode::Tee { inner } =&gt; {
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(transformed) =
-                    seen_tees.get(<span class="kw-2">&amp;</span>(inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;))
+                    seen_tees.get(<span class="kw-2">&amp;</span>(inner.<span class="number">0</span>.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;))
                 {
-                    <span class="kw-2">*</span>inner = transformed.clone();
+                    <span class="kw-2">*</span>inner = TeeNode(transformed.clone());
                 } <span class="kw">else </span>{
                     <span class="kw">let </span>transformed_cell = Rc::new(RefCell::new(HfPlusNode::Placeholder));
                     seen_tees.insert(
-                        inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;,
+                        inner.<span class="number">0</span>.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;,
                         transformed_cell.clone(),
                     );
-                    <span class="kw">let </span><span class="kw-2">mut </span>orig = inner.replace(HfPlusNode::Placeholder);
+                    <span class="kw">let </span><span class="kw-2">mut </span>orig = inner.<span class="number">0</span>.replace(HfPlusNode::Placeholder);
                     transform(<span class="kw-2">&amp;mut </span>orig, seen_tees);
                     <span class="kw-2">*</span>transformed_cell.borrow_mut() = orig;
-                    <span class="kw-2">*</span>inner = transformed_cell;
+                    <span class="kw-2">*</span>inner = TeeNode(transformed_cell);
                 }
             }
 
@@ -1909,12 +2019,14 @@
             }
 
             HfPlusNode::Tee { inner } =&gt; {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(ret) = built_tees.get(<span class="kw-2">&amp;</span>(inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;)) {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(ret) = built_tees.get(<span class="kw-2">&amp;</span>(inner.<span class="number">0</span>.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;))
+                {
                     ret.clone()
                 } <span class="kw">else </span>{
                     <span class="kw">let </span>(inner_ident, inner_location_id) =
                         inner
-                            .borrow()
+                            .<span class="number">0
+                            </span>.borrow()
                             .emit(graph_builders, built_tees, next_stmt_id);
 
                     <span class="kw">let </span>tee_id = <span class="kw-2">*</span>next_stmt_id;
@@ -1929,7 +2041,7 @@
                     });
 
                     built_tees.insert(
-                        inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;,
+                        inner.<span class="number">0</span>.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;,
                         (tee_ident.clone(), inner_location_id),
                     );
 
