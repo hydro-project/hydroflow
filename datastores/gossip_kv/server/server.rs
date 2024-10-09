@@ -299,8 +299,14 @@ where
 
             trace!("{:?}: Peers: {:?}", context.current_tick(), peer_names);
 
-            let chosen_peer_name = peer_names.iter().choose(&mut thread_rng()).unwrap();
+            let chosen_peer_name = peer_names.iter().choose(&mut thread_rng());
 
+            if chosen_peer_name.is_none() {
+                trace!("{:?}: No peers to gossip to.", context.current_tick());
+                return None;
+            }
+
+            let chosen_peer_name = chosen_peer_name.unwrap();
             let gossip_address = if peers.contains_key(chosen_peer_name) {
                 let peer_info_value = peers.get(chosen_peer_name).unwrap().as_reveal_ref().1.as_reveal_ref().iter().next().unwrap().clone();
                 let peer_info_deserialized = serde_json::from_str::<MemberData<Addr>>(&peer_info_value).unwrap();
@@ -310,8 +316,9 @@ where
             };
 
             trace!("Chosen peer: {:?}:{:?}", chosen_peer_name, gossip_address);
-            (id, infecting_write, gossip_address)
+            Some((id, infecting_write, gossip_address))
         })
+        -> flatten()
         -> inspect(|(message_id, infecting_write, peer_gossip_address)| trace!("{:?}: Sending write:\nMessageId:{:?}\nWrite:{:?}\nPeer Address:{:?}", context.current_tick(), message_id, infecting_write, peer_gossip_address))
         -> map(|(message_id, infecting_write, peer_gossip_address): (String, InfectingWrite, Addr)| {
             let gossip_request = GossipMessage::Gossip {

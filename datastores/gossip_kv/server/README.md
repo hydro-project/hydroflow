@@ -40,5 +40,5 @@ minikube image ls --format tablemin
 
 ## Deploy to Minikube
 ```shell
-kubectl apply -f datastores/gossip_kv/server/deployment/local
+kubectl apply -f datastores/gossip_kv/server/deployment/local/objects.yaml
 ```

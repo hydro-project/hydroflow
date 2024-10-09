@@ -1,4 +1,4 @@
-FROM "hydroflow/gossip-kv-server-base-image:latest" AS builder
+FROM "hydroflow/gossip-kv-base-image:latest" AS builder
 WORKDIR /usr/src/gossip-kv-server
 COPY . .
 RUN find .
@@ -11,4 +11,3 @@ RUN  mkdir -p /config/static
 # Don't skip the trailing slash in the destination directory
 COPY datastores/gossip_kv/server/config/static/*.toml /config/static/
 CMD ["gossip_server"]
-# ENTRYPOINT ["tail", "-f", "/dev/null"]

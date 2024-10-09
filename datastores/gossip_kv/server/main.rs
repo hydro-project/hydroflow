@@ -8,7 +8,7 @@ use clap::Parser;
 use gossip_protocol::membership::{MemberDataBuilder, Protocol};
 use gossip_protocol::{ClientRequest, GossipMessage};
 use hydroflow::futures::{SinkExt, StreamExt};
-use hydroflow::tokio_stream::wrappers::ReceiverStream;
+use hydroflow::tokio_stream::wrappers::IntervalStream;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use hydroflow::{bincode, tokio};
 use tracing::{error, info, trace};
@@ -126,8 +126,9 @@ async fn main() {
         };
         ready(mapped)
     });
-    // TODO: Trigger gossip every X (configurable number of seconds)
-    let (_gossip_tx, gossip_rx) = tokio::sync::mpsc::channel::<()>(20 /* Configure size */);
+
+    let gossip_rx =
+        IntervalStream::new(tokio::time::interval(tokio::time::Duration::from_secs(5))).map(|_| ());
 
     let (_watcher, server_settings, settings_stream) = setup_settings_watch();
 
@@ -148,7 +149,7 @@ async fn main() {
         client_ob,
         gossip_ib,
         gossip_ob,
-        ReceiverStream::new(gossip_rx),
+        gossip_rx,
         member_data,
         seed_nodes,
         seed_node_stream,
