@@ -1,23 +1,15 @@
- 
-
 #![no_main]
 
+use lattices::algebra::{
+    associativity_single, commutativity_single, distributive_single, linearity_single,
+};
+use libfuzzer_sys::fuzz_target;
 
-use libfuzzer_sys::fuzz_target; 
-
-use lattices::algebra::associativity_single; 
-use lattices::algebra::linearity_single;
-use lattices::algebra::commutativity_single; 
-use lattices::algebra::distributive_single;
-
-
- 
 fuzz_target!(|data: &[u8]| {
     // Define your function f here inside the fuzz target
     let f = |x: u8, y: u8| x.wrapping_add(y); // Use wrapping addition
     let q = |x: u8| x; // Identity function
     let g = |x: u8, y: u8| x.wrapping_add(y); // Use wrapping addition
-
 
     if data.len() < 3 {
         return; // Ensure there's enough data for the fuzz target
@@ -35,7 +27,7 @@ fuzz_target!(|data: &[u8]| {
     println!("Running commutativity fuzz test");
     let commutativity_result = commutativity_single(a, b, f);
     println!("Commutativity test result: {}", commutativity_result);
- 
+
     println!("Running linearity fuzz test");
     let linearity_result = linearity_single(a, b, f, q, g);
     println!("Linearity test result: {}", linearity_result);
