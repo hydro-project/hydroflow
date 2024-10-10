@@ -4,7 +4,7 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use sealed::sealed;
-use variadics::variadic_collections::VariadicMultiset;
+use variadics::variadic_collections::VariadicCollection;
 use variadics::{
     var_args, var_type, PartialEqVariadic, RefVariadic, Split, SplitBySuffix, VariadicExt,
 };
@@ -24,7 +24,7 @@ pub trait GeneralizedHashTrieNode: Default {
     /// This type is the same in all nodes of the trie.
     type ValType: VariadicExt + Eq + Hash + Clone;
     /// The type that holds the data in the leaves
-    type Storage: VariadicMultiset<Schema = Self::Schema>
+    type Storage: VariadicCollection<Schema = Self::Schema>
         + Default
         + IntoIterator<Item = Self::Schema>;
 
@@ -203,7 +203,7 @@ where
 pub struct GhtLeaf<Schema, ValType, Storage>
 where
     Schema: Eq + Hash,
-    Storage: VariadicMultiset<Schema = Schema>,
+    Storage: VariadicCollection<Schema = Schema>,
 {
     pub(crate) elements: Storage,
     pub(crate) forced: bool,
@@ -212,7 +212,7 @@ where
 impl<Schema, ValType, Storage> Default for GhtLeaf<Schema, ValType, Storage>
 where
     Schema: Eq + Hash,
-    Storage: VariadicMultiset<Schema = Schema> + Default,
+    Storage: VariadicCollection<Schema = Schema> + Default,
 {
     fn default() -> Self {
         let elements = Default::default();
@@ -239,7 +239,7 @@ where
     var_type!(ValHead, ...ValRest): Clone + Eq + Hash + PartialEqVariadic,
     <Schema as SplitBySuffix<var_type!(ValHead, ...ValRest)>>::Prefix: Eq + Hash + Clone,
     // for<'a> Schema::AsRefVar<'a>: PartialEq,
-    Storage: VariadicMultiset<Schema = Schema> + Default + IntoIterator<Item = Schema>,
+    Storage: VariadicCollection<Schema = Schema> + Default + IntoIterator<Item = Schema>,
 {
     type Schema = Schema;
     type SuffixSchema = var_type!(ValHead, ...ValRest);
@@ -310,7 +310,7 @@ where
         + Clone
         // + SplitBySuffix<var_type!(ValHead, ...ValRest)>
         + PartialEqVariadic,
-    Storage: VariadicMultiset<Schema = Schema> + Default + IntoIterator<Item = Schema>,
+    Storage: VariadicCollection<Schema = Schema> + Default + IntoIterator<Item = Schema>,
     // ValHead: Clone + Eq + Hash,
     // var_type!(ValHead, ...ValRest): Clone + Eq + Hash + PartialEqVariadic,
     // <Schema as SplitBySuffix<var_type!(ValHead, ...ValRest)>>::Prefix: Eq + Hash + Clone,
@@ -378,7 +378,7 @@ where
 impl<Schema, ValType, Storage> FromIterator<Schema> for GhtLeaf<Schema, ValType, Storage>
 where
     Schema: Eq + Hash,
-    Storage: VariadicMultiset<Schema = Schema> + Default + FromIterator<Schema>,
+    Storage: VariadicCollection<Schema = Schema> + Default + FromIterator<Schema>,
 {
     fn from_iter<Iter: IntoIterator<Item = Schema>>(iter: Iter) -> Self {
         let elements = iter.into_iter().collect();
@@ -449,7 +449,7 @@ where
     ValType: Eq + Hash + Clone + PartialEqVariadic,
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
-    Storage: VariadicMultiset<Schema = Schema>,
+    Storage: VariadicCollection<Schema = Schema>,
 {
     /// Type returned by [`Self::get`].
     type Get = GhtLeaf<Schema, ValType, Storage>;
@@ -544,7 +544,7 @@ where
     // for<'a> SuffixSchema::AsRefVar<'a>: Split<KeyPrefixRef>,
     ValType: Split<KeyPrefixRef::UnRefVar>,
     KeyPrefixRef::UnRefVar: PartialEqVariadic,
-    Storage: 'static + VariadicMultiset<Schema = Schema>,
+    Storage: 'static + VariadicCollection<Schema = Schema>,
 {
     type Item = Schema;
     fn prefix_iter<'a>(

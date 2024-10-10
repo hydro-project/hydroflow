@@ -13,9 +13,7 @@
 
 /// module of collection types for variadics
 pub mod variadic_collections;
-
 use std::any::Any;
-use std::ops::RangeBounds;
 
 use sealed::sealed;
 
@@ -193,14 +191,14 @@ pub trait VariadicExt: Variadic {
     where
         Self: 'static;
 
-    /// type for all elements of the variadic being wrapped in Option
+    /// type for all elements of the variadic being wrapped in `Option`
     type IntoOption;
-    /// wrap all elements of the variadic in Option
+    /// wrap all elements of the variadic in `Option``
     fn into_option(self) -> Self::IntoOption;
 
-    /// type for all elements of the variadic being wrapped in Vec
+    /// type for all elements of the variadic being wrapped in `Vec`
     type IntoVec: VecVariadic<UnVec = Self> + Default;
-    /// wrap all elements of the variadic in a Vec
+    /// wrap all elements of the variadic in a `Vec`
     fn into_singleton_vec(self) -> Self::IntoVec;
 }
 
@@ -228,7 +226,7 @@ where
     fn reverse_ref(this: Self::AsRefVar<'_>) -> <Self::Reverse as VariadicExt>::AsRefVar<'_> {
         let (item, rest) = this;
         let out = Rest::reverse_ref(rest).extend((item, ()));
-        // TODO!!!
+        // TODO(mingwei): check if use of unsafe is necessary
         let out2 = unsafe { std::mem::transmute_copy(&out) };
         std::mem::forget(out);
         out2
@@ -352,7 +350,7 @@ pub trait EitherRefVariadic: VariadicExt {
     /// let un_ref: <var_type!(&u32, &String, &bool) as EitherRefVariadic>::UnRefVar =
     ///     var_expr!(1_u32, "Hello".to_owned(), false);
     /// ```
-    type UnRefVar: for<'a> VariadicExt;
+    type UnRefVar: VariadicExt;
 
     /// This type with all exclusive `&mut` references replaced with shared `&` references.
     ///
@@ -375,7 +373,7 @@ pub trait EitherRefVariadic: VariadicExt {
     /// Conversion from `&` to `&mut` is generally invalid, so a `ref_to_mut()` method does not exist.
     type MutVar: MutVariadic<UnRefVar = Self::UnRefVar, MutVar = Self::MutVar>;
 
-    /// convert entries to <UnRefVar as VariadicExt>::AsRefVar
+    /// convert entries to [`<UnRefVar as VariadicExt>::AsRefVar`](VariadicExt::AsRefVar)
     fn unref_ref(&self) -> <Self::UnRefVar as VariadicExt>::AsRefVar<'_>;
 }
 #[sealed]
@@ -508,29 +506,21 @@ impl CopyRefVariadic for () {
     fn copy_var(&self) -> Self::UnRefVar {}
 }
 
-/// Clone a variadic of references [`EitherRefVariadic`] into a variadic of owned values [`EitherRefVariadic::UnRefVar`].
+/// Clone a variadic of references [`AsRefVar`](VariadicExt::AsRefVar) into a variadic of owned values.
 ///
 /// ```rust
 /// # use variadics::*;
 /// let ref_var = var_expr!(&1, &format!("hello {}", "world"), &vec![1, 2, 3]);
-/// let clone_var = ref_var.clone_var();
+/// let clone_var = CloneVariadic::clone_ref_var(ref_var);
 /// assert_eq!(
 ///     var_expr!(1, "hello world".to_owned(), vec![1, 2, 3]),
 ///     clone_var
 /// );
 /// ```
 #[sealed]
-pub trait CloneVariadic: VariadicExt {
-    /// Clone a variadic of references [`EitherRefVariadic`] into a variadic of owned values [`EitherRefVariadic::UnRefVar`]
-    fn clone_var(&self) -> Self
-    where
-        Self: Sized,
-    {
-        Self::clone_var_ref(self.as_ref_var())
-    }
-
-    /// Clone self per-value.
-    fn clone_var_ref(this: Self::AsRefVar<'_>) -> Self;
+pub trait CloneVariadic: VariadicExt + Clone {
+    /// Clone a variadic of references [`AsRefVar`](VariadicExt::AsRefVar) into a variadic of owned values.
+    fn clone_ref_var(this: Self::AsRefVar<'_>) -> Self;
 }
 #[sealed]
 impl<Item, Rest> CloneVariadic for (Item, Rest)
@@ -538,14 +528,14 @@ where
     Item: Clone,
     Rest: CloneVariadic,
 {
-    fn clone_var_ref(this: Self::AsRefVar<'_>) -> Self {
+    fn clone_ref_var(this: Self::AsRefVar<'_>) -> Self {
         let var_args!(item, ...rest) = this;
-        var_expr!(item.clone(), ...Rest::clone_var_ref(rest))
+        var_expr!(item.clone(), ...Rest::clone_ref_var(rest))
     }
 }
 #[sealed]
 impl CloneVariadic for () {
-    fn clone_var_ref(_this: Self::AsRefVar<'_>) -> Self {}
+    fn clone_ref_var(_this: Self::AsRefVar<'_>) -> Self {}
 }
 
 /// A variadic where all item implement [`PartialEq`].
@@ -793,15 +783,13 @@ pub trait VecVariadic: VariadicExt {
     /// Turns into a Drain of items `UnVec` -- i.e. iterate through rows (not columns!).
     fn drain<R>(&mut self, range: R) -> Self::Drain<'_>
     where
-        R: RangeBounds<usize> + Clone;
+        R: std::ops::RangeBounds<usize> + Clone;
 }
 
 #[sealed]
 impl<Item, Rest> VecVariadic for (Vec<Item>, Rest)
 where
     Rest: VecVariadic,
-    // Item: 'static,
-    // Rest: 'static,
 {
     type UnVec = var_type!(Item, ...Rest::UnVec);
 
@@ -835,7 +823,7 @@ where
     type Drain<'a> = std::iter::Zip<std::vec::Drain<'a, Item>, Rest::Drain<'a>> where Self: 'a;
     fn drain<R>(&mut self, range: R) -> Self::Drain<'_>
     where
-        R: RangeBounds<usize> + Clone,
+        R: std::ops::RangeBounds<usize> + Clone,
     {
         let (this, rest) = self;
         std::iter::zip(this.drain(range.clone()), rest.drain(range))
@@ -864,7 +852,7 @@ impl VecVariadic for var_type!() {
     type Drain<'a> = std::iter::Repeat<var_type!()> where Self: 'a;
     fn drain<R>(&mut self, _range: R) -> Self::Drain<'_>
     where
-        R: RangeBounds<usize>,
+        R: std::ops::RangeBounds<usize>,
     {
         std::iter::repeat(var_expr!())
     }
@@ -876,14 +864,13 @@ mod test {
 
     type MyList = var_type!(u8, u16, u32, u64);
     type MyPrefix = var_type!(u8, u16);
-
+    #[expect(dead_code, reason = "compilation test")]
     type MySuffix = <MyList as Split<MyPrefix>>::Suffix;
 
-    #[allow(dead_code)]
     const _: MySuffix = var_expr!(0_u32, 0_u64);
 
     #[test]
-    #[allow(clippy::let_unit_value)]
+    // #[expect(clippy::let_unit_value, reason = "var_expr macro test")]
     fn test_basic_expr() {
         let _ = var_expr!();
         let _ = var_expr!(1);
@@ -892,11 +879,12 @@ mod test {
         let _ = var_expr!(false, true, 1 + 2);
     }
 
-    variadic_trait! {
-        /// Variaidic list of futures.
-        #[allow(dead_code)]
-        pub variadic<F> FuturesList where F: std::future::Future {}
-    }
+    // commented out because neither #[allow(dead_code)] nor #[expect(dead_code)] made clippy happy
+    // variadic_trait! {
+    //     /// Variaidic list of futures.
+    //     pub variadic<F> FuturesList where F: std::future::Future {
+    //     }
+    // }
 
     type _ListA = var_type!(u32, u8, i32);
     type _ListB = var_type!(..._ListA, bool, Option<()>);
@@ -976,4 +964,40 @@ mod test {
         assert_eq!(column_store.get(0).unwrap(), first.as_ref_var());
         assert_eq!(column_store.get(1).unwrap(), second.as_ref_var());
     }
+}
+
+#[test]
+fn test_eq_ref_vec() {
+    type MyVar = var_type!(i32, bool, &'static str);
+    let vec: Vec<MyVar> = vec![
+        var_expr!(0, true, "hello"),
+        var_expr!(1, true, "world"),
+        var_expr!(2, false, "goodnight"),
+        var_expr!(3, false, "moon"),
+    ];
+    let needle: <MyVar as VariadicExt>::AsRefVar<'_> =
+        var_expr!(2, false, "goodnight").as_ref_var();
+    assert_eq!(
+        Some(2),
+        vec.iter()
+            .position(|item| <MyVar as PartialEqVariadic>::eq_ref(needle, item.as_ref_var()))
+    );
+
+    let missing: <MyVar as VariadicExt>::AsRefVar<'_> =
+        var_expr!(3, false, "goodnight").as_ref_var();
+    assert_eq!(
+        None,
+        vec.iter()
+            .position(|item| <MyVar as PartialEqVariadic>::eq_ref(missing, item.as_ref_var()))
+    );
+}
+
+#[test]
+fn clone_var_test() {
+    let ref_var = var_expr!(&1, &format!("hello {}", "world"), &vec![1, 2, 3]);
+    let clone_var = CloneVariadic::clone_ref_var(ref_var);
+    assert_eq!(
+        var_expr!(1, "hello world".to_owned(), vec![1, 2, 3]),
+        clone_var
+    );
 }
