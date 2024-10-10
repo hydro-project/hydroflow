@@ -308,7 +308,7 @@ mod test {
     }
     #[test]
     fn test_merge() {
-        type MyGht = GhtType!(u32, u64 => u16, &'static str: Row);
+        type MyGht = GhtType!(u32, u64 => u16, &'static str: Set);
 
         let mut test_ght1 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
         let test_ght2 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
@@ -348,8 +348,8 @@ mod test {
     }
     #[test]
     fn test_node_lattice() {
-        type MyGht = GhtType!(u32, u64 => u16, &'static str: Row);
-        type MyGhtNode = GhtType!(u32, u64 => u16, &'static str: Row);
+        type MyGht = GhtType!(u32, u64 => u16, &'static str: Set);
+        type MyGhtNode = GhtType!(u32, u64 => u16, &'static str: Set);
 
         let mut test_vec: Vec<MyGhtNode> = Vec::new();
 
@@ -374,8 +374,8 @@ mod test {
 
     #[test]
     fn test_cartesian_bimorphism() {
-        type MyGhtA = GhtType!(u32, u64 => u16, &'static str: Row);
-        type MyGhtB = GhtType!(u32, u64, u16 => &'static str: Row);
+        type MyGhtA = GhtType!(u32, u64 => u16, &'static str: Set);
+        type MyGhtB = GhtType!(u32, u64, u16 => &'static str: Set);
 
         let mut ght_a = MyGhtA::default();
         let mut ght_b = MyGhtB::default();
