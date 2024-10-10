@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 
 use sealed::sealed;
 use variadics::variadic_collections::VariadicCollection;
+use variadics::variadic_collections::VariadicCollection;
 use variadics::{
     var_args, var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt,
 };
@@ -11,7 +12,7 @@ use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
 
 #[sealed]
 /// COLT from Wang/Willsey/Suciu
-/// 
+///
 /// In the paper, the COLT is an unbalanced trie that "grows upward" from leaves via the
 /// `force` method. Unbalanced tries don't interact well with our Rust types, which want
 /// a node's type to be defined via the type of its children, recursively --
