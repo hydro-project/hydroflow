@@ -667,6 +667,22 @@
 <a href="#667" id="667">667</a>
 <a href="#668" id="668">668</a>
 <a href="#669" id="669">669</a>
+<a href="#670" id="670">670</a>
+<a href="#671" id="671">671</a>
+<a href="#672" id="672">672</a>
+<a href="#673" id="673">673</a>
+<a href="#674" id="674">674</a>
+<a href="#675" id="675">675</a>
+<a href="#676" id="676">676</a>
+<a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -724,8 +740,8 @@
         <span class="prelude-val">None</span>::&lt;Box&lt;<span class="kw">dyn </span>Iterator&lt;Item = <span class="self">Self</span>::Schema&gt;&gt;&gt;
     }
 
-    <span class="kw">type </span>Force = GhtInner&lt;Head, Node&gt; <span class="kw">where </span>Node:GeneralizedHashTrieNode;
-    <span class="kw">fn </span>force(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Force&gt; {
+    <span class="kw">type </span>Force = GhtInner&lt;Head, Node&gt;; <span class="comment">// where Node:GeneralizedHashTrieNode;
+    </span><span class="kw">fn </span>force(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Force&gt; {
         <span class="prelude-val">None
     </span>}
 
@@ -753,8 +769,8 @@
     Storage: VariadicCollection&lt;Schema = Schema&gt;
         + Default <span class="comment">// + Iterator&lt;Item = Schema&gt;
         </span>+ IntoIterator&lt;Item = Schema&gt;,
-    GhtLeaf&lt;Schema, Rest, Storage&gt;: GeneralizedHashTrieNode&lt;Schema = Schema&gt;,
-    GhtInner&lt;Head, GhtLeaf&lt;Schema, Rest, Storage&gt;&gt;: GeneralizedHashTrieNode&lt;Schema = Schema&gt;,
+    GhtLeaf&lt;Schema, Rest, Storage&gt;: GeneralizedHashTrieNode&lt;Schema = Schema, Storage = Storage&gt;,
+    GhtInner&lt;Head, GhtLeaf&lt;Schema, Rest, Storage&gt;&gt;: GeneralizedHashTrieNode&lt;Schema = Schema, Storage = Storage&gt;,
 {
     <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw">impl </span>Iterator&lt;Item = <span class="self">Self</span>::Schema&gt;&gt; {
         <span class="prelude-val">Some</span>(<span class="self">self</span>.elements.into_iter())
@@ -984,6 +1000,9 @@
     <span class="doccomment">/// Schema variadic: the schema of the relation stored in this COLT.
     /// This type is the same in all Tries and nodes of the COLT.
     </span><span class="kw">type </span>Schema: VariadicExt + Eq + Hash + Clone;
+    <span class="doccomment">/// The type of Storage
+    /// This type is the same in all Tries and nodes of the COLT
+    </span><span class="kw">type </span>Storage: VariadicCollection;
     <span class="doccomment">/// SuffixSchema variadic: the suffix of the schema *from this node of the trie
     /// downward*. The first entry in this variadic is of type Head.
     /// This type is the same in all Tries of the COLT (but changes as we traverse downward)
@@ -991,6 +1010,7 @@
     <span class="doccomment">/// The type of the first column in the SuffixSchema
     /// This type is the same in all Tries of the COLT (but changes as we traverse downward)
     </span><span class="kw">type </span>Head: Eq + Hash;
+
 
     <span class="doccomment">/// Type returned by [`Self::get`].
     </span><span class="kw">type </span>Get; <span class="comment">//: ColtNode;
@@ -1015,6 +1035,7 @@
         &lt;GhtLeaf&lt;Schema, SuffixSchema, Storage&gt; <span class="kw">as </span>ColumnLazyTrieNode&gt;::Force,
        <span class="comment">// Schema = Schema,
         // SuffixSchema = SuffixSchema,
+        // Storage = Storage,
     </span>&gt;,
     &lt;Rest <span class="kw">as </span>ColtNode&gt;::SuffixSchema: <span class="lifetime">'a</span>,
     GhtLeaf&lt;Schema, SuffixSchema, Storage&gt;: ColumnLazyTrieNode,
@@ -1026,6 +1047,7 @@
     <span class="kw">type </span>Head = Rest::Head;
     <span class="kw">type </span>SuffixSchema = SuffixSchema;
     <span class="kw">type </span>Get = Rest::Get;
+    <span class="kw">type </span>Storage = Rest::Storage;
 
     <span class="kw">fn </span>get(<span class="self">self</span>, head: <span class="kw-2">&amp;</span><span class="self">Self</span>::Head) -&gt; <span class="self">Self</span>::Get {
         <span class="kw">let </span>(first, <span class="kw-2">mut </span>rest) = <span class="self">self</span>;
@@ -1041,7 +1063,8 @@
         &lt;GhtLeaf&lt;Schema, SuffixSchema, Storage&gt; <span class="kw">as </span>ColumnLazyTrieNode&gt;::Force,
         <span class="comment">// Schema = Schema,
         // SuffixSchema = SuffixSchema,
-    </span>&gt;,
+        </span>Storage = Storage,
+    &gt;,
     &lt;Rest <span class="kw">as </span>ColtNode&gt;::SuffixSchema: <span class="lifetime">'a</span>,
     GhtLeaf&lt;Schema, SuffixSchema, Storage&gt;: ColumnLazyTrieNode,
     Schema: Clone + Hash + Eq + VariadicExt,
@@ -1064,13 +1087,15 @@
         Head = Rest::Head,
         SuffixSchema = Rest::SuffixSchema,
         Schema = Rest::Schema,
+        Storage = Rest::Storage,
     &gt;,
-    GhtInner&lt;Head2, Node&gt;: GeneralizedHashTrieNode&lt;Schema = Rest::Schema&gt;,
+    GhtInner&lt;Head2, Node&gt;: GeneralizedHashTrieNode&lt;Schema = Rest::Schema, Storage = Rest::Storage&gt;,
 {
     <span class="kw">type </span>Schema = Rest::Schema;
     <span class="kw">type </span>Head = Rest::Head;
     <span class="kw">type </span>SuffixSchema = Rest::SuffixSchema;
     <span class="kw">type </span>Get = <span class="macro">var_type!</span>(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>GhtInner&lt;Head2, Node&gt;, ...Rest::Get);
+    <span class="kw">type </span>Storage = Rest::Storage;
 
     <span class="kw">fn </span>get(<span class="self">self</span>, head: <span class="kw-2">&amp;</span><span class="self">Self</span>::Head) -&gt; <span class="self">Self</span>::Get {
         <span class="kw">let </span>(first, rest) = <span class="self">self</span>;
@@ -1091,8 +1116,11 @@
             Head = Rest::Head,
             SuffixSchema = Rest::SuffixSchema,
             Schema = Rest::Schema,
-        &gt; + GhtGet&lt;Get = GhtInner&lt;Head2, Node&gt;&gt;,
-    GhtInner&lt;Head2, Node&gt;: GeneralizedHashTrieNode&lt;Schema = Rest::Schema&gt; + GhtGet,
+            Storage = Rest::Storage,
+        &gt;
+        <span class="comment">// + GhtGet&lt;Get = GhtInner&lt;Head2, Node&gt;&gt;
+        </span>,
+    GhtInner&lt;Head2, Node&gt;: GeneralizedHashTrieNode&lt;Schema = Rest::Schema, Storage = Rest::Storage&gt; + GhtGet,
 {
     <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _inner_to_merge: T) {
         <span class="macro">panic!</span>();
@@ -1120,14 +1148,16 @@
         Head = Rest::Head,
         <span class="comment">// SuffixSchema = Rest::SuffixSchema,
         </span>Schema = Rest::Schema,
+        Storage = Rest::Storage,
     &gt;,
-    GhtLeaf&lt;Schema, ValType, Storage&gt;: GeneralizedHashTrieNode&lt;Schema = Rest::Schema&gt; + GhtGet,
+    GhtLeaf&lt;Schema, ValType, Storage&gt;: GeneralizedHashTrieNode&lt;Schema = Rest::Schema, Storage = Rest::Storage&gt; + GhtGet,
 {
     <span class="kw">type </span>Schema = Rest::Schema;
     <span class="kw">type </span>Head = Rest::Head;
     <span class="kw">type </span>SuffixSchema = Rest::SuffixSchema;
     <span class="comment">// type Get = Rest::Get; // Option&lt;&amp;'a &lt;GhtLeaf&lt;Schema, ValType&gt; as GhtGet&gt;::Get&gt;,
     </span><span class="kw">type </span>Get = <span class="macro">var_type!</span>(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>GhtLeaf&lt;Schema, ValType, Storage&gt;, ...Rest::Get);
+    <span class="kw">type </span>Storage = Rest::Storage;
 
     <span class="kw">fn </span>get(<span class="self">self</span>, head: <span class="kw-2">&amp;</span><span class="self">Self</span>::Head) -&gt; <span class="self">Self</span>::Get {
         <span class="kw">let </span>(first, rest) = <span class="self">self</span>;
@@ -1139,15 +1169,16 @@
 </span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, Head, Rest, Schema, ValType, Storage&gt;
     ColtNodeTail&lt;GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;&gt; <span class="kw">for </span><span class="macro">var_type!</span>(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;, ...Rest)
 <span class="kw">where
-    </span>Rest: ColtNode&lt;Head = Head, Schema = Schema&gt;,
+    </span>Rest: ColtNode&lt;Head = Head, Schema = Schema, Storage = Storage&gt;,
     Head: Eq + Hash + Clone,
     Schema: Eq + Hash + Clone + PartialEqVariadic,
     ValType: Eq + Hash + Clone + PartialEqVariadic,
     Storage: VariadicCollection&lt;Schema = Schema&gt;,
+    <span class="macro">var_type!</span>(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;, ...Rest): ColtNode&lt;Head = Head, Schema = Schema, Storage = Storage&gt;,
     GhtLeaf&lt;Schema, ValType, Storage&gt;: GeneralizedHashTrieNode&lt;Schema = Schema&gt;,
     Schema: <span class="lifetime">'static </span>+ Eq + VariadicExt + Hash + Clone + SplitBySuffix&lt;ValType&gt; + PartialEqVariadic,
     &lt;Schema <span class="kw">as </span>SplitBySuffix&lt;ValType&gt;&gt;::Prefix: Eq + Hash + Clone,
-    GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;: GeneralizedHashTrieNode&lt;Head = Head, Schema = Schema&gt;
+    GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;: GeneralizedHashTrieNode&lt;Head = Head, Schema = Schema, Storage = Storage&gt;
         <span class="comment">// can't use Merge with COLT bc columnstore is not a lattice!!
         // + crate::Merge&lt;GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;&gt;
         </span>+ GhtGet,
@@ -1171,6 +1202,7 @@
     <span class="kw">type </span>SuffixSchema = &lt;GhtInner&lt;Head, Node&gt; <span class="kw">as </span>GeneralizedHashTrieNode&gt;::SuffixSchema;
     <span class="kw">type </span>Head = Head;
     <span class="kw">type </span>Get = <span class="macro">var_type!</span>(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Node);
+    <span class="kw">type </span>Storage = Node::Storage;
 
     <span class="kw">fn </span>get(<span class="self">self</span>, head: <span class="kw-2">&amp;</span><span class="self">Self</span>::Head) -&gt; <span class="self">Self</span>::Get {
         <span class="kw">let </span>child = <span class="self">self</span>.<span class="number">0</span>.children.entry(head.clone()).or_default();
@@ -1186,7 +1218,7 @@
         + GhtGet
         + <span class="kw">crate</span>::Merge&lt;GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;&gt;
         + GhtGet,
-    GhtLeaf&lt;Schema, ValType, Storage&gt;: GeneralizedHashTrieNode&lt;Schema = Schema&gt;,
+    GhtLeaf&lt;Schema, ValType, Storage&gt;: GeneralizedHashTrieNode&lt;Schema = Schema, Storage = Storage&gt;,
     Head: Clone + Eq + Hash,
     Schema: Clone + Eq + Hash + VariadicExt,
     Storage: VariadicCollection&lt;Schema = Schema&gt;,

@@ -993,7 +993,7 @@
     Storage: VariadicCollection&lt;Schema = Schema&gt; + Default,
 {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>elements = Default::default();
+        <span class="kw">let </span>elements = Storage::default();
         <span class="self">Self </span>{
             elements,
             forced: <span class="bool-val">false</span>,

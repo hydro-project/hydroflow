@@ -1212,7 +1212,7 @@
     <span class="kw">use </span>std::io::{<span class="self">self</span>, Write};
 
     <span class="kw">use </span>variadics::variadic_collections::{
-        VariadicColumnMultiset, VariadicCountedHashSet, VariadicMultiset,
+        VariadicCollection, VariadicColumnMultiset, VariadicCountedHashSet,
     };
     <span class="kw">use </span>variadics::{var_expr, var_type, VariadicExt};
 
@@ -1222,7 +1222,7 @@
         </span>GhtCartesianProductBimorphism,
         <span class="comment">//     GhtNodeKeyedBimorphism, GhtValTypeProductBimorphism,
     </span>};
-    <span class="kw">use </span><span class="kw">crate</span>::ght_lazy::{ColtNode, ColumnLazyTrieNode, ForestFindLeaf, GhtForest}; <span class="comment">/* GhtForestStruct}; */
+    <span class="kw">use </span><span class="kw">crate</span>::ght_lazy::{ColtNode, ColtNodeTail, ColumnLazyTrieNode, ForestFindLeaf, GhtForest}; <span class="comment">/* GhtForestStruct}; */
     </span><span class="kw">use crate</span>::{GhtForestType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
 
     <span class="attr">#[test]
