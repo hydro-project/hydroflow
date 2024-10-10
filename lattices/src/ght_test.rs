@@ -957,6 +957,56 @@ mod test {
     }
 
     #[test]
+    fn test_forest_macro() {
+        type Forest4 = GhtForestType!(u8, u16, u32, u64);
+        let _f4 = Forest4::default();
+
+        type Forest3 = GhtForestType!(u8, u16, u32);
+        let _f3 = Forest3::default();
+
+        type Forest2 = GhtForestType!(u8, u16);
+        let _f2 = Forest2::default();
+
+        type Forest1 = GhtForestType!(u8);
+        let _f2 = Forest1::default();
+    }
+
+    #[test]
+    fn test_colt_little_get() {
+        type MyForest = GhtForestType!(u8);
+
+        // debugging info
+        // type MyForest = (GhtLeaf<(u8, ()), (u8, ()), VariadicColumnMultiset<(u8, ())>>, (GhtInner<u8, GhtLeaf<(u8, ()), (), VariadicColumnMultiset<(u8, ())>>>, ()));
+        let mut forest = MyForest::default();
+        // type Force = crate::ght::GhtInner<u8, GhtLeaf<(u8, ()), (), VariadicColumnMultiset<(u8, ())>>>;
+        // let force: Force = forest.0.force().unwrap();
+
+
+        forest.0.insert(var_expr!(1));
+        forest.0.insert(var_expr!(2));
+        forest.0.insert(var_expr!(3));
+
+        println!("forest.len() = {}", forest.len());
+        println!("forest before get: {:?}", forest);
+
+        // 343  |   impl<'a, Rest, Schema, SuffixSchema, Storage> ColtNode for var_type!(&'a mut GhtLeaf<Schema, SuffixSchema, Storage>, ...Rest)
+        //      |                                                 --------     ------------------------------------------------------------------
+        // 344  |   where
+        // 345  |       Rest: ColtNodeTail<
+        //      |  ___________^
+        // 346  | |         <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
+        // 347  | |         Schema = Schema,
+        // 348  | |         // SuffixSchema = SuffixSchema,
+        // 349  | |     >,
+        //      | |_____^ unsatisfied trait bound introduced here
+        let result = ColtNode::get(forest.as_mut_var(), &3);
+        // println!("forest after get: {:?}", forest);
+        // println!("result.len() = {}", result.len());
+        // let result2 = result.get(&4);
+        // println!("forest.1: {:?}", forest.1);
+    }
+
+    #[test]
     fn test_build_forest() {
         type MyForest = GhtForestType!(u8, u16, u32, u64);
         let mut forest = MyForest::default();
