@@ -639,6 +639,42 @@ macro_rules! GhtColumnTypeWithSchema {
     );
 }
 
+// Hack to test set: just clones the above using VariadicHashSet instead of VariadicCountedHashSet
+// Should unify these macros
+/// Helper that does the heavy lifting for GhtType!
+#[macro_export]
+macro_rules! GhtSetTypeWithSchema {
+    // Empty key & Val (Leaf)
+    (() => () => $( $schema:ty ),+ ) => (
+        $crate::ght::GhtLeaf::<$( $schema ),*,  ()  >
+    );
+
+    // Empty key (Leaf)
+    (() => $( $z:ty ),* => $schema:ty ) => (
+        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ), $crate::variadics::variadic_collections::VariadicHashSet<$schema> >
+    );
+
+    // Singleton key & Empty val (Inner over Leaf)
+    ($a:ty => () => $schema:ty ) => (
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, (), $crate::variadics::variadic_collections::VariadicHashSet<$schema> >>
+    );
+
+    // Singleton key (Inner over Leaf)
+    ($a:ty => $( $z:ty ),* => $schema:ty ) => (
+        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*), $crate::variadics::variadic_collections::VariadicHashSet<$schema> >>
+    );
+
+    // Recursive case with empty val
+    ($a:ty, $( $b:ty ),* => () => $schema:ty ) => (
+        $crate::ght::GhtInner::<$a, $crate::GhtSetTypeWithSchema!($( $b ),* => () => $schema)>
+    );
+
+    // Recursive case.
+    ($a:ty, $( $b:ty ),* => $( $z:ty ),* => $schema:ty ) => (
+        $crate::ght::GhtInner::<$a, $crate::GhtSetTypeWithSchema!($( $b ),* => $( $z ),* => $schema)>
+    );
+}
+
 /// Macro to construct a Ght node type from the constituent key and
 /// dependent column types. You pass it:
 ///    - a list of key column types and dependent column type separated by a fat arrow,
@@ -658,6 +694,10 @@ macro_rules! GhtType {
         $crate::GhtColumnTypeWithSchema!(() => $( $z ),* => $crate::variadics::var_type!($( $z ),* ))
     );
 
+    (() => $( $z:ty ),*: Set ) => (
+        $crate::GhtSetTypeWithSchema!(() => $( $z ),* => $crate::variadics::var_type!($( $z ),* ))
+    );
+
     // Recursive case empty val
     ($( $b:ty ),* => (): Row ) => (
         $crate::GhtRowTypeWithSchema!($( $b ),* => () => $crate::variadics::var_type!($( $b ),*))
@@ -667,6 +707,10 @@ macro_rules! GhtType {
         $crate::GhtColumnTypeWithSchema!($( $b ),* => () => $crate::variadics::var_type!($( $b ),*))
     );
 
+    ($( $b:ty ),* => (): Set ) => (
+        $crate::GhtSetTypeWithSchema!($( $b ),* => () => $crate::variadics::var_type!($( $b ),*))
+    );
+
     // Recursive case
     ($( $b:ty ),* => $( $z:ty ),*: Row) => (
         $crate::GhtRowTypeWithSchema!($( $b ),* => $( $z ),* => $crate::variadics::var_type!($( $b ),*, $( $z ),*))
@@ -674,5 +718,9 @@ macro_rules! GhtType {
 
     ($( $b:ty ),* => $( $z:ty ),*: Column) => (
         $crate::GhtColumnTypeWithSchema!($( $b ),* => $( $z ),* => $crate::variadics::var_type!($( $b ),*, $( $z ),*))
+    );
+
+    ($( $b:ty ),* => $( $z:ty ),*: Set) => (
+        $crate::GhtSetTypeWithSchema!($( $b ),* => $( $z ),* => $crate::variadics::var_type!($( $b ),*, $( $z ),*))
     );
 }

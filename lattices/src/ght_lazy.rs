@@ -122,20 +122,35 @@ where
 /// Constructs a forest (variadic list) of Ght structs,
 /// one for each height from 0 to length of the schema - 1
 macro_rules! GhtForestType {
-    ($a:ty, $( $b:ty ),* => ()) => {
-        var_type!($crate::GhtType!($a, $( $b ),* => (): Column))
+    // 1 => 0
+    ($a:ty => ()) => {
+        var_type!($crate::GhtType!($a => (): Column))
     };
+    // 1 => 1
+    ($a:ty => $c:ty ) => {
+        ($crate::GhtType!($a => $c: Column), GhtForestType!($a, $c => ()))
+    };
+    // 1 => >1
     ($a:ty => $c:ty, $( $d:ty ),* ) => {
         ($crate::GhtType!($a => $c, $( $d ),*: Column), GhtForestType!($a, $c => $( $d ),*))
     };
+    // >1 => 0
+    ($a:ty, $( $b:ty ),* => ()) => {
+        var_type!($crate::GhtType!($a, $( $b ),* => (): Column))
+    };
+    // >1 => 1
     ($a:ty, $( $b:ty ),* => $c:ty) => {
         ($crate::GhtType!($a, $( $b ),* => $c: Column), GhtForestType!($a, $( $b ),*, $c => ()))
     };
-
+    // >1 => >1
     ($a:ty, $( $b:ty ),* => $c:ty, $( $d:ty ),* ) => {
         ($crate::GhtType!($a, $( $b ),* => $c, $( $d ),*: Column), GhtForestType!($a, $( $b ),* , $c => $( $d ),*))
     };
-
+    // general 1
+    ($a:ty) => {
+        ($crate::GhtType!(() => $a: Column), GhtForestType!($a => ()))
+    };
+    // general >1
     ($a:ty, $( $b:ty ),* ) => {
         ($crate::GhtType!(() => $a, $( $b ),*: Column), GhtForestType!($a => $( $b ),*))
     };
