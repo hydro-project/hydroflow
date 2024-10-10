@@ -368,15 +368,15 @@ where
 #[sealed]
 impl<'a, Rest, Schema, SuffixSchema, T, Storage> ColtNodeTail<T> for var_type!(&'a mut GhtLeaf<Schema, SuffixSchema, Storage>, ...Rest)
 where
-    Rest: ColtNodeTail<
-        <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
-        // Schema = Schema,
-        // SuffixSchema = SuffixSchema,
-    >,
-    <Rest as ColtNode>::SuffixSchema: 'a,
-    GhtLeaf<Schema, SuffixSchema, Storage>: ColumnLazyTrieNode,
+    // Rest: ColtNodeTail<
+    //     <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
+    //     // Schema = Schema,
+    //     // SuffixSchema = SuffixSchema,
+    // >,
+    // <Rest as ColtNode>::SuffixSchema: 'a,
+    // GhtLeaf<Schema, SuffixSchema, Storage>: ColumnLazyTrieNode,
     Schema: Clone + Hash + Eq + VariadicExt,
-    SuffixSchema: Clone + Hash + Eq + VariadicExt,
+    // SuffixSchema: Clone + Hash + Eq + VariadicExt,
     Storage: VariadicCollection<Schema = Schema>,
 {
     fn merge(&mut self, _inner_to_merge: T) {
