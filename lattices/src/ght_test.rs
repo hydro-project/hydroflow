@@ -47,28 +47,44 @@ mod test {
     }
     #[test]
     fn test_ght_node_type_macro() {
+        // 0 => 1 
         type LilTrie = GhtType!(() => u32: Row);
         let _j = LilTrie::default();
         let _l = LilTrie::new_from(vec![var_expr!(1)]);
 
+        // 0 => >1
         type LilTrie2 = GhtType!(() => u32, u64: Row);
         let _l = LilTrie2::default();
         let _l = LilTrie2::new_from(vec![var_expr!(1, 1)]);
 
+        // 1 => 0
+        type KeyNoValTrie = GhtType!(u32 => (): Row);
+        let l = KeyNoValTrie::new_from(vec![var_expr!(1)]);
+        let _: KeyNoValTrie = l;
+        
+        // 1 => 1
         type SmallTrie = GhtType!(u32 => &'static str: Row);
         type SmallKeyedTrie = GhtType!(u32 => &'static str: Row);
         let l = SmallTrie::new_from(vec![var_expr!(1, "hello")]);
         let _: SmallKeyedTrie = l;
 
+        // 1 => >1 
+        type SmallKeyLongValTrie = GhtType!(u32 => u64, u16, &'static str: Row);
+        let _x = SmallKeyLongValTrie::new_from(vec![var_expr!(1, 999, 222, "hello")]);
+
+        // >1 => 0
+        type LongKeyNoValTrie = GhtType!(u32, u64 => (): Row);
+        let l = LongKeyNoValTrie::new_from(vec![var_expr!(1, 999)]);
+        let _: LongKeyNoValTrie = l;
+
+        // >1 => 1
         type LongKeySmallValTrie = GhtType!(u32, u16 => &'static str: Row);
         type LongKeySmallValKeyedTrie = GhtType!(u32, u16 => &'static str: Row);
         let x = LongKeySmallValTrie::new_from(vec![var_expr!(1, 314, "hello")]);
         let _: LongKeySmallValKeyedTrie = x;
         let _ = LongKeySmallValTrie::new_from(vec![var_expr!(1, 314, "hello")]);
 
-        type SmallKeyLongValTrie = GhtType!(u32 => u64, u16, &'static str: Row);
-        let _x = SmallKeyLongValTrie::new_from(vec![var_expr!(1, 999, 222, "hello")]);
-
+        // >1 => >1
         type LongKeyLongValTrie = GhtType!(u32, u64 => u16, &'static str: Row);
         let _x = LongKeyLongValTrie::new_from(vec![var_expr!(1, 999, 222, "hello")]);
     }
@@ -375,8 +391,8 @@ mod test {
 
     #[test]
     fn test_cartesian_bimorphism() {
-        type MyGhtA = GhtType!(u32, u64 => u16, &'static str: Row);
-        type MyGhtB = GhtType!(u32, u64, u16 => &'static str: Row);
+        type MyGhtA = GhtType!(u32, u64 => u16, &'static str: Set);
+        type MyGhtB = GhtType!(u32, u64, u16 => &'static str: Set);
 
         let mut ght_a = MyGhtA::default();
         let mut ght_b = MyGhtB::default();
@@ -958,6 +974,57 @@ mod test {
     }
 
     #[test]
+    fn test_forest_macro() {
+        type Forest4 = GhtForestType!(u8, u16, u32, u64);
+        let _f4 = Forest4::default();
+
+        type Forest3 = GhtForestType!(u8, u16, u32);
+        let _f3 = Forest3::default();
+
+        type Forest2 = GhtForestType!(u8, u16);
+        let _f2 = Forest2::default();
+
+        type Forest1 = GhtForestType!(u8);
+        let _f2 = Forest1::default();
+    }
+
+    #[test]
+    fn test_colt_little_get() {
+        type MyForest = GhtForestType!(u8);
+
+        // debugging info
+        // type MyForest = (GhtLeaf<(u8, ()), (u8, ()), VariadicColumnMultiset<(u8, ())>>, (GhtInner<u8, GhtLeaf<(u8, ()), (), VariadicColumnMultiset<(u8, ())>>>, ()));
+        let mut forest = MyForest::default();
+        // type Force = crate::ght::GhtInner<u8, GhtLeaf<(u8, ()), (), VariadicColumnMultiset<(u8, ())>>>;
+        // let force: Force = forest.0.force().unwrap();
+
+
+        forest.0.insert(var_expr!(1));
+        forest.0.insert(var_expr!(2));
+        forest.0.insert(var_expr!(3));
+
+        println!("forest.len() = {}", forest.len());
+        println!("forest before get: {:?}", forest);
+
+        // 343  |   impl<'a, Rest, Schema, SuffixSchema, Storage> ColtNode for var_type!(&'a mut GhtLeaf<Schema, SuffixSchema, Storage>, ...Rest)
+        //      |                                                 --------     ------------------------------------------------------------------
+        // 344  |   where
+        // 345  |       Rest: ColtNodeTail<
+        //      |  ___________^
+        // 346  | |         <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
+        // 347  | |         Schema = Schema,
+        // 348  | |         // SuffixSchema = SuffixSchema,
+        // 349  | |     >,
+        //      | |_____^ unsatisfied trait bound introduced here
+        // let result = ColtNode::get(forest.as_mut_var(), &3);
+        // println!("forest after get: {:?}", forest);
+        // println!("result.len() = {}", result.len());
+        // let result2 = result.get(&4);
+        // println!("forest.1: {:?}", forest.1);
+    }
+
+
+    #[test]
     fn test_build_forest() {
         type MyForest = GhtForestType!(u8, u16, u32, u64);
         let mut forest = MyForest::default();
@@ -1123,7 +1190,7 @@ mod test {
         }
         {
             let result = forest.as_mut_var().get(&3);
-            println!("result: {:?}", result);
+            // println!("result: {:?}", result);
         }
         // check: first Leaf trie is forced
         assert!(forest.0.forced);
@@ -1131,7 +1198,7 @@ mod test {
         {
             let result = forest.as_mut_var().get(&3);
             let result2 = result.get(&true);
-            println!("result2: {:?}", result2);
+            // println!("result2: {:?}", result2);
         }
         {
             // check: leaf below 3 in first non-empty trie is forced
@@ -1147,13 +1214,16 @@ mod test {
             .prefix_iter(var_expr!(3, true).as_ref_var())
             .next()
             .is_some());
-        println!("forest.0: {:?}", forest.0);
+        // println!("forest.1.1.0: {:?}", forest.1.1.0);
         {
             let result = forest.as_mut_var().get(&3);
             let result2 = result.get(&true);
+            println!("result2: {:?}", result2);
             let result3 = result2.get(&1);
-            let result4 = result3.get(&"hello");
-            println!("result4: {:?}", result4);
+            println!("result3: {:?}", result3);
+            // println!("forest.1.1.1: {:?}", forest.1.1.1);
+            // let result4 = result3.get(&"hello");
+            // println!("result4: {:?}", result4);
         }
     }
 }

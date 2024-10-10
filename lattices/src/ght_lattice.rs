@@ -26,11 +26,11 @@ where
         for (k, v) in other.children {
             match self.children.entry(k) {
                 std::collections::hash_map::Entry::Occupied(mut occupied) => {
-                    changed |= occupied.get_mut().merge(v)
+                    changed |= occupied.get_mut().merge_node(v);
                 }
                 std::collections::hash_map::Entry::Vacant(vacant) => {
                     vacant.insert(v);
-                    changed = true
+                    changed = true;
                 }
             }
         }

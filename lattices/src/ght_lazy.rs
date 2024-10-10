@@ -22,7 +22,7 @@ use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
 /// instead `take`s the leaf from the current trie and merges it in to the trie to the right which
 /// is 1 taller.
 
-/// A trait for the special behavior we need from the GHTs in a COLT forest
+/// A trait for the special behavior we need from the GHTs in a COLT forest#[derive(Debug, Clone)]
 pub trait ColumnLazyTrieNode: GeneralizedHashTrieNode {
     /// into_iter for leaf elements, needed by force below
     fn into_iter(self) -> Option<impl Iterator<Item = Self::Schema>>;
@@ -123,20 +123,35 @@ where
 /// Constructs a forest (variadic list) of Ght structs,
 /// one for each height from 0 to length of the schema - 1
 macro_rules! GhtForestType {
-    ($a:ty, $( $b:ty ),* => ()) => {
-        var_type!($crate::GhtType!($a, $( $b ),* => (): Column))
+    // 1 => 0
+    ($a:ty => ()) => {
+        var_type!($crate::GhtType!($a => (): Column))
     };
+    // 1 => 1
+    ($a:ty => $c:ty ) => {
+        ($crate::GhtType!($a => $c: Column), GhtForestType!($a, $c => ()))
+    };
+    // 1 => >1
     ($a:ty => $c:ty, $( $d:ty ),* ) => {
         ($crate::GhtType!($a => $c, $( $d ),*: Column), GhtForestType!($a, $c => $( $d ),*))
     };
+    // >1 => 0
+    ($a:ty, $( $b:ty ),* => ()) => {
+        var_type!($crate::GhtType!($a, $( $b ),* => (): Column))
+    };
+    // >1 => 1
     ($a:ty, $( $b:ty ),* => $c:ty) => {
         ($crate::GhtType!($a, $( $b ),* => $c: Column), GhtForestType!($a, $( $b ),*, $c => ()))
     };
-
+    // >1 => >1
     ($a:ty, $( $b:ty ),* => $c:ty, $( $d:ty ),* ) => {
         ($crate::GhtType!($a, $( $b ),* => $c, $( $d ),*: Column), GhtForestType!($a, $( $b ),* , $c => $( $d ),*))
     };
-
+    // general 1
+    ($a:ty) => {
+        ($crate::GhtType!(() => $a: Column), GhtForestType!($a => ()))
+    };
+    // general >1
     ($a:ty, $( $b:ty ),* ) => {
         ($crate::GhtType!(() => $a, $( $b ),*: Column), GhtForestType!($a => $( $b ),*))
     };
@@ -329,7 +344,7 @@ impl<'a, Rest, Schema, SuffixSchema, Storage> ColtNode for var_type!(&'a mut Ght
 where
     Rest: ColtNodeTail<
         <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
-        Schema = Schema,
+       // Schema = Schema,
         // SuffixSchema = SuffixSchema,
     >,
     <Rest as ColtNode>::SuffixSchema: 'a,
@@ -355,7 +370,7 @@ impl<'a, Rest, Schema, SuffixSchema, T, Storage> ColtNodeTail<T> for var_type!(&
 where
     Rest: ColtNodeTail<
         <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
-        Schema = Schema,
+        // Schema = Schema,
         // SuffixSchema = SuffixSchema,
     >,
     <Rest as ColtNode>::SuffixSchema: 'a,
@@ -472,7 +487,7 @@ where
         // This shouldn't be none? IDK
         let (head, _rest) = self;
         // can't use Merge with COLT bc columnstore is not a lattice!!
-        crate::Merge::merge(*head, inner_to_merge);
+        head.merge_node(inner_to_merge);
     }
 }
 
