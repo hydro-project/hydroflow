@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["built","deploy"],"struct":["ClusterIds","FlowBuilder","FlowStateInner"],"type":["FlowState"]};
+window.SIDEBAR_ITEMS = {"struct":["BuiltFlow","FlowBuilder"]};

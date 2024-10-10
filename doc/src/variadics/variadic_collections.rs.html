@@ -641,6 +641,13 @@
 <a href="#641" id="641">641</a>
 <a href="#642" id="642">642</a>
 <a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
 <span class="kw">use </span>std::hash::{BuildHasher, Hash, RandomState};
 
@@ -649,7 +656,7 @@
 <span class="kw">use crate</span>::{PartialEqVariadic, VariadicExt, VecVariadic};
 
 <span class="doccomment">/// Trait for a set of Variadic Tuples
-</span><span class="kw">pub trait </span>VariadicCollection {
+</span><span class="kw">pub trait </span>VariadicCollection: Extend&lt;<span class="self">Self</span>::Schema&gt; {
     <span class="doccomment">/// The Schema (aka Variadic type) associated with tuples in this set
     </span><span class="kw">type </span>Schema: PartialEqVariadic;
 
@@ -701,7 +708,7 @@
 
 <span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>VariadicHashSet&lt;T&gt;
 <span class="kw">where
-    </span>T: fmt::Debug + VariadicExt + PartialEqVariadic,
+    </span>T: fmt::Debug + VariadicExt + PartialEqVariadic + Eq + Hash,
     <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; T::AsRefVar&lt;<span class="lifetime">'a</span>&gt;: Hash + fmt::Debug,
 {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
@@ -725,7 +732,7 @@
 }
 <span class="kw">impl</span>&lt;T, S&gt; VariadicCollection <span class="kw">for </span>VariadicHashSet&lt;T, S&gt;
 <span class="kw">where
-    </span>T: VariadicExt + PartialEqVariadic,
+    </span>T: VariadicExt + PartialEqVariadic + Eq + Hash,
     <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; T::AsRefVar&lt;<span class="lifetime">'a</span>&gt;: Hash,
     S: BuildHasher,
 {
@@ -770,7 +777,7 @@
 }
 <span class="kw">impl</span>&lt;T, S&gt; VariadicSet <span class="kw">for </span>VariadicHashSet&lt;T, S&gt;
 <span class="kw">where
-    </span>T: VariadicExt + PartialEqVariadic,
+    </span>T: VariadicExt + PartialEqVariadic + Eq + Hash,
     <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; T::AsRefVar&lt;<span class="lifetime">'a</span>&gt;: Hash,
     S: BuildHasher,
 {
@@ -926,7 +933,7 @@
 
 <span class="kw">impl</span>&lt;K, S&gt; VariadicCollection <span class="kw">for </span>VariadicCountedHashSet&lt;K, S&gt;
 <span class="kw">where
-    </span>K: VariadicExt + PartialEqVariadic + Hash + Clone,
+    </span>K: VariadicExt + PartialEqVariadic + Eq + Hash + Clone,
     <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; K::AsRefVar&lt;<span class="lifetime">'a</span>&gt;: Hash,
     S: BuildHasher,
 {
@@ -976,7 +983,7 @@
 
 <span class="kw">impl</span>&lt;K, S&gt; VariadicMultiset <span class="kw">for </span>VariadicCountedHashSet&lt;K, S&gt;
 <span class="kw">where
-    </span>K: VariadicExt + PartialEqVariadic + Hash + Clone,
+    </span>K: VariadicExt + PartialEqVariadic + Eq + Hash + Clone,
     <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; K::AsRefVar&lt;<span class="lifetime">'a</span>&gt;: Hash,
     S: BuildHasher,
 {
@@ -999,6 +1006,7 @@
 }
 
 <span class="doccomment">/// Iterator helper for [`VariadicCountedHashSet::into_iter`].
+</span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>DuplicateCounted&lt;Iter, Item&gt; {
     iter: Iter,
     state: <span class="prelude-ty">Option</span>&lt;(Item, usize)&gt;,
@@ -1117,9 +1125,10 @@
 
 <span class="doccomment">/// Column storage for Variadic tuples of type Schema
 /// An alternative to VariadicHashMultiset
+</span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>VariadicColumnMultiset&lt;Schema&gt;
 <span class="kw">where
-    </span>Schema: VariadicExt,
+    </span>Schema: VariadicExt + Eq + Hash,
 {
     columns: Schema::IntoVec,
     last_offset: usize,
@@ -1127,7 +1136,7 @@
 
 <span class="kw">impl</span>&lt;T&gt; VariadicColumnMultiset&lt;T&gt;
 <span class="kw">where
-    </span>T: VariadicExt,
+    </span>T: VariadicExt + Eq + Hash,
 {
     <span class="doccomment">/// initialize an empty columnar multiset
     </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
@@ -1140,7 +1149,7 @@
 
 <span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span>VariadicColumnMultiset&lt;T&gt;
 <span class="kw">where
-    </span>T: VariadicExt,
+    </span>T: VariadicExt + Eq + Hash,
 {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::new()
@@ -1149,7 +1158,8 @@
 
 <span class="kw">impl</span>&lt;Schema&gt; VariadicCollection <span class="kw">for </span>VariadicColumnMultiset&lt;Schema&gt;
 <span class="kw">where
-    </span>Schema: PartialEqVariadic,
+    </span>Schema: PartialEqVariadic + Eq + Hash,
+    <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; &lt;Schema <span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'a</span>&gt;: Hash,
 {
     <span class="kw">type </span>Schema = Schema;
 
@@ -1186,11 +1196,15 @@
     }
 }
 
-<span class="kw">impl</span>&lt;Schema&gt; VariadicMultiset <span class="kw">for </span>VariadicColumnMultiset&lt;Schema&gt; <span class="kw">where </span>Schema: PartialEqVariadic {}
+<span class="kw">impl</span>&lt;Schema&gt; VariadicMultiset <span class="kw">for </span>VariadicColumnMultiset&lt;Schema&gt; 
+<span class="kw">where 
+    </span>Schema: PartialEqVariadic + Eq + Hash, 
+    <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; &lt;Schema <span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'a</span>&gt;: Hash 
+{}
 
 <span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>VariadicColumnMultiset&lt;T&gt;
 <span class="kw">where
-    </span>T: fmt::Debug + VariadicExt + PartialEqVariadic,
+    </span>T: fmt::Debug + VariadicExt + PartialEqVariadic + Eq + Hash,
     <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; T::AsRefVar&lt;<span class="lifetime">'a</span>&gt;: Hash + fmt::Debug,
 {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
@@ -1200,7 +1214,7 @@
 
 <span class="kw">impl</span>&lt;Schema&gt; IntoIterator <span class="kw">for </span>VariadicColumnMultiset&lt;Schema&gt;
 <span class="kw">where
-    </span>Schema: PartialEqVariadic,
+    </span>Schema: PartialEqVariadic + Eq + Hash,
 {
     <span class="kw">type </span>Item = Schema;
     <span class="kw">type </span>IntoIter = &lt;Schema::IntoVec <span class="kw">as </span>VecVariadic&gt;::IntoZip;

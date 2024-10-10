@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["paxos_core"],"struct":["Acceptor","Ballot","Proposer"],"trait":["PaxosPayload"]};

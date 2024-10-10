@@ -201,28 +201,6 @@
 <a href="#201" id="201">201</a>
 <a href="#202" id="202">202</a>
 <a href="#203" id="203">203</a>
-<a href="#204" id="204">204</a>
-<a href="#205" id="205">205</a>
-<a href="#206" id="206">206</a>
-<a href="#207" id="207">207</a>
-<a href="#208" id="208">208</a>
-<a href="#209" id="209">209</a>
-<a href="#210" id="210">210</a>
-<a href="#211" id="211">211</a>
-<a href="#212" id="212">212</a>
-<a href="#213" id="213">213</a>
-<a href="#214" id="214">214</a>
-<a href="#215" id="215">215</a>
-<a href="#216" id="216">216</a>
-<a href="#217" id="217">217</a>
-<a href="#218" id="218">218</a>
-<a href="#219" id="219">219</a>
-<a href="#220" id="220">220</a>
-<a href="#221" id="221">221</a>
-<a href="#222" id="222">222</a>
-<a href="#223" id="223">223</a>
-<a href="#224" id="224">224</a>
-<a href="#225" id="225">225</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::io::BufRead;
@@ -250,9 +228,6 @@
     </span>example: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="doccomment">/// `--profile` parameter.
     </span>profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    rustflags: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    target_dir: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
-    no_default_features: bool,
     <span class="doccomment">/// `--target &lt;linux&gt;` if cross-compiling for linux ([`HostTargetType::Linux`]).
     </span>target_type: HostTargetType,
     <span class="doccomment">/// `--features` flags, will be comma-delimited.
@@ -260,15 +235,11 @@
 }
 <span class="kw">impl </span>BuildParams {
     <span class="doccomment">/// Creates a new `BuildParams` and canonicalizes the `src` path.
-    </span><span class="attr">#[expect(clippy::too_many_arguments, reason = <span class="string">"internal code"</span>)]
     </span><span class="kw">pub fn </span>new(
         src: <span class="kw">impl </span>AsRef&lt;Path&gt;,
         bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
         example: <span class="prelude-ty">Option</span>&lt;String&gt;,
         profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
-        rustflags: <span class="prelude-ty">Option</span>&lt;String&gt;,
-        target_dir: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
-        no_default_features: bool,
         target_type: HostTargetType,
         features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     ) -&gt; <span class="self">Self </span>{
@@ -285,9 +256,6 @@
             bin,
             example,
             profile,
-            rustflags,
-            target_dir,
-            no_default_features,
             target_type,
             features,
         }
@@ -312,14 +280,14 @@
         .get_or_init(MemoMap::new)
         .get_or_insert(<span class="kw-2">&amp;</span>params, Default::default)
         .get_or_try_init(<span class="kw">move </span>|| {
-            ProgressTracker::rich_leaf(<span class="string">"build"</span>, <span class="kw">move </span>|set_msg| <span class="kw">async move </span>{
+            ProgressTracker::rich_leaf(<span class="string">"build"</span>.to_string(), <span class="kw">move </span>|<span class="kw">_</span>, set_msg| <span class="kw">async move </span>{
                 tokio::task::spawn_blocking(<span class="kw">move </span>|| {
                     <span class="kw">let </span><span class="kw-2">mut </span>command = Command::new(<span class="string">"cargo"</span>);
-                    command.args([<span class="string">"build"</span>]);
-
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(profile) = params.profile.as_ref() {
-                        command.args([<span class="string">"--profile"</span>, profile]);
-                    }
+                    command.args([
+                        <span class="string">"build"</span>,
+                        <span class="string">"--profile"</span>,
+                        params.profile.as_deref().unwrap_or(<span class="string">"release"</span>),
+                    ]);
 
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(bin) = params.bin.as_ref() {
                         command.args([<span class="string">"--bin"</span>, bin]);
@@ -336,23 +304,11 @@
                         }
                     }
 
-                    <span class="kw">if </span>params.no_default_features {
-                        command.arg(<span class="string">"--no-default-features"</span>);
-                    }
-
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(features) = params.features {
                         command.args([<span class="string">"--features"</span>, <span class="kw-2">&amp;</span>features.join(<span class="string">","</span>)]);
                     }
 
                     command.arg(<span class="string">"--message-format=json-diagnostic-rendered-ansi"</span>);
-
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(rustflags) = params.rustflags.as_ref() {
-                        command.env(<span class="string">"RUSTFLAGS"</span>, rustflags);
-                    }
-
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(target_dir) = params.target_dir.as_ref() {
-                        command.env(<span class="string">"CARGO_TARGET_DIR"</span>, target_dir);
-                    }
 
                     <span class="kw">let </span><span class="kw-2">mut </span>spawned = command
                         .current_dir(<span class="kw-2">&amp;</span>params.src)

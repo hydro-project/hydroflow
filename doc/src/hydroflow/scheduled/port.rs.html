@@ -106,8 +106,6 @@
 <a href="#106" id="106">106</a>
 <a href="#107" id="107">107</a>
 <a href="#108" id="108">108</a>
-<a href="#109" id="109">109</a>
-<a href="#110" id="110">110</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Organizational module for Hydroflow Send/RecvCtx structs and Input/OutputPort structs.
 </span><span class="kw">use </span>std::cell::RefMut;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -130,12 +128,10 @@
 <span class="doccomment">/// An uninstantiable type used to tag port [`Polarity`] as **send**.
 ///
 /// See also: [`RECV`].
-</span><span class="attr">#[expect(clippy::upper_case_acronyms, reason = <span class="string">"marker type"</span>)]
 </span><span class="kw">pub enum </span>SEND {}
 <span class="doccomment">/// An uninstantiable type used to tag port [`Polarity`] as **receive**.
 ///
 /// See also: [`SEND`].
-</span><span class="attr">#[expect(clippy::upper_case_acronyms, reason = <span class="string">"marker type"</span>)]
 </span><span class="kw">pub enum </span>RECV {}
 <span class="attr">#[sealed]
 </span><span class="kw">impl </span>Polarity <span class="kw">for </span>SEND {}
@@ -150,7 +146,7 @@
     </span>H: Handoff,
 {
     <span class="kw">pub</span>(<span class="kw">crate</span>) handoff_id: HandoffId,
-    <span class="attr">#[expect(clippy::type_complexity, reason = <span class="string">"phantom data"</span>)]
+    <span class="attr">#[allow(clippy::type_complexity)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) _marker: PhantomData&lt;(<span class="kw-2">*const </span>S, <span class="kw">fn</span>() -&gt; H)&gt;,
 }
 <span class="doccomment">/// Send-specific variant of [`Port`]. An output port.

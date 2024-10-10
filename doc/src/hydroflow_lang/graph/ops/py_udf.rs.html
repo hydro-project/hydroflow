@@ -144,6 +144,7 @@
 <a href="#144" id="144">144</a>
 <a href="#145" id="145">145</a>
 <a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::Literal;
 <span class="kw">use </span>quote::quote_spanned;
 
@@ -211,6 +212,7 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
+    flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    root,
                    op_span,
@@ -230,7 +232,7 @@
 
         <span class="kw">let </span>py_func_ident = wc.make_ident(<span class="string">"py_func"</span>);
 
-        <span class="kw">let </span>err_lit = Literal::string(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
+        <span class="kw">let </span>err_lit = Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(
             <span class="string">"Hydroflow 'python' feature must be enabled to use `{}`"</span>,
             op_name
         ));

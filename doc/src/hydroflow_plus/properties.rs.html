@@ -109,48 +109,22 @@
 <a href="#109" id="109">109</a>
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
-<a href="#112" id="112">112</a>
-<a href="#113" id="113">113</a>
-<a href="#114" id="114">114</a>
-<a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a>
-<a href="#117" id="117">117</a>
-<a href="#118" id="118">118</a>
-<a href="#119" id="119">119</a>
-<a href="#120" id="120">120</a>
-<a href="#121" id="121">121</a>
-<a href="#122" id="122">122</a>
-<a href="#123" id="123">123</a>
-<a href="#124" id="124">124</a>
-<a href="#125" id="125">125</a>
-<a href="#126" id="126">126</a>
-<a href="#127" id="127">127</a>
-<a href="#128" id="128">128</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashSet;
 
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
 <span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusLeaf, HfPlusNode, SeenTees};
 
-<span class="doccomment">/// Structure for tracking expressions known to have particular algebraic properties.
-///
-/// # Schema
-///
-/// Each field in this struct corresponds to an algebraic property, and contains the list of
-/// expressions that satisfy the property. Currently only `commutative`.
-///
-/// # Interface
-///
-/// "Tag" an expression with a property and it will add it to that table. For example, [`Self::add_commutative_tag`].
-/// Can also run a check to see if an expression satisfies a property.
+<span class="doccomment">/// schema : table per algebraic property with the list of expressions that satisfy the property
+/// interface: can "tag" an expression with a property and it will add it to that table
+/// can also run a check to see if an expression satisfies a property
 </span><span class="attr">#[derive(Default)]
 </span><span class="kw">pub struct </span>PropertyDatabase {
     commutative: HashSet&lt;syn::Expr&gt;,
 }
 
-<span class="doccomment">/// Allows us to convert the hydroflow datatype for folds to a binary operation for the algebra
-/// property tests.
-</span><span class="attr">#[allow(clippy::allow_attributes, dead_code, reason = <span class="string">"staged programming"</span>)]
+<span class="attr">#[allow(dead_code)]
+</span><span class="comment">// allows us to convert the hydroflow datatype for folds to a binary operation for the algebra property tests
 </span><span class="kw">fn </span>convert_hf_to_binary&lt;I, A: Default, F: Fn(<span class="kw-2">&amp;mut </span>A, I)&gt;(f: F) -&gt; <span class="kw">impl </span>Fn(I, I) -&gt; A {
     <span class="kw">move </span>|a, b| {
         <span class="kw">let </span><span class="kw-2">mut </span>acc = Default::default();
@@ -161,13 +135,12 @@
 }
 
 <span class="kw">impl </span>PropertyDatabase {
-    <span class="doccomment">/// Tags the expression as commutative.
-    </span><span class="kw">pub fn </span>add_commutative_tag&lt;<span class="lifetime">'a</span>, I, A, F: Fn(<span class="kw-2">&amp;mut </span>A, I), Q: Quoted&lt;<span class="lifetime">'a</span>, F&gt; + Clone&gt;(
+    <span class="kw">pub fn </span>add_commutative_tag&lt;<span class="lifetime">'a</span>, I, A, F: Fn(<span class="kw-2">&amp;mut </span>A, I), Q: Quoted&lt;<span class="lifetime">'a</span>, F&gt; + Clone&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         expr: Q,
     ) -&gt; Q {
         <span class="kw">let </span>expr_clone = expr.clone();
-        <span class="self">self</span>.commutative.insert(expr_clone.splice_untyped());
+        <span class="self">self</span>.commutative.insert(expr_clone.splice());
         expr
     }
 
@@ -180,19 +153,19 @@
 // TODO add a test that verifies the space of possible graphs after rewrites is correct for each property
 
 </span><span class="kw">fn </span>properties_optimize_node(
-    node: <span class="kw-2">&amp;mut </span>HfPlusNode,
+    node: HfPlusNode,
     db: <span class="kw-2">&amp;</span>PropertyDatabase,
     seen_tees: <span class="kw-2">&amp;mut </span>SeenTees,
-) {
-    node.transform_children(
+) -&gt; HfPlusNode {
+    <span class="kw">match </span>node.transform_children(
         |node, seen_tees| properties_optimize_node(node, db, seen_tees),
         seen_tees,
-    );
-    <span class="kw">match </span>node {
-        HfPlusNode::ReduceKeyed { f, .. } <span class="kw">if </span>db.is_tagged_commutative(<span class="kw-2">&amp;</span>f.<span class="number">0</span>) =&gt; {
+    ) {
+        HfPlusNode::ReduceKeyed { f, input } <span class="kw">if </span>db.is_tagged_commutative(<span class="kw-2">&amp;</span>f.<span class="number">0</span>) =&gt; {
             <span class="macro">dbg!</span>(<span class="string">"IDENTIFIED COMMUTATIVE OPTIMIZATION for {:?}"</span>, <span class="kw-2">&amp;</span>f);
+            HfPlusNode::ReduceKeyed { f, input }
         }
-        <span class="kw">_ </span>=&gt; {}
+        o =&gt; o,
     }
 }
 
@@ -211,47 +184,40 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span><span class="kw">crate</span>::deploy::SingleProcessGraph;
-    <span class="kw">use </span><span class="kw">crate</span>::location::Location;
-    <span class="kw">use </span><span class="kw">crate</span>::FlowBuilder;
+    <span class="kw">use crate</span>::{FlowBuilder, SingleProcessGraph};
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_property_database() {
         <span class="kw">let </span><span class="kw-2">mut </span>db = PropertyDatabase::default();
 
-        <span class="macro">assert!</span>(!db.is_tagged_commutative(<span class="kw-2">&amp;</span>(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b).splice_untyped())));
+        <span class="macro">assert!</span>(!db.is_tagged_commutative(<span class="kw-2">&amp;</span>(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b).splice())));
 
         <span class="kw">let _ </span>= db.add_commutative_tag(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b));
 
-        <span class="macro">assert!</span>(db.is_tagged_commutative(<span class="kw-2">&amp;</span>(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b).splice_untyped())));
+        <span class="macro">assert!</span>(db.is_tagged_commutative(<span class="kw-2">&amp;</span>(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b).splice())));
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_property_optimized() {
-        <span class="kw">let </span>flow = FlowBuilder::new();
+        <span class="kw">let </span>flow = FlowBuilder::&lt;SingleProcessGraph&gt;::new();
         <span class="kw">let </span><span class="kw-2">mut </span>database = PropertyDatabase::default();
 
-        <span class="kw">let </span>process = flow.process::&lt;()&gt;();
+        <span class="kw">let </span>process = flow.process(<span class="kw-2">&amp;</span>());
 
         <span class="kw">let </span>counter_func = <span class="macro">q!</span>(|count: <span class="kw-2">&amp;mut </span>i32, <span class="kw">_</span>| <span class="kw-2">*</span>count += <span class="number">1</span>);
         <span class="kw">let _ </span>= database.add_commutative_tag(counter_func);
 
-        process
-            .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>[]))
+        flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="macro">vec!</span>[]))
             .map(<span class="macro">q!</span>(|string: String| (string, ())))
-            .tick_batch()
             .fold_keyed(<span class="macro">q!</span>(|| <span class="number">0</span>), counter_func)
-            .all_ticks()
             .for_each(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(<span class="string">"{}: {}"</span>, string, count)));
 
         <span class="kw">let </span>built = flow
-            .finalize()
+            .extract()
             .optimize_with(|ir| properties_optimize(ir, <span class="kw-2">&amp;</span>database))
             .with_default_optimize();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
-
-        <span class="kw">let _ </span>= built.compile_no_network::&lt;SingleProcessGraph&gt;();
     }
 }
 </code></pre></div></section></main></body></html>

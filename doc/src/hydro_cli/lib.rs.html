@@ -854,28 +854,20 @@
 <a href="#854" id="854">854</a>
 <a href="#855" id="855">855</a>
 <a href="#856" id="856">856</a>
-<a href="#857" id="857">857</a>
-<a href="#858" id="858">858</a>
-<a href="#859" id="859">859</a>
-<a href="#860" id="860">860</a>
-<a href="#861" id="861">861</a>
-<a href="#862" id="862">862</a>
-</pre></div><pre class="rust"><code><span class="attr">#![expect(
-    unused_qualifications,
-    non_local_definitions,
-    reason = <span class="string">"for pyo3 generated code"
-</span>)]
+</pre></div><pre class="rust"><code><span class="comment">// TODO(mingwei): For pyo3 generated code.
+</span><span class="attr">#![allow(unused_qualifications, non_local_definitions)]
 
 </span><span class="kw">use </span>core::hydroflow_crate::ports::HydroflowSource;
 <span class="kw">use </span>std::cell::OnceCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::ops::Deref;
+<span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::pin::Pin;
 <span class="kw">use </span>std::sync::{Arc, OnceLock};
 
 <span class="kw">use </span>bytes::Bytes;
 <span class="kw">use </span>futures::{Future, SinkExt, StreamExt};
-<span class="kw">use </span>hydroflow_deploy_integration::{
+<span class="kw">use </span>hydroflow_cli_integration::{
     ConnectedDirect, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
 };
 <span class="kw">use </span>pyo3::exceptions::{PyException, PyStopAsyncIteration};
@@ -888,8 +880,8 @@
 <span class="kw">use </span>tokio::sync::{Mutex, RwLock};
 
 <span class="kw">mod </span>cli;
+<span class="kw">use </span>hydro_deploy <span class="kw">as </span>core;
 <span class="kw">use </span>hydro_deploy::ssh::LaunchedSshHost;
-<span class="kw">use </span>hydro_deploy::{<span class="self">self </span><span class="kw">as </span>core};
 
 <span class="kw">static </span>TOKIO_RUNTIME: std::sync::RwLock&lt;<span class="prelude-ty">Option</span>&lt;tokio::runtime::Runtime&gt;&gt; =
     std::sync::RwLock::new(<span class="prelude-val">None</span>);
@@ -1020,13 +1012,13 @@
     <span class="attr">#[new]
     </span><span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
         Deployment {
-            underlying: Arc::new(RwLock::new(core::Deployment::new())),
+            underlying: Arc::new(RwLock::new(core::Deployment::default())),
         }
     }
 
-    <span class="attr">#[expect(non_snake_case, reason = <span class="string">"pymethods"</span>)]
+    <span class="attr">#[allow(non_snake_case)]
     </span><span class="kw">fn </span>Localhost(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
-        <span class="kw">let </span>arc = <span class="self">self</span>.underlying.blocking_read().Localhost();
+        <span class="kw">let </span>arc = <span class="self">self</span>.underlying.blocking_write().Localhost();
 
         <span class="prelude-val">Ok</span>(Py::new(
             py,
@@ -1038,7 +1030,7 @@
         </span>.into_py(py))
     }
 
-    <span class="attr">#[expect(non_snake_case, clippy::too_many_arguments, reason = <span class="string">"pymethods"</span>)]
+    <span class="attr">#[allow(non_snake_case, clippy::too_many_arguments)]
     </span><span class="kw">fn </span>GcpComputeEngineHost(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         py: Python&lt;<span class="lifetime">'_</span>&gt;,
@@ -1048,7 +1040,6 @@
         region: String,
         network: GcpNetwork,
         user: <span class="prelude-ty">Option</span>&lt;String&gt;,
-        startup_script: <span class="prelude-ty">Option</span>&lt;String&gt;,
     ) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>arc = <span class="self">self</span>.underlying.blocking_write().add_host(|id| {
             core::GcpComputeEngineHost::new(
@@ -1059,7 +1050,6 @@
                 region,
                 network.underlying,
                 user,
-                startup_script,
             )
         });
 
@@ -1073,7 +1063,7 @@
         </span>.into_py(py))
     }
 
-    <span class="attr">#[expect(non_snake_case, clippy::too_many_arguments, reason = <span class="string">"pymethods"</span>)]
+    <span class="attr">#[allow(non_snake_case, clippy::too_many_arguments)]
     </span><span class="kw">fn </span>AzureHost(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         py: Python&lt;<span class="lifetime">'_</span>&gt;,
@@ -1098,7 +1088,7 @@
         </span>.into_py(py))
     }
 
-    <span class="attr">#[expect(non_snake_case, reason = <span class="string">"pymethods"</span>)]
+    <span class="attr">#[allow(non_snake_case)]
     </span><span class="kw">fn </span>CustomService(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         py: Python&lt;<span class="lifetime">'_</span>&gt;,
@@ -1122,7 +1112,7 @@
         </span>.into_py(py))
     }
 
-    <span class="attr">#[expect(non_snake_case, clippy::too_many_arguments, reason = <span class="string">"pymethods"</span>)]
+    <span class="attr">#[allow(non_snake_case, clippy::too_many_arguments)]
     </span><span class="kw">fn </span>HydroflowCrate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         py: Python&lt;<span class="lifetime">'_</span>&gt;,
@@ -1131,6 +1121,7 @@
         bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
         example: <span class="prelude-ty">Option</span>&lt;String&gt;,
         profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
         features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
@@ -1144,11 +1135,8 @@
                 bin,
                 example,
                 profile,
-                <span class="prelude-val">None</span>,  <span class="comment">// Python API doesn't support rustflags
-                </span><span class="prelude-val">None</span>,  <span class="comment">// Python API doesn't support target_dir
-                </span><span class="bool-val">false</span>, <span class="comment">// Python API doesn't support no_default_features
-                </span><span class="prelude-val">None</span>,  <span class="comment">// Python API doesn't support perf
-                </span>features,
+                perf,
+                features,
                 args,
                 display_id,
                 external_ports.unwrap_or_default(),
@@ -1575,7 +1563,7 @@
 
 <span class="attr">#[pyclass]
 </span><span class="kw">struct </span>ServerPort {
-    underlying: hydroflow_deploy_integration::ServerPort,
+    underlying: hydroflow_cli_integration::ServerPort,
 }
 
 <span class="kw">fn </span>with_tokio_runtime&lt;T&gt;(f: <span class="kw">impl </span>Fn() -&gt; T) -&gt; T {
@@ -1590,7 +1578,7 @@
         pythonize(py, <span class="kw-2">&amp;</span><span class="self">self</span>.underlying).unwrap()
     }
 
-    <span class="attr">#[expect(clippy::wrong_self_convention, reason = <span class="string">"pymethods"</span>)]
+    <span class="attr">#[allow(clippy::wrong_self_convention)]
     </span><span class="kw">fn </span>into_source&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>realized = with_tokio_runtime(|| ServerOrBound::Server((<span class="kw-2">&amp;</span><span class="self">self</span>.underlying).into()));
 
@@ -1603,7 +1591,7 @@
         })
     }
 
-    <span class="attr">#[expect(clippy::wrong_self_convention, reason = <span class="string">"pymethods"</span>)]
+    <span class="attr">#[allow(clippy::wrong_self_convention)]
     </span><span class="kw">fn </span>into_sink&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>realized = with_tokio_runtime(|| ServerOrBound::Server((<span class="kw-2">&amp;</span><span class="self">self</span>.underlying).into()));
 

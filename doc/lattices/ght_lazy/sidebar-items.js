@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":["ColtNode","ColtNodeTail","ColumnLazyTrieNode","ForestFindLeaf","GhtForest","GhtTakeLeaf"]};

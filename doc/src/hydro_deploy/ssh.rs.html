@@ -378,79 +378,6 @@
 <a href="#378" id="378">378</a>
 <a href="#379" id="379">379</a>
 <a href="#380" id="380">380</a>
-<a href="#381" id="381">381</a>
-<a href="#382" id="382">382</a>
-<a href="#383" id="383">383</a>
-<a href="#384" id="384">384</a>
-<a href="#385" id="385">385</a>
-<a href="#386" id="386">386</a>
-<a href="#387" id="387">387</a>
-<a href="#388" id="388">388</a>
-<a href="#389" id="389">389</a>
-<a href="#390" id="390">390</a>
-<a href="#391" id="391">391</a>
-<a href="#392" id="392">392</a>
-<a href="#393" id="393">393</a>
-<a href="#394" id="394">394</a>
-<a href="#395" id="395">395</a>
-<a href="#396" id="396">396</a>
-<a href="#397" id="397">397</a>
-<a href="#398" id="398">398</a>
-<a href="#399" id="399">399</a>
-<a href="#400" id="400">400</a>
-<a href="#401" id="401">401</a>
-<a href="#402" id="402">402</a>
-<a href="#403" id="403">403</a>
-<a href="#404" id="404">404</a>
-<a href="#405" id="405">405</a>
-<a href="#406" id="406">406</a>
-<a href="#407" id="407">407</a>
-<a href="#408" id="408">408</a>
-<a href="#409" id="409">409</a>
-<a href="#410" id="410">410</a>
-<a href="#411" id="411">411</a>
-<a href="#412" id="412">412</a>
-<a href="#413" id="413">413</a>
-<a href="#414" id="414">414</a>
-<a href="#415" id="415">415</a>
-<a href="#416" id="416">416</a>
-<a href="#417" id="417">417</a>
-<a href="#418" id="418">418</a>
-<a href="#419" id="419">419</a>
-<a href="#420" id="420">420</a>
-<a href="#421" id="421">421</a>
-<a href="#422" id="422">422</a>
-<a href="#423" id="423">423</a>
-<a href="#424" id="424">424</a>
-<a href="#425" id="425">425</a>
-<a href="#426" id="426">426</a>
-<a href="#427" id="427">427</a>
-<a href="#428" id="428">428</a>
-<a href="#429" id="429">429</a>
-<a href="#430" id="430">430</a>
-<a href="#431" id="431">431</a>
-<a href="#432" id="432">432</a>
-<a href="#433" id="433">433</a>
-<a href="#434" id="434">434</a>
-<a href="#435" id="435">435</a>
-<a href="#436" id="436">436</a>
-<a href="#437" id="437">437</a>
-<a href="#438" id="438">438</a>
-<a href="#439" id="439">439</a>
-<a href="#440" id="440">440</a>
-<a href="#441" id="441">441</a>
-<a href="#442" id="442">442</a>
-<a href="#443" id="443">443</a>
-<a href="#444" id="444">444</a>
-<a href="#445" id="445">445</a>
-<a href="#446" id="446">446</a>
-<a href="#447" id="447">447</a>
-<a href="#448" id="448">448</a>
-<a href="#449" id="449">449</a>
-<a href="#450" id="450">450</a>
-<a href="#451" id="451">451</a>
-<a href="#452" id="452">452</a>
-<a href="#453" id="453">453</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
@@ -458,32 +385,22 @@
 <span class="kw">use </span>std::sync::{Arc, Mutex};
 <span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use </span>anyhow::{Context <span class="kw">as _</span>, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_ssh2_lite::ssh2::ErrorCode;
-<span class="kw">use </span>async_ssh2_lite::{AsyncChannel, AsyncSession, SessionConfiguration};
+<span class="kw">use </span>async_ssh2_lite::{AsyncChannel, AsyncSession, Error, SessionConfiguration};
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>futures::io::BufReader <span class="kw">as </span>FuturesBufReader;
+<span class="kw">use </span>futures::io::BufReader;
 <span class="kw">use </span>futures::{AsyncBufReadExt, AsyncWriteExt};
-<span class="kw">use </span>hydroflow_deploy_integration::ServerBindConfig;
-<span class="kw">use </span>inferno::collapse::perf::Folder;
-<span class="kw">use </span>inferno::collapse::Collapse;
+<span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
 <span class="kw">use </span>nanoid::nanoid;
-<span class="kw">use </span>tokio::io::BufReader <span class="kw">as </span>TokioBufReader;
 <span class="kw">use </span>tokio::net::{TcpListener, TcpStream};
-<span class="kw">use </span>tokio::runtime::Handle;
 <span class="kw">use </span>tokio::sync::{mpsc, oneshot};
-<span class="kw">use </span>tokio_stream::StreamExt;
-<span class="kw">use </span>tokio_util::io::SyncIoBridge;
 
 <span class="kw">use </span><span class="kw">super</span>::progress::ProgressTracker;
 <span class="kw">use </span><span class="kw">super</span>::util::async_retry;
 <span class="kw">use super</span>::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
 <span class="kw">use </span><span class="kw">crate</span>::hydroflow_crate::build::BuildOutput;
-<span class="kw">use </span><span class="kw">crate</span>::hydroflow_crate::flamegraph::handle_fold_data;
-<span class="kw">use </span><span class="kw">crate</span>::hydroflow_crate::tracing_options::TracingOptions;
 <span class="kw">use </span><span class="kw">crate</span>::util::prioritized_broadcast;
-
-<span class="kw">const </span>PERF_OUTFILE: <span class="kw-2">&amp;</span>str = <span class="string">"__profile.perf.data"</span>;
 
 <span class="kw">struct </span>LaunchedSshBinary {
     _resource_result: Arc&lt;ResourceResult&gt;,
@@ -491,9 +408,8 @@
     channel: AsyncChannel&lt;TcpStream&gt;,
     stdin_sender: mpsc::UnboundedSender&lt;String&gt;,
     stdout_receivers: Arc&lt;Mutex&lt;Vec&lt;mpsc::UnboundedSender&lt;String&gt;&gt;&gt;&gt;,
-    stdout_deploy_receivers: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;oneshot::Sender&lt;String&gt;&gt;&gt;&gt;,
+    stdout_cli_receivers: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;oneshot::Sender&lt;String&gt;&gt;&gt;&gt;,
     stderr_receivers: Arc&lt;Mutex&lt;Vec&lt;mpsc::UnboundedSender&lt;String&gt;&gt;&gt;&gt;,
-    tracing: <span class="prelude-ty">Option</span>&lt;TracingOptions&gt;,
 }
 
 <span class="attr">#[async_trait]
@@ -502,11 +418,11 @@
         <span class="self">self</span>.stdin_sender.clone()
     }
 
-    <span class="kw">fn </span>deploy_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; oneshot::Receiver&lt;String&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_deploy_receivers.lock().unwrap();
+    <span class="kw">fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; oneshot::Receiver&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_cli_receivers.lock().unwrap();
 
         <span class="kw">if </span>receivers.is_some() {
-            <span class="macro">panic!</span>(<span class="string">"Only one deploy stdout receiver is allowed at a time"</span>);
+            <span class="macro">panic!</span>(<span class="string">"Only one CLI stdout receiver is allowed at a time"</span>);
         }
 
         <span class="kw">let </span>(sender, receiver) = oneshot::channel::&lt;String&gt;();
@@ -537,84 +453,27 @@
         </span>}
     }
 
-    <span class="kw">async fn </span>wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;i32&gt; {
+    <span class="kw">async fn </span>wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
         <span class="self">self</span>.channel.wait_eof().<span class="kw">await</span>.unwrap();
-        <span class="kw">let </span>exit_code = <span class="self">self</span>.channel.exit_status()<span class="question-mark">?</span>;
+        <span class="kw">let </span>ret = <span class="self">self</span>.exit_code();
         <span class="self">self</span>.channel.wait_close().<span class="kw">await</span>.unwrap();
-
-        <span class="prelude-val">Ok</span>(exit_code)
-    }
-
-    <span class="kw">async fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">if </span>!<span class="self">self</span>.channel.eof() {
-            ProgressTracker::leaf(<span class="string">"force stopping"</span>, <span class="kw">async </span>{
-                <span class="self">self</span>.channel.write_all(<span class="string">b"\x03"</span>).<span class="kw">await</span><span class="question-mark">?</span>; <span class="comment">// `^C`
-                </span><span class="self">self</span>.channel.send_eof().<span class="kw">await</span><span class="question-mark">?</span>;
-                <span class="self">self</span>.channel.wait_eof().<span class="kw">await</span><span class="question-mark">?</span>;
-                <span class="comment">// `exit_status()`
-                </span><span class="self">self</span>.channel.wait_close().<span class="kw">await</span><span class="question-mark">?</span>;
-                <span class="prelude-ty">Result</span>::&lt;<span class="kw">_</span>&gt;::Ok(())
-            })
-            .<span class="kw">await</span><span class="question-mark">?</span>;
-        }
-
-        <span class="comment">// Run perf post-processing and download perf output.
-        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(tracing) = <span class="self">self</span>.tracing.as_ref() {
-            <span class="kw">let </span><span class="kw-2">mut </span>script_channel = <span class="self">self</span>.session.as_ref().unwrap().channel_session().<span class="kw">await</span><span class="question-mark">?</span>;
-            <span class="kw">let </span><span class="kw-2">mut </span>fold_er = Folder::from(tracing.fold_perf_options.clone().unwrap_or_default());
-
-            <span class="kw">let </span>fold_data = ProgressTracker::leaf(<span class="string">"perf script &amp; folding"</span>, <span class="kw">async move </span>{
-                <span class="kw">let </span><span class="kw-2">mut </span>stderr_lines = FuturesBufReader::new(script_channel.stderr()).lines();
-                <span class="kw">let </span>stdout = script_channel.stream(<span class="number">0</span>);
-
-                <span class="comment">// Pattern on `()` to make sure no `Result`s are ignored.
-                </span><span class="kw">let </span>((), fold_data, ()) = <span class="macro">tokio::try_join!</span>(
-                    <span class="kw">async move </span>{
-                        <span class="comment">// Log stderr.
-                        </span><span class="kw">while let </span><span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(s)) = stderr_lines.next().<span class="kw">await </span>{
-                            ProgressTracker::println(<span class="macro">format!</span>(<span class="string">"[perf stderr] {s}"</span>));
-                        }
-                        <span class="prelude-ty">Result</span>::&lt;<span class="kw">_</span>&gt;::Ok(())
-                    },
-                    <span class="kw">async move </span>{
-                        <span class="comment">// Download perf output and fold.
-                        </span>tokio::task::spawn_blocking(<span class="kw">move </span>|| {
-                            <span class="kw">let </span><span class="kw-2">mut </span>fold_data = Vec::new();
-                            fold_er.collapse(
-                                SyncIoBridge::new(TokioBufReader::new(stdout)),
-                                <span class="kw-2">&amp;mut </span>fold_data,
-                            )<span class="question-mark">?</span>;
-                            <span class="prelude-val">Ok</span>(fold_data)
-                        })
-                        .<span class="kw">await</span><span class="question-mark">?
-                    </span>},
-                    <span class="kw">async move </span>{
-                        <span class="comment">// Run command (last!).
-                        </span>script_channel
-                            .exec(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"perf script --symfs=/ -i {PERF_OUTFILE}"</span>))
-                            .<span class="kw">await</span><span class="question-mark">?</span>;
-                        <span class="prelude-val">Ok</span>(())
-                    },
-                )<span class="question-mark">?</span>;
-                <span class="prelude-ty">Result</span>::&lt;<span class="kw">_</span>&gt;::Ok(fold_data)
-            })
-            .<span class="kw">await</span><span class="question-mark">?</span>;
-
-            handle_fold_data(tracing, fold_data).<span class="kw">await</span><span class="question-mark">?</span>;
-        };
-
-        <span class="prelude-val">Ok</span>(())
+        ret
     }
 }
 
 <span class="kw">impl </span>Drop <span class="kw">for </span>LaunchedSshBinary {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(session) = <span class="self">self</span>.session.take() {
-            tokio::task::block_in_place(|| {
-                Handle::current().block_on(session.disconnect(<span class="prelude-val">None</span>, <span class="string">""</span>, <span class="prelude-val">None</span>))
+        <span class="kw">let </span>session = <span class="self">self</span>.session.take().unwrap();
+        std::thread::scope(|s| {
+            s.spawn(|| {
+                <span class="kw">let </span>runtime = tokio::runtime::Builder::new_multi_thread().build().unwrap();
+                runtime
+                    .block_on(session.disconnect(<span class="prelude-val">None</span>, <span class="string">""</span>, <span class="prelude-val">None</span>))
+                    .unwrap();
             })
+            .join()
             .unwrap();
-        }
+        });
     }
 }
 
@@ -744,7 +603,7 @@
             <span class="kw">let </span>temp_path = PathBuf::from(<span class="macro">format!</span>(<span class="string">"/home/{user}/hydro-{random}"</span>));
             <span class="kw">let </span>sftp = <span class="kw-2">&amp;</span>sftp;
 
-            ProgressTracker::progress_leaf(
+            ProgressTracker::rich_leaf(
                 <span class="macro">format!</span>(<span class="string">"uploading binary to {}"</span>, binary_path.display()),
                 |set_progress, <span class="kw">_</span>| {
                     <span class="kw">let </span>binary = <span class="kw-2">&amp;</span>binary;
@@ -773,9 +632,7 @@
 
                         <span class="kw">match </span>sftp.rename(<span class="kw-2">&amp;</span>temp_path, binary_path, <span class="prelude-val">None</span>).<span class="kw">await </span>{
                             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {}
-                            <span class="prelude-val">Err</span>(async_ssh2_lite::Error::Ssh2(e))
-                                <span class="kw">if </span>e.code() == ErrorCode::SFTP(<span class="number">4</span>) =&gt;
-                            {
+                            <span class="prelude-val">Err</span>(Error::Ssh2(e)) <span class="kw">if </span>e.code() == ErrorCode::SFTP(<span class="number">4</span>) =&gt; {
                                 <span class="comment">// file already exists
                                 </span>sftp.unlink(<span class="kw-2">&amp;</span>temp_path).<span class="kw">await</span><span class="question-mark">?</span>;
                             }
@@ -798,7 +655,7 @@
         id: String,
         binary: <span class="kw-2">&amp;</span>BuildOutput,
         args: <span class="kw-2">&amp;</span>[String],
-        tracing: <span class="prelude-ty">Option</span>&lt;TracingOptions&gt;,
+        perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt; {
         <span class="kw">let </span>session = <span class="self">self</span>.open_ssh_session().<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -823,20 +680,18 @@
                         Duration::from_secs(<span class="number">1</span>),
                     )
                     .<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>binary_path_string = binary_path.to_str().unwrap();
+                <span class="kw">let </span>args_string = args
+                    .iter()
+                    .map(|s| shell_escape::unix::escape(Cow::from(s)))
+                    .fold(<span class="string">""</span>.to_string(), |acc, v| <span class="macro">format!</span>(<span class="string">"{acc} {v}"</span>));
+                channel
+                    .exec(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{binary_path_string}{args_string}"</span>))
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">if </span>perf.is_some() {
+                    <span class="macro">todo!</span>(<span class="string">"Profiling on remote machines is not (yet) supported"</span>);
+                }
 
-                <span class="kw">let </span><span class="kw-2">mut </span>command = binary_path.to_str().unwrap().to_owned();
-                <span class="kw">for </span>arg <span class="kw">in </span>args{
-                    command.push(<span class="string">' '</span>);
-                    command.push_str(<span class="kw-2">&amp;</span>shell_escape::unix::escape(Cow::Borrowed(arg)))
-                }
-                <span class="comment">// Launch with perf if specified, also copy local binary to expected place for perf report to work
-                </span><span class="kw">if let </span><span class="prelude-val">Some</span>(TracingOptions { frequency, .. }) = tracing.clone() {
-                    <span class="comment">// Attach perf to the command
-                    </span>command = <span class="macro">format!</span>(
-                        <span class="string">"perf record -F {frequency} -e cycles:u --call-graph dwarf,65528 -o {PERF_OUTFILE} {command}"</span>,
-                    );
-                }
-                channel.exec(<span class="kw-2">&amp;</span>command).<span class="kw">await</span><span class="question-mark">?</span>;
                 anyhow::Ok(channel)
             },
         )
@@ -855,13 +710,13 @@
         });
 
         <span class="kw">let </span>id_clone = id.clone();
-        <span class="kw">let </span>(stdout_deploy_receivers, stdout_receivers) =
-            prioritized_broadcast(FuturesBufReader::new(channel.stream(<span class="number">0</span>)).lines(), <span class="kw">move </span>|s| {
-                ProgressTracker::println(<span class="macro">format!</span>(<span class="string">"[{id_clone}] {s}"</span>));
+        <span class="kw">let </span>(stdout_cli_receivers, stdout_receivers) =
+            prioritized_broadcast(BufReader::new(channel.stream(<span class="number">0</span>)).lines(), <span class="kw">move </span>|s| {
+                <span class="macro">println!</span>(<span class="string">"[{id_clone}] {s}"</span>)
             });
         <span class="kw">let </span>(<span class="kw">_</span>, stderr_receivers) =
-            prioritized_broadcast(FuturesBufReader::new(channel.stderr()).lines(), <span class="kw">move </span>|s| {
-                ProgressTracker::println(<span class="macro">format!</span>(<span class="string">"[{id} stderr] {s}"</span>));
+            prioritized_broadcast(BufReader::new(channel.stderr()).lines(), <span class="kw">move </span>|s| {
+                <span class="macro">eprintln!</span>(<span class="string">"[{id}] {s}"</span>)
             });
 
         <span class="prelude-val">Ok</span>(Box::new(LaunchedSshBinary {
@@ -869,10 +724,9 @@
             session: <span class="prelude-val">Some</span>(session),
             channel,
             stdin_sender,
-            stdout_deploy_receivers,
+            stdout_cli_receivers,
             stdout_receivers,
             stderr_receivers,
-            tracing,
         }))
     }
 
@@ -886,7 +740,7 @@
         <span class="kw">let </span>port = addr.port();
 
         tokio::spawn(<span class="kw">async move </span>{
-            <span class="attr">#[expect(clippy::never_loop, reason = <span class="string">"tcp accept loop pattern"</span>)]
+            <span class="attr">#[allow(clippy::never_loop)]
             </span><span class="kw">while let </span><span class="prelude-val">Ok</span>((<span class="kw-2">mut </span>local_stream, <span class="kw">_</span>)) = local_port.accept().<span class="kw">await </span>{
                 <span class="kw">let </span><span class="kw-2">mut </span>channel = session
                     .channel_direct_tcpip(<span class="kw-2">&amp;</span>internal_ip, port, <span class="prelude-val">None</span>)

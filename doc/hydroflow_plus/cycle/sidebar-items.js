@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["HfCycle"],"trait":["CycleCollection","CycleCollectionWithInitial","CycleComplete"]};
+window.SIDEBAR_ITEMS = {"struct":["HfCycle"]};

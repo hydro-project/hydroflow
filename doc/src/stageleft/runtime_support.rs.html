@@ -155,28 +155,6 @@
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
 <a href="#157" id="157">157</a>
-<a href="#158" id="158">158</a>
-<a href="#159" id="159">159</a>
-<a href="#160" id="160">160</a>
-<a href="#161" id="161">161</a>
-<a href="#162" id="162">162</a>
-<a href="#163" id="163">163</a>
-<a href="#164" id="164">164</a>
-<a href="#165" id="165">165</a>
-<a href="#166" id="166">166</a>
-<a href="#167" id="167">167</a>
-<a href="#168" id="168">168</a>
-<a href="#169" id="169">169</a>
-<a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-<a href="#174" id="174">174</a>
-<a href="#175" id="175">175</a>
-<a href="#176" id="176">176</a>
-<a href="#177" id="177">177</a>
-<a href="#178" id="178">178</a>
-<a href="#179" id="179">179</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::BorrowMut;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::mem::MaybeUninit;
@@ -260,7 +238,7 @@
         </span><span class="self">Self</span>: Sized;
 
     <span class="kw">fn </span>uninitialized(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; O {
-        <span class="attr">#[expect(clippy::uninit_assumed_init, reason = <span class="string">"this code should never run"</span>)]
+        <span class="attr">#[allow(clippy::uninit_assumed_init)]
         </span><span class="kw">unsafe </span>{
             MaybeUninit::uninit().assume_init()
         }
@@ -333,27 +311,5 @@
             <span class="prelude-val">None</span>,
         )
     }
-}
-
-<span class="kw">pub fn </span>type_hint&lt;O&gt;(v: O) -&gt; O {
-    v
-}
-
-<span class="kw">pub fn </span>fn0_type_hint&lt;<span class="lifetime">'a</span>, O&gt;(f: <span class="kw">impl </span>Fn() -&gt; O + <span class="lifetime">'a</span>) -&gt; <span class="kw">impl </span>Fn() -&gt; O + <span class="lifetime">'a </span>{
-    f
-}
-
-<span class="kw">pub fn </span>fn1_type_hint&lt;<span class="lifetime">'a</span>, I, O&gt;(f: <span class="kw">impl </span>Fn(I) -&gt; O + <span class="lifetime">'a</span>) -&gt; <span class="kw">impl </span>Fn(I) -&gt; O + <span class="lifetime">'a </span>{
-    f
-}
-
-<span class="kw">pub fn </span>fn1_borrow_type_hint&lt;<span class="lifetime">'a</span>, I, O&gt;(f: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;</span>I) -&gt; O + <span class="lifetime">'a</span>) -&gt; <span class="kw">impl </span>Fn(<span class="kw-2">&amp;</span>I) -&gt; O + <span class="lifetime">'a </span>{
-    f
-}
-
-<span class="kw">pub fn </span>fn2_borrow_mut_type_hint&lt;<span class="lifetime">'a</span>, I1, I2, O&gt;(
-    f: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>I1, I2) -&gt; O + <span class="lifetime">'a</span>,
-) -&gt; <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>I1, I2) -&gt; O + <span class="lifetime">'a </span>{
-    f
 }
 </code></pre></div></section></main></body></html>

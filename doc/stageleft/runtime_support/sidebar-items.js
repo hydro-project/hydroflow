@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["create_import","fn0_type_hint","fn1_borrow_type_hint","fn1_type_hint","fn2_borrow_mut_type_hint","get_final_crate_name","set_macro_to_crate","type_hint"],"struct":["Import"],"trait":["FreeVariable","ParseFromLiteral"]};
+window.SIDEBAR_ITEMS = {"fn":["create_import","get_final_crate_name","set_macro_to_crate"],"struct":["Import"],"trait":["FreeVariable","ParseFromLiteral"]};

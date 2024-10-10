@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["decouple_cluster","decouple_process","simple_cluster"]};
+window.SIDEBAR_ITEMS = {"fn":["simple_cluster"],"macro":["simple_cluster_runtime"]};

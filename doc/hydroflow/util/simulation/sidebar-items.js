@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["Address","Fleet","Host","HostBuilder","Inbox","Outbox","TransducerBuilderContext"],"trait":["MessageSender"],"type":["Hostname","MessageWithAddress"]};

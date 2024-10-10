@@ -76,22 +76,7 @@
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
-<a href="#79" id="79">79</a>
-<a href="#80" id="80">80</a>
-<a href="#81" id="81">81</a>
-<a href="#82" id="82">82</a>
-<a href="#83" id="83">83</a>
-<a href="#84" id="84">84</a>
-<a href="#85" id="85">85</a>
-<a href="#86" id="86">86</a>
-<a href="#87" id="87">87</a>
-<a href="#88" id="88">88</a>
-<a href="#89" id="89">89</a>
-<a href="#90" id="90">90</a>
-<a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
-<span class="kw">use </span>location::{ExternalBincodeSink, ExternalProcess};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
@@ -100,82 +85,69 @@
     <span class="kw">pub </span>n: u32,
 }
 
-<span class="kw">pub struct </span>P1 {}
-<span class="kw">pub struct </span>P2 {}
+<span class="kw">pub fn </span>first_ten_distributed&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
+    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
+    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
+) -&gt; D::Process {
+    <span class="kw">let </span>process = flow.process(process_spec);
+    <span class="kw">let </span>second_process = flow.process(process_spec);
 
-<span class="kw">pub fn </span>first_ten_distributed&lt;<span class="lifetime">'a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
-) -&gt; (
-    ExternalProcess&lt;<span class="lifetime">'a</span>, ()&gt;,
-    ExternalBincodeSink&lt;String&gt;,
-    Process&lt;<span class="lifetime">'a</span>, P1&gt;,
-    Process&lt;<span class="lifetime">'a</span>, P2&gt;,
-) {
-    <span class="kw">let </span>external_process = flow.external_process::&lt;()&gt;();
-    <span class="kw">let </span>process = flow.process::&lt;P1&gt;();
-    <span class="kw">let </span>second_process = flow.process::&lt;P2&gt;();
-
-    <span class="kw">let </span>(numbers_external_port, numbers_external) =
-        external_process.source_external_bincode(<span class="kw-2">&amp;</span>process);
-    numbers_external.for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"hi: {:?}"</span>, n)));
-
-    <span class="kw">let </span>numbers = process.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
+    <span class="kw">let </span>numbers = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
     numbers
         .map(<span class="macro">q!</span>(|n| SendOverNetwork { n }))
         .send_bincode(<span class="kw-2">&amp;</span>second_process)
-        .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n.n)));
+        .for_each(<span class="macro">q!</span>(|n: SendOverNetwork| <span class="macro">println!</span>(<span class="string">"{}"</span>, n.n))); <span class="comment">// TODO(shadaj): why is the explicit type required here?
 
-    (
-        external_process,
-        numbers_external_port,
-        process,
-        second_process,
-    )
+    </span>second_process
 }
 
-<span class="attr">#[cfg(test)]
-</span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>hydroflow_plus::util::cli::HydroCLI;
+<span class="kw">use </span>hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
-    <span class="kw">use </span>futures::SinkExt;
-    <span class="kw">use </span>hydro_deploy::{Deployment, Host};
-    <span class="kw">use </span>hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
+<span class="attr">#[stageleft::entry]
+</span><span class="kw">pub fn </span>first_ten_distributed_runtime&lt;<span class="lifetime">'a</span>&gt;(
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
+    <span class="kw">let _ </span>= first_ten_distributed(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>cli);
+    flow.extract()
+        .optimize_default()
+        .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
+}
+
+<span class="attr">#[stageleft::runtime]
+#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use </span>hydro_deploy::{Deployment, HydroflowCrate};
+    <span class="kw">use </span>hydroflow_plus_cli_integration::{DeployCrateWrapper, DeployProcessSpec};
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>first_ten_distributed() {
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
+        <span class="kw">let </span>localhost = deployment.Localhost();
 
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
-        <span class="kw">let </span>(external_process, external_port, first_node, second_node) =
-            <span class="kw">super</span>::first_ten_distributed(<span class="kw-2">&amp;</span>builder);
+        <span class="kw">let </span>second_node = <span class="kw">super</span>::first_ten_distributed(
+            <span class="kw-2">&amp;</span>builder,
+            <span class="kw-2">&amp;</span>DeployProcessSpec::new(|| {
+                deployment.add_service(
+                    HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
+                        .bin(<span class="string">"first_ten_distributed"</span>)
+                        .profile(<span class="string">"dev"</span>),
+                )
+            }),
+        );
 
-        <span class="kw">let </span>built = builder.with_default_optimize();
+        <span class="comment">// if we drop this, we drop the references to the deployment nodes
+        </span><span class="kw">let </span>built = builder.extract();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
-        <span class="kw">let </span>nodes = built
-            .with_process(<span class="kw-2">&amp;</span>first_node, TrybuildHost::new(deployment.Localhost()))
-            .with_process(<span class="kw-2">&amp;</span>second_node, TrybuildHost::new(deployment.Localhost()))
-            .with_external(<span class="kw-2">&amp;</span>external_process, deployment.Localhost() <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>Host&gt;)
-            .deploy(<span class="kw-2">&amp;mut </span>deployment);
-
         deployment.deploy().<span class="kw">await</span>.unwrap();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>external_port = nodes.connect_sink_bincode(external_port).<span class="kw">await</span>;
-
-        <span class="kw">let </span><span class="kw-2">mut </span>first_node_stdout = nodes.get_process(<span class="kw-2">&amp;</span>first_node).stdout().<span class="kw">await</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>second_node_stdout = nodes.get_process(<span class="kw-2">&amp;</span>second_node).stdout().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>second_node_stdout = second_node.stdout().<span class="kw">await</span>;
 
         deployment.start().<span class="kw">await</span>.unwrap();
-
-        external_port
-            .send(<span class="string">"this is some string"</span>.to_string())
-            .<span class="kw">await
-            </span>.unwrap();
-        <span class="macro">assert_eq!</span>(
-            first_node_stdout.recv().<span class="kw">await</span>.unwrap(),
-            <span class="string">"hi: \"this is some string\""
-        </span>);
 
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
             <span class="macro">assert_eq!</span>(second_node_stdout.recv().<span class="kw">await</span>.unwrap(), i.to_string());

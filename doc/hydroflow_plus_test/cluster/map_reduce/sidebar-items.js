@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["map_reduce"],"struct":["Leader","Worker"]};
+window.SIDEBAR_ITEMS = {"fn":["map_reduce"],"macro":["map_reduce_runtime"]};

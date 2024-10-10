@@ -166,16 +166,6 @@
 <a href="#166" id="166">166</a>
 <a href="#167" id="167">167</a>
 <a href="#168" id="168">168</a>
-<a href="#169" id="169">169</a>
-<a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-<a href="#174" id="174">174</a>
-<a href="#175" id="175">175</a>
-<a href="#176" id="176">176</a>
-<a href="#177" id="177">177</a>
-<a href="#178" id="178">178</a>
 </pre></div><pre class="rust"><code><span class="attr">#![feature(box_patterns)]
 
 </span><span class="macro">stageleft::stageleft_no_entry_crate!</span>();
@@ -186,7 +176,7 @@
 <span class="kw">use </span>hydroflow::scheduled::context::Context;
 <span class="kw">pub use </span>hydroflow::scheduled::graph::Hydroflow;
 <span class="kw">pub use </span>hydroflow::<span class="kw-2">*</span>;
-<span class="kw">use </span>lang::graph::{partition_graph, HydroflowGraph};
+<span class="kw">use </span>lang::graph::{partition_graph, propagate_flow_props, HydroflowGraph};
 <span class="kw">use </span>proc_macro2::TokenStream;
 <span class="kw">use </span>quote::quote;
 <span class="kw">use </span>stageleft::runtime_support::FreeVariable;
@@ -197,16 +187,13 @@
 }
 
 <span class="kw">pub mod </span>stream;
-<span class="kw">pub use </span>stream::{Bounded, NoTick, Stream, Tick, Unbounded};
-
-<span class="kw">pub mod </span>singleton;
-<span class="kw">pub use </span>singleton::{Optional, Singleton};
+<span class="kw">pub use </span>stream::Stream;
 
 <span class="kw">pub mod </span>location;
-<span class="kw">pub use </span>location::{Cluster, ClusterId, Location, Process};
-
-<span class="kw">pub mod </span>deploy;
-<span class="kw">pub use </span>deploy::{ClusterSpec, Deploy, ProcessSpec};
+<span class="kw">pub use </span>location::{
+    Cluster, ClusterSpec, Deploy, LocalDeploy, Location, MultiGraph, ProcessSpec,
+    SingleProcessGraph,
+};
 
 <span class="kw">pub mod </span>cycle;
 <span class="kw">pub use </span>cycle::HfCycle;
@@ -220,8 +207,6 @@
 <span class="kw">pub mod </span>profiler;
 
 <span class="kw">pub mod </span>properties;
-
-<span class="kw">mod </span>staging_util;
 
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>RuntimeContext&lt;<span class="lifetime">'a</span>&gt; {
@@ -238,7 +223,6 @@
 
 <span class="kw">pub struct </span>HfCompiled&lt;<span class="lifetime">'a</span>, ID&gt; {
     hydroflow_ir: BTreeMap&lt;usize, HydroflowGraph&gt;,
-    extra_stmts: BTreeMap&lt;usize, Vec&lt;syn::Stmt&gt;&gt;,
     _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>ID&gt;,
 }
 
@@ -249,7 +233,7 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; HfCompiled&lt;<span class="lifetime">'a</span>, usize&gt; {
-    <span class="kw">pub fn </span>with_dynamic_id(<span class="self">self</span>, id: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, usize&gt;) -&gt; HfBuiltWithId&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">pub fn </span>with_dynamic_id(<span class="self">self</span>, id: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, usize&gt;) -&gt; HfBuiltWithID&lt;<span class="lifetime">'a</span>&gt; {
         <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">"hydroflow_plus"</span>)
             .expect(<span class="string">"hydroflow_plus should be present in `Cargo.toml`"</span>);
         <span class="kw">let </span>root = <span class="kw">match </span>hydroflow_crate {
@@ -262,28 +246,28 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>conditioned_tokens = <span class="prelude-val">None</span>;
         <span class="kw">for </span>(subgraph_id, flat_graph) <span class="kw">in </span><span class="self">self</span>.hydroflow_ir {
-            <span class="kw">let </span>partitioned_graph =
+            <span class="kw">let </span><span class="kw-2">mut </span>partitioned_graph =
                 partition_graph(flat_graph).expect(<span class="string">"Failed to partition (cycle detected)."</span>);
 
             <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = Vec::new();
+            <span class="comment">// Propagate flow properties throughout the graph.
+            // TODO(mingwei): Should this be done at a flat graph stage instead?
+            </span><span class="kw">let _ </span>= propagate_flow_props::propagate_flow_props(
+                <span class="kw-2">&amp;mut </span>partitioned_graph,
+                <span class="kw-2">&amp;mut </span>diagnostics,
+            );
+
             <span class="kw">let </span>tokens = partitioned_graph.as_code(<span class="kw-2">&amp;</span>root, <span class="bool-val">true</span>, <span class="macro">quote::quote!</span>(), <span class="kw-2">&amp;mut </span>diagnostics);
-            <span class="kw">let </span>my_extra_stmts = <span class="self">self
-                </span>.extra_stmts
-                .get(<span class="kw-2">&amp;</span>subgraph_id)
-                .cloned()
-                .unwrap_or_default();
 
             <span class="kw">if let </span><span class="prelude-val">Some</span>(conditioned_tokens) = conditioned_tokens.as_mut() {
                 <span class="kw-2">*</span>conditioned_tokens = <span class="macro">syn::parse_quote!</span> {
                     #conditioned_tokens <span class="kw">else if </span>__given_id == #subgraph_id {
-                        #(#my_extra_stmts)*
                         #tokens
                     }
                 };
             } <span class="kw">else </span>{
                 conditioned_tokens = <span class="prelude-val">Some</span>(<span class="macro">syn::parse_quote!</span> {
                     <span class="kw">if </span>__given_id == #subgraph_id {
-                        #(#my_extra_stmts)*
                         #tokens
                     }
                 });
@@ -291,8 +275,8 @@
         }
 
         <span class="kw">let </span>conditioned_tokens: TokenStream = conditioned_tokens.unwrap();
-        <span class="kw">let </span>id = id.splice_untyped();
-        HfBuiltWithId {
+        <span class="kw">let </span>id = id.splice();
+        HfBuiltWithID {
             tokens: <span class="macro">syn::parse_quote!</span>({
                 <span class="kw">let </span>__given_id = #id;
                 #conditioned_tokens <span class="kw">else </span>{
@@ -323,35 +307,31 @@
         }
 
         <span class="kw">let </span>flat_graph = <span class="self">self</span>.hydroflow_ir.remove(<span class="kw-2">&amp;</span><span class="number">0</span>).unwrap();
-        <span class="kw">let </span>partitioned_graph =
+        <span class="kw">let </span><span class="kw-2">mut </span>partitioned_graph =
             partition_graph(flat_graph).expect(<span class="string">"Failed to partition (cycle detected)."</span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = Vec::new();
+        <span class="comment">// Propagate flow properties throughout the graph.
+        // TODO(mingwei): Should this be done at a flat graph stage instead?
+        </span><span class="kw">let _ </span>=
+            propagate_flow_props::propagate_flow_props(<span class="kw-2">&amp;mut </span>partitioned_graph, <span class="kw-2">&amp;mut </span>diagnostics);
+
         <span class="kw">let </span>tokens = partitioned_graph.as_code(<span class="kw-2">&amp;</span>root, <span class="bool-val">true</span>, <span class="macro">quote::quote!</span>(), <span class="kw-2">&amp;mut </span>diagnostics);
 
         (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(tokens))
     }
 }
 
-<span class="kw">pub struct </span>HfBuiltWithId&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">pub struct </span>HfBuiltWithID&lt;<span class="lifetime">'a</span>&gt; {
     tokens: TokenStream,
     _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>()&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>HfBuiltWithId&lt;<span class="lifetime">'a</span>&gt; {}
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>HfBuiltWithID&lt;<span class="lifetime">'a</span>&gt; {}
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; FreeVariable&lt;Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>HfBuiltWithId&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; FreeVariable&lt;Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>HfBuiltWithID&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">fn </span>to_tokens(<span class="self">self</span>) -&gt; (<span class="prelude-ty">Option</span>&lt;TokenStream&gt;, <span class="prelude-ty">Option</span>&lt;TokenStream&gt;) {
         (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="self">self</span>.tokens))
-    }
-}
-
-<span class="attr">#[stageleft::runtime]
-#[cfg(test)]
-</span><span class="kw">mod </span>tests {
-    <span class="attr">#[ctor::ctor]
-    </span><span class="kw">fn </span>init() {
-        <span class="kw">crate</span>::deploy::init_test();
     }
 }
 </code></pre></div></section></main></body></html>

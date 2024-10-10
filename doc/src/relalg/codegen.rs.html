@@ -193,7 +193,7 @@
             }
             RelExpr::Filter(preds, input) =&gt; {
                 <span class="kw">let </span>op_name = <span class="self">self</span>.gensym(<span class="string">"filter"</span>);
-                <span class="kw">let </span>input_name = <span class="self">self</span>.compile_op(input);
+                <span class="kw">let </span>input_name = <span class="self">self</span>.compile_op(<span class="kw-2">&amp;**</span>input);
 
                 <span class="kw">let </span>pred = <span class="macro">quote!</span> {
                     #(#preds.eval(row).is_true())&amp;&amp;*
@@ -207,7 +207,7 @@
             }
             RelExpr::Project(exprs, input) =&gt; {
                 <span class="kw">let </span>op_name = <span class="self">self</span>.gensym(<span class="string">"project"</span>);
-                <span class="kw">let </span>input_name = <span class="self">self</span>.compile_op(input);
+                <span class="kw">let </span>input_name = <span class="self">self</span>.compile_op(<span class="kw-2">&amp;**</span>input);
 
                 <span class="kw">let </span>pred = <span class="macro">quote!</span> {
                     <span class="macro">vec!</span>[ #(#exprs.eval(<span class="kw-2">&amp;</span>row)),* ]
