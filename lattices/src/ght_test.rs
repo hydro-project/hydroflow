@@ -4,7 +4,7 @@ mod test {
     use std::io::{self, Write};
 
     use variadics::variadic_collections::{
-        VariadicColumnMultiset, VariadicCountedHashSet, VariadicCollection,
+        VariadicCollection, VariadicColumnMultiset, VariadicCountedHashSet,
     };
     
     use variadics::{var_expr, var_type, VariadicExt};
@@ -15,7 +15,7 @@ mod test {
         GhtCartesianProductBimorphism,
         //     GhtNodeKeyedBimorphism, GhtValTypeProductBimorphism,
     };
-    use crate::ght_lazy::{ColtNode, ColumnLazyTrieNode, ForestFindLeaf, GhtForest}; /* GhtForestStruct}; */
+    use crate::ght_lazy::{ColtNode, ColtNodeTail, ColumnLazyTrieNode, ForestFindLeaf, GhtForest}; /* GhtForestStruct}; */
     use crate::{GhtForestType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
 
     #[test]

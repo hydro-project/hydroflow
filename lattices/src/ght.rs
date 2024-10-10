@@ -235,7 +235,7 @@ where
     Storage: VariadicCollection<Schema = Schema> + Default,
 {
     fn default() -> Self {
-        let elements = Default::default();
+        let elements = Storage::default();
         Self {
             elements,
             forced: false,
