@@ -55,7 +55,7 @@ where
         None::<Box<dyn Iterator<Item = Self::Schema>>>
     }
 
-    type Force = GhtInner<Head, Node> where Node:GeneralizedHashTrieNode;
+    type Force = GhtInner<Head, Node>; // where Node:GeneralizedHashTrieNode;
     fn force(self) -> Option<Self::Force> {
         None
     }
@@ -84,8 +84,8 @@ where
     Storage: VariadicCollection<Schema = Schema>
         + Default // + Iterator<Item = Schema>
         + IntoIterator<Item = Schema>,
-    GhtLeaf<Schema, Rest, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
-    GhtInner<Head, GhtLeaf<Schema, Rest, Storage>>: GeneralizedHashTrieNode<Schema = Schema>,
+    GhtLeaf<Schema, Rest, Storage>: GeneralizedHashTrieNode<Schema = Schema, Storage = Storage>,
+    GhtInner<Head, GhtLeaf<Schema, Rest, Storage>>: GeneralizedHashTrieNode<Schema = Schema, Storage = Storage>,
 {
     fn into_iter(self) -> Option<impl Iterator<Item = Self::Schema>> {
         Some(self.elements.into_iter())
@@ -315,6 +315,9 @@ pub trait ColtNode {
     /// Schema variadic: the schema of the relation stored in this COLT.
     /// This type is the same in all Tries and nodes of the COLT.
     type Schema: VariadicExt + Eq + Hash + Clone;
+    /// The type of Storage
+    /// This type is the same in all Tries and nodes of the COLT
+    type Storage: VariadicCollection;
     /// SuffixSchema variadic: the suffix of the schema *from this node of the trie
     /// downward*. The first entry in this variadic is of type Head.
     /// This type is the same in all Tries of the COLT (but changes as we traverse downward)
@@ -322,6 +325,7 @@ pub trait ColtNode {
     /// The type of the first column in the SuffixSchema
     /// This type is the same in all Tries of the COLT (but changes as we traverse downward)
     type Head: Eq + Hash;
+
 
     /// Type returned by [`Self::get`].
     type Get; //: ColtNode;
@@ -346,6 +350,7 @@ where
         <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
        // Schema = Schema,
         // SuffixSchema = SuffixSchema,
+        // Storage = Storage,
     >,
     <Rest as ColtNode>::SuffixSchema: 'a,
     GhtLeaf<Schema, SuffixSchema, Storage>: ColumnLazyTrieNode,
@@ -357,6 +362,7 @@ where
     type Head = Rest::Head;
     type SuffixSchema = SuffixSchema;
     type Get = Rest::Get;
+    type Storage = Rest::Storage;
 
     fn get(self, head: &Self::Head) -> Self::Get {
         let (first, mut rest) = self;
@@ -368,15 +374,16 @@ where
 #[sealed]
 impl<'a, Rest, Schema, SuffixSchema, T, Storage> ColtNodeTail<T> for var_type!(&'a mut GhtLeaf<Schema, SuffixSchema, Storage>, ...Rest)
 where
-    // Rest: ColtNodeTail<
-    //     <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
-    //     // Schema = Schema,
-    //     // SuffixSchema = SuffixSchema,
-    // >,
-    // <Rest as ColtNode>::SuffixSchema: 'a,
-    // GhtLeaf<Schema, SuffixSchema, Storage>: ColumnLazyTrieNode,
+    Rest: ColtNodeTail<
+        <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
+        // Schema = Schema,
+        // SuffixSchema = SuffixSchema,
+        Storage = Storage,
+    >,
+    <Rest as ColtNode>::SuffixSchema: 'a,
+    GhtLeaf<Schema, SuffixSchema, Storage>: ColumnLazyTrieNode,
     Schema: Clone + Hash + Eq + VariadicExt,
-    // SuffixSchema: Clone + Hash + Eq + VariadicExt,
+    SuffixSchema: Clone + Hash + Eq + VariadicExt,
     Storage: VariadicCollection<Schema = Schema>,
 {
     fn merge(&mut self, _inner_to_merge: T) {
@@ -395,13 +402,15 @@ where
         Head = Rest::Head,
         SuffixSchema = Rest::SuffixSchema,
         Schema = Rest::Schema,
+        Storage = Rest::Storage,
     >,
-    GhtInner<Head2, Node>: GeneralizedHashTrieNode<Schema = Rest::Schema>,
+    GhtInner<Head2, Node>: GeneralizedHashTrieNode<Schema = Rest::Schema, Storage = Rest::Storage>,
 {
     type Schema = Rest::Schema;
     type Head = Rest::Head;
     type SuffixSchema = Rest::SuffixSchema;
     type Get = var_type!(&'a mut GhtInner<Head2, Node>, ...Rest::Get);
+    type Storage = Rest::Storage;
 
     fn get(self, head: &Self::Head) -> Self::Get {
         let (first, rest) = self;
@@ -422,8 +431,11 @@ where
             Head = Rest::Head,
             SuffixSchema = Rest::SuffixSchema,
             Schema = Rest::Schema,
-        > + GhtGet<Get = GhtInner<Head2, Node>>,
-    GhtInner<Head2, Node>: GeneralizedHashTrieNode<Schema = Rest::Schema> + GhtGet,
+            Storage = Rest::Storage,
+        >
+        // + GhtGet<Get = GhtInner<Head2, Node>>
+        ,
+    GhtInner<Head2, Node>: GeneralizedHashTrieNode<Schema = Rest::Schema, Storage = Rest::Storage> + GhtGet,
 {
     fn merge(&mut self, _inner_to_merge: T) {
         panic!();
@@ -451,14 +463,16 @@ where
         Head = Rest::Head,
         // SuffixSchema = Rest::SuffixSchema,
         Schema = Rest::Schema,
+        Storage = Rest::Storage,
     >,
-    GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Rest::Schema> + GhtGet,
+    GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Rest::Schema, Storage = Rest::Storage> + GhtGet,
 {
     type Schema = Rest::Schema;
     type Head = Rest::Head;
     type SuffixSchema = Rest::SuffixSchema;
     // type Get = Rest::Get; // Option<&'a <GhtLeaf<Schema, ValType> as GhtGet>::Get>,
     type Get = var_type!(&'a mut GhtLeaf<Schema, ValType, Storage>, ...Rest::Get);
+    type Storage = Rest::Storage;
 
     fn get(self, head: &Self::Head) -> Self::Get {
         let (first, rest) = self;
@@ -470,15 +484,16 @@ where
 impl<'a, Head, Rest, Schema, ValType, Storage>
     ColtNodeTail<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>> for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>, ...Rest)
 where
-    Rest: ColtNode<Head = Head, Schema = Schema>,
+    Rest: ColtNode<Head = Head, Schema = Schema, Storage = Storage>,
     Head: Eq + Hash + Clone,
     Schema: Eq + Hash + Clone + PartialEqVariadic,
     ValType: Eq + Hash + Clone + PartialEqVariadic,
     Storage: VariadicCollection<Schema = Schema>,
+    var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>, ...Rest): ColtNode<Head = Head, Schema = Schema, Storage = Storage>,
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
     Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<ValType> + PartialEqVariadic,
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
-    GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>: GeneralizedHashTrieNode<Head = Head, Schema = Schema>
+    GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>: GeneralizedHashTrieNode<Head = Head, Schema = Schema, Storage = Storage>
         // can't use Merge with COLT bc columnstore is not a lattice!!
         // + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
         + GhtGet,
@@ -502,6 +517,7 @@ where
     type SuffixSchema = <GhtInner<Head, Node> as GeneralizedHashTrieNode>::SuffixSchema;
     type Head = Head;
     type Get = var_type!(&'a mut Node);
+    type Storage = Node::Storage;
 
     fn get(self, head: &Self::Head) -> Self::Get {
         let child = self.0.children.entry(head.clone()).or_default();
@@ -517,7 +533,7 @@ where
         + GhtGet
         + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
         + GhtGet,
-    GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
+    GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema, Storage = Storage>,
     Head: Clone + Eq + Hash,
     Schema: Clone + Eq + Hash + VariadicExt,
     Storage: VariadicCollection<Schema = Schema>,
