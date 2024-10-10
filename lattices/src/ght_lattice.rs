@@ -275,7 +275,7 @@ where
                 .recursive_iter()
                 .map(move |b| {
                     let (_b_prefix, b_suffix) = <GhtB::Schema as SplitBySuffix<GhtB::SuffixSchema>>::split_by_suffix_ref(b);
-                    var_expr!(...<GhtA::SuffixSchema as CloneVariadic>::clone_var_ref(a_suffix), ...<GhtB::SuffixSchema as CloneVariadic>::clone_var_ref(b_suffix))
+                    var_expr!(...<GhtA::SuffixSchema as CloneVariadic>::clone_ref_var(a_suffix), ...<GhtB::SuffixSchema as CloneVariadic>::clone_ref_var(b_suffix))
                 })
         }).collect()
     }
@@ -314,7 +314,7 @@ GhtB::Storage: VariadicSet<Schema = GhtB::Schema>, // multiset is not a lattice!
                 .map(move |b| {
                     let (_prefix_b, suffix_b)
                         = <GhtB::Schema as SplitBySuffix<GhtB::ValType>>::split_by_suffix_ref(b);
-                    var_expr!(...<GhtA::Schema as CloneVariadic>::clone_var_ref(a), ...<GhtB::ValType as CloneVariadic>::clone_var_ref(suffix_b))
+                    var_expr!(...<GhtA::Schema as CloneVariadic>::clone_ref_var(a), ...<GhtB::ValType as CloneVariadic>::clone_ref_var(suffix_b))
                 }
             )
         }).collect()

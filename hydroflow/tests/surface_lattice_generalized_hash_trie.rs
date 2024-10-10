@@ -8,7 +8,7 @@ use variadics::variadic_collections::VariadicCountedHashSet; // Import the Inser
 
 #[test]
 fn test_basic() {
-    type MyGht = GhtType!(u16, u32 => u64: Row);
+    type MyGht = GhtType!(u16, u32 => u64: Set);
     type FlatTup = var_type!(u16, u32, u64);
     let input: Vec<FlatTup> = vec![
         var_expr!(42, 314, 43770),
@@ -34,8 +34,8 @@ fn test_basic() {
 
 #[test]
 fn test_join() {
-    type MyGht = GhtType!(u8 => u16: Row);
-    type ResultGht = GhtType!(u8 => u16, u16: Row);
+    type MyGht = GhtType!(u8 => u16: Set);
+    type ResultGht = GhtType!(u8 => u16, u16: Set);
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
     let r = vec![

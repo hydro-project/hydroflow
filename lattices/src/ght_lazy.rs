@@ -2,7 +2,7 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use sealed::sealed;
-use variadics::variadic_collections::VariadicMultiset;
+use variadics::variadic_collections::VariadicCollection;
 use variadics::{
     var_args, var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt,
 };
@@ -11,6 +11,7 @@ use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
 
 #[sealed]
 /// COLT from Wang/Willsey/Suciu
+///
 /// In the paper, the COLT is an unbalanced trie that "grows upward" from leaves via the
 /// `force` method. Unbalanced tries don't interact well with our Rust types, which want
 /// a node's type to be defined via the type of its children, recursively --
@@ -80,7 +81,7 @@ where
     Schema: SplitBySuffix<Rest>,
     <Schema as SplitBySuffix<(Head, Rest)>>::Prefix: Eq + Hash + Clone,
     <Schema as SplitBySuffix<Rest>>::Prefix: Eq + Hash + Clone,
-    Storage: VariadicMultiset<Schema = Schema>
+    Storage: VariadicCollection<Schema = Schema>
         + Default // + Iterator<Item = Schema>
         + IntoIterator<Item = Schema>,
     GhtLeaf<Schema, Rest, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
@@ -240,7 +241,7 @@ where
         Head,
         <GhtLeaf<Schema, ValType, Storage> as GeneralizedHashTrieNode>::SuffixSchema,
     )>,
-    Storage: 'static + VariadicMultiset<Schema = Schema> + Default,
+    Storage: 'static + VariadicCollection<Schema = Schema> + Default + Extend<Schema> + IntoIterator<Item = Schema>,
 {
     fn take_containing_leaf(
         &mut self,
@@ -269,11 +270,11 @@ where
             <<Self as GeneralizedHashTrieNode>::Schema as SplitBySuffix<
                 <Self as GeneralizedHashTrieNode>::SuffixSchema,
             >>::split_by_suffix_ref(row);
-        if let Some(old_val) = self.children.insert(head.clone(), leaf) {
-            self.children.insert(head.clone(), old_val);
-            panic!();
-            false
+        if let Some(old_val) = self.children.get_mut(&head.clone()) {
+            old_val.elements.extend(leaf.elements);
+            true
         } else {
+            self.children.insert(head.clone(), leaf);
             true
         }
     }
@@ -285,7 +286,7 @@ where
     Schema: 'static + Hash + Clone + Eq + PartialEqVariadic + SplitBySuffix<ValType>,
     ValType: 'static + Hash + Clone + Eq + VariadicExt + PartialEqVariadic,
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode,
-    Storage: 'static + VariadicMultiset<Schema = Schema>,
+    Storage: 'static + VariadicCollection<Schema = Schema>,
 {
     fn take_containing_leaf(
         &mut self,
@@ -304,6 +305,7 @@ where
 }
 
 /// Virtual COLT "node" with an API similar to GeneralizedHashTrieNode.
+/// 
 /// The "current node" at depth d from the root in the Wang/Willsey/Suciu
 /// paper sits above an unbalanced trie. We emulate that here via a variadic
 /// of nodes at depth d in all the tries in the forest (that are height d or taller.)
@@ -342,14 +344,14 @@ impl<'a, Rest, Schema, SuffixSchema, Storage> ColtNode for var_type!(&'a mut Ght
 where
     Rest: ColtNodeTail<
         <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
-        Schema = Schema,
+       // Schema = Schema,
         // SuffixSchema = SuffixSchema,
     >,
     <Rest as ColtNode>::SuffixSchema: 'a,
     GhtLeaf<Schema, SuffixSchema, Storage>: ColumnLazyTrieNode,
     Schema: Clone + Hash + Eq + VariadicExt,
     SuffixSchema: Clone + Hash + Eq + VariadicExt,
-    Storage: VariadicMultiset<Schema = Schema>,
+    Storage: VariadicCollection<Schema = Schema>,
 {
     type Schema = Schema;
     type Head = Rest::Head;
@@ -368,14 +370,14 @@ impl<'a, Rest, Schema, SuffixSchema, T, Storage> ColtNodeTail<T> for var_type!(&
 where
     Rest: ColtNodeTail<
         <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
-        Schema = Schema,
+        // Schema = Schema,
         // SuffixSchema = SuffixSchema,
     >,
     <Rest as ColtNode>::SuffixSchema: 'a,
     GhtLeaf<Schema, SuffixSchema, Storage>: ColumnLazyTrieNode,
     Schema: Clone + Hash + Eq + VariadicExt,
     SuffixSchema: Clone + Hash + Eq + VariadicExt,
-    Storage: VariadicMultiset<Schema = Schema>,
+    Storage: VariadicCollection<Schema = Schema>,
 {
     fn merge(&mut self, _inner_to_merge: T) {
         panic!();
@@ -435,7 +437,7 @@ where
     Head: Eq + Hash + Clone,
     Schema: Eq + Hash + Clone + PartialEqVariadic,
     ValType: Eq + Hash + Clone + PartialEqVariadic,
-    Storage: VariadicMultiset<Schema = Schema>,
+    Storage: VariadicCollection<Schema = Schema>,
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode,
     Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<ValType> + PartialEqVariadic,
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
@@ -472,18 +474,20 @@ where
     Head: Eq + Hash + Clone,
     Schema: Eq + Hash + Clone + PartialEqVariadic,
     ValType: Eq + Hash + Clone + PartialEqVariadic,
-    Storage: VariadicMultiset<Schema = Schema>,
+    Storage: VariadicCollection<Schema = Schema>,
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
     Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<ValType> + PartialEqVariadic,
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
     GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>: GeneralizedHashTrieNode<Head = Head, Schema = Schema>
-        + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
+        // can't use Merge with COLT bc columnstore is not a lattice!!
+        // + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
         + GhtGet,
 {
     fn merge(&mut self, inner_to_merge: GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>) {
         // This shouldn't be none? IDK
         let (head, _rest) = self;
-        crate::Merge::merge(*head, inner_to_merge);
+        // can't use Merge with COLT bc columnstore is not a lattice!!
+        head.merge_node(inner_to_merge);
     }
 }
 
@@ -516,7 +520,7 @@ where
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
     Head: Clone + Eq + Hash,
     Schema: Clone + Eq + Hash + VariadicExt,
-    Storage: VariadicMultiset<Schema = Schema>,
+    Storage: VariadicCollection<Schema = Schema>,
 {
     fn merge(&mut self, inner_to_merge: GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>) {
         crate::Merge::merge(self.0, inner_to_merge);
@@ -570,12 +574,12 @@ where
                 // TrieFirst::ValType IS NOT the same as TrieSecond::ValType,
                 // but the elements in the leaf are the same.
                 // So we just need a new GhtLeaf with the right ValType.
-                let leaf = GhtLeaf::<TrieSecond::Schema, TrieSecond::ValType, TrieSecond::Storage> {
+                let new_leaf = GhtLeaf::<TrieSecond::Schema, TrieSecond::ValType, TrieSecond::Storage> {
                     elements: leaf.elements,
                     forced: false,
                     _suffix_schema: PhantomData,
                 };
-                rest_first.merge_leaf(row.as_ref_var(), leaf);
+                rest_first.merge_leaf(row.as_ref_var(), new_leaf);
                 // drop through and recurse: we may have to force again in the neighbor
             }
             // recurse
@@ -615,7 +619,7 @@ where
 pub trait ForestFindLeaf<Schema, Storage>
 where
     Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
-    Storage: VariadicMultiset<Schema = Schema>,
+    Storage: VariadicCollection<Schema = Schema>,
 {
     /// find a matching leaf in the forest
     fn find_containing_leaf(
@@ -654,7 +658,7 @@ where
 impl<Schema, Storage> ForestFindLeaf<Schema, Storage> for var_type!()
 where
     Schema: Eq + Hash + VariadicExt + PartialEqVariadic,
-    Storage: VariadicMultiset<Schema = Schema>,
+    Storage: VariadicCollection<Schema = Schema>,
 {
     fn find_containing_leaf(
         &self,

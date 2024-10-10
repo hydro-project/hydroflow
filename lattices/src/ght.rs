@@ -38,6 +38,9 @@ pub trait GeneralizedHashTrieNode: Default {
     /// Create a new Ght from the iterator.
     fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self;
 
+    /// Merge a matching Ght node into this one
+    fn merge_node(&mut self, other: Self) -> bool;
+
     /// Report the height of the tree if its not empty. This is the length of a root to leaf path -1.
     /// E.g. if we have GhtInner<GhtInner<GhtLeaf...>> the height is 2
     fn height(&self) -> usize {
@@ -134,6 +137,23 @@ where
             result = result && retval.insert(row);
         }
         retval
+    }
+
+    fn merge_node(&mut self, other: Self) -> bool {
+        let mut changed = false;
+
+        for (k, v) in other.children {
+            match self.children.entry(k) {
+                std::collections::hash_map::Entry::Occupied(mut occupied) => {
+                    changed |= occupied.get_mut().merge_node(v)
+                }
+                std::collections::hash_map::Entry::Vacant(vacant) => {
+                    vacant.insert(v);
+                    changed = true
+                }
+            }
+        }
+        changed
     }
 
     fn static_height() -> usize {
@@ -256,6 +276,12 @@ where
         retval
     }
 
+    fn merge_node(&mut self, other: Self) -> bool {
+        let old_len = self.elements.len();
+        self.elements.extend(other.elements);
+        self.elements.len() > old_len
+    }
+
     fn static_height() -> usize {
         0
     }
@@ -329,6 +355,12 @@ where
             retval.insert(i);
         }
         retval
+    }
+
+    fn merge_node(&mut self, other: Self) -> bool {
+        let old_len = self.elements.len();
+        self.elements.extend(other.elements);
+        self.elements.len() > old_len
     }
 
     fn static_height() -> usize {
