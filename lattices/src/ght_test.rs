@@ -330,7 +330,6 @@ mod test {
         let mut test_ght1 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
         let test_ght2 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
 
-        // merge contains duplicate copy of the tuple
         assert_eq!(
             test_ght1
                 .recursive_iter()
@@ -339,16 +338,15 @@ mod test {
             1
         );
         test_ght1.merge(test_ght2.clone());
+        // merge does not contain duplicate copy of the tuple
         assert_eq!(
             test_ght1
                 .recursive_iter()
                 .collect::<Vec<var_type!(&u32, &u64, &u16, &&'static str)>>()
                 .len(),
-            2
+            1
         );
-        let mut iter = test_ght1.recursive_iter();
-        assert_eq!(iter.next(), iter.next());
-        // assert!(!test_ght1.merge(test_ght2.clone()));
+        assert!(!test_ght1.merge(test_ght2.clone()));
 
         let mut test_ght1 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
         let mut test_ght2 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
@@ -1006,21 +1004,9 @@ mod test {
         println!("forest.len() = {}", forest.len());
         println!("forest before get: {:?}", forest);
 
-        // 343  |   impl<'a, Rest, Schema, SuffixSchema, Storage> ColtNode for var_type!(&'a mut GhtLeaf<Schema, SuffixSchema, Storage>, ...Rest)
-        //      |                                                 --------     ------------------------------------------------------------------
-        // 344  |   where
-        // 345  |       Rest: ColtNodeTail<
-        //      |  ___________^
-        // 346  | |         <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
-        // 347  | |         Schema = Schema,
-        // 348  | |         // SuffixSchema = SuffixSchema,
-        // 349  | |     >,
-        //      | |_____^ unsatisfied trait bound introduced here
-        // let result = ColtNode::get(forest.as_mut_var(), &3);
-        // println!("forest after get: {:?}", forest);
-        // println!("result.len() = {}", result.len());
-        // let result2 = result.get(&4);
-        // println!("forest.1: {:?}", forest.1);
+        let result = ColtNode::get(forest.as_mut_var(), &3);
+        // println!("forest after get: {:?}", forest2);
+        println!("result.len() = {}", result.len());
     }
 
 
@@ -1190,7 +1176,7 @@ mod test {
         }
         {
             let result = forest.as_mut_var().get(&3);
-            // println!("result: {:?}", result);
+            println!("result: {:?}", result);
         }
         // check: first Leaf trie is forced
         assert!(forest.0.forced);
@@ -1198,7 +1184,7 @@ mod test {
         {
             let result = forest.as_mut_var().get(&3);
             let result2 = result.get(&true);
-            // println!("result2: {:?}", result2);
+            println!("result2: {:?}", result2);
         }
         {
             // check: leaf below 3 in first non-empty trie is forced
@@ -1222,8 +1208,8 @@ mod test {
             let result3 = result2.get(&1);
             println!("result3: {:?}", result3);
             // println!("forest.1.1.1: {:?}", forest.1.1.1);
-            // let result4 = result3.get(&"hello");
-            // println!("result4: {:?}", result4);
+            let result4 = result3.get(&"hello");
+            println!("result4: {:?}", result4);
         }
     }
 }

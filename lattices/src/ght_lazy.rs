@@ -484,7 +484,6 @@ where
         + GhtGet,
 {
     fn merge(&mut self, inner_to_merge: GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>) {
-        // This shouldn't be none? IDK
         let (head, _rest) = self;
         // can't use Merge with COLT bc columnstore is not a lattice!!
         head.merge_node(inner_to_merge);
@@ -514,8 +513,7 @@ impl<'a, Head, Schema, ValType, Storage>
     for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>)
 where
     GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>: GeneralizedHashTrieNode<Head = Head>
-        + GhtGet
-        + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
+        // + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
         + GhtGet,
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
     Head: Clone + Eq + Hash,
@@ -523,7 +521,9 @@ where
     Storage: VariadicCollection<Schema = Schema>,
 {
     fn merge(&mut self, inner_to_merge: GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>) {
-        crate::Merge::merge(self.0, inner_to_merge);
+        let (head, _rest) = self;
+        // can't use Merge with COLT bc columnstore is not a lattice!!
+        head.merge_node(inner_to_merge);
     }
 }
 
