@@ -306,7 +306,7 @@
 <span class="kw">use </span>hydroflow::bytes::{Bytes, BytesMut};
 <span class="kw">use </span>hydroflow::hydroflow_syntax;
 <span class="kw">use </span>hydroflow::scheduled::graph::Hydroflow;
-<span class="kw">use </span>hydroflow::util::deploy::{
+<span class="kw">use </span>hydroflow::util::cli::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged,
 };
 
@@ -511,7 +511,7 @@
     <span class="kw">let </span>_self_id: u32 = args.next().unwrap().parse().unwrap();
     <span class="kw">let </span>neighbors: Vec&lt;u32&gt; = args.map(|x| x.parse().unwrap()).collect();
 
-    <span class="kw">let </span>ports = hydroflow::util::deploy::init::&lt;()&gt;().<span class="kw">await</span>;
+    <span class="kw">let </span>ports = hydroflow::util::cli::init::&lt;()&gt;().<span class="kw">await</span>;
 
     <span class="kw">let </span>input_recv = ports
         .port(<span class="string">"from_peer"</span>)
@@ -583,7 +583,7 @@
     }
 
     <span class="kw">let </span>f1_handle = tokio::spawn(f1);
-    hydroflow::util::deploy::launch_flow(flow).<span class="kw">await</span>;
+    hydroflow::util::cli::launch_flow(flow).<span class="kw">await</span>;
     f1_handle.abort();
 }
 </code></pre></div></section></main></body></html>

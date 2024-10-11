@@ -1054,35 +1054,11 @@
 <a href="#1054" id="1054">1054</a>
 <a href="#1055" id="1055">1055</a>
 <a href="#1056" id="1056">1056</a>
-<a href="#1057" id="1057">1057</a>
-<a href="#1058" id="1058">1058</a>
-<a href="#1059" id="1059">1059</a>
-<a href="#1060" id="1060">1060</a>
-<a href="#1061" id="1061">1061</a>
-<a href="#1062" id="1062">1062</a>
-<a href="#1063" id="1063">1063</a>
-<a href="#1064" id="1064">1064</a>
-<a href="#1065" id="1065">1065</a>
-<a href="#1066" id="1066">1066</a>
-<a href="#1067" id="1067">1067</a>
-<a href="#1068" id="1068">1068</a>
-<a href="#1069" id="1069">1069</a>
-<a href="#1070" id="1070">1070</a>
-<a href="#1071" id="1071">1071</a>
-<a href="#1072" id="1072">1072</a>
-<a href="#1073" id="1073">1073</a>
-<a href="#1074" id="1074">1074</a>
-<a href="#1075" id="1075">1075</a>
-<a href="#1076" id="1076">1076</a>
-<a href="#1077" id="1077">1077</a>
-<a href="#1078" id="1078">1078</a>
-<a href="#1079" id="1079">1079</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt::Debug;
 
 <span class="kw">use </span><span class="kw">crate</span>::test::cartesian_power;
 
 <span class="doccomment">/// Defines a monoid structure.
-///
 /// A monoid is a set of items along with an associative binary operation `f` and an identity element `zero`.
 /// The `f` operation combines two items and the `zero` element acts as the identity for `f`.
 </span><span class="kw">pub fn </span>monoid&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
@@ -1096,7 +1072,6 @@
 }
 
 <span class="doccomment">/// Defines a semigroup structure.
-///
 /// A semigroup is a set of items along with an associative binary operation `f`.
 </span><span class="kw">pub fn </span>semigroup&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1107,7 +1082,6 @@
 }
 
 <span class="doccomment">/// Defines a semiring structure.
-///
 /// A semiring is a set of items along with two associative binary operations `f` and `g`,
 /// and two identity elements `zero` and `one`.
 /// f must be commutative and g must distribute over f.
@@ -1130,7 +1104,6 @@
 }
 
 <span class="doccomment">/// Defines a ring structure.
-///
 /// A ring is a semiring with an inverse operation on f.
 </span><span class="kw">pub fn </span>ring&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1146,7 +1119,6 @@
 }
 
 <span class="doccomment">/// Defines an integral domain structure.
-///
 /// An integral domain is a nonzero commutative ring with no nonzero zero divisors.
 </span><span class="kw">pub fn </span>integral_domain&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1162,7 +1134,6 @@
 }
 
 <span class="doccomment">/// Defines a no-nonzero-zero-divisors property.
-///
 /// x is a nonzero divisor if xy = 0 and y is also a nonzero element.
 </span><span class="kw">pub fn </span>no_nonzero_zero_divisors&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1185,7 +1156,6 @@
 }
 
 <span class="doccomment">/// Defines a commutative ring structure.
-///
 /// A commutative ring is a ring where the multiplication operation g is commutative.
 </span><span class="kw">pub fn </span>commutative_ring&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1202,7 +1172,6 @@
 }
 
 <span class="doccomment">/// Defines a field structure.
-///
 /// A field is a commutative ring where every element has a multiplicative inverse.
 </span><span class="kw">pub fn </span>field&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1219,7 +1188,6 @@
 }
 
 <span class="doccomment">/// Defines a commutative monoid structure.
-///
 /// A commutative monoid is a monoid where the operation f is commutative.
 </span><span class="kw">pub fn </span>commutative_monoid&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1232,7 +1200,6 @@
 }
 
 <span class="doccomment">/// Defines a group structure.
-///
 /// A group is a set of items along with an associative binary operation `f`
 /// an identity element `zero`
 /// and every element has an inverse element with respect to `f`
@@ -1248,7 +1215,6 @@
 }
 
 <span class="doccomment">/// Defines an abelian group structure.
-///
 /// An abelian group is a group where the operation f is commutative.
 </span><span class="kw">pub fn </span>abelian_group&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1263,7 +1229,6 @@
 
 <span class="comment">// Algebraic Properties
 </span><span class="doccomment">/// Defines the distributive property
-///
 /// a(b+c) = ab + ac
 /// and (b+c)a = ba + ca
 </span><span class="kw">pub fn </span>distributive&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
@@ -1277,7 +1242,6 @@
 }
 
 <span class="doccomment">/// Defines the left distributive property
-///
 /// a(b+c) = ab + ac
 </span><span class="kw">pub fn </span>left_distributes&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1295,7 +1259,6 @@
 }
 
 <span class="doccomment">/// Defines the right distributive property.
-///
 /// (b+c)a = ba + ca
 </span><span class="kw">pub fn </span>right_distributes&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1313,7 +1276,6 @@
 }
 
 <span class="doccomment">/// Defines the absorbing_element property.
-///
 /// An element z is absorbing if az = z and za = z for all a.
 </span><span class="kw">pub fn </span>absorbing_element&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1335,7 +1297,6 @@
 }
 
 <span class="doccomment">/// Defines the inverse property.
-///
 /// An element b is the inverse of a if ab = e and ba = e for some identity element e.
 </span><span class="kw">pub fn </span>inverse&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1356,7 +1317,6 @@
 }
 
 <span class="doccomment">/// Defines the non_zero inverse property.
-///
 /// Every element except zero must have an inverse.
 </span><span class="kw">pub fn </span>nonzero_inverse&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1380,7 +1340,6 @@
 }
 
 <span class="doccomment">/// Defines the identity property.
-///
 /// An element e is the identity of f if ae = a and ea = a for all a.
 </span><span class="kw">pub fn </span>identity&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1400,7 +1359,6 @@
 }
 
 <span class="doccomment">/// Defines the associativity property.
-///
 /// a(bc) = (ab)c
 </span><span class="kw">pub fn </span>associativity&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1418,7 +1376,6 @@
 }
 
 <span class="doccomment">/// Defines the commutativity property.
-///
 /// xy = yx
 </span><span class="kw">pub fn </span>commutativity&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1434,7 +1391,6 @@
 }
 
 <span class="doccomment">/// Defines the idempotency property.
-///
 /// xx = x
 </span><span class="kw">pub fn </span>idempotency&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
@@ -1449,7 +1405,6 @@
 }
 
 <span class="doccomment">/// Defines the linearity property
-///
 /// q is linear with respect to some group operation + if q(a+b) = q(a) + q(b)
 /// This is the same as q being a group homomorphism
 /// As defined in the paper "DBSP: Automatic Incremental View Maintenance for Rich Query Languages"
@@ -1472,7 +1427,6 @@
 }
 
 <span class="doccomment">/// Defines the bilinearity property
-///
 /// q is bilinear with respect to + if q(a + b, c) = q(a,c) + q(b,c) and q(a,c + d) = q(a,c) + q(a,d)
 /// This is the same as q being distributive over the addition operation of the three groups S, T, and R in q:S x T --&gt; R
 /// As defined in the paper "DBSP: Automatic Incremental View Maintenance for Rich Query Languages
@@ -1519,7 +1473,7 @@
 //     ("inverse", inverse),
 //     ("absorbing_element", absorbing_element)];
 
-</span><span class="doccomment">/// Loop through each algebraic property in SINGLE_FUNCTION_PROPERTIES and test for them.
+</span><span class="doccomment">/// Loop through each algebraic property in SINGLE_FUNCTION_PROPERTIES and test for them
 </span><span class="kw">pub fn </span>get_single_function_properties&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
     f: <span class="kw">impl </span>Fn(S, S) -&gt; S,

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["DebugInstantiate","HfPlusLeaf","HfPlusNode","HfPlusSource"],"fn":["dbg_dedup_tee"],"struct":["DebugExpr","DebugPipelineFn","TeeNode"],"type":["SeenTees"]};
+window.SIDEBAR_ITEMS = {"enum":["HfPlusLeaf","HfPlusNode","HfPlusSource"],"struct":["DebugExpr","DebugPipelineFn"],"type":["SeenTees"]};

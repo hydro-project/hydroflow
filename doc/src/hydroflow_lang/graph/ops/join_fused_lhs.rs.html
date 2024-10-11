@@ -172,6 +172,7 @@
 <a href="#172" id="172">172</a>
 <a href="#173" id="173">173</a>
 <a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 <span class="kw">use </span>syn::spanned::Spanned;
@@ -216,6 +217,7 @@
         }
         <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
     },
+    flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    context,
                    hydroflow,

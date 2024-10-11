@@ -332,9 +332,8 @@
 <a href="#332" id="332">332</a>
 <a href="#333" id="333">333</a>
 <a href="#334" id="334">334</a>
-<a href="#335" id="335">335</a>
 </pre></div><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">"datalog"</span>)]
-</span><span class="comment">// #[expect(dead_code)]
+#[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
     <span class="kw">use </span>rust_sitter::Spanned;
 
@@ -420,8 +419,7 @@
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub enum </span>ExtractExpr {
         Ident(Spanned&lt;Ident&gt;),
-        <span class="attr">#[expect(dead_code, reason = <span class="string">"unused spanned"</span>)]
-        </span>Underscore(<span class="attr">#[rust_sitter::leaf(text = <span class="string">"_"</span>)] </span>Spanned&lt;()&gt;),
+        Underscore(<span class="attr">#[rust_sitter::leaf(text = <span class="string">"_"</span>)] </span>Spanned&lt;()&gt;),
         Flatten(<span class="attr">#[rust_sitter::leaf(text = <span class="string">"*"</span>)] </span>(), Box&lt;ExtractExpr&gt;),
         Untuple(
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">"("</span>)] </span>(),
@@ -471,7 +469,7 @@
     }
 
     <span class="attr">#[derive(Debug, Clone)]
-    #[expect(clippy::manual_non_exhaustive, reason = <span class="string">"`()` used for leaf"</span>)]
+    #[allow(clippy::manual_non_exhaustive)]
     </span><span class="kw">pub struct </span>AtNode {
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">"@"</span>)]
         </span>_at: (),

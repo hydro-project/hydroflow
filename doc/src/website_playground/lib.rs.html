@@ -281,6 +281,12 @@
 <a href="#281" id="281">281</a>
 <a href="#282" id="282">282</a>
 <a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>utils;
 <span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
@@ -298,6 +304,12 @@
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>wasm_bindgen::prelude::<span class="kw-2">*</span>;
 
+<span class="comment">// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
+// allocator.
+</span><span class="attr">#[cfg(feature = <span class="string">"wee_alloc"</span>)]
+#[global_allocator]
+</span><span class="kw">static </span>ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
 <span class="attr">#[wasm_bindgen]
 </span><span class="kw">extern </span><span class="string">"C" </span>{
     <span class="kw">fn </span>alert(s: <span class="kw-2">&amp;</span>str);
@@ -311,14 +323,14 @@
 }
 
 <span class="attr">#[derive(Serialize, Deserialize)]
-</span><span class="kw">pub struct </span>JsLineColumn {
+</span><span class="kw">pub struct </span>JSLineColumn {
     <span class="kw">pub </span>line: usize,
     <span class="kw">pub </span>column: usize,
 }
 
-<span class="kw">impl </span>From&lt;LineColumn&gt; <span class="kw">for </span>JsLineColumn {
+<span class="kw">impl </span>From&lt;LineColumn&gt; <span class="kw">for </span>JSLineColumn {
     <span class="kw">fn </span>from(lc: LineColumn) -&gt; <span class="self">Self </span>{
-        JsLineColumn {
+        JSLineColumn {
             line: lc.line,
             column: lc.column,
         }
@@ -326,12 +338,12 @@
 }
 
 <span class="attr">#[derive(Serialize, Deserialize)]
-</span><span class="kw">pub struct </span>JsSpan {
-    <span class="kw">pub </span>start: JsLineColumn,
-    <span class="kw">pub </span>end: <span class="prelude-ty">Option</span>&lt;JsLineColumn&gt;,
+</span><span class="kw">pub struct </span>JSSpan {
+    <span class="kw">pub </span>start: JSLineColumn,
+    <span class="kw">pub </span>end: <span class="prelude-ty">Option</span>&lt;JSLineColumn&gt;,
 }
 
-<span class="kw">impl </span>From&lt;Span&gt; <span class="kw">for </span>JsSpan {
+<span class="kw">impl </span>From&lt;Span&gt; <span class="kw">for </span>JSSpan {
     <span class="kw">fn </span>from(span: Span) -&gt; <span class="self">Self </span>{
         <span class="attr">#[cfg(procmacro2_semver_exempt)]
         </span><span class="kw">let </span>is_call_site = span.eq(<span class="kw-2">&amp;</span>Span::call_site());
@@ -340,12 +352,12 @@
         </span><span class="kw">let </span>is_call_site = <span class="bool-val">true</span>;
 
         <span class="kw">if </span>is_call_site {
-            JsSpan {
-                start: JsLineColumn { line: <span class="number">0</span>, column: <span class="number">0 </span>},
+            JSSpan {
+                start: JSLineColumn { line: <span class="number">0</span>, column: <span class="number">0 </span>},
                 end: <span class="prelude-val">None</span>,
             }
         } <span class="kw">else </span>{
-            JsSpan {
+            JSSpan {
                 start: span.start().into(),
                 end: <span class="prelude-val">Some</span>(span.end().into()),
             }
@@ -354,15 +366,15 @@
 }
 
 <span class="attr">#[derive(Serialize, Deserialize)]
-</span><span class="kw">pub struct </span>JsDiagnostic {
-    <span class="kw">pub </span>span: JsSpan,
+</span><span class="kw">pub struct </span>JSDiagnostic {
+    <span class="kw">pub </span>span: JSSpan,
     <span class="kw">pub </span>message: String,
     <span class="kw">pub </span>is_error: bool,
 }
 
-<span class="kw">impl </span>From&lt;Diagnostic&gt; <span class="kw">for </span>JsDiagnostic {
+<span class="kw">impl </span>From&lt;Diagnostic&gt; <span class="kw">for </span>JSDiagnostic {
     <span class="kw">fn </span>from(diag: Diagnostic) -&gt; <span class="self">Self </span>{
-        JsDiagnostic {
+        JSDiagnostic {
             span: diag.span.into(),
             message: diag.message,
             is_error: diag.level == Level::Error,
@@ -373,7 +385,7 @@
 <span class="attr">#[derive(Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>HydroflowResult {
     <span class="kw">pub </span>output: <span class="prelude-ty">Option</span>&lt;HydroflowOutput&gt;,
-    <span class="kw">pub </span>diagnostics: Vec&lt;JsDiagnostic&gt;,
+    <span class="kw">pub </span>diagnostics: Vec&lt;JSDiagnostic&gt;,
 }
 <span class="attr">#[derive(Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>HydroflowOutput {
@@ -425,7 +437,7 @@
             output: <span class="prelude-val">None</span>,
             diagnostics: errors
                 .into_iter()
-                .map(|e| JsDiagnostic {
+                .map(|e| JSDiagnostic {
                     span: e.span().into(),
                     message: e.to_string(),
                     is_error: <span class="bool-val">true</span>,

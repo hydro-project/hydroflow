@@ -104,12 +104,16 @@
 <a href="#104" id="104">104</a>
 <a href="#105" id="105">105</a>
 <a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use super</span>::{
-    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
-    OperatorWriteOutput, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, PortListSpec, WriteContextArgs,
+    LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
 
 <span class="doccomment">/// &gt; 2 input streams, 1 output stream, no arguments.
@@ -151,6 +155,8 @@
     ports_inn: <span class="prelude-val">Some</span>(|| PortListSpec::Fixed(<span class="macro">parse_quote!</span> { input, signal })),
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::MonotoneAccum),
+    <span class="comment">// kind of like tick-based lattice_fold(), this is batch-at-a-time
+    </span>flow_prop_fn: <span class="prelude-val">Some</span>(LATTICE_FOLD_REDUCE_FLOW_PROP_FN),
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    context,
                    hydroflow,

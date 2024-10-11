@@ -117,37 +117,37 @@
 <span class="kw">use </span>hydroflow::futures::channel::mpsc::UnboundedSender;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
+<span class="kw">use crate as </span>hydroflow_plus;
 <span class="kw">use </span><span class="kw">crate</span>::ir::<span class="kw-2">*</span>;
-<span class="kw">use crate</span>::{profiler <span class="kw">as </span>myself, RuntimeContext};
+<span class="kw">use </span><span class="kw">crate</span>::RuntimeContext;
 
 <span class="kw">pub fn </span>increment_counter(count: <span class="kw-2">&amp;mut </span>u64) {
     <span class="kw-2">*</span>count += <span class="number">1</span>;
 }
 
-<span class="kw">fn </span>quoted_any_fn&lt;<span class="lifetime">'a</span>, F: Fn(<span class="kw-2">&amp;</span>usize) + <span class="lifetime">'a</span>, Q: IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;&gt;(q: Q) -&gt; Q {
+<span class="kw">fn </span>quoted_any_fn&lt;<span class="lifetime">'a</span>, F: Fn(usize) -&gt; usize + <span class="lifetime">'a</span>, Q: IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;&gt;(q: Q) -&gt; Q {
     q
 }
 
 <span class="doccomment">/// Add a profiling node before each node to count the cardinality of its input
 </span><span class="kw">fn </span>add_profiling_node&lt;<span class="lifetime">'a</span>&gt;(
-    node: <span class="kw-2">&amp;mut </span>HfPlusNode,
+    node: HfPlusNode,
     _context: RuntimeContext&lt;<span class="lifetime">'a</span>&gt;,
     counters: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;u64&gt;&gt;&gt;,
     counter_queue: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;UnboundedSender&lt;(usize, u64)&gt;&gt;&gt;,
     id: <span class="kw-2">&amp;mut </span>u32,
     seen_tees: <span class="kw-2">&amp;mut </span>SeenTees,
-) {
+) -&gt; HfPlusNode {
     <span class="kw">let </span>my_id = <span class="kw-2">*</span>id;
     <span class="kw-2">*</span>id += <span class="number">1</span>;
 
-    node.transform_children(
+    <span class="kw">let </span>child = node.transform_children(
         |node, seen_tees| {
             add_profiling_node(node, _context, counters, counter_queue, id, seen_tees)
         },
         seen_tees,
     );
-    <span class="kw">let </span>orig_node = std::mem::replace(node, HfPlusNode::Placeholder);
-    <span class="kw-2">*</span>node = HfPlusNode::Inspect {
+    HfPlusNode::Map {
         f: quoted_any_fn(<span class="macro">q!</span>({
             <span class="comment">// Put counters on queue
             </span>counter_queue
@@ -155,13 +155,16 @@
                 .unbounded_send((my_id <span class="kw">as </span>usize, counters.borrow()[my_id <span class="kw">as </span>usize]))
                 .unwrap();
             counters.borrow_mut()[my_id <span class="kw">as </span>usize] = <span class="number">0</span>;
-            <span class="kw">move </span>|<span class="kw">_</span>| {
-                myself::increment_counter(<span class="kw-2">&amp;mut </span>counters.borrow_mut()[my_id <span class="kw">as </span>usize]);
+            <span class="kw">move </span>|v| {
+                hydroflow_plus::profiler::increment_counter(
+                    <span class="kw-2">&amp;mut </span>counters.borrow_mut()[my_id <span class="kw">as </span>usize],
+                );
+                v
             }
         }))
-        .splice_untyped()
+        .splice()
         .into(),
-        input: Box::new(orig_node),
+        input: Box::new(child),
     }
 }
 
@@ -186,31 +189,31 @@
         .collect()
 }
 
-<span class="attr">#[cfg(test)]
+<span class="attr">#[stageleft::runtime]
+#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-    <span class="kw">use </span><span class="kw">crate</span>::deploy::MultiGraph;
-    <span class="kw">use </span><span class="kw">crate</span>::location::Location;
+    <span class="kw">use </span><span class="kw">crate</span>::MultiGraph;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>profiler_wrapping_all_operators() {
-        <span class="kw">let </span>flow = <span class="kw">crate</span>::builder::FlowBuilder::new();
-        <span class="kw">let </span>process = flow.process::&lt;()&gt;();
+        <span class="kw">let </span>flow = <span class="kw">crate</span>::builder::FlowBuilder::&lt;MultiGraph&gt;::new();
+        <span class="kw">let </span>process = flow.process(<span class="kw-2">&amp;</span>());
 
-        process
-            .source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
+        flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
+            .all_ticks()
             .map(<span class="macro">q!</span>(|v| v + <span class="number">1</span>))
             .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n)));
 
         <span class="kw">let </span>runtime_context = flow.runtime_context();
-        <span class="kw">let </span>built = flow.finalize();
+        <span class="kw">let </span>built = flow.extract();
 
-        <span class="macro">insta::assert_debug_snapshot!</span>(<span class="kw-2">&amp;</span>built.ir());
+        <span class="macro">insta::assert_debug_snapshot!</span>(<span class="kw-2">&amp;</span>built.ir);
 
         <span class="comment">// Print mermaid
         // let mut mermaid_config = WriteConfig {op_text_no_imports: true, ..Default::default()};
-        // for (_, ir) in built.clone().with_default_optimize().compile().hydroflow_ir() {
+        // for (_, ir) in built.clone().optimize_default().hydroflow_ir() {
         //     println!("{}", ir.to_mermaid(&amp;mermaid_config));
         // }
 
@@ -218,12 +221,9 @@
         <span class="kw">let </span>counter_queue = RuntimeData::new(<span class="string">"Fake"</span>);
 
         <span class="kw">let </span>pushed_down = built
-            .with_default_optimize()
             .optimize_with(|ir| <span class="kw">super</span>::profiling(ir, runtime_context, counters, counter_queue));
 
-        <span class="macro">insta::assert_debug_snapshot!</span>(<span class="kw-2">&amp;</span>pushed_down.ir());
-
-        <span class="kw">let _ </span>= pushed_down.compile_no_network::&lt;MultiGraph&gt;();
+        <span class="macro">insta::assert_debug_snapshot!</span>(<span class="kw-2">&amp;</span>pushed_down.ir);
     }
 }
 </code></pre></div></section></main></body></html>

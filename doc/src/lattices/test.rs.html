@@ -368,11 +368,6 @@
 <a href="#368" id="368">368</a>
 <a href="#369" id="369">369</a>
 <a href="#370" id="370">370</a>
-<a href="#371" id="371">371</a>
-<a href="#372" id="372">372</a>
-<a href="#373" id="373">373</a>
-<a href="#374" id="374">374</a>
-<a href="#375" id="375">375</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Helper test utils to test lattice implementation correctness.
 
 </span><span class="kw">use </span>std::fmt::Debug;
@@ -405,11 +400,8 @@
 }
 
 <span class="doccomment">/// Checks `PartialOrd` and `PartialEq`'s reflexivity, symmetry, transitivity, and duality.
-</span><span class="attr">#[expect(
-    clippy::eq_op,
-    clippy::double_comparisons,
-    reason = <span class="string">"testing comparison properties"
-</span>)]
+</span><span class="attr">#[allow(clippy::eq_op)]
+#[allow(clippy::double_comparisons)]
 </span><span class="kw">pub fn </span>check_partial_ord_properties&lt;T: PartialOrd + PartialEq + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
     <span class="kw">use </span>std::cmp::Ordering::<span class="kw-2">*</span>;
 
@@ -461,7 +453,7 @@
         </span><span class="macro">assert_eq!</span>(a &gt;= b, a &gt; b || a == b, <span class="string">"`{:?}`, `{:?}`"</span>, a, b);
         <span class="comment">// PartialEq:
         // a != b if and only if !(a == b).
-        // #[expect(clippy::nonminimal_bool, reason = "testing comparison properties")]
+        </span><span class="attr">#[allow(clippy::nonminimal_bool)]
         </span>{
             <span class="macro">assert_eq!</span>(a != b, !(a == b), <span class="string">"`{:?}`, `{:?}`"</span>, a, b);
         }
@@ -648,10 +640,8 @@
     }
 }
 
-<span class="doccomment">/// Returns an iterator of `N`-length arrays containing all permutations of `items` (with
-/// replacement).
-///
-/// I.e. the `N`th cartesian power of `items`. I.e. the cartesian
+<span class="doccomment">/// Returns an iterator of `N`-length arrays containing all possible permutations (with
+/// replacement) of items in `items`. I.e. the `N`th cartesian power of `items`. I.e. the cartesian
 /// product of `items` with itself `N` times.
 </span><span class="kw">pub fn </span>cartesian_power&lt;T, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[T],

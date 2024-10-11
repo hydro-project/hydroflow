@@ -1276,12 +1276,18 @@
 <a href="#1276" id="1276">1276</a>
 <a href="#1277" id="1277">1277</a>
 <a href="#1278" id="1278">1278</a>
+<a href="#1279" id="1279">1279</a>
+<a href="#1280" id="1280">1280</a>
+<a href="#1281" id="1281">1281</a>
+<a href="#1282" id="1282">1282</a>
+<a href="#1283" id="1283">1283</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
 <span class="kw">use </span>std::ops::Deref;
 
 <span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span>hydroflow_lang::graph::{
-    eliminate_extra_unions_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,
+    eliminate_extra_unions_tees, partition_graph, propagate_flow_props, FlatGraphBuilder,
+    HydroflowGraph,
 };
 <span class="kw">use </span>hydroflow_lang::parse::{
     HfStatement, IndexInt, Indexing, Pipeline, PipelineLink, PipelineStatement, PortIndex,
@@ -1603,10 +1609,14 @@
 }
 
 <span class="kw">pub fn </span>hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -&gt; TokenStream {
-    <span class="kw">let </span>partitioned_graph =
+    <span class="kw">let </span><span class="kw-2">mut </span>partitioned_graph =
         partition_graph(flat_graph).expect(<span class="string">"Failed to partition (cycle detected)."</span>);
 
     <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = Vec::new();
+    <span class="comment">// Propagate flow properties throughout the graph.
+    // TODO(mingwei): Should this be done at a flat graph stage instead?
+    </span><span class="kw">let _ </span>= propagate_flow_props::propagate_flow_props(<span class="kw-2">&amp;mut </span>partitioned_graph, <span class="kw-2">&amp;mut </span>diagnostics);
+
     <span class="kw">let </span>code_tokens = partitioned_graph.as_code(<span class="kw-2">&amp;</span>root, <span class="bool-val">true</span>, <span class="macro">quote::quote!</span>(), <span class="kw-2">&amp;mut </span>diagnostics);
     <span class="macro">assert_eq!</span>(
         <span class="number">0</span>,
@@ -1617,7 +1627,7 @@
     code_tokens
 }
 
-<span class="attr">#[expect(clippy::too_many_arguments, reason = <span class="string">"internal code"</span>)]
+<span class="attr">#[allow(clippy::too_many_arguments)]
 </span><span class="kw">fn </span>generate_rule(
     plan: JoinPlan&lt;<span class="lifetime">'_</span>&gt;,
     rule: <span class="kw-2">&amp;</span>rust_sitter::Spanned&lt;Rule&gt;,
@@ -2106,7 +2116,7 @@
 
             <span class="kw">let </span>flat_graph_ref = <span class="kw-2">&amp;</span>flat_graph;
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="string">"surface_graph"</span>}, {
-                <span class="macro">insta::assert_snapshot!</span>(flat_graph_ref.surface_syntax_string());
+                <span class="macro">insta::assert_display_snapshot!</span>(flat_graph_ref.surface_syntax_string());
             });
 
             <span class="kw">let </span>tokens = hydroflow_graph_to_program(flat_graph, <span class="macro">quote::quote!</span> { hydroflow });
@@ -2118,7 +2128,7 @@
             };
 
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="string">"datalog_program"</span>}, {
-                <span class="macro">insta::assert_snapshot!</span>(
+                <span class="macro">insta::assert_display_snapshot!</span>(
                     prettyplease::unparse(<span class="kw-2">&amp;</span>wrapped)
                 );
             });

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["many_to_many"]};
+window.SIDEBAR_ITEMS = {"fn":["many_to_many"],"macro":["many_to_many_runtime"]};
