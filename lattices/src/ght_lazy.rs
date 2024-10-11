@@ -350,7 +350,7 @@ where
         <GhtLeaf<Schema, SuffixSchema, Storage> as ColumnLazyTrieNode>::Force,
        // Schema = Schema,
         // SuffixSchema = SuffixSchema,
-        // Storage = Storage,
+        Storage = Storage,
     >,
     <Rest as ColtNode>::SuffixSchema: 'a,
     GhtLeaf<Schema, SuffixSchema, Storage>: ColumnLazyTrieNode,
@@ -507,7 +507,7 @@ where
 }
 
 #[sealed]
-impl<'a, Head, Node> ColtNode for var_type!(&'a mut GhtInner<Head, Node>)
+impl<'a, Head, Node> ColtNode for (&'a mut GhtInner<Head, Node>, ())
 where
     GhtInner<Head, Node>: GeneralizedHashTrieNode,
     Head: Clone + Eq + Hash,
@@ -527,19 +527,22 @@ where
 #[sealed]
 impl<'a, Head, Schema, ValType, Storage>
     ColtNodeTail<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
-    for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>)
+    for (&'a mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>, ())
 where
-    GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>: GeneralizedHashTrieNode<Head = Head>
-        + GhtGet
-        + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
-        + GhtGet,
+    Self: ColtNode,
+    // GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>: GeneralizedHashTrieNode<Head = Head>
+    //     + GhtGet
+    //     + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>> // <---- this type bound made it only work for sets
+    //     + GhtGet,
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema, Storage = Storage>,
-    Head: Clone + Eq + Hash,
-    Schema: Clone + Eq + Hash + VariadicExt,
+    Head: Clone, // + Eq + Hash,
+    Schema: Eq + Hash, // + Clone + Eq + Hash + VariadicExt,
     Storage: VariadicCollection<Schema = Schema>,
 {
     fn merge(&mut self, inner_to_merge: GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>) {
-        crate::Merge::merge(self.0, inner_to_merge);
+        // // we shouldn't use merge - that only works for sets
+        // crate::Merge::merge(self.0, inner_to_merge);
+        todo!()
     }
 }
 

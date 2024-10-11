@@ -999,6 +999,8 @@ mod test {
         // 348  | |         // SuffixSchema = SuffixSchema,
         // 349  | |     >,
         //      | |_____^ unsatisfied trait bound introduced here
+        fn guard<T>(_: impl ColtNodeTail<T>) {}
+        // guard(forest.as_mut_var());
         let result = ColtNode::get(forest.as_mut_var(), &3);
         // println!("forest after get: {:?}", forest);
         // println!("result.len() = {}", result.len());
