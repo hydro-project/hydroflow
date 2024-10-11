@@ -193,10 +193,8 @@
 <a href="#193" id="193">193</a>
 <a href="#194" id="194">194</a>
 <a href="#195" id="195">195</a>
-<a href="#196" id="196">196</a>
-</pre></div><pre class="rust"><code><span class="attr">#![allow(dead_code)]
-#![allow(clippy::iter_with_drain)]
-#![allow(clippy::explicit_auto_deref)]
+</pre></div><pre class="rust"><code><span class="attr">#![allow(clippy::allow_attributes, dead_code, reason = <span class="string">"deprecated code"</span>)]
+
 </span><span class="kw">use </span>anyhow::bail;
 <span class="kw">use </span>sexp::Sexp;
 
@@ -220,7 +218,7 @@
         }
     }
 
-    <span class="kw">pub fn </span>is_true(<span class="self">self</span>) -&gt; bool {
+    <span class="kw">pub fn </span>is_true(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="macro">matches!</span>(<span class="self">self</span>, Datum::Bool(<span class="bool-val">true</span>))
     }
 }

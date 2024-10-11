@@ -110,14 +110,12 @@
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
 <a href="#112" id="112">112</a>
-<a href="#113" id="113">113</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::io;
 <span class="kw">use </span>std::sync::{Arc, Mutex};
 <span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>anyhow::Result;
-<span class="kw">use </span>futures::{Future, StreamExt};
-<span class="kw">use </span>futures_core::Stream;
+<span class="kw">use </span>futures::{Future, Stream, StreamExt};
 <span class="kw">use </span>tokio::sync::{mpsc, oneshot};
 
 <span class="kw">pub async fn </span>async_retry&lt;T, F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;T&gt;&gt;&gt;(
@@ -154,15 +152,15 @@
 
     tokio::spawn(<span class="kw">async move </span>{
         <span class="kw">while let </span><span class="prelude-val">Some</span>(Result::Ok(line)) = lines.next().<span class="kw">await </span>{
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(cli_receivers) = weak_priority_receivers.upgrade() {
-                <span class="kw">let </span><span class="kw-2">mut </span>cli_receivers = cli_receivers.lock().unwrap();
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(deploy_receivers) = weak_priority_receivers.upgrade() {
+                <span class="kw">let </span><span class="kw-2">mut </span>deploy_receivers = deploy_receivers.lock().unwrap();
 
-                <span class="kw">let </span>successful_send = <span class="kw">if let </span><span class="prelude-val">Some</span>(r) = cli_receivers.take() {
+                <span class="kw">let </span>successful_send = <span class="kw">if let </span><span class="prelude-val">Some</span>(r) = deploy_receivers.take() {
                     r.send(line.clone()).is_ok()
                 } <span class="kw">else </span>{
                     <span class="bool-val">false
                 </span>};
-                drop(cli_receivers);
+                drop(deploy_receivers);
 
                 <span class="kw">if </span>successful_send {
                     <span class="kw">continue</span>;
@@ -185,9 +183,9 @@
             }
         }
 
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(cli_receivers) = weak_priority_receivers.upgrade() {
-            <span class="kw">let </span><span class="kw-2">mut </span>cli_receivers = cli_receivers.lock().unwrap();
-            drop(cli_receivers.take());
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(deploy_receivers) = weak_priority_receivers.upgrade() {
+            <span class="kw">let </span><span class="kw-2">mut </span>deploy_receivers = deploy_receivers.lock().unwrap();
+            drop(deploy_receivers.take());
         }
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(receivers) = weak_receivers.upgrade() {

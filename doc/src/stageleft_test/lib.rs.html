@@ -108,7 +108,7 @@
 </span><span class="kw">fn </span>closure_capture_lifetime&lt;<span class="lifetime">'a</span>, I: Copy + Into&lt;u32&gt; + <span class="lifetime">'a</span>&gt;(
     _ctx: BorrowBounds&lt;<span class="lifetime">'a</span>&gt;,
     v: RuntimeData&lt;I&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;Box&lt;<span class="kw">dyn </span>Fn() -&gt; u32 + <span class="lifetime">'a</span>&gt;&gt; {
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Box&lt;<span class="kw">dyn </span>Fn() -&gt; u32 + <span class="lifetime">'a</span>&gt;&gt; {
     <span class="macro">q!</span>(Box::new(<span class="kw">move </span>|| { v.into() }) <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>Fn() -&gt; u32 + <span class="lifetime">'a</span>&gt;)
 }
 

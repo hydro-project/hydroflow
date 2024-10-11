@@ -428,6 +428,9 @@
 <a href="#428" id="428">428</a>
 <a href="#429" id="429">429</a>
 <a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Punct, Spacing, Span, TokenStream};
 <span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>syn::punctuated::Punctuated;
@@ -436,7 +439,9 @@
 
 <span class="kw">mod </span>quote_impl;
 
-<span class="doccomment">/// Creates a quoted expression, which can be typechecked but has its AST serialized
+<span class="doccomment">/// Creates a quoted expression for Hydroflow+.
+///
+/// Creates a quoted expression, which can be typechecked but has its AST serialized
 /// until it is spliced into a staged entrypoint. Returns a value which implements
 /// `Quoted&lt;T&gt;`, where `T` is the type of the expression, and also may implement
 /// `IntoQuotedMut&lt;T&gt;` is the values it captures would be safe to capture inside an
@@ -495,7 +500,7 @@
                     <span class="attr">#[allow(non_upper_case_globals, non_snake_case)]
                     </span><span class="kw">let </span>#name_ident_unspanned = #root::runtime_support::create_import(
                         #full_path,
-                        <span class="macro">env!</span>(<span class="string">"STAGELEFT_FINAL_CRATE_NAME"</span>),
+                        <span class="macro">option_env!</span>(<span class="string">"STAGELEFT_FINAL_CRATE_NAME"</span>).unwrap_or(<span class="macro">env!</span>(<span class="string">"CARGO_PKG_NAME"</span>)),
                         {
                             <span class="kw">let </span>__quse_local = ();
                             {
@@ -580,8 +585,9 @@
     })
 }
 
-<span class="doccomment">/// A utility for declaring top-level public modules in a Stageleft crate that will
-/// export macros. This gets around errors in compiling the macro crate when there
+<span class="doccomment">/// A utility for declaring top-level public modules in a Stageleft crate that exports macros.
+///
+/// This gets around errors in compiling the macro crate when there
 /// are `pub mod` declarations at the top-level file.
 ///
 /// This macro will only work on nightly with `#![feature(proc_macro_hygiene)]`,
@@ -793,11 +799,11 @@
             #(#param_parsing)*
 
             <span class="kw">let </span>macro_crate_name = <span class="macro">env!</span>(<span class="string">"CARGO_PKG_NAME"</span>);
-            <span class="kw">let </span>final_crate_name = <span class="macro">env!</span>(<span class="string">"STAGELEFT_FINAL_CRATE_NAME"</span>);
+            <span class="kw">let </span>final_crate_name = <span class="macro">option_env!</span>(<span class="string">"STAGELEFT_FINAL_CRATE_NAME"</span>).unwrap_or(macro_crate_name);
             #root::runtime_support::set_macro_to_crate(macro_crate_name, final_crate_name);
 
             <span class="kw">let </span>output_core = {
-                #root::Quoted::splice(#input_name #passed_generics(#root::QuotedContext::create(), #(#params_to_pass),<span class="kw-2">*</span>))
+                #root::Quoted::splice_untyped(#input_name #passed_generics(#root::QuotedContext::create(), #(#params_to_pass),<span class="kw-2">*</span>))
             };
 
             <span class="kw">let </span>final_crate_root = #root::runtime_support::get_final_crate_name(final_crate_name);

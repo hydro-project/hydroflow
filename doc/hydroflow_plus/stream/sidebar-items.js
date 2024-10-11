@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Async","Stream","Windowed"]};
+window.SIDEBAR_ITEMS = {"enum":["Bounded","NoTick","Tick","Unbounded"],"struct":["Stream"]};

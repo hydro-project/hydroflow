@@ -595,7 +595,7 @@
 <a href="#595" id="595">595</a>
 <a href="#596" id="596">596</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! AST for surface syntax, modelled on [`syn`]'s ASTs.
-</span><span class="attr">#![allow(missing_docs)]
+</span><span class="attr">#![allow(clippy::allow_attributes, missing_docs, reason = <span class="string">"internal use"</span>)]
 
 </span><span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::hash::Hash;
@@ -1115,7 +1115,7 @@
 }
 <span class="kw">impl </span>ToTokens <span class="kw">for </span>IndexInt {
     <span class="kw">fn </span>to_tokens(<span class="kw-2">&amp;</span><span class="self">self</span>, tokens: <span class="kw-2">&amp;mut </span>TokenStream) {
-        <span class="kw">let </span>lit_int = LitInt::new(<span class="kw-2">&amp;*</span><span class="self">self</span>.value.to_string(), <span class="self">self</span>.span);
+        <span class="kw">let </span>lit_int = LitInt::new(<span class="kw-2">&amp;</span><span class="self">self</span>.value.to_string(), <span class="self">self</span>.span);
         lit_int.to_tokens(tokens)
     }
 }

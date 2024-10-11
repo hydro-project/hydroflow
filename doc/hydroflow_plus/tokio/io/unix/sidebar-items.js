@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["AsyncFd","AsyncFdReadyGuard","AsyncFdReadyMutGuard","TryIoError"]};
+window.SIDEBAR_ITEMS = {"struct":["AsyncFd","AsyncFdReadyGuard","AsyncFdReadyMutGuard","AsyncFdTryNewError","TryIoError"]};

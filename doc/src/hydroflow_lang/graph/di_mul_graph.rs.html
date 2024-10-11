@@ -634,7 +634,7 @@
 }
 
 <span class="doccomment">/// A compact edge list representation of a [`DiMulGraph`], used for serialization.
-</span><span class="attr">#[allow(type_alias_bounds)]
+</span><span class="attr">#[expect(type_alias_bounds, reason = <span class="string">"code readability"</span>)]
 </span><span class="kw">pub type </span>EdgeList&lt;V, E&gt;
 <span class="kw">where
     </span>V: Key,

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["wrap"],"struct":["Consecutive","Duplicates","Monotonic","NoDuplicates","NonMonotonic"],"trait":["PropDuplicates","PropMonotonicity","Props","Spec"]};

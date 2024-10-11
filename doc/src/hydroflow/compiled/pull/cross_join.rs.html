@@ -189,7 +189,7 @@
                 </span><span class="self">self</span>.state.draw_from_left = !<span class="self">self</span>.state.draw_from_left;
 
                 <span class="comment">// try to fetch from the specified side
-                </span><span class="attr">#[allow(clippy::collapsible_else_if)]
+                </span><span class="attr">#[expect(clippy::collapsible_else_if, reason = <span class="string">"code symmetry"</span>)]
                 </span><span class="kw">if </span><span class="self">self</span>.state.draw_from_left {
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(l) = <span class="self">self</span>.lhs.next() {
                         <span class="self">self</span>.state.draw_from_left = <span class="bool-val">true</span>;

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"trait":["HfSend","HfSendManyToMany","HfSendManyToOne","HfSendOneToMany","HfSendOneToOne"]};

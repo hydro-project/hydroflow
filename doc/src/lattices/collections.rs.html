@@ -1172,10 +1172,6 @@
 <a href="#1172" id="1172">1172</a>
 <a href="#1173" id="1173">1173</a>
 <a href="#1174" id="1174">1174</a>
-<a href="#1175" id="1175">1175</a>
-<a href="#1176" id="1176">1176</a>
-<a href="#1177" id="1177">1177</a>
-<a href="#1178" id="1178">1178</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Simple singleton or array collection with [`cc_traits`] implementations.
 
 </span><span class="kw">use </span>std::borrow::Borrow;
@@ -2037,9 +2033,7 @@
     Q: Eq + <span class="question-mark">?</span>Sized,
 {
     <span class="kw">fn </span>get_key_value(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Q) -&gt; <span class="prelude-ty">Option</span>&lt;(<span class="self">Self</span>::KeyRef&lt;<span class="lifetime">'_</span>&gt;, <span class="self">Self</span>::ItemRef&lt;<span class="lifetime">'_</span>&gt;)&gt; {
-        <span class="comment">// TODO(mingwei): https://github.com/rust-lang/rust-clippy/issues/11764
-        </span><span class="attr">#[allow(clippy::map_identity)]
-        </span><span class="self">self</span>.<span class="number">0
+        <span class="self">self</span>.<span class="number">0
             </span>.as_ref()
             .filter(|(k, _v)| key == k.borrow())
             .map(|(k, v)| (k, v))
@@ -2075,9 +2069,7 @@
 		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">'_</span>&gt; {
-        <span class="comment">// TODO(mingwei): https://github.com/rust-lang/rust-clippy/issues/11764
-        </span><span class="attr">#[allow(clippy::map_identity)]
-        </span><span class="self">self</span>.<span class="number">0</span>.as_ref().map(|(k, v)| (k, v)).into_iter()
+        <span class="self">self</span>.<span class="number">0</span>.as_ref().map(|(k, v)| (k, v)).into_iter()
     }
 }
 <span class="kw">impl</span>&lt;K, V&gt; MapIterMut <span class="kw">for </span>OptionMap&lt;K, V&gt; {

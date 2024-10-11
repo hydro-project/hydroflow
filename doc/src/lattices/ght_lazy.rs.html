@@ -683,9 +683,6 @@
 <a href="#683" id="683">683</a>
 <a href="#684" id="684">684</a>
 <a href="#685" id="685">685</a>
-<a href="#686" id="686">686</a>
-<a href="#687" id="687">687</a>
-<a href="#688" id="688">688</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -710,7 +707,7 @@
 /// instead `take`s the leaf from the current trie and merges it in to the trie to the right which
 /// is 1 taller.
 
-/// A trait for the special behavior we need from the GHTs in a COLT forest
+/// A trait for the special behavior we need from the GHTs in a COLT forest#[derive(Debug, Clone)]
 </span><span class="kw">pub trait </span>ColumnLazyTrieNode: GeneralizedHashTrieNode {
     <span class="doccomment">/// into_iter for leaf elements, needed by force below
     </span><span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw">impl </span>Iterator&lt;Item = <span class="self">Self</span>::Schema&gt;&gt;;
@@ -1038,8 +1035,8 @@
         &lt;GhtLeaf&lt;Schema, SuffixSchema, Storage&gt; <span class="kw">as </span>ColumnLazyTrieNode&gt;::Force,
        <span class="comment">// Schema = Schema,
         // SuffixSchema = SuffixSchema,
-        </span>Storage = Storage,
-    &gt;,
+        // Storage = Storage,
+    </span>&gt;,
     &lt;Rest <span class="kw">as </span>ColtNode&gt;::SuffixSchema: <span class="lifetime">'a</span>,
     GhtLeaf&lt;Schema, SuffixSchema, Storage&gt;: ColumnLazyTrieNode,
     Schema: Clone + Hash + Eq + VariadicExt,
@@ -1187,15 +1184,14 @@
         </span>+ GhtGet,
 {
     <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, inner_to_merge: GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;) {
-        <span class="comment">// This shouldn't be none? IDK
-        </span><span class="kw">let </span>(head, _rest) = <span class="self">self</span>;
+        <span class="kw">let </span>(head, _rest) = <span class="self">self</span>;
         <span class="comment">// can't use Merge with COLT bc columnstore is not a lattice!!
         </span>head.merge_node(inner_to_merge);
     }
 }
 
 <span class="attr">#[sealed]
-</span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, Head, Node&gt; ColtNode <span class="kw">for </span>(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>GhtInner&lt;Head, Node&gt;, ())
+</span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, Head, Node&gt; ColtNode <span class="kw">for </span><span class="macro">var_type!</span>(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>GhtInner&lt;Head, Node&gt;)
 <span class="kw">where
     </span>GhtInner&lt;Head, Node&gt;: GeneralizedHashTrieNode,
     Head: Clone + Eq + Hash,
@@ -1215,22 +1211,20 @@
 <span class="attr">#[sealed]
 </span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, Head, Schema, ValType, Storage&gt;
     ColtNodeTail&lt;GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;&gt;
-    <span class="kw">for </span>(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;, ())
+    <span class="kw">for </span><span class="macro">var_type!</span>(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;)
 <span class="kw">where
-    </span><span class="self">Self</span>: ColtNode,
-    <span class="comment">// GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;: GeneralizedHashTrieNode&lt;Head = Head&gt;
-    //     + GhtGet
-    //     + crate::Merge&lt;GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;&gt; // &lt;---- this type bound made it only work for sets
-    //     + GhtGet,
-    </span>GhtLeaf&lt;Schema, ValType, Storage&gt;: GeneralizedHashTrieNode&lt;Schema = Schema, Storage = Storage&gt;,
-    Head: Clone, <span class="comment">// + Eq + Hash,
-    </span>Schema: Eq + Hash, <span class="comment">// + Clone + Eq + Hash + VariadicExt,
-    </span>Storage: VariadicCollection&lt;Schema = Schema&gt;,
+    </span>GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;: GeneralizedHashTrieNode&lt;Head = Head&gt;
+        <span class="comment">// + crate::Merge&lt;GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;&gt;
+        </span>+ GhtGet,
+    GhtLeaf&lt;Schema, ValType, Storage&gt;: GeneralizedHashTrieNode&lt;Schema = Schema, Storage = Storage&gt;,
+    Head: Clone + Eq + Hash,
+    Schema: Clone + Eq + Hash + VariadicExt,
+    Storage: VariadicCollection&lt;Schema = Schema&gt;,
 {
     <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, inner_to_merge: GhtInner&lt;Head, GhtLeaf&lt;Schema, ValType, Storage&gt;&gt;) {
-        <span class="comment">// // we shouldn't use merge - that only works for sets
-        // crate::Merge::merge(self.0, inner_to_merge);
-        </span><span class="macro">todo!</span>()
+        <span class="kw">let </span>(head, _rest) = <span class="self">self</span>;
+        <span class="comment">// can't use Merge with COLT bc columnstore is not a lattice!!
+        </span>head.merge_node(inner_to_merge);
     }
 }
 

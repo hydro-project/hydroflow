@@ -267,6 +267,36 @@
 <a href="#267" id="267">267</a>
 <a href="#268" id="268">268</a>
 <a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeSet;
 <span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::{env, fs};
@@ -341,7 +371,7 @@
 
         <span class="kw">let </span>proc_macro_wrapper: syn::ItemFn = <span class="macro">parse_quote!</span>(
             <span class="attr">#[proc_macro]
-            #[allow(non_snake_case, unused_qualifications)]
+            #[expect(unused_qualifications, reason = <span class="string">"generated code"</span>)]
             </span><span class="kw">pub fn </span>#underscored_path(input: ::proc_macro::TokenStream) -&gt; ::proc_macro::TokenStream {
                 <span class="kw">let </span>input = ::stageleft::internal::TokenStream::from(input);
                 <span class="kw">let </span>out = #exported_from_parsed::#underscored_path_impl(input);
@@ -385,6 +415,7 @@
 
 <span class="kw">struct </span>GenFinalPubVistor {
     current_mod: <span class="prelude-ty">Option</span>&lt;syn::Path&gt;,
+    test_mode: bool,
 }
 
 <span class="kw">impl </span>VisitMut <span class="kw">for </span>GenFinalPubVistor {
@@ -411,8 +442,14 @@
     <span class="kw">fn </span>visit_item_mod_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::ItemMod) {
         <span class="kw">let </span>is_runtime_or_test = i.attrs.iter().any(|a| {
             a.path().to_token_stream().to_string() == <span class="string">"stageleft :: runtime"
-                </span>|| a.to_token_stream().to_string() == <span class="string">"# [cfg (test)]"
+                </span>|| a.to_token_stream().to_string() == <span class="string">"# [test]"
+                </span>|| a.to_token_stream().to_string() == <span class="string">"# [tokio::test]"
         </span>});
+
+        <span class="kw">let </span>is_test_mod = i
+            .attrs
+            .iter()
+            .any(|a| a.to_token_stream().to_string() == <span class="string">"# [cfg (test)]"</span>);
 
         <span class="kw">if </span>is_runtime_or_test {
             <span class="kw-2">*</span>i = <span class="macro">parse_quote!</span> {
@@ -420,6 +457,15 @@
                 </span>#i
             };
         } <span class="kw">else </span>{
+            <span class="kw">if </span>is_test_mod {
+                i.attrs
+                    .retain(|a| a.to_token_stream().to_string() != <span class="string">"# [cfg (test)]"</span>);
+
+                <span class="kw">if </span>!<span class="self">self</span>.test_mode {
+                    i.attrs.push(<span class="macro">parse_quote!</span>(<span class="attr">#[cfg(stageleft_macro)]</span>));
+                }
+            }
+
             <span class="kw">let </span>old_mod = <span class="self">self</span>.current_mod.clone();
             <span class="kw">let </span>i_ident = <span class="kw-2">&amp;</span>i.ident;
             <span class="self">self</span>.current_mod = <span class="self">self
@@ -502,7 +548,23 @@
     }
 }
 
-<span class="kw">pub fn </span>gen_final_helper(final_crate: <span class="kw-2">&amp;</span>str) {
+<span class="kw">pub fn </span>gen_staged_trybuild(lib_path: <span class="kw-2">&amp;</span>Path, orig_crate_name: String, test_mode: bool) -&gt; syn::File {
+    <span class="kw">let </span><span class="kw-2">mut </span>orig_flow_lib = syn_inline_mod::parse_and_inline_modules(lib_path);
+    InlineTopLevelMod {}.visit_file_mut(<span class="kw-2">&amp;mut </span>orig_flow_lib);
+
+    <span class="kw">let </span><span class="kw-2">mut </span>flow_lib_pub = syn_inline_mod::parse_and_inline_modules(lib_path);
+
+    <span class="kw">let </span>orig_crate_ident = syn::Ident::new(<span class="kw-2">&amp;</span>orig_crate_name, Span::call_site());
+    <span class="kw">let </span><span class="kw-2">mut </span>final_pub_visitor = GenFinalPubVistor {
+        current_mod: <span class="prelude-val">Some</span>(<span class="macro">parse_quote!</span>(#orig_crate_ident)),
+        test_mode,
+    };
+    final_pub_visitor.visit_file_mut(<span class="kw-2">&amp;mut </span>flow_lib_pub);
+
+    flow_lib_pub
+}
+
+<span class="kw">pub fn </span>gen_final_helper() {
     <span class="kw">let </span>out_dir = env::var_os(<span class="string">"OUT_DIR"</span>).unwrap();
 
     <span class="kw">let </span><span class="kw-2">mut </span>orig_flow_lib = syn_inline_mod::parse_and_inline_modules(Path::new(<span class="string">"src/lib.rs"</span>));
@@ -512,6 +574,7 @@
 
     <span class="kw">let </span><span class="kw-2">mut </span>final_pub_visitor = GenFinalPubVistor {
         current_mod: <span class="prelude-val">Some</span>(<span class="macro">parse_quote!</span>(<span class="kw">crate</span>)),
+        test_mode: <span class="bool-val">false</span>,
     };
     final_pub_visitor.visit_file_mut(<span class="kw-2">&amp;mut </span>flow_lib_pub);
 
@@ -522,10 +585,6 @@
     .unwrap();
 
     <span class="macro">println!</span>(<span class="string">"cargo::rustc-check-cfg=cfg(stageleft_macro)"</span>);
-    <span class="macro">println!</span>(
-        <span class="string">"cargo::rustc-env=STAGELEFT_FINAL_CRATE_NAME={}"</span>,
-        final_crate
-    );
     <span class="macro">println!</span>(<span class="string">"cargo::rerun-if-changed=build.rs"</span>);
     <span class="macro">println!</span>(<span class="string">"cargo::rerun-if-changed=src"</span>);
 }
@@ -533,7 +592,8 @@
 <span class="attr">#[macro_export]
 </span><span class="macro">macro_rules!</span> gen_final {
     () =&gt; {
-        <span class="macro-nonterminal">$crate::gen_final_helper</span>(<span class="macro">env!</span>(<span class="string">"CARGO_PKG_NAME"</span>))
+        <span class="attr">#[cfg(not(feature = <span class="string">"stageleft_devel"</span>))]
+        </span><span class="macro-nonterminal">$crate::gen_final_helper</span>()
     };
 }
 </code></pre></div></section></main></body></html>

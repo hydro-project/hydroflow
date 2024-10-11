@@ -202,7 +202,7 @@
 <a href="#202" id="202">202</a>
 <a href="#203" id="203">203</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Old query API, where each operator is a single subgraph. Deprecated.
-</span><span class="attr">#![allow(missing_docs)]
+</span><span class="attr">#![allow(clippy::allow_attributes, missing_docs, reason = <span class="string">"deprecated"</span>)]
 
 </span><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::cell::RefCell;

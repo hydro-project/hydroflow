@@ -926,7 +926,6 @@
 <a href="#926" id="926">926</a>
 <a href="#927" id="927">927</a>
 <a href="#928" id="928">928</a>
-<a href="#929" id="929">929</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for the [`Hydroflow`] struct and helper items.
 
 </span><span class="kw">use </span>std::any::Any;
@@ -1544,8 +1543,8 @@
         <span class="kw">let </span>sg_id = SubgraphId(<span class="self">self</span>.subgraphs.len());
 
         <span class="kw">let </span>(<span class="kw-2">mut </span>subgraph_preds, <span class="kw-2">mut </span>subgraph_succs) = Default::default();
-        recv_ports.set_graph_meta(<span class="kw-2">&amp;mut *</span><span class="self">self</span>.handoffs, <span class="kw-2">&amp;mut </span>subgraph_preds, sg_id, <span class="bool-val">true</span>);
-        send_ports.set_graph_meta(<span class="kw-2">&amp;mut *</span><span class="self">self</span>.handoffs, <span class="kw-2">&amp;mut </span>subgraph_succs, sg_id, <span class="bool-val">false</span>);
+        recv_ports.set_graph_meta(<span class="kw-2">&amp;mut </span><span class="self">self</span>.handoffs, <span class="kw-2">&amp;mut </span>subgraph_preds, sg_id, <span class="bool-val">true</span>);
+        send_ports.set_graph_meta(<span class="kw-2">&amp;mut </span><span class="self">self</span>.handoffs, <span class="kw-2">&amp;mut </span>subgraph_succs, sg_id, <span class="bool-val">false</span>);
 
         <span class="kw">let </span>subgraph = <span class="kw">move </span>|context: <span class="kw-2">&amp;mut </span>Context, handoffs: <span class="kw-2">&amp;mut </span>Vec&lt;HandoffData&gt;| {
             <span class="kw">let </span>recv = recv_ports.make_ctx(<span class="kw-2">&amp;*</span>handoffs);
@@ -1757,7 +1756,6 @@
 </span><span class="attr">#[doc(hidden)]
 </span><span class="kw">pub struct </span>HandoffData {
     <span class="doccomment">/// A friendly name for diagnostics.
-    </span><span class="attr">#[allow(dead_code)] </span><span class="comment">// TODO(mingwei): remove attr once used.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) name: Cow&lt;<span class="lifetime">'static</span>, str&gt;,
     <span class="doccomment">/// Crate-visible to crate for `handoff_list` internals.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) handoff: Box&lt;<span class="kw">dyn </span>HandoffMeta&gt;,
@@ -1812,13 +1810,13 @@
 /// structure and scheduled state.
 </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>SubgraphData&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// A friendly name for diagnostics.
-    </span><span class="attr">#[allow(dead_code)] </span><span class="comment">// TODO(mingwei): remove attr once used.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) name: Cow&lt;<span class="lifetime">'static</span>, str&gt;,
     <span class="doccomment">/// This subgraph's stratum number.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) stratum: usize,
     <span class="doccomment">/// The actual execution code of the subgraph.
     </span>subgraph: Box&lt;<span class="kw">dyn </span>Subgraph + <span class="lifetime">'a</span>&gt;,
-    <span class="attr">#[allow(dead_code)]
+
+    <span class="attr">#[expect(dead_code, reason = <span class="string">"may be useful in the future"</span>)]
     </span>preds: Vec&lt;HandoffId&gt;,
     succs: Vec&lt;HandoffId&gt;,
 

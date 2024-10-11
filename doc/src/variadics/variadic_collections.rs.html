@@ -648,6 +648,7 @@
 <a href="#648" id="648">648</a>
 <a href="#649" id="649">649</a>
 <a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
 <span class="kw">use </span>std::hash::{BuildHasher, Hash, RandomState};
 
@@ -661,6 +662,7 @@
     </span><span class="kw">type </span>Schema: PartialEqVariadic;
 
     <span class="doccomment">/// Insert an element into the set, return true if successful
+    /// Insert an element into the set, return true if successful
     </span><span class="kw">fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, element: <span class="self">Self</span>::Schema) -&gt; bool;
 
     <span class="doccomment">/// Iterate over the elements of the set

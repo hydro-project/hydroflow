@@ -79,10 +79,152 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::ir::<span class="kw-2">*</span>;
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
+<span class="kw">use </span>std::collections::HashSet;
 
-<span class="kw">fn </span>persist_pullup_node(node: HfPlusNode, seen_tees: <span class="kw-2">&amp;mut </span>SeenTees) -&gt; HfPlusNode {
-    <span class="kw">match </span>node.transform_children(persist_pullup_node, seen_tees) {
+<span class="kw">use </span><span class="kw">crate</span>::ir::<span class="kw-2">*</span>;
+
+<span class="kw">fn </span>persist_pullup_node(
+    node: <span class="kw-2">&amp;mut </span>HfPlusNode,
+    persist_pulled_tees: <span class="kw-2">&amp;mut </span>HashSet&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;&gt;,
+) {
+    <span class="kw-2">*</span>node = <span class="kw">match </span>std::mem::replace(node, HfPlusNode::Placeholder) {
+        HfPlusNode::Unpersist(<span class="kw">box </span>HfPlusNode::Persist(<span class="kw">box </span>behind_persist)) =&gt; behind_persist,
+
+        HfPlusNode::Delta(<span class="kw">box </span>HfPlusNode::Persist(<span class="kw">box </span>behind_persist)) =&gt; behind_persist,
+
+        HfPlusNode::Tee { inner } =&gt; {
+            <span class="kw">if </span>persist_pulled_tees.contains(<span class="kw-2">&amp;</span>(inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;)) {
+                HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
+                    inner: inner.clone(),
+                }))
+            } <span class="kw">else if </span><span class="macro">matches!</span>(<span class="kw-2">*</span>inner.borrow(), HfPlusNode::Persist(<span class="kw">_</span>)) {
+                persist_pulled_tees.insert(inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;);
+                <span class="kw">if let </span>HfPlusNode::Persist(<span class="kw">box </span>behind_persist) =
+                    inner.replace(HfPlusNode::Placeholder)
+                {
+                    <span class="kw-2">*</span>inner.borrow_mut() = behind_persist;
+                } <span class="kw">else </span>{
+                    <span class="macro">unreachable!</span>()
+                }
+
+                HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
+                    inner: inner.clone(),
+                }))
+            } <span class="kw">else </span>{
+                HfPlusNode::Tee { inner }
+            }
+        }
+
         HfPlusNode::Map {
             f,
             input: <span class="kw">box </span>HfPlusNode::Persist(behind_persist),
@@ -90,14 +232,84 @@
             f,
             input: behind_persist,
         })),
-        o =&gt; o,
-    }
+
+        HfPlusNode::FlatMap {
+            f,
+            input: <span class="kw">box </span>HfPlusNode::Persist(behind_persist),
+        } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::FlatMap {
+            f,
+            input: behind_persist,
+        })),
+
+        HfPlusNode::Filter {
+            f,
+            input: <span class="kw">box </span>HfPlusNode::Persist(behind_persist),
+        } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::Filter {
+            f,
+            input: behind_persist,
+        })),
+
+        HfPlusNode::Network {
+            from_location,
+            from_key,
+            to_location,
+            to_key,
+            serialize_pipeline,
+            instantiate_fn,
+            deserialize_pipeline,
+            input: <span class="kw">box </span>HfPlusNode::Persist(behind_persist),
+            ..
+        } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+            from_location,
+            from_key,
+            to_location,
+            to_key,
+            serialize_pipeline,
+            instantiate_fn,
+            deserialize_pipeline,
+            input: behind_persist,
+        })),
+
+        HfPlusNode::Union(<span class="kw">box </span>HfPlusNode::Persist(left), <span class="kw">box </span>HfPlusNode::Persist(right)) =&gt; {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Union(left, right)))
+        }
+
+        HfPlusNode::CrossProduct(<span class="kw">box </span>HfPlusNode::Persist(left), <span class="kw">box </span>HfPlusNode::Persist(right)) =&gt; {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(
+                HfPlusNode::CrossProduct(
+                    Box::new(HfPlusNode::Persist(left)),
+                    Box::new(HfPlusNode::Persist(right)),
+                ),
+            ))))
+        }
+
+        HfPlusNode::Join(<span class="kw">box </span>HfPlusNode::Persist(left), <span class="kw">box </span>HfPlusNode::Persist(right)) =&gt; {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Join(
+                Box::new(HfPlusNode::Persist(left)),
+                Box::new(HfPlusNode::Persist(right)),
+            )))))
+        }
+
+        HfPlusNode::Unique(<span class="kw">box </span>HfPlusNode::Persist(inner)) =&gt; {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Unique(
+                Box::new(HfPlusNode::Persist(inner)),
+            )))))
+        }
+
+        node =&gt; node,
+    };
 }
 
 <span class="kw">pub fn </span>persist_pullup(ir: Vec&lt;HfPlusLeaf&gt;) -&gt; Vec&lt;HfPlusLeaf&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>seen_tees = Default::default();
+    <span class="kw">let </span><span class="kw-2">mut </span>persist_pulled_tees = Default::default();
     ir.into_iter()
-        .map(|l| l.transform_children(persist_pullup_node, <span class="kw-2">&amp;mut </span>seen_tees))
+        .map(|l| {
+            l.transform_children(
+                |n, s| n.transform_bottom_up(persist_pullup_node, s, <span class="kw-2">&amp;mut </span>persist_pulled_tees),
+                <span class="kw-2">&amp;mut </span>seen_tees,
+            )
+        })
         .collect()
 }
 
@@ -105,47 +317,53 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-    <span class="kw">use </span><span class="kw">crate</span>::MultiGraph;
+    <span class="kw">use </span><span class="kw">crate</span>::deploy::MultiGraph;
+    <span class="kw">use </span><span class="kw">crate</span>::location::Location;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>persist_pullup_through_map() {
-        <span class="kw">let </span>flow = <span class="kw">crate</span>::builder::FlowBuilder::&lt;MultiGraph&gt;::new();
-        <span class="kw">let </span>process = flow.process(<span class="kw-2">&amp;</span>());
+        <span class="kw">let </span>flow = <span class="kw">crate</span>::builder::FlowBuilder::new();
+        <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
-        flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
-            .all_ticks()
+        process
+            .source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
             .map(<span class="macro">q!</span>(|v| v + <span class="number">1</span>))
             .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n)));
 
-        <span class="kw">let </span>built = flow.extract();
+        <span class="kw">let </span>built = flow.finalize();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
         <span class="kw">let </span>optimized = built.optimize_with(<span class="kw">super</span>::persist_pullup);
 
         <span class="macro">insta::assert_debug_snapshot!</span>(optimized.ir());
-        <span class="kw">for </span>(id, graph) <span class="kw">in </span>optimized.no_optimize().hydroflow_ir() {
+        <span class="kw">for </span>(id, graph) <span class="kw">in </span>optimized.compile_no_network::&lt;MultiGraph&gt;().hydroflow_ir() {
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="macro">format!</span>(<span class="string">"surface_graph_{id}"</span>)}, {
-                <span class="macro">insta::assert_display_snapshot!</span>(graph.surface_syntax_string());
+                <span class="macro">insta::assert_snapshot!</span>(graph.surface_syntax_string());
             });
         }
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>persist_pullup_behind_tee() {
-        <span class="kw">let </span>flow = <span class="kw">crate</span>::builder::FlowBuilder::&lt;MultiGraph&gt;::new();
-        <span class="kw">let </span>process = flow.process(<span class="kw-2">&amp;</span>());
+        <span class="kw">let </span>flow = <span class="kw">crate</span>::builder::FlowBuilder::new();
+        <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
-        <span class="kw">let </span>before_tee = flow
-            .source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
+        <span class="kw">let </span>before_tee = process.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>)).tick_batch().persist();
+
+        before_tee
+            .clone()
+            .map(<span class="macro">q!</span>(|v| v + <span class="number">1</span>))
             .all_ticks()
-            .map(<span class="macro">q!</span>(|v| v + <span class="number">1</span>));
+            .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n)));
 
-        before_tee.clone().for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n)));
+        before_tee
+            .clone()
+            .map(<span class="macro">q!</span>(|v| v + <span class="number">1</span>))
+            .all_ticks()
+            .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n)));
 
-        before_tee.for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n)));
-
-        <span class="kw">let </span>built = flow.extract();
+        <span class="kw">let </span>built = flow.finalize();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
@@ -153,9 +371,9 @@
 
         <span class="macro">insta::assert_debug_snapshot!</span>(optimized.ir());
 
-        <span class="kw">for </span>(id, graph) <span class="kw">in </span>optimized.no_optimize().hydroflow_ir() {
+        <span class="kw">for </span>(id, graph) <span class="kw">in </span>optimized.compile_no_network::&lt;MultiGraph&gt;().hydroflow_ir() {
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="macro">format!</span>(<span class="string">"surface_graph_{id}"</span>)}, {
-                <span class="macro">insta::assert_display_snapshot!</span>(graph.surface_syntax_string());
+                <span class="macro">insta::assert_snapshot!</span>(graph.surface_syntax_string());
             });
         }
     }

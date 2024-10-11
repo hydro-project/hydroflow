@@ -1,1 +1,0 @@
-searchState.loadedDescShard("cardinality_compute_pi", 0, "")

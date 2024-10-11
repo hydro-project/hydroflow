@@ -354,11 +354,32 @@
 <a href="#354" id="354">354</a>
 <a href="#355" id="355">355</a>
 <a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
 </pre></div><pre class="rust"><code><span class="attr">#![cfg_attr(
     feature = <span class="string">"diagnostics"</span>,
     feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)
 )]
-#![allow(clippy::explicit_auto_deref)]
 
 </span><span class="kw">use </span>std::path::PathBuf;
 
@@ -368,7 +389,7 @@
 <span class="kw">use </span>proc_macro2::{Ident, Literal, Span};
 <span class="kw">use </span>quote::{format_ident, quote};
 <span class="kw">use </span>syn::{
-    parse_macro_input, parse_quote, Attribute, GenericParam, ItemEnum, LitStr, Variant,
+    parse_macro_input, parse_quote, Attribute, Fields, GenericParam, ItemEnum, LitStr, Variant,
     WherePredicate,
 };
 
@@ -491,8 +512,8 @@
             <span class="kw">let </span>part_graph = partition_graph(flat_graph).unwrap();
             <span class="kw">let </span>part_mermaid = part_graph.to_mermaid(<span class="kw-2">&amp;</span>Default::default());
 
-            <span class="kw">let </span>lit0 = Literal::string(<span class="kw-2">&amp;*</span>flat_mermaid);
-            <span class="kw">let </span>lit1 = Literal::string(<span class="kw-2">&amp;*</span>part_mermaid);
+            <span class="kw">let </span>lit0 = Literal::string(<span class="kw-2">&amp;</span>flat_mermaid);
+            <span class="kw">let </span>lit1 = Literal::string(<span class="kw-2">&amp;</span>part_mermaid);
 
             <span class="kw">return </span><span class="macro">quote!</span> {
                 {
@@ -514,7 +535,7 @@
     <span class="kw">let </span>each = hydroflow_lang::graph::ops::OPERATORS.iter().map(|op| {
         <span class="kw">let </span>op_ident = Ident::new(op.name, Span::call_site());
         <span class="kw">let </span>op_filename = <span class="macro">format!</span>(<span class="string">"../../docs/docgen/{}.md"</span>, op.name);
-        <span class="kw">let </span>lit_filename = LitStr::new(<span class="kw-2">&amp;*</span>op_filename, Span::call_site());
+        <span class="kw">let </span>lit_filename = LitStr::new(<span class="kw-2">&amp;</span>op_filename, Span::call_site());
         <span class="macro">quote!</span> {
             <span class="attr">#[doc = <span class="macro">include_str!</span>(#lit_filename)]
             </span><span class="kw">mod </span>#op_ident {}
@@ -599,21 +620,21 @@
     <span class="kw">let </span>root = root();
 
     <span class="kw">let </span>ItemEnum {
-        ident,
+        ident: item_ident,
         generics,
         variants,
         ..
     } = <span class="macro">parse_macro_input!</span>(item <span class="kw">as </span>ItemEnum);
 
     <span class="comment">// Sort variants alphabetically.
-    </span><span class="kw">let </span><span class="kw-2">mut </span>variants_sorted = variants.into_iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-    variants_sorted.sort_by(|a, b| a.ident.cmp(<span class="kw-2">&amp;</span>b.ident));
+    </span><span class="kw">let </span><span class="kw-2">mut </span>variants = variants.into_iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+    variants.sort_by(|a, b| a.ident.cmp(<span class="kw-2">&amp;</span>b.ident));
 
-    <span class="kw">let </span>variant_pusherator_generics = variants_sorted
+    <span class="kw">let </span>variant_pusherator_generics = variants
         .iter()
         .map(|variant| <span class="macro">format_ident!</span>(<span class="string">"__Pusherator{}"</span>, variant.ident))
         .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-    <span class="kw">let </span>variant_pusherator_localvars = variants_sorted
+    <span class="kw">let </span>variant_pusherator_localvars = variants
         .iter()
         .map(|variant| {
             <span class="macro">format_ident!</span>(
@@ -623,22 +644,22 @@
             )
         })
         .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-    <span class="kw">let </span>variant_output_types = variants_sorted
+    <span class="kw">let </span>variant_output_types = variants
         .iter()
         .map(|variant| <span class="kw">match </span><span class="kw-2">&amp;</span>variant.fields {
-            syn::Fields::Named(fields) =&gt; {
+            Fields::Named(fields) =&gt; {
                 <span class="kw">let </span>field_types = fields.named.iter().map(|field| <span class="kw-2">&amp;</span>field.ty);
                 <span class="macro">quote!</span> {
                     ( #( #field_types, )* )
                 }
             }
-            syn::Fields::Unnamed(fields) =&gt; {
+            Fields::Unnamed(fields) =&gt; {
                 <span class="kw">let </span>field_types = fields.unnamed.iter().map(|field| <span class="kw-2">&amp;</span>field.ty);
                 <span class="macro">quote!</span> {
                     ( #( #field_types, )* )
                 }
             }
-            syn::Fields::Unit =&gt; <span class="macro">quote!</span>(()),
+            Fields::Unit =&gt; <span class="macro">quote!</span>(()),
         })
         .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
@@ -662,38 +683,38 @@
     <span class="kw">let </span>(impl_generics_item, ty_generics, where_clause_item) = generics.split_for_impl();
     <span class="kw">let </span>(impl_generics, _ty_generics, where_clause) = full_generics.split_for_impl();
 
-    <span class="kw">let </span>variant_pats = variants_sorted
+    <span class="kw">let </span>variant_pats = variants
         .iter()
         .zip(variant_pusherator_localvars.iter())
         .map(|(variant, pushvar)| {
             <span class="kw">let </span>Variant { ident, fields, .. } = variant;
-            <span class="kw">let </span>idents = fields
-                .iter()
-                .enumerate()
-                .map(|(i, field)| {
-                    field
-                        .ident
-                        .clone()
-                        .unwrap_or_else(|| <span class="macro">format_ident!</span>(<span class="string">"_{}"</span>, i))
-                })
-                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-            <span class="kw">let </span>(fields_pat, push_item) = <span class="kw">match </span>fields {
-                syn::Fields::Named(<span class="kw">_</span>) =&gt; {
-                    (<span class="macro">quote!</span>( { #( #idents, )* } ), <span class="macro">quote!</span>( ( #( #idents, )* ) ))
-                }
-                syn::Fields::Unnamed(<span class="kw">_</span>) =&gt; {
-                    (<span class="macro">quote!</span>( ( #( #idents ),* ) ), <span class="macro">quote!</span>( ( #( #idents, )* ) ))
-                }
-                syn::Fields::Unit =&gt; (<span class="macro">quote!</span>(), <span class="macro">quote!</span>(())),
-            };
+            <span class="kw">let </span>(fields_pat, push_item) = field_pattern_item(fields);
             <span class="macro">quote!</span> {
                 <span class="self">Self</span>::#ident #fields_pat =&gt; #pushvar.give(#push_item)
             }
         });
 
+    <span class="kw">let </span>single_impl = (<span class="number">1 </span>== variants.len()).then(|| {
+        <span class="kw">let </span>Variant { ident, fields, .. } = variants.first().unwrap();
+        <span class="kw">let </span>(fields_pat, push_item) = field_pattern_item(fields);
+        <span class="kw">let </span>out_type = variant_output_types.first().unwrap();
+        <span class="macro">quote!</span> {
+            <span class="kw">impl </span>#impl_generics_item #root::util::demux_enum::SingleVariant
+                <span class="kw">for </span>#item_ident #ty_generics #where_clause_item
+            {
+                <span class="kw">type </span>Output = #out_type;
+                <span class="kw">fn </span>single_variant(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Output {
+                    <span class="kw">match </span><span class="self">self </span>{
+                        <span class="self">Self</span>::#ident #fields_pat =&gt; #push_item,
+                    }
+                }
+            }
+        }
+    });
+
     <span class="macro">quote!</span> {
         <span class="kw">impl </span>#impl_generics #root::util::demux_enum::DemuxEnum&lt;( #( #variant_pusherator_generics, )* )&gt;
-            <span class="kw">for </span>#ident #ty_generics #where_clause
+            <span class="kw">for </span>#item_ident #ty_generics #where_clause
         {
             <span class="kw">fn </span>demux_enum(
                 <span class="self">self</span>,
@@ -706,8 +727,31 @@
             }
         }
 
-        <span class="kw">impl </span>#impl_generics_item #root::util::demux_enum::DemuxEnumBase <span class="kw">for </span>#ident #ty_generics #where_clause_item {}
+        <span class="kw">impl </span>#impl_generics_item #root::util::demux_enum::DemuxEnumBase
+            <span class="kw">for </span>#item_ident #ty_generics #where_clause_item {}
+
+        #single_impl
     }
     .into()
+}
+
+<span class="doccomment">/// (fields pattern, push item expr)
+</span><span class="kw">fn </span>field_pattern_item(fields: <span class="kw-2">&amp;</span>Fields) -&gt; (proc_macro2::TokenStream, proc_macro2::TokenStream) {
+    <span class="kw">let </span>idents = fields
+        .iter()
+        .enumerate()
+        .map(|(i, field)| {
+            field
+                .ident
+                .clone()
+                .unwrap_or_else(|| <span class="macro">format_ident!</span>(<span class="string">"_{}"</span>, i))
+        })
+        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+    <span class="kw">let </span>(fields_pat, push_item) = <span class="kw">match </span>fields {
+        Fields::Named(<span class="kw">_</span>) =&gt; (<span class="macro">quote!</span>( { #( #idents, )* } ), <span class="macro">quote!</span>( ( #( #idents, )* ) )),
+        Fields::Unnamed(<span class="kw">_</span>) =&gt; (<span class="macro">quote!</span>( ( #( #idents ),* ) ), <span class="macro">quote!</span>( ( #( #idents, )* ) )),
+        Fields::Unit =&gt; (<span class="macro">quote!</span>(), <span class="macro">quote!</span>(())),
+    };
+    (fields_pat, push_item)
 }
 </code></pre></div></section></main></body></html>

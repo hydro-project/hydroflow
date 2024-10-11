@@ -445,6 +445,9 @@
 <a href="#445" id="445">445</a>
 <a href="#446" id="446">446</a>
 <a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::cmp::Ordering::{Equal, Greater, Less};
 <span class="kw">use </span>std::cmp::Ordering;
 <span class="kw">use </span>std::collections::HashMap;
@@ -470,15 +473,15 @@
     <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: GhtInner&lt;Head, Node&gt;) -&gt; bool {
         <span class="kw">let </span><span class="kw-2">mut </span>changed = <span class="bool-val">false</span>;
 
-        <span class="kw">for </span>(k, v) <span class="kw">in </span>other.children.into_iter() {
+        <span class="kw">for </span>(k, v) <span class="kw">in </span>other.children {
             <span class="kw">match </span><span class="self">self</span>.children.entry(k) {
                 std::collections::hash_map::Entry::Occupied(<span class="kw-2">mut </span>occupied) =&gt; {
-                    changed |= occupied.get_mut().merge(v)
+                    changed |= occupied.get_mut().merge_node(v);
                 }
                 std::collections::hash_map::Entry::Vacant(vacant) =&gt; {
                     vacant.insert(v);
-                    changed = <span class="bool-val">true
-                </span>}
+                    changed = <span class="bool-val">true</span>;
+                }
             }
         }
         changed
@@ -686,9 +689,12 @@
 }
 
 <span class="comment">//////////////////////////
-</span><span class="doccomment">/// BiMorphisms for GHT
-</span><span class="comment">//////////////////////////
-</span><span class="doccomment">/// Bimorphism for the cartesian product of two GHT *subtries*. Output is a set of all possible pairs of
+// BiMorphisms for GHT
+//
+
+</span><span class="doccomment">/// Bimorphism for the cartesian product of two GHT *subtries*. 
+/// 
+/// Output is a set of all possible pairs of
 /// *suffixes* from the two subtries. If you use this at the root of a GHT, it's a full cross-product.
 /// If you use this at an internal node, it provides a 'factorized' representation with only the suffix
 /// cross-products expanded.

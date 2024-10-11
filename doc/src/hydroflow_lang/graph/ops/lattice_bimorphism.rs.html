@@ -93,13 +93,12 @@
 <a href="#93" id="93">93</a>
 <a href="#94" id="94">94</a>
 <a href="#95" id="95">95</a>
-<a href="#96" id="96">96</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use super</span>::{
     OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    JOIN_CROSS_JOIN_FLOW_PROP_FN, RANGE_0, RANGE_1,
+    RANGE_0, RANGE_1,
 };
 
 <span class="comment">// TODO(mingwei):
@@ -118,8 +117,7 @@
     ports_inn: <span class="prelude-val">Some</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote!</span> { <span class="number">0</span>, <span class="number">1 </span>})),
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    flow_prop_fn: <span class="prelude-val">Some</span>(JOIN_CROSS_JOIN_FLOW_PROP_FN),
-    write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+    write_fn: |<span class="kw-2">&amp;</span>WriteContextArgs {
                    root,
                    context,
                    op_span,
@@ -133,7 +131,7 @@
                <span class="kw">_</span>| {
         <span class="macro">assert!</span>(is_pull);
 
-        <span class="kw">let </span>func = wc.wrap_check_func_arg(<span class="kw-2">&amp;</span>arguments[<span class="number">0</span>]);
+        <span class="kw">let </span>func = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
         <span class="kw">let </span>lhs_state_handle = <span class="kw-2">&amp;</span>arguments_handles[<span class="number">1</span>];
         <span class="kw">let </span>rhs_state_handle = <span class="kw-2">&amp;</span>arguments_handles[<span class="number">2</span>];
 
