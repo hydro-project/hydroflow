@@ -4,14 +4,30 @@ use lattices::algebra::{
     associativity_single, commutativity_single, distributive_single, linearity_single,
 };
 use libfuzzer_sys::fuzz_target;
+use std::fs::{OpenOptions, create_dir_all};
+use std::io::Write;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 fuzz_target!(|data: &[u8]| {
-    // Define your function f here inside the fuzz target
-    let f = |x: u8, y: u8| x.wrapping_add(y); // Use wrapping addition
-    let q = |x: u8| x; // Identity function
-    let g = |x: u8, y: u8| x.wrapping_add(y); // Use wrapping addition
+
+    let crash_dir = "./artifacts/all_fuzz/crashes/";
+
+    // Create the directory if it doesn't exist
+    create_dir_all(crash_dir).expect("Failed to create crash log directory");
+
+    // Create a unique filename using the current timestamp
+    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+    let log_file_path = format!("{}crashes_{}.txt", crash_dir, timestamp);
+
+    // Open the crash log file 
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(&log_file_path)
+        .expect("Failed to open crash log file");
 
     if data.len() < 3 {
+        writeln!(file, "Insufficient data length: expected at least 3 bytes").unwrap();
         return; // Ensure there's enough data for the fuzz target
     }
 
@@ -19,20 +35,29 @@ fuzz_target!(|data: &[u8]| {
     let b = data[1];
     let c = data[2];
 
-    // Running all property tests
-    println!("Running associativity fuzz test");
+    // Define the functions for testing
+    let f = |x: u8, y: u8| x ^ y;              // XOR operation
+    let g = |x: u8, y: u8| x.wrapping_mul(y);  // Multiplication modulo 256
+    let q = |x: u8| x;                         // Identity function
+
+
     let associativity_result = associativity_single(a, b, c, f);
-    println!("Associativity test result: {}", associativity_result);
+    if !associativity_result {
+        writeln!(file, "Associativity test failed with inputs: a={}, b={}, c={}", a, b, c).unwrap();
+    }
 
-    println!("Running commutativity fuzz test");
     let commutativity_result = commutativity_single(a, b, f);
-    println!("Commutativity test result: {}", commutativity_result);
+    if !commutativity_result {
+        writeln!(file, "Commutativity test failed with inputs: a={}, b={}", a, b).unwrap();
+    }
 
-    println!("Running linearity fuzz test");
     let linearity_result = linearity_single(a, b, f, q, g);
-    println!("Linearity test result: {}", linearity_result);
+    if !linearity_result {
+        writeln!(file, "Linearity test failed with inputs: a={}, b={}", a, b).unwrap();
+    }
 
-    println!("Running distributivity fuzz test");
     let distributivity_result = distributive_single(a, b, c, f, g);
-    println!("Distributivity test result: {}", distributivity_result);
+    if !distributivity_result {
+        writeln!(file, "Distributivity test failed with inputs: a={}, b={}, c={}", a, b, c).unwrap();
+    }
 });
