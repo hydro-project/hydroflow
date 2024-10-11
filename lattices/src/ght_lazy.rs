@@ -3,7 +3,6 @@ use std::marker::PhantomData;
 
 use sealed::sealed;
 use variadics::variadic_collections::VariadicCollection;
-use variadics::variadic_collections::VariadicCollection;
 use variadics::{
     var_args, var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt,
 };

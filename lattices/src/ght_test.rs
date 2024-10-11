@@ -15,7 +15,7 @@ mod test {
         GhtCartesianProductBimorphism,
         //     GhtNodeKeyedBimorphism, GhtValTypeProductBimorphism,
     };
-    use crate::ght_lazy::{ColtNode, ColtNodeTail, ColumnLazyTrieNode, ForestFindLeaf, GhtForest}; /* GhtForestStruct}; */
+    use crate::ght_lazy::{ColtNode, ColumnLazyTrieNode, ForestFindLeaf, GhtForest}; /* GhtForestStruct}; */
     use crate::{GhtForestType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
 
     #[test]
