@@ -1558,31 +1558,6 @@
 <a href="#1558" id="1558">1558</a>
 <a href="#1559" id="1559">1559</a>
 <a href="#1560" id="1560">1560</a>
-<a href="#1561" id="1561">1561</a>
-<a href="#1562" id="1562">1562</a>
-<a href="#1563" id="1563">1563</a>
-<a href="#1564" id="1564">1564</a>
-<a href="#1565" id="1565">1565</a>
-<a href="#1566" id="1566">1566</a>
-<a href="#1567" id="1567">1567</a>
-<a href="#1568" id="1568">1568</a>
-<a href="#1569" id="1569">1569</a>
-<a href="#1570" id="1570">1570</a>
-<a href="#1571" id="1571">1571</a>
-<a href="#1572" id="1572">1572</a>
-<a href="#1573" id="1573">1573</a>
-<a href="#1574" id="1574">1574</a>
-<a href="#1575" id="1575">1575</a>
-<a href="#1576" id="1576">1576</a>
-<a href="#1577" id="1577">1577</a>
-<a href="#1578" id="1578">1578</a>
-<a href="#1579" id="1579">1579</a>
-<a href="#1580" id="1580">1580</a>
-<a href="#1581" id="1581">1581</a>
-<a href="#1582" id="1582">1582</a>
-<a href="#1583" id="1583">1583</a>
-<a href="#1584" id="1584">1584</a>
-<a href="#1585" id="1585">1585</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -1602,17 +1577,18 @@
     WriteContextArgs, OPERATORS,
 };
 <span class="kw">use super</span>::{
-    change_spans, get_operator_generics, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphNode,
-    GraphNodeId, GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT,
-    HANDOFF_NODE_STR, HYDROFLOW, MODULE_BOUNDARY_NODE_STR,
+    change_spans, get_operator_generics, Color, DiMulGraph, GraphEdgeId, GraphNode, GraphNodeId,
+    GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
+    HYDROFLOW, MODULE_BOUNDARY_NODE_STR,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::{PrettyRowCol, PrettySpan};
 <span class="kw">use </span><span class="kw">crate</span>::process_singletons;
 
-<span class="doccomment">/// A graph representing a Hydroflow dataflow graph (with or without subgraph partitioning,
-/// stratification, and handoff insertion). This is a "meta" graph used for generating Rust source
-/// code in macros from Hydroflow surface sytnax.
+<span class="doccomment">/// An abstract "meta graph" representation of a Hydroflow graph.
+///
+/// Can be with or without subgraph partitioning, stratification, and handoff insertion. This is
+/// the meta graph used for generating Rust source code in macros from Hydroflow surface sytnax.
 ///
 /// This struct has a lot of methods for manipulating the graph, vaguely grouped together in
 /// separate `impl` blocks. You might notice a few particularly specific arbitray-seeming methods
@@ -1643,10 +1619,6 @@
     </span>node_singleton_references: SparseSecondaryMap&lt;GraphNodeId, Vec&lt;<span class="prelude-ty">Option</span>&lt;GraphNodeId&gt;&gt;&gt;,
     <span class="doccomment">/// What variable name each graph node belongs to (if any). For debugging (graph writing) purposes only.
     </span>node_varnames: SparseSecondaryMap&lt;GraphNodeId, Varname&gt;,
-
-    <span class="comment">// TODO(mingwei): #[serde(skip)] this and recompute as needed, to reduce codegen.
-    </span><span class="doccomment">/// Stream properties.
-    </span>flow_props: SecondaryMap&lt;GraphEdgeId, FlowProps&gt;,
 
     <span class="doccomment">/// If this subgraph is 'lazy' then when it sends data to a lower stratum it does not cause a new tick to start
     /// This is to support lazy defers
@@ -2292,25 +2264,6 @@
     }
 }
 
-<span class="doccomment">/// Flow properties
-</span><span class="kw">impl </span>HydroflowGraph {
-    <span class="doccomment">/// Gets the flow properties associated with the edge, if set.
-    </span><span class="kw">pub fn </span>edge_flow_props(<span class="kw-2">&amp;</span><span class="self">self</span>, edge_id: GraphEdgeId) -&gt; <span class="prelude-ty">Option</span>&lt;FlowProps&gt; {
-        <span class="self">self</span>.flow_props.get(edge_id).copied()
-    }
-
-    <span class="doccomment">/// Sets the flow properties associated with the given edge.
-    ///
-    /// Returns the old flow properties, if set.
-    </span><span class="kw">pub fn </span>set_edge_flow_props(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        edge_id: GraphEdgeId,
-        flow_props: FlowProps,
-    ) -&gt; <span class="prelude-ty">Option</span>&lt;FlowProps&gt; {
-        <span class="self">self</span>.flow_props.insert(edge_id, flow_props)
-    }
-}
-
 <span class="doccomment">/// Display/output methods.
 </span><span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// Helper to generate a deterministic `Ident` for the given node.
@@ -2330,7 +2283,7 @@
             (<span class="bool-val">false</span>, <span class="kw-2">&amp;</span>GraphNode::Handoff { dst_span, .. }) =&gt; dst_span,
             (<span class="kw">_</span>, GraphNode::ModuleBoundary { .. }) =&gt; <span class="macro">panic!</span>(),
         };
-        Ident::new(<span class="kw-2">&amp;*</span>name, span)
+        Ident::new(<span class="kw-2">&amp;</span>name, span)
     }
 
     <span class="doccomment">/// For per-node singleton references. Helper to generate a deterministic `Ident` for the given node.
@@ -2409,9 +2362,9 @@
                 GraphNode::ModuleBoundary { .. } =&gt; <span class="macro">panic!</span>(),
             })
             .map(|(node_id, (src_span, dst_span))| {
-                <span class="kw">let </span>ident_send = Ident::new(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">"hoff_{:?}_send"</span>, node_id.data()), dst_span);
-                <span class="kw">let </span>ident_recv = Ident::new(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">"hoff_{:?}_recv"</span>, node_id.data()), src_span);
-                <span class="kw">let </span>hoff_name = Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">"handoff {:?}"</span>, node_id));
+                <span class="kw">let </span>ident_send = Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"hoff_{:?}_send"</span>, node_id.data()), dst_span);
+                <span class="kw">let </span>ident_recv = Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"hoff_{:?}_recv"</span>, node_id.data()), src_span);
+                <span class="kw">let </span>hoff_name = Literal::string(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"handoff {:?}"</span>, node_id));
                 <span class="macro">quote!</span> {
                     <span class="kw">let </span>(#ident_send, #ident_recv) =
                         #hf.make_edge::&lt;<span class="kw">_</span>, #root::scheduled::handoff::VecHandoff&lt;<span class="kw">_</span>&gt;&gt;(#hoff_name);
@@ -2525,13 +2478,6 @@
                                 })
                                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-                            <span class="comment">// Corresponds 1:1 to inputs.
-                            </span><span class="kw">let </span>flow_props_in = <span class="self">self
-                                </span>.graph
-                                .predecessor_edges(node_id)
-                                .map(|edge_id| <span class="self">self</span>.flow_props.get(edge_id).copied())
-                                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-
                             <span class="kw">let </span>is_pull = idx &lt; pull_to_push_idx;
 
                             <span class="kw">let </span>singleton_output_ident = <span class="kw-2">&amp;</span><span class="kw">if </span>op_constraints.has_singleton_output {
@@ -2574,14 +2520,13 @@
                                 op_span,
                                 ident: <span class="kw-2">&amp;</span>ident,
                                 is_pull,
-                                inputs: <span class="kw-2">&amp;*</span>inputs,
-                                outputs: <span class="kw-2">&amp;*</span>outputs,
+                                inputs: <span class="kw-2">&amp;</span>inputs,
+                                outputs: <span class="kw-2">&amp;</span>outputs,
                                 singleton_output_ident,
                                 op_name,
                                 op_inst,
                                 arguments,
                                 arguments_handles,
-                                flow_props_in: <span class="kw-2">&amp;*</span>flow_props_in,
                             };
 
                             <span class="kw">let </span>write_result =
@@ -2603,30 +2548,45 @@
                             subgraph_op_iter_code.push(write_iterator);
 
                             <span class="kw">if </span>include_type_guards {
-                                <span class="kw">let </span>source_info = {
-                                    <span class="comment">// TODO: This crashes when running tests from certain directories because of diagnostics flag being turned on when it should not be on.
-                                    // Not sure of the solution yet, but it is not too important because the file is usually obvious as there can only be one until module support is added.
-                                    // #[cfg(feature = "diagnostics")]
-                                    // let path = op_span.unwrap().source_file().path();
-                                    </span><span class="attr">#[cfg(feature = <span class="string">"diagnostics"</span>)]
-                                    </span><span class="kw">let </span>location = <span class="string">"unknown"</span>; <span class="comment">// path.display();
+                                <span class="attr">#[cfg(not(feature = <span class="string">"diagnostics"</span>))]
+                                </span><span class="kw">let </span>source_info = <span class="prelude-ty">Option</span>::&lt;String&gt;::None;
 
-                                    </span><span class="attr">#[cfg(not(feature = <span class="string">"diagnostics"</span>))]
-                                    </span><span class="kw">let </span>location = <span class="string">"unknown"</span>;
+                                <span class="attr">#[cfg(feature = <span class="string">"diagnostics"</span>)]
+                                </span><span class="kw">let </span>source_info = std::panic::catch_unwind(|| op_span.unwrap())
+                                    .map(|op_span| {
+                                        <span class="macro">format!</span>(
+                                            <span class="string">"loc_{}_{}_{}_{}_{}"</span>,
+                                            op_span
+                                                .source_file()
+                                                .path()
+                                                .display()
+                                                .to_string()
+                                                .replace(|x: char| !x.is_alphanumeric(), <span class="string">"_"</span>),
+                                            op_span.start().line(),
+                                            op_span.start().column(),
+                                            op_span.end().line(),
+                                            op_span.end().column(),
+                                        )
+                                    })
+                                    .ok();
 
-                                    <span class="kw">let </span>location = location
-                                        .to_string()
-                                        .replace(|x: char| !x.is_alphanumeric(), <span class="string">"_"</span>);
-
+                                <span class="attr">#[cfg_attr(
+                                    not(feature = <span class="string">"diagnostics"</span>),
+                                    expect(
+                                        clippy::unnecessary_literal_unwrap,
+                                        reason = <span class="string">"conditional compilation"
+                                    </span>)
+                                )]
+                                </span><span class="kw">let </span>source_info = source_info.unwrap_or_else(|| {
                                     <span class="macro">format!</span>(
-                                        <span class="string">"loc_{}_start_{}_{}_end_{}_{}"</span>,
-                                        location,
+                                        <span class="string">"loc_nopath_{}_{}_{}_{}"</span>,
                                         op_span.start().line,
                                         op_span.start().column,
                                         op_span.end().line,
                                         op_span.end().column
                                     )
-                                };
+                                });
+
                                 <span class="kw">let </span>fn_ident = <span class="macro">format_ident!</span>(
                                     <span class="string">"{}__{}__{}"</span>,
                                     ident,
@@ -2743,7 +2703,7 @@
                     }
                 };
 
-                <span class="kw">let </span>hoff_name = Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">"Subgraph {:?}"</span>, subgraph_id));
+                <span class="kw">let </span>hoff_name = Literal::string(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Subgraph {:?}"</span>, subgraph_id));
                 <span class="kw">let </span>stratum = Literal::usize_unsuffixed(
                     <span class="self">self</span>.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(<span class="number">0</span>),
                 );
@@ -2777,11 +2737,11 @@
         };
 
         <span class="kw">let </span>meta_graph_json = serde_json::to_string(<span class="kw-2">&amp;</span><span class="self">self</span>).unwrap();
-        <span class="kw">let </span>meta_graph_json = Literal::string(<span class="kw-2">&amp;*</span>meta_graph_json);
+        <span class="kw">let </span>meta_graph_json = Literal::string(<span class="kw-2">&amp;</span>meta_graph_json);
 
         <span class="kw">let </span>serde_diagnostics: Vec&lt;<span class="kw">_</span>&gt; = diagnostics.iter().map(Diagnostic::to_serde).collect();
         <span class="kw">let </span>diagnostics_json = serde_json::to_string(<span class="kw-2">&amp;*</span>serde_diagnostics).unwrap();
-        <span class="kw">let </span>diagnostics_json = Literal::string(<span class="kw-2">&amp;*</span>diagnostics_json);
+        <span class="kw">let </span>diagnostics_json = Literal::string(<span class="kw-2">&amp;</span>diagnostics_json);
 
         <span class="macro">quote!</span> {
             {
@@ -2944,7 +2904,7 @@
             }
             graph_write.write_node(
                 node_id,
-                <span class="kw-2">&amp;*</span><span class="kw">if </span>write_config.op_short_text {
+                <span class="kw-2">&amp;</span><span class="kw">if </span>write_config.op_short_text {
                     node.to_name_string()
                 } <span class="kw">else if </span>write_config.op_text_no_imports {
                     <span class="comment">// Remove any lines that start with "use" (imports)
@@ -2985,19 +2945,11 @@
                 dst_port = <span class="self">self</span>.edge_ports(succ_edge).<span class="number">1</span>;
             }
 
-            <span class="kw">let </span>flow_props = <span class="self">self</span>.edge_flow_props(edge_id); <span class="comment">// Should be the same both before &amp; after handoffs.
-            </span><span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
+            <span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
             <span class="kw">let </span>delay_type = <span class="self">self
                 </span>.node_op_inst(dst_id)
                 .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-            graph_write.write_edge(
-                src_id,
-                dst_id,
-                delay_type,
-                flow_props,
-                label.as_deref(),
-                <span class="bool-val">false</span>,
-            )<span class="question-mark">?</span>;
+            graph_write.write_edge(src_id, dst_id, delay_type, label.as_deref(), <span class="bool-val">false</span>)<span class="question-mark">?</span>;
         }
 
         <span class="comment">// Write reference edges.
@@ -3010,10 +2962,8 @@
                     .flatten()
                 {
                     <span class="kw">let </span>delay_type = <span class="prelude-val">Some</span>(DelayType::Stratum);
-                    <span class="kw">let </span>flow_props = <span class="prelude-val">None</span>;
                     <span class="kw">let </span>label = <span class="prelude-val">None</span>;
-                    graph_write
-                        .write_edge(src_ref_id, dst_id, delay_type, flow_props, label, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+                    graph_write.write_edge(src_ref_id, dst_id, delay_type, label, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
                 }
             }
         }
@@ -3034,7 +2984,7 @@
                     {
                         <span class="macro">assert!</span>(!varname_node_ids.is_empty());
                         graph_write.write_varname(
-                            <span class="kw-2">&amp;*</span>varname.<span class="number">0</span>.to_string(),
+                            <span class="kw-2">&amp;</span>varname.<span class="number">0</span>.to_string(),
                             varname_node_ids.into_iter(),
                             <span class="prelude-val">Some</span>(subgraph_id),
                         )<span class="question-mark">?</span>;
@@ -3043,9 +2993,9 @@
                 graph_write.write_subgraph_end()<span class="question-mark">?</span>;
             }
         } <span class="kw">else if </span>!write_config.no_varnames {
-            <span class="kw">for </span>(varname, varname_node_ids) <span class="kw">in </span>varname_nodes.into_iter() {
+            <span class="kw">for </span>(varname, varname_node_ids) <span class="kw">in </span>varname_nodes {
                 graph_write.write_varname(
-                    <span class="kw-2">&amp;*</span>varname.<span class="number">0</span>.to_string(),
+                    <span class="kw-2">&amp;</span>varname.<span class="number">0</span>.to_string(),
                     varname_node_ids.into_iter(),
                     <span class="prelude-val">None</span>,
                 )<span class="question-mark">?</span>;
@@ -3133,35 +3083,35 @@
 
 <span class="doccomment">/// Configuration for writing graphs.
 </span><span class="attr">#[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = <span class="string">"debugging"</span>, derive(clap::Args))]
+#[cfg_attr(feature = <span class="string">"clap-derive"</span>, derive(clap::Args))]
 </span><span class="kw">pub struct </span>WriteConfig {
     <span class="doccomment">/// Subgraphs will not be rendered if set.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"clap-derive"</span>, arg(long))]
     </span><span class="kw">pub </span>no_subgraphs: bool,
     <span class="doccomment">/// Variable names will not be rendered if set.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"clap-derive"</span>, arg(long))]
     </span><span class="kw">pub </span>no_varnames: bool,
     <span class="doccomment">/// Will not render pull/push shapes if set.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"clap-derive"</span>, arg(long))]
     </span><span class="kw">pub </span>no_pull_push: bool,
     <span class="doccomment">/// Will not render handoffs if set.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"clap-derive"</span>, arg(long))]
     </span><span class="kw">pub </span>no_handoffs: bool,
     <span class="doccomment">/// Will not render singleton references if set.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"clap-derive"</span>, arg(long))]
     </span><span class="kw">pub </span>no_references: bool,
 
     <span class="doccomment">/// Op text will only be their name instead of the whole source.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"clap-derive"</span>, arg(long))]
     </span><span class="kw">pub </span>op_short_text: bool,
     <span class="doccomment">/// Op text will exclude any line that starts with "use".
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"clap-derive"</span>, arg(long))]
     </span><span class="kw">pub </span>op_text_no_imports: bool,
 }
 
 <span class="doccomment">/// Enum for choosing between mermaid and dot graph writing.
 </span><span class="attr">#[derive(Copy, Clone, Debug)]
-#[cfg_attr(feature = <span class="string">"debugging"</span>, derive(clap::Parser, clap::ValueEnum))]
+#[cfg_attr(feature = <span class="string">"clap-derive"</span>, derive(clap::Parser, clap::ValueEnum))]
 </span><span class="kw">pub enum </span>WriteGraphType {
     <span class="doccomment">/// Mermaid graphs.
     </span>Mermaid,

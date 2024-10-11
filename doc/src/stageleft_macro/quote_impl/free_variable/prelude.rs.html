@@ -5,29 +5,11 @@
 <a href="#5" id="5">5</a>
 <a href="#6" id="6">6</a>
 <a href="#7" id="7">7</a>
-<a href="#8" id="8">8</a>
-<a href="#9" id="9">9</a>
-<a href="#10" id="10">10</a>
-<a href="#11" id="11">11</a>
-<a href="#12" id="12">12</a>
-<a href="#13" id="13">13</a>
-<a href="#14" id="14">14</a>
-<a href="#15" id="15">15</a>
-<a href="#16" id="16">16</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashSet;
-
-<span class="kw">use </span>lazy_static::lazy_static;
-
-<span class="macro">lazy_static!</span> {
-    <span class="kw">static </span><span class="kw-2">ref </span>PRELUDE: HashSet&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; = {
-        <span class="macro">vec!</span>[<span class="string">"Some"</span>, <span class="string">"None"</span>, <span class="string">"Ok"</span>, <span class="string">"Err"</span>]
-            .into_iter()
-            .collect::&lt;HashSet&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;&gt;()
-    };
-}
+</pre></div><pre class="rust"><code><span class="kw">const </span>PRELUDE: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str] = <span class="kw-2">&amp;</span>[<span class="string">"Err"</span>, <span class="string">"None"</span>, <span class="string">"Ok"</span>, <span class="string">"Some"</span>];
 
 <span class="kw">pub fn </span>is_prelude(ident: <span class="kw-2">&amp;</span>syn::Ident) -&gt; bool {
     <span class="kw">let </span>ident_str = ident.to_string();
-    PRELUDE.contains(<span class="kw-2">&amp;</span>ident_str.as_str())
+    <span class="comment">// Linear search is fast enough for four items.
+    </span>PRELUDE.contains(<span class="kw-2">&amp;</span>ident_str.as_str())
 }
 </code></pre></div></section></main></body></html>

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["first_ten_distributed"],"macro":["first_ten_distributed_runtime"]};
+window.SIDEBAR_ITEMS = {"fn":["first_ten_distributed"],"struct":["P1","P2"]};

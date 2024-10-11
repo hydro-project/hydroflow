@@ -310,20 +310,54 @@
 <a href="#310" id="310">310</a>
 <a href="#311" id="311">311</a>
 <a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use </span>anyhow::{bail, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>anyhow::{bail, Context, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>futures_core::Future;
-<span class="kw">use </span>hydroflow_cli_integration::{InitConfig, ServerPort};
+<span class="kw">use </span>futures::Future;
+<span class="kw">use </span>hydroflow_deploy_integration::{InitConfig, ServerPort};
 <span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>tokio::sync::{mpsc, RwLock};
 
 <span class="kw">use </span><span class="kw">super</span>::build::{build_crate_memoized, BuildError, BuildOutput, BuildParams};
 <span class="kw">use </span><span class="kw">super</span>::ports::{<span class="self">self</span>, HydroflowPortConfig, HydroflowSink, SourcePath};
+<span class="kw">use </span><span class="kw">super</span>::tracing_options::TracingOptions;
 <span class="kw">use </span><span class="kw">crate</span>::progress::ProgressTracker;
 <span class="kw">use crate</span>::{
     Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
@@ -333,7 +367,7 @@
     id: usize,
     <span class="kw">pub</span>(<span class="kw">super</span>) on: Arc&lt;<span class="kw">dyn </span>Host&gt;,
     build_params: BuildParams,
-    perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+    tracing: <span class="prelude-ty">Option</span>&lt;TracingOptions&gt;,
     args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
     external_ports: Vec&lt;u16&gt;,
@@ -358,7 +392,7 @@
 }
 
 <span class="kw">impl </span>HydroflowCrateService {
-    <span class="attr">#[allow(clippy::too_many_arguments)]
+    <span class="attr">#[expect(clippy::too_many_arguments, reason = <span class="string">"internal code"</span>)]
     </span><span class="kw">pub fn </span>new(
         id: usize,
         src: PathBuf,
@@ -366,7 +400,10 @@
         bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
         example: <span class="prelude-ty">Option</span>&lt;String&gt;,
         profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
-        perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+        rustflags: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        target_dir: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+        no_default_features: bool,
+        tracing: <span class="prelude-ty">Option</span>&lt;TracingOptions&gt;,
         features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
@@ -374,13 +411,23 @@
     ) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>target_type = on.target_type();
 
-        <span class="kw">let </span>build_params = BuildParams::new(src, bin, example, profile, target_type, features);
+        <span class="kw">let </span>build_params = BuildParams::new(
+            src,
+            bin,
+            example,
+            profile,
+            rustflags,
+            target_dir,
+            no_default_features,
+            target_type,
+            features,
+        );
 
         <span class="self">Self </span>{
             id,
             on,
             build_params,
-            perf,
+            tracing,
             args,
             display_id,
             external_ports,
@@ -495,13 +542,12 @@
         }
 
         ProgressTracker::with_group(
-            <span class="kw-2">&amp;</span><span class="self">self
-                </span>.display_id
+            <span class="self">self</span>.display_id
                 .clone()
                 .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id)),
             <span class="prelude-val">None</span>,
             || <span class="kw">async </span>{
-                <span class="kw">let </span>built = <span class="self">self</span>.build().<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>built = ProgressTracker::leaf(<span class="string">"build"</span>, <span class="self">self</span>.build()).<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="kw">let </span>host = <span class="kw-2">&amp;</span><span class="self">self</span>.on;
                 <span class="kw">let </span>launched = host.provision(resource_result);
@@ -521,8 +567,7 @@
         }
 
         ProgressTracker::with_group(
-            <span class="kw-2">&amp;</span><span class="self">self
-                </span>.display_id
+            <span class="self">self</span>.display_id
                 .clone()
                 .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id)),
             <span class="prelude-val">None</span>,
@@ -539,7 +584,7 @@
                             .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id)),
                         built,
                         <span class="kw-2">&amp;</span>args,
-                        <span class="self">self</span>.perf.clone(),
+                        <span class="self">self</span>.tracing.clone(),
                     )
                     .<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -552,15 +597,17 @@
                     serde_json::to_string::&lt;InitConfig&gt;(<span class="kw-2">&amp;</span>(bind_config, <span class="self">self</span>.meta.clone())).unwrap();
 
                 <span class="comment">// request stdout before sending config so we don't miss the "ready" response
-                </span><span class="kw">let </span>stdout_receiver = binary.cli_stdout();
+                </span><span class="kw">let </span>stdout_receiver = binary.deploy_stdout();
 
                 binary.stdin().send(<span class="macro">format!</span>(<span class="string">"{formatted_bind_config}\n"</span>))<span class="question-mark">?</span>;
 
                 <span class="kw">let </span>ready_line = ProgressTracker::leaf(
-                    <span class="string">"waiting for ready"</span>.to_string(),
+                    <span class="string">"waiting for ready"</span>,
                     tokio::time::timeout(Duration::from_secs(<span class="number">60</span>), stdout_receiver),
                 )
-                .<span class="kw">await</span><span class="question-mark">??</span>;
+                .<span class="kw">await
+                </span>.context(<span class="string">"Timed out waiting for ready"</span>)<span class="question-mark">?
+                </span>.context(<span class="string">"Program unexpectedly quit"</span>)<span class="question-mark">?</span>;
                 <span class="kw">if </span>ready_line.starts_with(<span class="string">"ready: "</span>) {
                     <span class="kw-2">*</span><span class="self">self</span>.server_defns.try_write().unwrap() =
                         serde_json::from_str(ready_line.trim_start_matches(<span class="string">"ready: "</span>)).unwrap();
@@ -588,7 +635,7 @@
 
         <span class="kw">let </span>formatted_defns = serde_json::to_string(<span class="kw-2">&amp;</span>sink_ports).unwrap();
 
-        <span class="kw">let </span>stdout_receiver = <span class="self">self</span>.launched_binary.as_ref().unwrap().cli_stdout();
+        <span class="kw">let </span>stdout_receiver = <span class="self">self</span>.launched_binary.as_ref().unwrap().deploy_stdout();
 
         <span class="self">self</span>.launched_binary
             .as_ref()
@@ -598,7 +645,10 @@
             .unwrap();
 
         <span class="kw">let </span>start_ack_line = ProgressTracker::leaf(
-            <span class="string">"waiting for ack start"</span>.to_string(),
+            <span class="self">self</span>.display_id
+                .clone()
+                .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id))
+                + <span class="string">" / waiting for ack start"</span>,
             tokio::time::timeout(Duration::from_secs(<span class="number">60</span>), stdout_receiver),
         )
         .<span class="kw">await</span><span class="question-mark">??</span>;
@@ -611,15 +661,31 @@
     }
 
     <span class="kw">async fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="self">self</span>.launched_binary
-            .as_ref()
-            .unwrap()
-            .stdin()
-            .send(<span class="string">"stop\n"</span>.to_string())<span class="question-mark">?</span>;
+        ProgressTracker::with_group(
+            <span class="self">self</span>.display_id
+                .clone()
+                .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id)),
+            <span class="prelude-val">None</span>,
+            || <span class="kw">async </span>{
+                <span class="kw">let </span>launched_binary = <span class="self">self</span>.launched_binary.as_mut().unwrap();
+                launched_binary.stdin().send(<span class="string">"stop\n"</span>.to_string())<span class="question-mark">?</span>;
 
-        <span class="self">self</span>.launched_binary.as_mut().unwrap().wait().<span class="kw">await</span>;
+                <span class="kw">let </span>timeout_result = ProgressTracker::leaf(
+                    <span class="string">"waiting for exit"</span>,
+                    tokio::time::timeout(Duration::from_secs(<span class="number">60</span>), launched_binary.wait()),
+                )
+                .<span class="kw">await</span>;
+                <span class="kw">match </span>timeout_result {
+                    <span class="prelude-val">Err</span>(_timeout) =&gt; {} <span class="comment">// `wait()` timed out, but stop will force quit.
+                    </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(unexpected_error)) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(unexpected_error), <span class="comment">// `wait()` errored.
+                    </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(_exit_status)) =&gt; {}
+                }
+                launched_binary.stop().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(())
-    }
+                <span class="prelude-val">Ok</span>(())
+            },
+        )
+        .<span class="kw">await
+    </span>}
 }
 </code></pre></div></section></main></body></html>

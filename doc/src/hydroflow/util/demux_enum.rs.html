@@ -20,6 +20,18 @@
 <a href="#20" id="20">20</a>
 <a href="#21" id="21">21</a>
 <a href="#22" id="22">22</a>
+<a href="#23" id="23">23</a>
+<a href="#24" id="24">24</a>
+<a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Trait for the `demux_enum` derive and operator.
 
 </span><span class="kw">pub use </span>hydroflow_macro::DemuxEnum;
@@ -31,15 +43,27 @@
 /// The derive will implement this such that `Outputs` can be any tuple where each item is a
 /// `Pusherator` that corresponds to each of the variants of the tuple, in alphabetic order.
 </span><span class="attr">#[diagnostic::on_unimplemented(
-    note = <span class="string">"Ensure there is exactly one output for each enum variant."</span>,
-    note = <span class="string">"Ensure that the type for each output is a tuple of the field for the variant: `()`, `(a,)`, or `(a, b, ...)`."
+    note = <span class="string">"ensure there is exactly one output for each enum variant."</span>,
+    note = <span class="string">"ensure that the type for each output is a tuple of the field for the variant: `()`, `(a,)`, or `(a, b, ...)`."
 </span>)]
 </span><span class="kw">pub trait </span>DemuxEnum&lt;Outputs&gt;: DemuxEnumBase {
     <span class="doccomment">/// Pushes self into the corresponding output pusherator in `outputs`.
     </span><span class="kw">fn </span>demux_enum(<span class="self">self</span>, outputs: <span class="kw-2">&amp;mut </span>Outputs);
 }
 
-<span class="doccomment">/// Base implementation to constrain that `DemuxEnum&lt;SOMETHING&gt;` is implemented.
-</span><span class="attr">#[diagnostic::on_unimplemented(note = <span class="string">"Use `#[derive(hydroflow::DemuxEnum)]`"</span>)]
+<span class="doccomment">/// Special case of [`DemuxEnum`] for when there is only one variant.
+</span><span class="attr">#[diagnostic::on_unimplemented(
+    note = <span class="string">"requires that the enum have only one variant."</span>,
+    note = <span class="string">"ensure there are no missing outputs; there must be exactly one output for each enum variant."
+</span>)]
+</span><span class="kw">pub trait </span>SingleVariant: DemuxEnumBase {
+    <span class="doccomment">/// Output tuple type.
+    </span><span class="kw">type </span>Output;
+    <span class="doccomment">/// Convert self into it's single variant tuple Output.
+    </span><span class="kw">fn </span>single_variant(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Output;
+}
+
+<span class="doccomment">/// Base implementation to constrain that [`DemuxEnum&lt;SOMETHING&gt;`] is implemented.
+</span><span class="attr">#[diagnostic::on_unimplemented(note = <span class="string">"use `#[derive(hydroflow::DemuxEnum)]`"</span>)]
 </span><span class="kw">pub trait </span>DemuxEnumBase {}
 </code></pre></div></section></main></body></html>

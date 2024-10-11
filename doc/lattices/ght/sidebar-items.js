@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["GhtInner","GhtLeaf"],"trait":["GeneralizedHashTrieNode","GhtGet","GhtPrefixIter"]};

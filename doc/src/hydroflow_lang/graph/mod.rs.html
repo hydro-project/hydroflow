@@ -431,15 +431,6 @@
 <a href="#431" id="431">431</a>
 <a href="#432" id="432">432</a>
 <a href="#433" id="433">433</a>
-<a href="#434" id="434">434</a>
-<a href="#435" id="435">435</a>
-<a href="#436" id="436">436</a>
-<a href="#437" id="437">437</a>
-<a href="#438" id="438">438</a>
-<a href="#439" id="439">439</a>
-<a href="#440" id="440">440</a>
-<a href="#441" id="441">441</a>
-<a href="#442" id="442">442</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Graph representation stages for Hydroflow graphs.
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -462,7 +453,6 @@
 <span class="kw">mod </span>eliminate_extra_unions_tees;
 <span class="kw">mod </span>flat_graph_builder;
 <span class="kw">mod </span>flat_to_partitioned;
-<span class="kw">mod </span>flow_props;
 <span class="kw">mod </span>graph_write;
 <span class="kw">mod </span>hydroflow_graph;
 <span class="kw">mod </span>hydroflow_graph_debugging;
@@ -474,12 +464,10 @@
 <span class="kw">pub use </span>eliminate_extra_unions_tees::eliminate_extra_unions_tees;
 <span class="kw">pub use </span>flat_graph_builder::FlatGraphBuilder;
 <span class="kw">pub use </span>flat_to_partitioned::partition_graph;
-<span class="kw">pub use </span>flow_props::<span class="kw-2">*</span>;
 <span class="kw">pub use </span>hydroflow_graph::{HydroflowGraph, WriteConfig, WriteGraphType};
 
 <span class="kw">pub mod </span>graph_algorithms;
 <span class="kw">pub mod </span>ops;
-<span class="kw">pub mod </span>propagate_flow_props;
 
 <span class="macro">new_key_type!</span> {
     <span class="doccomment">/// ID to identify a node (operator or handoff) in [`HydroflowGraph`].
@@ -508,7 +496,7 @@
         </span>S: Serializer,
         T: quote::ToTokens,
     {
-        serializer.serialize_str(<span class="kw-2">&amp;*</span>value.to_token_stream().to_string())
+        serializer.serialize_str(<span class="kw-2">&amp;</span>value.to_token_stream().to_string())
     }
 
     <span class="kw">pub fn </span>deserialize&lt;<span class="lifetime">'de</span>, D, T&gt;(deserializer: D) -&gt; <span class="prelude-ty">Result</span>&lt;T, D::Error&gt;
@@ -517,7 +505,7 @@
         T: syn::parse::Parse,
     {
         <span class="kw">let </span>s = String::deserialize(deserializer)<span class="question-mark">?</span>;
-        syn::parse_str(<span class="kw-2">&amp;*</span>s).map_err(&lt;D::Error <span class="kw">as </span>serde::de::Error&gt;::custom)
+        syn::parse_str(<span class="kw-2">&amp;</span>s).map_err(&lt;D::Error <span class="kw">as </span>serde::de::Error&gt;::custom)
     }
 }
 
@@ -635,9 +623,10 @@
     </span><span class="kw">pub </span>type_args: Vec&lt;Type&gt;,
 }
 
-<span class="doccomment">/// Gets the generic arguments for the operator. This helper method is here due to the special
-/// handling of persistence lifetimes (`'static`, `'tick`, `'mutable`) which must come before
-/// other generic parameters.
+<span class="doccomment">/// Gets the generic arguments for the operator.
+///
+/// This helper method is useful due to the special handling of persistence lifetimes (`'static`,
+/// `'tick`, `'mutable`) which must come before other generic parameters.
 </span><span class="kw">pub fn </span>get_operator_generics(
     diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
     operator: <span class="kw-2">&amp;</span>Operator,
@@ -829,23 +818,16 @@
 
         eliminate_extra_unions_tees(<span class="kw-2">&amp;mut </span>flat_graph);
         <span class="kw">match </span>partition_graph(flat_graph) {
-            <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>partitioned_graph) =&gt; {
-                <span class="comment">// Propagate flow properties throughout the graph.
-                // TODO(mingwei): Should this be done at a flat graph stage instead?
-                </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(()) = propagate_flow_props::propagate_flow_props(
-                    <span class="kw-2">&amp;mut </span>partitioned_graph,
+            <span class="prelude-val">Ok</span>(partitioned_graph) =&gt; {
+                <span class="kw">let </span>code = partitioned_graph.as_code(
+                    root,
+                    <span class="bool-val">true</span>,
+                    <span class="macro">quote::quote!</span> { #( #uses )* },
                     <span class="kw-2">&amp;mut </span>diagnostics,
-                ) {
-                    <span class="kw">let </span>code = partitioned_graph.as_code(
-                        root,
-                        <span class="bool-val">true</span>,
-                        <span class="macro">quote::quote!</span> { #( #uses )* },
-                        <span class="kw-2">&amp;mut </span>diagnostics,
-                    );
-                    <span class="kw">if </span>!diagnostics.iter().any(Diagnostic::is_error) {
-                        <span class="comment">// Success.
-                        </span><span class="kw">return </span>(<span class="prelude-val">Some</span>((partitioned_graph, code)), diagnostics);
-                    }
+                );
+                <span class="kw">if </span>!diagnostics.iter().any(Diagnostic::is_error) {
+                    <span class="comment">// Success.
+                    </span><span class="kw">return </span>(<span class="prelude-val">Some</span>((partitioned_graph, code)), diagnostics);
                 }
             }
             <span class="prelude-val">Err</span>(diagnostic) =&gt; diagnostics.push(diagnostic),

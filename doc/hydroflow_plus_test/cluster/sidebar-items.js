@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["compute_pi","many_to_many","map_reduce","simple_cluster"]};
+window.SIDEBAR_ITEMS = {"mod":["compute_pi","many_to_many","map_reduce","paxos","paxos_bench","simple_cluster","two_pc"]};

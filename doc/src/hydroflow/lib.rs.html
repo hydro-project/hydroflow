@@ -52,18 +52,7 @@
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
 <a href="#54" id="54">54</a>
-<a href="#55" id="55">55</a>
-<a href="#56" id="56">56</a>
-<a href="#57" id="57">57</a>
-<a href="#58" id="58">58</a>
-<a href="#59" id="59">59</a>
-<a href="#60" id="60">60</a>
 </pre></div><pre class="rust"><code><span class="attr">#![cfg_attr(feature = <span class="string">"nightly"</span>, feature(never_type))]
-#![feature(type_alias_impl_trait)]
-#![allow(type_alias_bounds)]
-#![allow(clippy::let_and_return)]
-#![allow(clippy::iter_with_drain)]
-#![allow(clippy::explicit_auto_deref)]
 #![warn(missing_docs)]
 
 </span><span class="doccomment">//! Hydroflow is a low-level dataflow-based runtime system for the [Hydro Project](https://hydro.run/).
@@ -83,7 +72,6 @@
 //! For more examples, check out the [`examples` folder on Github](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples).
 
 </span><span class="kw">pub mod </span>compiled;
-<span class="kw">pub mod </span>props;
 <span class="kw">pub mod </span>scheduled;
 <span class="kw">pub mod </span>util;
 

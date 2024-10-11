@@ -34,7 +34,7 @@
     <span class="comment">// TODO(shadaj): right now, public structs must have public fields
     // because otherwise they may not be visible at splice time.
     // This should be documented and ideally have some tooling support.
-    </span><span class="attr">#[allow(dead_code)]
+    </span><span class="attr">#[allow(clippy::allow_attributes, dead_code, reason = <span class="string">"// TODO(shadaj)"</span>)]
     </span><span class="kw">pub </span>a: u32,
 }
 

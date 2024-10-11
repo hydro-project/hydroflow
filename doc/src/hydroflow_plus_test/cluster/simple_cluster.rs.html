@@ -114,96 +114,170 @@
 <a href="#114" id="114">114</a>
 <a href="#115" id="115">115</a>
 <a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-<span class="kw">pub fn </span>simple_cluster&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>, ClusterId = u32&gt;&gt;(
-    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
-    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
-    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
-) -&gt; (D::Process, D::Cluster) {
-    <span class="kw">let </span>process = flow.process(process_spec);
-    <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
+<span class="kw">pub fn </span>decouple_cluster&lt;<span class="lifetime">'a</span>&gt;(flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt;) -&gt; (Cluster&lt;<span class="lifetime">'a</span>, ()&gt;, Cluster&lt;<span class="lifetime">'a</span>, ()&gt;) {
+    <span class="kw">let </span>cluster1 = flow.cluster();
+    <span class="kw">let </span>cluster2 = flow.cluster();
+    <span class="kw">let </span>cluster_self_id = cluster2.self_id();
+    <span class="kw">let </span>cluster1_self_id = cluster1.self_id();
+    cluster1
+        .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>(cluster1_self_id)))
+        <span class="comment">// .for_each(q!(|message| println!("hey, {}", message)))
+        </span>.inspect(<span class="macro">q!</span>(|message| <span class="macro">println!</span>(<span class="string">"Cluster1 node sending message: {}"</span>, message)))
+        .decouple_cluster(<span class="kw-2">&amp;</span>cluster2)
+        .for_each(<span class="macro">q!</span>(<span class="kw">move </span>|message| <span class="macro">println!</span>(
+            <span class="string">"My self id is {}, my message is {}"</span>,
+            cluster_self_id, message
+        )));
+    (cluster1, cluster2)
+}
 
-    <span class="kw">let </span>numbers = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>));
-    <span class="kw">let </span>ids = flow.source_iter(<span class="kw-2">&amp;</span>process, cluster.ids()).map(<span class="macro">q!</span>(|<span class="kw-2">&amp;</span>id| id));
+<span class="kw">pub fn </span>decouple_process&lt;<span class="lifetime">'a</span>&gt;(flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt;) -&gt; (Process&lt;<span class="lifetime">'a</span>, ()&gt;, Process&lt;<span class="lifetime">'a</span>, ()&gt;) {
+    <span class="kw">let </span>process1 = flow.process();
+    <span class="kw">let </span>process2 = flow.process();
+    process1
+        .source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">3</span>))
+        .decouple_process(<span class="kw-2">&amp;</span>process2)
+        .for_each(<span class="macro">q!</span>(|message| <span class="macro">println!</span>(<span class="string">"I received message is {}"</span>, message)));
+    (process1, process2)
+}
+
+<span class="kw">pub fn </span>simple_cluster&lt;<span class="lifetime">'a</span>&gt;(flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt;) -&gt; (Process&lt;<span class="lifetime">'a</span>, ()&gt;, Cluster&lt;<span class="lifetime">'a</span>, ()&gt;) {
+    <span class="kw">let </span>process = flow.process();
+    <span class="kw">let </span>cluster = flow.cluster();
+
+    <span class="kw">let </span>numbers = process.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>));
+    <span class="kw">let </span>ids = process.source_iter(cluster.members()).map(<span class="macro">q!</span>(|<span class="kw-2">&amp;</span>id| id));
 
     <span class="kw">let </span>cluster_self_id = cluster.self_id();
 
     ids.cross_product(numbers)
         .map(<span class="macro">q!</span>(|(id, n)| (id, (id, n))))
         .send_bincode(<span class="kw-2">&amp;</span>cluster)
+        .tick_batch()
         .inspect(<span class="macro">q!</span>(<span class="kw">move </span>|n| <span class="macro">println!</span>(
             <span class="string">"cluster received: {:?} (self cluster id: {})"</span>,
             n, cluster_self_id
         )))
+        .all_ticks()
         .send_bincode(<span class="kw-2">&amp;</span>process)
         .for_each(<span class="macro">q!</span>(|(id, d)| <span class="macro">println!</span>(<span class="string">"node received: ({}, {:?})"</span>, id, d)));
 
     (process, cluster)
 }
 
-<span class="kw">use </span>hydroflow_plus::util::cli::HydroCLI;
-<span class="kw">use </span>hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
-
-<span class="attr">#[stageleft::entry]
-</span><span class="kw">pub fn </span>simple_cluster_runtime&lt;<span class="lifetime">'a</span>&gt;(
-    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
-    cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= simple_cluster(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
-    flow.extract()
-        .optimize_default()
-        .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
-}
-
-<span class="attr">#[stageleft::runtime]
-#[cfg(test)]
+<span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>std::cell::RefCell;
-
-    <span class="kw">use </span>hydro_deploy::{Deployment, HydroflowCrate};
-    <span class="kw">use </span>hydroflow_plus_cli_integration::{
-        DeployClusterSpec, DeployCrateWrapper, DeployProcessSpec,
-    };
+    <span class="kw">use </span>hydro_deploy::Deployment;
+    <span class="kw">use </span>hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>simple_cluster() {
-        <span class="kw">let </span>deployment = RefCell::new(Deployment::new());
-        <span class="kw">let </span>localhost = deployment.borrow_mut().Localhost();
+        <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
 
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
-        <span class="kw">let </span>(node, cluster) = <span class="kw">super</span>::simple_cluster(
-            <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;</span>DeployProcessSpec::new(|| {
-                deployment.borrow_mut().add_service(
-                    HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
-                        .bin(<span class="string">"simple_cluster"</span>)
-                        .profile(<span class="string">"dev"</span>),
-                )
-            }),
-            <span class="kw-2">&amp;</span>DeployClusterSpec::new(|| {
+        <span class="kw">let </span>(node, cluster) = <span class="kw">super</span>::simple_cluster(<span class="kw-2">&amp;</span>builder);
+        <span class="kw">let </span>built = builder.with_default_optimize();
+
+        <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
+
+        <span class="kw">let </span>nodes = built
+            .with_process(<span class="kw-2">&amp;</span>node, TrybuildHost::new(deployment.Localhost()))
+            .with_cluster(
+                <span class="kw-2">&amp;</span>cluster,
                 (<span class="number">0</span>..<span class="number">2</span>)
-                    .map(|<span class="kw">_</span>| {
-                        deployment.borrow_mut().add_service(
-                            HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
-                                .bin(<span class="string">"simple_cluster"</span>)
-                                .profile(<span class="string">"dev"</span>),
-                        )
-                    })
-                    .collect()
-            }),
-        );
-
-        <span class="macro">insta::assert_debug_snapshot!</span>(builder.extract().ir());
-
-        <span class="kw">let </span><span class="kw-2">mut </span>deployment = deployment.into_inner();
+                    .map(|<span class="kw">_</span>| TrybuildHost::new(deployment.Localhost()))
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
+            )
+            .deploy(<span class="kw-2">&amp;mut </span>deployment);
 
         deployment.deploy().<span class="kw">await</span>.unwrap();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>node_stdout = node.stdout().<span class="kw">await</span>;
-        <span class="kw">let </span>cluster_stdouts =
-            futures::future::join_all(cluster.members.iter().map(|node| node.stdout())).<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>node_stdout = nodes.get_process(<span class="kw-2">&amp;</span>node).stdout().<span class="kw">await</span>;
+        <span class="kw">let </span>cluster_stdouts = futures::future::join_all(
+            nodes
+                .get_cluster(<span class="kw-2">&amp;</span>cluster)
+                .members()
+                .iter()
+                .map(|node| node.stdout()),
+        )
+        .<span class="kw">await</span>;
 
         deployment.start().<span class="kw">await</span>.unwrap();
 
@@ -211,7 +285,7 @@
             <span class="kw">for </span>j <span class="kw">in </span><span class="number">0</span>..<span class="number">5 </span>{
                 <span class="macro">assert_eq!</span>(
                     stdout.recv().<span class="kw">await</span>.unwrap(),
-                    <span class="macro">format!</span>(<span class="string">"cluster received: ({}, {}) (self cluster id: {})"</span>, i, j, i)
+                    <span class="macro">format!</span>(<span class="string">"cluster received: (ClusterId::&lt;()&gt;({}), {}) (self cluster id: ClusterId::&lt;()&gt;({}))"</span>, i, j, i)
                 );
             }
         }
@@ -225,8 +299,82 @@
         <span class="kw">for </span>(i, n) <span class="kw">in </span>node_outs.into_iter().enumerate() {
             <span class="macro">assert_eq!</span>(
                 n,
-                <span class="macro">format!</span>(<span class="string">"node received: ({}, ({}, {}))"</span>, i / <span class="number">5</span>, i / <span class="number">5</span>, i % <span class="number">5</span>)
+                <span class="macro">format!</span>(
+                    <span class="string">"node received: (ClusterId::&lt;()&gt;({}), (ClusterId::&lt;()&gt;({}), {}))"</span>,
+                    i / <span class="number">5</span>,
+                    i / <span class="number">5</span>,
+                    i % <span class="number">5
+                </span>)
             );
+        }
+    }
+
+    <span class="attr">#[tokio::test]
+    </span><span class="kw">async fn </span>decouple_process() {
+        <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
+
+        <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
+        <span class="kw">let </span>(process1, process2) = <span class="kw">super</span>::decouple_process(<span class="kw-2">&amp;</span>builder);
+        <span class="kw">let </span>built = builder.with_default_optimize();
+
+        <span class="kw">let </span>nodes = built
+            .with_process(<span class="kw-2">&amp;</span>process1, TrybuildHost::new(deployment.Localhost()))
+            .with_process(<span class="kw-2">&amp;</span>process2, TrybuildHost::new(deployment.Localhost()))
+            .deploy(<span class="kw-2">&amp;mut </span>deployment);
+
+        deployment.deploy().<span class="kw">await</span>.unwrap();
+        <span class="kw">let </span><span class="kw-2">mut </span>process2_stdout = nodes.get_process(<span class="kw-2">&amp;</span>process2).stdout().<span class="kw">await</span>;
+        deployment.start().<span class="kw">await</span>.unwrap();
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">3 </span>{
+            <span class="kw">let </span>expected_message = <span class="macro">format!</span>(<span class="string">"I received message is {}"</span>, i);
+            <span class="macro">assert_eq!</span>(process2_stdout.recv().<span class="kw">await</span>.unwrap(), expected_message);
+        }
+    }
+
+    <span class="attr">#[tokio::test]
+    </span><span class="kw">async fn </span>decouple_cluster() {
+        <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
+
+        <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
+        <span class="kw">let </span>(cluster1, cluster2) = <span class="kw">super</span>::decouple_cluster(<span class="kw-2">&amp;</span>builder);
+        <span class="kw">let </span>built = builder.with_default_optimize();
+
+        <span class="kw">let </span>nodes = built
+            .with_cluster(
+                <span class="kw-2">&amp;</span>cluster1,
+                (<span class="number">0</span>..<span class="number">3</span>)
+                    .map(|<span class="kw">_</span>| TrybuildHost::new(deployment.Localhost()))
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
+            )
+            .with_cluster(
+                <span class="kw-2">&amp;</span>cluster2,
+                (<span class="number">0</span>..<span class="number">3</span>)
+                    .map(|<span class="kw">_</span>| TrybuildHost::new(deployment.Localhost()))
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
+            )
+            .deploy(<span class="kw-2">&amp;mut </span>deployment);
+
+        deployment.deploy().<span class="kw">await</span>.unwrap();
+
+        <span class="kw">let </span>cluster2_stdouts = futures::future::join_all(
+            nodes
+                .get_cluster(<span class="kw-2">&amp;</span>cluster2)
+                .members()
+                .iter()
+                .map(|node| node.stdout()),
+        )
+        .<span class="kw">await</span>;
+
+        deployment.start().<span class="kw">await</span>.unwrap();
+
+        <span class="kw">for </span>(i, <span class="kw-2">mut </span>stdout) <span class="kw">in </span>cluster2_stdouts.into_iter().enumerate() {
+            <span class="kw">for </span>_j <span class="kw">in </span><span class="number">0</span>..<span class="number">1 </span>{
+                <span class="kw">let </span>expected_message = <span class="macro">format!</span>(
+                    <span class="string">"My self id is ClusterId::&lt;()&gt;({}), my message is ClusterId::&lt;()&gt;({})"</span>,
+                    i, i
+                );
+                <span class="macro">assert_eq!</span>(stdout.recv().<span class="kw">await</span>.unwrap(), expected_message);
+            }
         }
     }
 }

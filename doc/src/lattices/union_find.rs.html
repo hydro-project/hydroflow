@@ -468,7 +468,7 @@
 {
     <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: UnionFind&lt;MapOther&gt;) -&gt; bool {
         <span class="kw">let </span><span class="kw-2">mut </span>changed = <span class="bool-val">false</span>;
-        <span class="kw">for </span>(item, parent) <span class="kw">in </span>other.<span class="number">0</span>.into_iter() {
+        <span class="kw">for </span>(item, parent) <span class="kw">in </span>other.<span class="number">0 </span>{
             <span class="comment">// Do not short circuit.
             </span>changed |= <span class="self">self</span>.union(item, parent.get()).into_reveal();
         }

@@ -966,8 +966,7 @@
     )
 }
 
-<span class="attr">#[allow(clippy::too_many_arguments)]
-</span><span class="doccomment">/// Processes an extract expression to generate a Hydroflow pipeline that reads the input
+<span class="doccomment">/// Processes an extract expression to generate a Hydroflow pipeline that reads the input
 /// data from the IDB/EDB.
 ///
 /// `row_width` is the number of elements in the tuples emitted by the **current** pipeline,
@@ -978,6 +977,7 @@
 /// This function returns the number of elements in the tuple that will be emitted by the
 /// extraction of the `ExtractExpr`. So for a single variable, it will return `1`, for a
 /// tuple, it will return sum of the number of elements emitted by its children.
+</span><span class="attr">#[expect(clippy::too_many_arguments, reason = <span class="string">"internal code"</span>)]
 </span><span class="kw">fn </span>process_extract(
     extract: <span class="kw-2">&amp;</span>ExtractExpr,
     variable_mapping: <span class="kw-2">&amp;mut </span>BTreeMap&lt;String, usize&gt;,

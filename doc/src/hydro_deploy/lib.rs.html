@@ -217,14 +217,17 @@
 <a href="#217" id="217">217</a>
 <a href="#218" id="218">218</a>
 <a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
-<span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
+<span class="kw">use </span>hydroflow_crate::tracing_options::TracingOptions;
+<span class="kw">use </span>hydroflow_deploy_integration::ServerBindConfig;
 
 <span class="kw">pub mod </span>deployment;
 <span class="kw">pub use </span>deployment::Deployment;
@@ -293,18 +296,21 @@
 </span><span class="kw">pub trait </span>LaunchedBinary: Send + Sync {
     <span class="kw">fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; mpsc::UnboundedSender&lt;String&gt;;
 
-    <span class="doccomment">/// Provides a oneshot channel for the CLI to handshake with the binary,
-    /// with the guarantee that as long as the CLI is holding on
+    <span class="doccomment">/// Provides a oneshot channel to handshake with the binary,
+    /// with the guarantee that as long as deploy is holding on
     /// to a handle, none of the messages will also be broadcast
     /// to the user-facing [`LaunchedBinary::stdout`] channel.
-    </span><span class="kw">fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; oneshot::Receiver&lt;String&gt;;
+    </span><span class="kw">fn </span>deploy_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; oneshot::Receiver&lt;String&gt;;
 
     <span class="kw">fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; mpsc::UnboundedReceiver&lt;String&gt;;
     <span class="kw">fn </span>stderr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; mpsc::UnboundedReceiver&lt;String&gt;;
 
     <span class="kw">fn </span>exit_code(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt;;
 
-    <span class="kw">async fn </span>wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt;;
+    <span class="doccomment">/// Wait for the process to stop on its own. Returns the exit code.
+    </span><span class="kw">async fn </span>wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;i32&gt;;
+    <span class="doccomment">/// If the process is still running, force stop it. Then run post-run tasks.
+    </span><span class="kw">async fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
 }
 
 <span class="attr">#[async_trait]
@@ -320,7 +326,7 @@
         id: String,
         binary: <span class="kw-2">&amp;</span>BuildOutput,
         args: <span class="kw-2">&amp;</span>[String],
-        perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+        perf: <span class="prelude-ty">Option</span>&lt;TracingOptions&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;;
 
     <span class="kw">async fn </span>forward_port(<span class="kw-2">&amp;</span><span class="self">self</span>, addr: <span class="kw-2">&amp;</span>SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;SocketAddr&gt;;

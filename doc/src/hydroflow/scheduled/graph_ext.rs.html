@@ -214,8 +214,8 @@
 <a href="#214" id="214">214</a>
 <a href="#215" id="215">215</a>
 <a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Helper extensions for [`Hydroflow`].
-</span><span class="attr">#![allow(missing_docs)]
 
 </span><span class="kw">use </span>core::task;
 <span class="kw">use </span>std::borrow::Cow;
@@ -308,7 +308,8 @@
         (send_port_1: W1, send_port_2: W2)
     );
 
-    <span class="kw">fn </span>add_channel_input&lt;Name, T, W&gt;(
+    <span class="doccomment">/// Adds a channel input which sends to the `send_port`.
+    </span><span class="kw">fn </span>add_channel_input&lt;Name, T, W&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         name: Name,
         send_port: SendPort&lt;W&gt;,
@@ -330,7 +331,8 @@
         T: <span class="lifetime">'static</span>,
         W: <span class="lifetime">'static </span>+ Handoff + CanReceive&lt;T&gt;;
 
-    <span class="kw">fn </span>add_input_from_stream&lt;Name, T, W, S&gt;(
+    <span class="doccomment">/// Adds a subgraph which pulls from the async stream and sends to the `send_port`.
+    </span><span class="kw">fn </span>add_input_from_stream&lt;Name, T, W, S&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         name: Name,
         send_port: SendPort&lt;W&gt;,

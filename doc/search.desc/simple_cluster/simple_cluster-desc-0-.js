@@ -1,1 +1,0 @@
-searchState.loadedDescShard("simple_cluster", 0, "")

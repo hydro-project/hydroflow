@@ -83,7 +83,6 @@
 <a href="#83" id="83">83</a>
 <a href="#84" id="84">84</a>
 <a href="#85" id="85">85</a>
-<a href="#86" id="86">86</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Union-find data structure, see [`UnionFind`].
 
 </span><span class="kw">use </span>slotmap::{Key, SecondaryMap};
@@ -105,7 +104,6 @@
     </span>K: Key,
 {
     <span class="doccomment">/// Creates a new `UnionFind`, same as [`Default::default()`].
-    </span><span class="attr">#[allow(dead_code)]
     </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::default()
     }
