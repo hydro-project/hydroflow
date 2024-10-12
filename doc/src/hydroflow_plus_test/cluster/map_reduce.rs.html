@@ -62,6 +62,9 @@
 <a href="#62" id="62">62</a>
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
@@ -80,7 +83,10 @@
     <span class="kw">let </span>words_partitioned = words
         .tick_batch()
         .enumerate()
-        .map(<span class="macro">q!</span>(|(i, w)| ((i % all_ids_vec.len()) <span class="kw">as </span>u32, w)))
+        .map(<span class="macro">q!</span>(|(i, w)| (
+            ClusterId::from_raw((i % all_ids_vec.len()) <span class="kw">as </span>u32),
+            w
+        )))
         .all_ticks();
 
     words_partitioned
