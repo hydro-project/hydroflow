@@ -1,7 +1,6 @@
 use std::hash::Hash;
 use std::marker::PhantomData;
 
-use sealed::sealed;
 use variadics::variadic_collections::VariadicCollection;
 use variadics::{
     var_args, var_expr, var_type, PartialEqVariadic, Split, SplitBySuffix, VariadicExt,
@@ -9,7 +8,6 @@ use variadics::{
 
 use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
 
-#[sealed]
 /// COLT from Wang/Willsey/Suciu
 ///
 /// In the paper, the COLT is an unbalanced trie that "grows upward" from leaves via the
@@ -40,7 +38,6 @@ pub trait ColumnLazyTrieNode: GeneralizedHashTrieNode {
     fn force_drain(&mut self) -> Option<Self::Force>;
 }
 
-#[sealed]
 impl<Head, Node> ColumnLazyTrieNode for GhtInner<Head, Node>
 where
     Head: 'static + Hash + Eq + Clone,
@@ -65,7 +62,6 @@ where
     }
 }
 
-#[sealed]
 impl<Schema, Head, Rest, Storage> ColumnLazyTrieNode
     for GhtLeaf<Schema, var_type!(Head, ...Rest), Storage>
 where
@@ -158,7 +154,6 @@ macro_rules! GhtForestType {
 }
 
 /// Trait for taking a matching leaf out of a trie, as part of force method for COLTs
-#[sealed]
 pub trait GhtTakeLeaf: GeneralizedHashTrieNode {
     /// take a matching leaf out of a trie, as part of the force method for COLTs
     fn take_containing_leaf(
@@ -174,7 +169,6 @@ pub trait GhtTakeLeaf: GeneralizedHashTrieNode {
     ) -> bool;
 }
 
-#[sealed]
 impl<Head, Head2, GrandNode> GhtTakeLeaf for GhtInner<Head, GhtInner<Head2, GrandNode>>
 where
     Head: 'static + Hash + Eq + Clone,
@@ -218,7 +212,6 @@ where
     }
 }
 
-#[sealed]
 impl<Head, Schema, ValType, Storage> GhtTakeLeaf
     for GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>
 where
@@ -280,7 +273,6 @@ where
     }
 }
 
-#[sealed]
 impl<Schema, ValType, Storage> GhtTakeLeaf for GhtLeaf<Schema, ValType, Storage>
 where
     Schema: 'static + Hash + Clone + Eq + PartialEqVariadic + SplitBySuffix<ValType>,
@@ -310,7 +302,6 @@ where
 /// paper sits above an unbalanced trie. We emulate that here via a variadic
 /// of nodes at depth d in all the tries in the forest (that are height d or taller.)
 /// This is basically a GhtForest of subtries.
-#[sealed]
 pub trait ColtNode {
     /// Schema variadic: the schema of the relation stored in this COLT.
     /// This type is the same in all Tries and nodes of the COLT.
@@ -337,13 +328,11 @@ pub trait ColtNode {
 }
 
 /// `ColtNode` without the first (head) trie.
-#[sealed]
 pub trait ColtNodeTail<InnerToMerge>: ColtNode {
     /// merge an inner node into the head of this tail of the forest
     fn merge(&mut self, inner_to_merge: InnerToMerge);
 }
 
-#[sealed]
 impl<'a, Rest, Schema, SuffixSchema, Storage> ColtNode for var_type!(&'a mut GhtLeaf<Schema, SuffixSchema, Storage>, ...Rest)
 where
     Rest: ColtNodeTail<
@@ -371,7 +360,6 @@ where
         Rest::get(rest, head)
     }
 }
-#[sealed]
 impl<'a, Rest, Schema, SuffixSchema, T, Storage> ColtNodeTail<T> for var_type!(&'a mut GhtLeaf<Schema, SuffixSchema, Storage>, ...Rest)
 where
     Rest: ColtNodeTail<
@@ -391,7 +379,6 @@ where
     }
 }
 
-#[sealed]
 impl<'a, Head, Head2, Rest, Node> ColtNode for var_type!(&'a mut GhtInner<Head, GhtInner<Head2, Node>>, ...Rest)
 where
     Rest: ColtNode<Head = Head>,
@@ -420,7 +407,6 @@ where
         var_expr!(child, ...Rest::get(rest, head))
     }
 }
-#[sealed]
 impl<'a, Head, Head2, Rest, Node, T> ColtNodeTail<T> for var_type!(&'a mut GhtInner<Head, GhtInner<Head2, Node>>, ...Rest)
 where
     Rest: ColtNode<Head = Head>,
@@ -442,7 +428,6 @@ where
     }
 }
 
-#[sealed]
 impl<'a, Head, Rest, Schema, ValType, Storage> ColtNode for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>, ...Rest)
 where
     Rest: ColtNode<Head = Head>,
@@ -480,7 +465,6 @@ where
         var_expr!(child, ...Rest::get(rest, head))
     }
 }
-#[sealed]
 impl<'a, Head, Rest, Schema, ValType, Storage>
     ColtNodeTail<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>> for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>, ...Rest)
 where
@@ -505,7 +489,6 @@ where
     }
 }
 
-#[sealed]
 impl<'a, Head, Node> ColtNode for var_type!(&'a mut GhtInner<Head, Node>)
 where
     GhtInner<Head, Node>: GeneralizedHashTrieNode,
@@ -523,7 +506,6 @@ where
         var_expr!(child)
     }
 }
-#[sealed]
 impl<'a, Head, Schema, ValType, Storage>
     ColtNodeTail<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
     for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>)
@@ -546,7 +528,6 @@ where
 // THE CODE BELOW MAY NOT BE USEFUL
 /// A GhtForest trait with a force method that does the forcing+merging logic
 /// This trait will be recursive on the variadic of `Ght`s.
-#[sealed]
 pub trait GhtForest<SearchKey>
 where
     SearchKey: VariadicExt,
@@ -558,7 +539,6 @@ where
     fn find_and_force(&mut self, search_key: SearchKey) -> bool;
 }
 
-#[sealed]
 impl<TrieFirst, TrieSecond, TrieRest, SearchKey /* , Head, Rest */> GhtForest<SearchKey> for var_type!(TrieFirst, TrieSecond, ...TrieRest)
 where
     TrieFirst: GeneralizedHashTrieNode + GhtTakeLeaf,
@@ -609,7 +589,6 @@ where
 }
 
 /// If we're on the last trie in the forest, there's nowhere to force right to
-#[sealed]
 impl<SearchKey, TrieFirst> GhtForest<SearchKey> for var_type!(TrieFirst)
 where
     SearchKey: VariadicExt,
@@ -620,7 +599,6 @@ where
     }
 }
 
-#[sealed]
 impl<SearchKey> GhtForest<SearchKey> for var_type!()
 where
     SearchKey: VariadicExt,
@@ -630,7 +608,6 @@ where
     }
 }
 
-#[sealed]
 /// a trait for finding a matching leaf in the forest
 pub trait ForestFindLeaf<Schema, Storage>
 where
@@ -644,7 +621,6 @@ where
     ) -> Option<&'_ GhtLeaf<Schema, (), Storage>>;
 }
 
-#[sealed]
 impl<TrieFirst, TrieRest> ForestFindLeaf<TrieFirst::Schema, TrieFirst::Storage> for var_type!(TrieFirst, ...TrieRest)
 where
     <TrieFirst as GeneralizedHashTrieNode>::Schema: PartialEqVariadic,
@@ -670,7 +646,6 @@ where
     }
 }
 
-#[sealed]
 impl<Schema, Storage> ForestFindLeaf<Schema, Storage> for var_type!()
 where
     Schema: Eq + Hash + VariadicExt + PartialEqVariadic,

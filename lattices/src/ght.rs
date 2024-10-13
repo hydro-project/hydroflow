@@ -3,7 +3,6 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::marker::PhantomData;
 
-use sealed::sealed;
 use variadics::variadic_collections::VariadicCollection;
 use variadics::{
     var_args, var_type, PartialEqVariadic, RefVariadic, Split, SplitBySuffix, VariadicExt,
@@ -12,7 +11,6 @@ use variadics::{
 use crate::ght_lattice::DeepJoinLatticeBimorphism;
 
 /// GeneralizedHashTrieNode trait
-#[sealed]
 pub trait GeneralizedHashTrieNode: Default {
     /// Schema variadic: the schema of the relation stored in this trie.
     /// This type is the same in all nodes of the trie.
@@ -115,7 +113,6 @@ where
         }
     }
 }
-#[sealed]
 impl<Head, Node> GeneralizedHashTrieNode for GhtInner<Head, Node>
 where
     Head: 'static + Hash + Eq + Clone,
@@ -244,7 +241,6 @@ where
     }
 }
 
-#[sealed]
 impl<Schema, ValHead, ValRest, Storage> GeneralizedHashTrieNode
     for GhtLeaf<Schema, var_type!(ValHead, ...ValRest), Storage>
 where
@@ -326,7 +322,6 @@ where
     }
 }
 
-#[sealed]
 impl<Schema, Storage> GeneralizedHashTrieNode for GhtLeaf<Schema, (), Storage>
 where
     Schema: 'static
@@ -508,7 +503,6 @@ where
     }
 }
 
-#[sealed]
 /// iterators for GHTs based on a prefix search
 pub trait GhtPrefixIter<KeyPrefix> {
     /// the schema output
@@ -522,7 +516,6 @@ pub trait GhtPrefixIter<KeyPrefix> {
         Self::Item: 'a;
 }
 
-#[sealed]
 impl<'k, Head, Node, PrefixRest> GhtPrefixIter<var_type!(&'k Head, ...PrefixRest)>
     for GhtInner<Head, Node>
 where
@@ -545,7 +538,6 @@ where
             .flatten()
     }
 }
-#[sealed]
 impl<Head, Node> GhtPrefixIter<var_type!()> for GhtInner<Head, Node>
 where
     Self: GeneralizedHashTrieNode,
@@ -566,7 +558,6 @@ where
 
 /// This case splits KeyPrefixRef and ValType in order to prevent a conflict with the `GhtPrefixIter<var_type!()>` impl.
 /// If not for that, we could just use a single variadic type parameter.
-#[sealed]
 impl<KeyPrefixRef, Schema, ValType, Storage> GhtPrefixIter<KeyPrefixRef>
     for GhtLeaf<Schema, ValType, Storage>
 where
