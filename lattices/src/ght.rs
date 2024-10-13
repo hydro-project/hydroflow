@@ -8,39 +8,43 @@ use variadics::{
     var_args, var_type, PartialEqVariadic, RefVariadic, Split, SplitBySuffix, VariadicExt,
 };
 
-use crate::ght_lattice::DeepJoinLatticeBimorphism;
-
-/// GeneralizedHashTrieNode trait
+/// The GeneralizedHashTrieNode trait captures the properties of nodes in a Ght.
+///
+/// The Ght, defined by Wang/Willsey/Suciu, is a hash-based trie for storing tuples.
+/// It is parameterized by an ordered schema [`VariadicExt`] of the relation stored in the trie.
+/// It is a tree of [`GhtInner`] nodes, with [`GhtLeaf`] nodes at the leaves.
+/// The trie is keyed on a prefix of the schema [`Self::KeyType`], 
+/// and the remaining columns [`Self::ValType`] are stored in the leaf.
+/// All leaf nodes use the same `[Self::Storage]` type to store the data.
 pub trait GeneralizedHashTrieNode: Default {
+    // types that are the same in all nodes of the trie
     /// Schema variadic: the schema of the relation stored in this trie.
-    /// This type is the same in all nodes of the trie.
     type Schema: VariadicExt + Eq + Hash + Clone + SplitBySuffix<Self::SuffixSchema>;
-    /// The prefix of columns in Schema that the trie is keyed on
-    /// This type is the same in all nodes of the trie.
+    /// The prefix of columns in [`Self::Schema`] that the trie is keyed on
     type KeyType: VariadicExt + Eq + Hash + Clone;
-    /// The suffix of columns in Schema that are not part of the trie keys
-    /// This type is the same in all nodes of the trie.
+    /// The suffix of columns in [`Self::Schema`] that are not part of the trie keys
     type ValType: VariadicExt + Eq + Hash + Clone;
     /// The type that holds the data in the leaves
     type Storage: VariadicCollection<Schema = Self::Schema>
         + Default
         + IntoIterator<Item = Self::Schema>;
 
-    /// SuffixSchema variadic: the suffix of the schema *from this node of the trie
-    /// downward*. The first entry in this variadic is of type Head.
+    // types that vary per node
+    /// SuffixSchema variadic: the suffix of [`Self::Schema`] from this node of the trie
+    /// downward. The first entry in this variadic is of type [`Self::Head`].
     type SuffixSchema: VariadicExt + Eq + Hash + Clone;
-
-    /// Head is the first field in SuffixSchema
+    /// The first field in [`Self::SuffixSchema`], and the key for the next node in the trie.
     type Head: Eq + Hash + Clone;
 
     /// Create a new Ght from the iterator.
     fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self;
 
-    /// Merge a matching Ght node into this one
+    /// Merge a matching Ght node into this node
     fn merge_node(&mut self, other: Self) -> bool;
 
-    /// Report the height of the tree if its not empty. This is the length of a root to leaf path -1.
+    /// Report the height of this node. This is the length of path from this node to a leaf - 1.
     /// E.g. if we have GhtInner<GhtInner<GhtLeaf...>> the height is 2
+    /// This is a static property of the type of this node, so simply invokes the static method.
     fn height(&self) -> usize {
         Self::static_height()
     }
@@ -48,42 +52,17 @@ pub trait GeneralizedHashTrieNode: Default {
     /// Return the height of this node in the GhT. Leaf = 0.
     fn static_height() -> usize;
 
-    /// report whether node is a leaf node; else an inner node
-    fn is_leaf(&self) -> bool;
-
-    /// Inserts items into the hash trie.
+    /// Inserts an item into the hash trie.
     fn insert(&mut self, row: Self::Schema) -> bool;
 
-    /// Returns `true` if the (entire) row is found in the trie, `false` otherwise.
-    /// See `get()` below to look just for "head" keys in this node
+    /// Returns `true` if the (entire) row is found below in the trie, `false` otherwise.
+    /// See [`Self::get`] to look just for "head" keys in this node
     fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool;
 
-    /// Iterate through the (entire) rows stored in this HashTrie.
-    /// Returns Variadics, not tuples.
+    /// Iterate through (entire) rows stored in this HashTrie.
     fn recursive_iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>>;
 
-    // /// Iterate through the (entire) rows stored in this HashTrie, but with the leaf
-    // /// values stubbed out ((), ()).
-    // fn recursive_iter_keys(
-    //     &self,
-    // ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>>;
-
-    /// Bimorphism for joining on full tuple keys (all GhtInner keys) in the trie
-    type DeepJoin<Other, Storage>
-    where
-        Other: GeneralizedHashTrieNode,
-        (Self, Other): DeepJoinLatticeBimorphism<Storage>;
-
-    // /// For Inner nodes only, this is the type of the Child node
-    // type ChildNode: GeneralizedHashTrieNode;
-
-    // /// Cast as Some<&GhtInner> if this is an inner node, else return None
-    // fn cast_as_inner(&self) -> Option<&Self>;
-
-    // /// Cast as Some<&mut GhtInner> if this is an inner node, else return None
-    // fn cast_as_inner_mut(&mut self) -> Option<&mut Self>;
-
-    /// return the leaf in the trie that contains this row
+    /// return the leaf below that contains this row, or `None` if not found.
     fn find_containing_leaf(
         &self,
         row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
@@ -100,6 +79,7 @@ where
     pub(crate) children: HashMap<Head, Node>,
     // pub(crate) _leaf: std::marker::PhantomData<Leaf>,
 }
+
 impl<Head, Node: GeneralizedHashTrieNode> Default for GhtInner<Head, Node>
 where
     Head: Clone,
@@ -113,6 +93,7 @@ where
         }
     }
 }
+
 impl<Head, Node> GeneralizedHashTrieNode for GhtInner<Head, Node>
 where
     Head: 'static + Hash + Eq + Clone,
@@ -120,18 +101,16 @@ where
     Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
 {
     type Schema = Node::Schema;
-    type SuffixSchema = var_type!(Head, ...Node::SuffixSchema);
-    type ValType = Node::ValType;
     type KeyType = Node::KeyType;
-    type Head = Head;
+    type ValType = Node::ValType;
     type Storage = Node::Storage;
+    type SuffixSchema = var_type!(Head, ...Node::SuffixSchema);
+    type Head = Head;
 
     fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self {
         let mut retval: Self = Default::default();
-        let mut result = true;
         for row in input {
-            // let (_prefix, suffix) = row.clone().split();
-            result = result && retval.insert(row);
+            retval.insert(row);
         }
         retval
     }
@@ -157,18 +136,12 @@ where
         Node::static_height() + 1
     }
 
-    fn is_leaf(&self) -> bool {
-        false
-    }
-
     fn insert(&mut self, row: Self::Schema) -> bool {
-        // TODO(mingwei): clones entire row...
-        let (_prefix, var_args!(head, ..._rest)) = row.clone().split_by_suffix();
-        self.children.entry(head).or_default().insert(row)
+        let (_prefix, var_args!(head, ..._rest)) = Self::Schema::split_by_suffix_ref(row.as_ref_var());
+        self.children.entry(head.clone()).or_default().insert(row)
     }
 
     fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
-        //  as SplitBySuffix<Self::SuffixSchema>>
         let (_prefix, var_args!(head, ..._rest)) = Self::Schema::split_by_suffix_ref(row);
         if let Some(node) = self.children.get(head) {
             node.contains(row)
@@ -182,11 +155,6 @@ where
             .iter()
             .flat_map(|(_k, vs)| vs.recursive_iter())
     }
-
-    type DeepJoin<Other, Storage> = <(Self, Other) as DeepJoinLatticeBimorphism<Storage>>::DeepJoinLatticeBimorphism
-    where
-        Other: GeneralizedHashTrieNode,
-        (Self, Other): DeepJoinLatticeBimorphism<Storage>;
 
     fn find_containing_leaf(
         &self,
@@ -216,7 +184,6 @@ where
 
 /// leaf node of a HashTrie
 #[derive(Debug, PartialEq, Eq, Clone)]
-// #[repr(transparent)]
 pub struct GhtLeaf<Schema, ValType, Storage>
 where
     Schema: Eq + Hash,
@@ -282,10 +249,6 @@ where
         0
     }
 
-    fn is_leaf(&self) -> bool {
-        true
-    }
-
     fn insert(&mut self, row: Self::Schema) -> bool {
         self.elements.insert(row);
         true
@@ -299,11 +262,6 @@ where
     fn recursive_iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
         self.elements.iter() // .map(Schema::as_ref_var)
     }
-
-    type DeepJoin<Other, TheStorage> = <(Self, Other) as DeepJoinLatticeBimorphism<TheStorage>>::DeepJoinLatticeBimorphism
-    where
-        Other: GeneralizedHashTrieNode,
-        (Self, Other): DeepJoinLatticeBimorphism<TheStorage>;
 
     fn find_containing_leaf(
         &self,
@@ -362,10 +320,6 @@ where
         0
     }
 
-    fn is_leaf(&self) -> bool {
-        true
-    }
-
     fn insert(&mut self, row: Self::Schema) -> bool {
         self.elements.insert(row);
         true
@@ -379,11 +333,6 @@ where
     fn recursive_iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
         self.elements.iter() //.map(Schema::as_ref_var)
     }
-
-    type DeepJoin<Other, TheStorage> = <(Self, Other) as DeepJoinLatticeBimorphism<TheStorage>>::DeepJoinLatticeBimorphism
-    where
-        Other: GeneralizedHashTrieNode,
-        (Self, Other): DeepJoinLatticeBimorphism<TheStorage>;
 
     fn find_containing_leaf(
         &self,
@@ -590,160 +539,4 @@ where
                 <KeyPrefixRef::UnRefVar as PartialEqVariadic>::eq_ref(prefix.unref_ref(), row_mid)
             })
     }
-}
-
-/// Helper that does the heavy lifting for GhtType!
-#[macro_export]
-macro_rules! GhtRowTypeWithSchema {
-    // Empty key & Val (Leaf)
-    (() => () => $( $schema:ty ),+ ) => (
-        $crate::ght::GhtLeaf::<$( $schema ),*,  ()  >
-    );
-
-    // Empty key (Leaf)
-    (() => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ), $crate::variadics::variadic_collections::VariadicCountedHashSet<$schema> >
-    );
-
-    // Singleton key & Empty val (Inner over Leaf)
-    ($a:ty => () => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, (), $crate::variadics::variadic_collections::VariadicCountedHashSet<$schema> >>
-    );
-
-    // Singleton key (Inner over Leaf)
-    ($a:ty => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*), $crate::variadics::variadic_collections::VariadicCountedHashSet<$schema> >>
-    );
-
-    // Recursive case with empty val
-    ($a:ty, $( $b:ty ),* => () => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::GhtRowTypeWithSchema!($( $b ),* => () => $schema)>
-    );
-
-    // Recursive case.
-    ($a:ty, $( $b:ty ),* => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::GhtRowTypeWithSchema!($( $b ),* => $( $z ),* => $schema)>
-    );
-}
-
-// Hack to test column store: just clones the above using VariadicColumnMultiset instead of VariadicCountedHashSet
-// Should unify these macros
-/// Helper that does the heavy lifting for GhtType!
-#[macro_export]
-macro_rules! GhtColumnTypeWithSchema {
-    // Empty key & Val (Leaf)
-    (() => () => $( $schema:ty ),+ ) => (
-        $crate::ght::GhtLeaf::<$( $schema ),*,  ()  >
-    );
-
-    // Empty key (Leaf)
-    (() => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ), $crate::variadics::variadic_collections::VariadicColumnMultiset<$schema> >
-    );
-
-    // Singleton key & Empty val (Inner over Leaf)
-    ($a:ty => () => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, (), $crate::variadics::variadic_collections::VariadicColumnMultiset<$schema> >>
-    );
-
-    // Singleton key (Inner over Leaf)
-    ($a:ty => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*), $crate::variadics::variadic_collections::VariadicColumnMultiset<$schema> >>
-    );
-
-    // Recursive case with empty val
-    ($a:ty, $( $b:ty ),* => () => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::GhtColumnTypeWithSchema!($( $b ),* => () => $schema)>
-    );
-
-    // Recursive case.
-    ($a:ty, $( $b:ty ),* => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::GhtColumnTypeWithSchema!($( $b ),* => $( $z ),* => $schema)>
-    );
-}
-
-// Hack to test set: just clones the above using VariadicHashSet instead of VariadicCountedHashSet
-// Should unify these macros
-/// Helper that does the heavy lifting for GhtType!
-#[macro_export]
-macro_rules! GhtSetTypeWithSchema {
-    // Empty key & Val (Leaf)
-    (() => () => $( $schema:ty ),+ ) => (
-        $crate::ght::GhtLeaf::<$( $schema ),*,  ()  >
-    );
-
-    // Empty key (Leaf)
-    (() => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtLeaf::<$schema,  $crate::variadics::var_type!($( $z ),* ), $crate::variadics::variadic_collections::VariadicHashSet<$schema> >
-    );
-
-    // Singleton key & Empty val (Inner over Leaf)
-    ($a:ty => () => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, (), $crate::variadics::variadic_collections::VariadicHashSet<$schema> >>
-    );
-
-    // Singleton key (Inner over Leaf)
-    ($a:ty => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::ght::GhtLeaf::<$schema, $crate::variadics::var_type!($( $z ),*), $crate::variadics::variadic_collections::VariadicHashSet<$schema> >>
-    );
-
-    // Recursive case with empty val
-    ($a:ty, $( $b:ty ),* => () => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::GhtSetTypeWithSchema!($( $b ),* => () => $schema)>
-    );
-
-    // Recursive case.
-    ($a:ty, $( $b:ty ),* => $( $z:ty ),* => $schema:ty ) => (
-        $crate::ght::GhtInner::<$a, $crate::GhtSetTypeWithSchema!($( $b ),* => $( $z ),* => $schema)>
-    );
-}
-
-/// Macro to construct a Ght node type from the constituent key and
-/// dependent column types. You pass it:
-///    - a list of key column types and dependent column type separated by a fat arrow,
-///         a la (K1, K2, K3 => T1, T2, T3)
-///
-/// This macro generates a hierarchy of GHT node types where each key column is associated with an GhtInner
-/// of the associated column type, and the remaining dependent columns are associated with a variadic HTleaf
-/// a la var_expr!(T1, T2, T3)
-#[macro_export]
-macro_rules! GhtType {
-    // Empty key
-    (() => $( $z:ty ),*: Row ) => (
-        $crate::GhtRowTypeWithSchema!(() => $( $z ),* => $crate::variadics::var_type!($( $z ),* ))
-    );
-
-    (() => $( $z:ty ),*: Column ) => (
-        $crate::GhtColumnTypeWithSchema!(() => $( $z ),* => $crate::variadics::var_type!($( $z ),* ))
-    );
-
-    (() => $( $z:ty ),*: Set ) => (
-        $crate::GhtSetTypeWithSchema!(() => $( $z ),* => $crate::variadics::var_type!($( $z ),* ))
-    );
-
-    // Recursive case empty val
-    ($( $b:ty ),* => (): Row ) => (
-        $crate::GhtRowTypeWithSchema!($( $b ),* => () => $crate::variadics::var_type!($( $b ),*))
-    );
-
-    ($( $b:ty ),* => (): Column ) => (
-        $crate::GhtColumnTypeWithSchema!($( $b ),* => () => $crate::variadics::var_type!($( $b ),*))
-    );
-
-    ($( $b:ty ),* => (): Set ) => (
-        $crate::GhtSetTypeWithSchema!($( $b ),* => () => $crate::variadics::var_type!($( $b ),*))
-    );
-
-    // Recursive case
-    ($( $b:ty ),* => $( $z:ty ),*: Row) => (
-        $crate::GhtRowTypeWithSchema!($( $b ),* => $( $z ),* => $crate::variadics::var_type!($( $b ),*, $( $z ),*))
-    );
-
-    ($( $b:ty ),* => $( $z:ty ),*: Column) => (
-        $crate::GhtColumnTypeWithSchema!($( $b ),* => $( $z ),* => $crate::variadics::var_type!($( $b ),*, $( $z ),*))
-    );
-
-    ($( $b:ty ),* => $( $z:ty ),*: Set) => (
-        $crate::GhtSetTypeWithSchema!($( $b ),* => $( $z ),* => $crate::variadics::var_type!($( $b ),*, $( $z ),*))
-    );
 }

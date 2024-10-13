@@ -91,19 +91,17 @@ mod test {
 
     #[test]
     fn test_insert() {
-        let mut htrie = <GhtType!(u16, u32 => u64: Row)>::default();
+        type MyGht = GhtType!(u16, u32 => u64: Row);
+        let mut htrie = MyGht::default();
         htrie.insert(var_expr!(42, 314, 43770));
         assert_eq!(htrie.recursive_iter().count(), 1);
-        assert_eq!(htrie.height(), 2);
+        assert_eq!(MyGht::static_height(), 2);
         htrie.insert(var_expr!(42, 315, 43770));
         assert_eq!(htrie.recursive_iter().count(), 2);
-        assert_eq!(htrie.height(), 2);
         htrie.insert(var_expr!(42, 314, 30619));
         assert_eq!(htrie.recursive_iter().count(), 3);
-        assert_eq!(htrie.height(), 2);
         htrie.insert(var_expr!(43, 10, 600));
         assert_eq!(htrie.recursive_iter().count(), 4);
-        assert_eq!(htrie.height(), 2);
         assert!(htrie.contains(var_expr!(&42, &314, &30619)));
         assert!(htrie.contains(var_expr!(&42, &315, &43770)));
         assert!(htrie.contains(var_expr!(&43, &10, &600)));
@@ -111,9 +109,7 @@ mod test {
         type LongKeyLongValTrie = GhtType!(u32, u64 => u16, &'static str: Row);
         let mut htrie = LongKeyLongValTrie::new_from(vec![var_expr!(1, 999, 222, "hello")]);
         htrie.insert(var_expr!(1, 999, 111, "bye"));
-        assert_eq!(htrie.height(), 2);
         htrie.insert(var_expr!(1, 1000, 123, "cya"));
-        assert_eq!(htrie.height(), 2);
         // println!("htrie: {:?}", htrie);
         assert!(htrie.contains(var_expr!(&1, &999, &222, &"hello")));
         assert!(htrie.contains(var_expr!(&1, &999, &111, &"bye")));
