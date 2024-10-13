@@ -191,7 +191,7 @@ where
 {
     pub(crate) elements: Storage,
     pub(crate) forced: bool,
-    pub(crate) _suffix_schema: PhantomData<ValType>,
+    pub(crate) _suffix_schema: PhantomData<ValType>, // defines ValType for the parents, recursively
 }
 impl<Schema, ValType, Storage> Default for GhtLeaf<Schema, ValType, Storage>
 where
@@ -221,7 +221,6 @@ where
     ValHead: Clone + Eq + Hash,
     var_type!(ValHead, ...ValRest): Clone + Eq + Hash + PartialEqVariadic,
     <Schema as SplitBySuffix<var_type!(ValHead, ...ValRest)>>::Prefix: Eq + Hash + Clone,
-    // for<'a> Schema::AsRefVar<'a>: PartialEq,
     Storage: VariadicCollection<Schema = Schema> + Default + IntoIterator<Item = Schema>,
 {
     type Schema = Schema;
@@ -452,7 +451,7 @@ where
     }
 }
 
-/// iterators for GHTs based on a prefix search
+/// A trait to iterate through the items in a Ght based on a prefix of the schema.
 pub trait GhtPrefixIter<KeyPrefix> {
     /// the schema output
     type Item: VariadicExt;
@@ -505,8 +504,6 @@ where
     }
 }
 
-/// This case splits KeyPrefixRef and ValType in order to prevent a conflict with the `GhtPrefixIter<var_type!()>` impl.
-/// If not for that, we could just use a single variadic type parameter.
 impl<KeyPrefixRef, Schema, ValType, Storage> GhtPrefixIter<KeyPrefixRef>
     for GhtLeaf<Schema, ValType, Storage>
 where
@@ -528,7 +525,6 @@ where
     {
         self.elements
             .iter()
-            // .map(Schema::as_ref_var)
             .filter(move |&row| {
                 let (_row_prefix, row_mid_suffix) =
                     <Schema as SplitBySuffix<ValType>>::split_by_suffix_ref(row);

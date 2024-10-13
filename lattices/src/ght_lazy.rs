@@ -427,6 +427,7 @@ where
         var_expr!(child, ...Rest::get(rest, head))
     }
 }
+
 impl<'a, Head, Rest, Schema, ValType, Storage>
     ColtNodeTail<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>> for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>, ...Rest)
 where
