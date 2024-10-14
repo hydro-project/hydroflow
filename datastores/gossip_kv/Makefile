@@ -29,7 +29,7 @@ redtext = @echo "$(COLOR_RED)$(1)$(COLOR_RESET)"
 
 aws_setup_cli:
 	$(call cecho_green, Setting up kubectl to work with AWS EKS Cluster)
-	aws eks update-kubeconfig --region $$(terraform -chdir=$(AWS_TERRAFORM_PATH) output -raw region) --name $$(terraform -chdir=$(AWS_TERRAFORM​⬤
+	aws eks update-kubeconfig --region $$(terraform -chdir=$(AWS_TERRAFORM_PATH) output -raw region) --name $$(terraform -chdir=$(AWS_TERRAFORM_PATH) output -raw cluster_name)
 
 # Default target when you run 'make'
 
