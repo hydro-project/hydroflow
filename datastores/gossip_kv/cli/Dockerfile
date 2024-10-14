@@ -1,4 +1,4 @@
-FROM "hydroflow/gossip-kv-base-image:latest" AS builder
+FROM "hydroflow-gossip-kv-base-image:latest" AS builder
 WORKDIR /usr/src/gossip-kv-server
 COPY . .
 RUN find .
