@@ -1,5 +1,6 @@
 [package]
-name = "fuzz"
+name = "lattices-fuzz"
+path = "src/lib.rs"
 version = "0.0.0"
 publish = false
 edition = "2021"
@@ -9,46 +10,44 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-lattices = { path = "../" }  # Adjust if necessary
-rand = "0.8"  # or the latest version
-chrono = "0.4" 
-afl = "0.15.10"
-url = "*"
+once_cell = "1.8.0"
 
-[profile.dev]
-opt-level = 1
-overflow-checks = true
-debug = true
-lto = true
-codegen-units = 1
-panic = "abort"
 
-[profile.release]
-opt-level = 2
-overflow-checks = true
-debug = true
-lto = true 
-codegen-units = 1
-panic = "abort"
+[dependencies.lattices]
+path = ".."
 
-[[bin]] 
-name = "all_fuzz"
-path = "fuzz_targets/all_fuzz.rs"
+[[bin]]
+name = "associativity_fuzz"
+path = "fuzz_targets/associativity_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "commutativity_fuzz"
+path = "fuzz_targets/commutativity_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "distributivity_fuzz"
+path = "fuzz_targets/distributivity_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "linearity_fuzz"
+path = "fuzz_targets/linearity_fuzz.rs"
 test = false
 doc = false
 bench = false
 
 
-[build]
-target = "aarch64-apple-darwin"
-
-[target.aarch64-apple-darwin]
-linker = "clang"
-rustflags = [
-    "-C", "link-arg=-mmacosx-version-min=14.0",
-    "-C", "link-arg=-lafl"  # Link against the AFL library
-]
- 
-
-[workspace]
-
+[[bin]]
+name = "monotonicity_fuzz"
+path = "fuzz_targets/monotonicity_fuzz.rs"
+test = false
+doc = false
+bench = false

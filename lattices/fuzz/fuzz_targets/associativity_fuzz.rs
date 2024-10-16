@@ -1,34 +1,28 @@
-// #![no_main]
-
-// extern crate libfuzzer_sys;
-// use libfuzzer_sys::fuzz_target;
-// use lattices::algebra::associativity_single;
-
-// // Define your function f outside
-// fn wrapping_add(x: u8, y: u8) -> u8 {
-//     x.wrapping_add(y)
-// }
-
-// fuzz_target!(|data: &[u8]| {
-//     if data.len() < 3 {
-//         return; // Ensure there's enough data for the test
-//     }
-
-//     let a = data[0];
-//     let b = data[1];
-//     let c = data[2];
-
-//     // Now you can use your wrapping_add function
-//     let result = associativity_single(a, b, c, wrapping_add);
-//     println!("Associativity test result: {}", result);
-// });
 #![no_main]
 
 extern crate libfuzzer_sys;
 use libfuzzer_sys::fuzz_target;
 use lattices::algebra::associativity_single;
+use once_cell::sync::Lazy;
+use lattices_fuzz::algebra_functions::FuzzFunctions;
 
-pub fn fuzz_target(a: u8, b: u8, c: u8, f: fn(u8, u8) -> u8) {
-    let result = associativity_single(a, b, c, f);
+type InputType = u8;
+static FUNCTIONS: Lazy<FuzzFunctions<InputType>> = Lazy::new(|| FuzzFunctions::new(
+    |a: u8, b: u8| a ^ b,
+    Some(|a: u8| a),
+    Some(|a: u8, b: u8| a.wrapping_mul(b)),
+));
+
+fuzz_target!(|data: &[u8]| {
+    if data.len() < 3 {
+        println!("Not enough data for associativity test.");
+        return;
+    }
+
+    let a = data[0];
+    let b = data[1];
+    let c = data[2];
+
+    let result = associativity_single(a, b, c, FUNCTIONS.f);
     println!("Associativity test result: {}", result);
-}
+});
