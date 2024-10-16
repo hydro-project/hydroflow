@@ -27,10 +27,6 @@ greentext = @echo "$(COLOR_GREEN)$(1)$(COLOR_RESET)"
 bluetext = @echo "$(COLOR_BLUE)$(1)$(COLOR_RESET)"
 redtext = @echo "$(COLOR_RED)$(1)$(COLOR_RESET)"
 
-aws_setup_cli:
-	$(call cecho_green, Setting up kubectl to work with AWS EKS Cluster)
-	aws eks update-kubeconfig --region $$(terraform -chdir=$(AWS_TERRAFORM_PATH) output -raw region) --name $$(terraform -chdir=$(AWS_TERRAFORM_PATH) output -raw cluster_name)
-
 # Default target when you run 'make'
 
 # Target to start Minikube with specific options
