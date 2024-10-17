@@ -1,3 +1,4 @@
+use std::convert::Infallible;
 use std::fmt::Debug;
 use std::future::ready;
 use std::hash::Hash;
@@ -11,7 +12,9 @@ use hydroflow::futures::{SinkExt, StreamExt};
 use hydroflow::tokio_stream::wrappers::IntervalStream;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use hydroflow::{bincode, tokio};
+use prometheus::{gather, Encoder, TextEncoder};
 use tracing::{error, info, trace};
+use warp::Filter;
 
 use crate::config::{setup_settings_watch, SeedNodeSettings};
 use crate::membership::member_name;
@@ -41,11 +44,30 @@ fn make_seed_node(settings: &SeedNodeSettings) -> SeedNode<SocketAddr> {
     }
 }
 
+async fn metrics_handler() -> Result<impl warp::Reply, Infallible> {
+    let encoder = TextEncoder::new();
+    let metric_families = gather();
+    let mut buffer = Vec::new();
+    encoder.encode(&metric_families, &mut buffer).unwrap();
+
+    Ok(warp::reply::with_header(
+        buffer,
+        "Content-Type",
+        encoder.format_type(),
+    ))
+}
+
 #[hydroflow::main]
 async fn main() {
     tracing_subscriber::fmt::init();
 
     let opts: Opts = Opts::parse();
+
+    let metrics_route = warp::path("metrics").and_then(metrics_handler);
+    tokio::spawn(async move {
+        info!("Starting metrics server on port 4003");
+        warp::serve(metrics_route).run(([0, 0, 0, 0], 4003)).await;
+    });
 
     // Setup protocol information in the member metadata.
     let client_protocol_address =

@@ -77,3 +77,11 @@ aws_upload_docker_images: build_docker_images
 	docker push $(SERVER_REPO_URL):$(SERVER_IMAGE_VERSION)
 	aws ecr get-login-password --region $(REGION) | docker login --username AWS --password-stdin $(SERVER_REPO_URL)
 	docker push $(CLI_REPO_URL):$(CLI_IMAGE_VERSION)
+
+aws_tunnel_grafana:
+	$(eval GRAFANA_PORT := $(shell terraform -chdir=$(AWS_TERRAFORM_PATH) output -raw grafana_port))
+	kubectl port-forward svc/grafana $(GRAFANA_PORT):$(GRAFANA_PORT)
+
+aws_tunnel_prometheus:
+	$(eval PROMETHEUS_PORT := $(shell terraform -chdir=$(AWS_TERRAFORM_PATH) output -raw prometheus_port))
+	kubectl port-forward svc/prometheus $(PROMETHEUS_PORT):$(PROMETHEUS_PORT)
