@@ -17,7 +17,7 @@ fn test_degenerate_union() {
         {
             source_iter([1, 2, 3]) -> union() -> for_each(|x| result_send.send(x).unwrap());
         },
-        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:0:0",
+        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:2:38",
     };
     df.run_available();
 
@@ -30,7 +30,7 @@ fn test_empty_union() {
         {
             union() -> for_each(|x: usize| println!("{}", x));
         },
-        "Warning: `union` should have at least 2 input(s), actually has 0.\n  --> $FILE:0:0",
+        "Warning: `union` should have at least 2 input(s), actually has 0.\n  --> $FILE:2:12",
     };
     df.run_available();
 }
@@ -43,7 +43,7 @@ fn test_degenerate_tee() {
         {
             source_iter([1, 2, 3]) -> tee() -> for_each(|x| result_send.send(x).unwrap());
         },
-        "Warning: `tee` should have at least 2 output(s), actually has 1.\n  --> $FILE:0:0"
+        "Warning: `tee` should have at least 2 output(s), actually has 1.\n  --> $FILE:2:38"
     };
     df.run_available();
 
@@ -59,7 +59,7 @@ fn test_empty_tee() {
         {
             source_iter([1, 2, 3]) -> inspect(|&x| output_inner.borrow_mut().push(x)) -> tee();
         },
-        "Warning: `tee` should have at least 2 output(s), actually has 0.\n  --> $FILE:0:0",
+        "Warning: `tee` should have at least 2 output(s), actually has 0.\n  --> $FILE:2:89",
     };
     df.run_available();
 
@@ -86,7 +86,7 @@ pub fn test_warped_diamond() {
             nodes -> [0]init;
             new_node[1] -> map(|n| (n, 'b')) -> [1]init;
         },
-        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:0:0",
+        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:3:20",
     };
     df.run_available();
 }
@@ -111,8 +111,8 @@ pub fn test_warped_diamond_2() {
 
             ntwk = source_iter([4, 5, 6]) -> tee();
         },
-        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:0:0",
-        "Warning: `tee` should have at least 2 output(s), actually has 0.\n  --> $FILE:0:0",
+        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:3:20",
+        "Warning: `tee` should have at least 2 output(s), actually has 0.\n  --> $FILE:16:45",
     };
     hf.run_available();
 }
