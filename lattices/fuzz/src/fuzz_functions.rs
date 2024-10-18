@@ -11,8 +11,8 @@ macro_rules! create_fuzz_functions {
         > = once_cell::sync::Lazy::new(|| {
             lattices_fuzz::algebra_functions::FuzzFunctions::new(
                 |a: $type, b: $type| a ^ b,
-                Some(|a: $type| a),
                 Some(|a: $type, b: $type| a.wrapping_mul(b)),
+                Some(|a: $type| a)
             )
         });
     };
