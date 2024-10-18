@@ -3,16 +3,14 @@
 extern crate libfuzzer_sys;
 use libfuzzer_sys::fuzz_target;
 use lattices::algebra::associativity_single;
-use once_cell::sync::Lazy;
-use lattices_fuzz::algebra_functions::FuzzFunctions;
+
+
+#[macro_use]
+extern crate lattices_fuzz;
 
 type InputType = u8;
-static FUNCTIONS: Lazy<FuzzFunctions<InputType>> = Lazy::new(|| FuzzFunctions::new(
-    |a: u8, b: u8| a ^ b,
-    Some(|a: u8| a),
-    Some(|a: u8, b: u8| a.wrapping_mul(b)),
-));
 
+create_fuzz_functions!(InputType, FUNCTIONS);
 fuzz_target!(|data: &[u8]| {
     if data.len() < 3 {
         println!("Not enough data for associativity test.");

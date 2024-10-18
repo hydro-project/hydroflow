@@ -2,16 +2,15 @@
 
 extern crate libfuzzer_sys;
 use lattices::algebra::commutativity_single;
-use lattices_fuzz::algebra_functions::FuzzFunctions;
 use libfuzzer_sys::fuzz_target;
-use once_cell::sync::Lazy;
+
+
+#[macro_use]
+extern crate lattices_fuzz;
 
 type InputType = u8;
-static FUNCTIONS: Lazy<FuzzFunctions<InputType>> = Lazy::new(|| FuzzFunctions::new(
-    |a: u8, b: u8| a ^ b,
-    Some(|a: u8| a),
-    Some(|a: u8, b: u8| a.wrapping_mul(b)),
-));
+
+create_fuzz_functions!(InputType, FUNCTIONS);
 
 fuzz_target!(|data: &[u8]| {
     if data.len() < 2 {

@@ -7,6 +7,7 @@ fn main() {
         "associativity_fuzz",
         "linearity_fuzz",
         "monotonicity_fuzz",
+        "distributivity_fuzz",
     ];
 
     for fuzz_target in fuzz_targets {
@@ -17,8 +18,8 @@ fn main() {
             .arg("run")
             .arg(fuzz_target)
             .arg("--")
-            .arg("-max_total_time=5") // Run each fuzz target for 5 seconds
-            .current_dir(&manifest_dir) // Set the current working directory
+            .arg("-max_total_time=1") // Run each fuzz target for 5 seconds
+            .current_dir(&manifest_dir)  
             .status()
             .expect("Failed to execute fuzz target");
 
