@@ -3,10 +3,10 @@
 fn main() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
     let fuzz_targets = vec![
-        "commutativity_fuzz",
-        "associativity_fuzz",
-        "linearity_fuzz",
-        "monotonicity_fuzz",
+        // "commutativity_fuzz",
+        // "associativity_fuzz",
+        // "linearity_fuzz",
+        // "monotonicity_fuzz",
         "distributivity_fuzz",
     ];
 

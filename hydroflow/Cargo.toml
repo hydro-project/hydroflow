@@ -87,14 +87,6 @@ tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
 trybuild = "1.0.80"
 zipf = "7.0.0"
 
-
-[workspace]
-members = [
-    "lattices/src",   # Your main src directory
-    "lattices/fuzz",  # Include the fuzz directory here
-    # Other members...
-]
-
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 # Rayon (rust data-parallelism library) does not compile on WASM.
 criterion = { version = "0.5", features = [ "async_tokio", "html_reports" ] }

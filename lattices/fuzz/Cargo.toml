@@ -13,7 +13,6 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 once_cell = "1.8.0"
 
-
 [dependencies.lattices]
 path = ".."
 

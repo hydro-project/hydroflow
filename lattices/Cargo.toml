@@ -1,6 +1,6 @@
 [package]
 name = "lattices"
-path = "src/lib.rs" 
+path = "src/lib.rs"
 publish = true
 version = "0.5.4"
 edition = "2021"
