@@ -146,8 +146,8 @@ fn test_ght_join_bimorphism() {
     // type MyGhtB = GhtType!(u32, u64, u16 => &'static str);
     // type MyGhtATrie = <MyGhtA as GeneralizedHashTrie>::Trie;
     // type MyGhtBTrie = <MyGhtB as GeneralizedHashTrie>::Trie;
-    type MyGhtATrie = GhtType!(u32, u64, u16 => &'static str: Set);
-    type MyGhtBTrie = GhtType!(u32, u64, u16 => &'static str: Set);
+    type MyGhtATrie = GhtType!(u32, u64, u16 => &'static str: VariadicHashSet);
+    type MyGhtBTrie = GhtType!(u32, u64, u16 => &'static str: VariadicHashSet);
 
     type Output = variadics::var_type!(u32, u64, u16, &'static str, &'static str);
 

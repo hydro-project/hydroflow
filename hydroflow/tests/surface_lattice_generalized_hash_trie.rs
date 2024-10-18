@@ -8,7 +8,7 @@ use variadics::variadic_collections::VariadicHashSet; // Import the Insert trait
 
 #[test]
 fn test_basic() {
-    type MyGht = GhtType!(u16, u32 => u64: Set);
+    type MyGht = GhtType!(u16, u32 => u64: VariadicHashSet);
     type FlatTup = var_type!(u16, u32, u64);
     let input: Vec<FlatTup> = vec![
         var_expr!(42, 314, 43770),
@@ -34,8 +34,8 @@ fn test_basic() {
 
 #[test]
 fn test_join() {
-    type MyGht = GhtType!(u8 => u16: Set);
-    type ResultGht = GhtType!(u8 => u16, u16: Set);
+    type MyGht = GhtType!(u8 => u16: VariadicHashSet);
+    type ResultGht = GhtType!(u8 => u16, u16: VariadicHashSet);
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
     let r = vec![

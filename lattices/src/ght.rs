@@ -67,6 +67,12 @@ pub trait GeneralizedHashTrieNode: Default {
         &self,
         row: <Self::Schema as VariadicExt>::AsRefVar<'_>,
     ) -> Option<&'_ GhtLeaf<Self::Schema, Self::ValType, Self::Storage>>;
+
+    /// into_iter for leaf elements, or None for inner nodes
+    fn into_iter(self) -> Option<impl Iterator<Item = Self::Schema>>;
+
+    /// pull all the data out of this trie node but retain the reference
+    fn drain(&mut self) -> Option<impl Iterator<Item = Self::Schema>>;
 }
 
 /// internal node of a HashTrie
@@ -164,6 +170,14 @@ where
         self.children
             .get(head)
             .and_then(|child| child.find_containing_leaf(row))
+    }
+
+    fn into_iter(self) -> Option<impl Iterator<Item = Self::Schema>> {
+        None::<Box<dyn Iterator<Item = Self::Schema>>>
+    }
+
+    fn drain(&mut self) -> Option<impl Iterator<Item = Self::Schema>> {
+        None::<Box<dyn Iterator<Item = Self::Schema>>>
     }
 }
 
@@ -277,6 +291,14 @@ where
             None
         }
     }
+
+    fn into_iter(self) -> Option<impl Iterator<Item = Self::Schema>> {
+        Some(self.elements.into_iter())
+    }
+
+    fn drain(&mut self) -> Option<impl Iterator<Item = Self::Schema>> {
+        Some(self.elements.drain())
+    }
 }
 
 impl<Schema, Storage> GeneralizedHashTrieNode for GhtLeaf<Schema, (), Storage>
@@ -347,6 +369,14 @@ where
         } else {
             None
         }
+    }
+
+    fn into_iter(self) -> Option<impl Iterator<Item = Self::Schema>> {
+        Some(self.elements.into_iter())
+    }
+
+    fn drain(&mut self) -> Option<impl Iterator<Item = Self::Schema>> {
+        Some(self.elements.drain())
     }
 }
 
