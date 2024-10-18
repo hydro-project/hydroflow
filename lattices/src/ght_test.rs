@@ -3,10 +3,7 @@ mod test {
     use std::collections::HashSet;
     use std::io::{self, Write};
 
-    use variadics::variadic_collections::{
-        VariadicCollection, VariadicCountedHashSet,
-    };
-    
+    use variadics::variadic_collections::{VariadicCollection, VariadicCountedHashSet};
     use variadics::{var_expr, var_type, VariadicExt};
 
     use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtLeaf, GhtPrefixIter};
@@ -15,7 +12,7 @@ mod test {
         GhtCartesianProductBimorphism,
         //     GhtNodeKeyedBimorphism, GhtValTypeProductBimorphism,
     };
-    use crate::ght_lazy::{ColtGet, ColtForestNode};
+    use crate::ght_lazy::{ColtForestNode, ColtGet};
     use crate::{ColtType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
 
     #[test]
@@ -47,7 +44,7 @@ mod test {
     }
     #[test]
     fn test_ght_node_type_macro() {
-        // 0 => 1 
+        // 0 => 1
         type LilTrie = GhtType!(() => u32: VariadicCountedHashSet);
         let _j = LilTrie::default();
         let _l = LilTrie::new_from(vec![var_expr!(1)]);
@@ -61,14 +58,14 @@ mod test {
         type KeyNoValTrie = GhtType!(u32 => (): VariadicCountedHashSet);
         let l = KeyNoValTrie::new_from(vec![var_expr!(1)]);
         let _: KeyNoValTrie = l;
-        
+
         // 1 => 1
         type SmallTrie = GhtType!(u32 => &'static str: VariadicCountedHashSet);
         type SmallKeyedTrie = GhtType!(u32 => &'static str: VariadicCountedHashSet);
         let l = SmallTrie::new_from(vec![var_expr!(1, "hello")]);
         let _: SmallKeyedTrie = l;
 
-        // 1 => >1 
+        // 1 => >1
         type SmallKeyLongValTrie = GhtType!(u32 => u64, u16, &'static str: VariadicCountedHashSet);
         let _x = SmallKeyLongValTrie::new_from(vec![var_expr!(1, 999, 222, "hello")]);
 
@@ -258,27 +255,6 @@ mod test {
         // }
     }
 
-    // #[test]
-    // fn test_find_containing_leaf() {
-    //     type MyGht = GhtType!(u32, u32 => u32);
-    //     type InputType = var_type!(u32, u32, u32);
-    //     let input: HashSet<InputType> = HashSet::from_iter(
-    //         [
-    //             (42, 314, 30619),
-    //             (42, 314, 43770),
-    //             (42, 315, 43770),
-    //             (43, 10, 600),
-    //         ]
-    //         .iter()
-    //         .map(|&(a, b, c)| var_expr!(a, b, c)),
-    //     );
-    //     let htrie = MyGht::new_from(input.clone());
-
-    //     assert!(
-    //         FindLeaf::find_containing_leaf(&htrie, var_expr!(42u32, 315u32, 43770u32)).is_some(),
-    //     );
-    // }
-
     #[test]
     fn test_prefix_iter_complex() {
         type MyGht = GhtType!(bool, u32, &'static str => i32: VariadicCountedHashSet);
@@ -410,8 +386,8 @@ mod test {
 
     // #[test]
     // fn test_join_bimorphism() {
-    //     type MyGhtATrie = GhtType!(u32, u64, u16 => &'static str);
-    //     type MyGhtBTrie = GhtType!(u32, u64, u16 => &'static str);
+    //     type MyGhtATrie = GhtType!(u32, u64, u16 => &'static str: VariadicCountedHashSet);
+    //     type MyGhtBTrie = GhtType!(u32, u64, u16 => &'static str: VariadicCountedHashSet);
 
     //     let mut ght_a = MyGhtATrie::default();
     //     let mut ght_b = MyGhtBTrie::default();
@@ -444,12 +420,17 @@ mod test {
     //         .collect();
     //         // type CartProdOld = GhtType!(() => u64, u16, &'static str, u64, u16, &'static str);
     //         type CartProd = GhtLeaf<
-    //             var_type!(u32, u64, u16, &'static str, u64, u16, &'static str),
+    //             var_type!(u32, u64, u16, &'static str, u32, u64, u16, &'static str),
     //             var_type!(),
+    //             VariadicCountedHashSet<
+    //                 var_type!(u32, u64, u16, &'static str, u32, u64, u16, &'static str),
+    //             >,
     //         >;
     //         // let _cp = ValTypeProd::default();
     //         let mut bim =
-    //             GhtNodeKeyedBimorphism::new(GhtCartesianProductBimorphism::<CartProd>::default());
+    //             crate::ght_lattice::GhtNodeKeyedBimorphism::new(GhtCartesianProductBimorphism::<
+    //                 CartProd,
+    //             >::default());
     //         let out = LatticeBimorphism::call(&mut bim, &ght_a, &ght_b);
     //         let out: HashSet<MyResultType> = out.recursive_iter().collect();
     //         assert_eq!(out, result.iter().copied().collect());
@@ -573,98 +554,6 @@ mod test {
     //         let out: HashSet<MyResultType> = out.recursive_iter().collect();
     //         assert_eq!(out, result.iter().copied().collect());
     //     }
-    // }
-
-    // #[test]
-    // fn test_recursive_iter_keys() {
-    //     type MyGht = GhtType!(u32 => u32, u32);
-    //     type InputType = var_type!(u32, u32, u32);
-    //     type OutputType = var_type!(u32);
-    //     type ResultType<'a> = var_type!(&'a u32);
-    //     let input: HashSet<InputType> = HashSet::from_iter(
-    //         [
-    //             (42, 314, 43770),
-    //             (42, 315, 43770),
-    //             (43, 10, 600),
-    //             (43, 10, 60),
-    //         ]
-    //         .iter()
-    //         .map(|&(a, b, c)| var_expr!(a, b, c)),
-    //     );
-    //     let output: HashSet<OutputType> = [var_expr!(42), var_expr!(43)].iter().copied().collect();
-
-    //     let htrie = MyGht::new_from(input.clone());
-    //     let result = output.iter().map(|v| v.as_ref_var()).collect();
-    //     let v: HashSet<ResultType> = htrie
-    //         .recursive_iter_keys()
-    //         .map(|(a, (_b, (_c, ())))| var_expr!(a))
-    //         .collect();
-    //     assert_eq!(v, result);
-    // }
-
-    pub trait PartialEqExceptNested: variadics::Variadic {
-        fn eq_except_nested(&self, other: &Self) -> bool;
-    }
-
-    // Implement the trait for the enum
-    impl PartialEqExceptNested for () {
-        fn eq_except_nested(&self, _other: &Self) -> bool {
-            true
-        }
-    }
-
-    // Recursive case: general variadic tuple
-    impl<Item, Rest> PartialEqExceptNested for (Item, Rest)
-    where
-        Item: PartialEq,
-        Rest: VariadicExt + PartialEqExceptNested,
-    {
-        fn eq_except_nested(&self, other: &Self) -> bool {
-            let (item, rest) = self;
-            let (other_item, other_rest) = other;
-            item == other_item && rest.eq_except_nested(other_rest)
-        }
-    }
-
-    // #[test]
-    // fn test_split_key_val() {
-    //     type MyGht = GhtType!(u32 => u32, u32);
-    //     type InputType = var_type!(u32, u32, u32);
-    //     type ResultType<'a> = (var_type!(&'a u32), var_type!(&'a u32, &'a u32));
-    //     let input: HashSet<InputType> = HashSet::from_iter(
-    //         [
-    //             (42, 314, 43770),
-    //             (42, 315, 43770),
-    //             (43, 10, 600),
-    //             (43, 10, 60),
-    //         ]
-    //         .iter()
-    //         .map(|&(a, b, c)| var_expr!(a, b, c)),
-    //     );
-    //     let htrie = MyGht::new_from(input.clone());
-    //     let output: HashSet<ResultType> =
-    //         htrie.recursive_iter().map(MyGht::split_key_val).collect();
-    //     let correct: HashSet<ResultType> = input
-    //         .iter()
-    //         .map(|(a, (b, (c, ())))| ((a, ()), (b, (c, ()))))
-    //         .collect();
-    //     assert_eq!(output, correct);
-    // }
-
-    // #[test]
-    // fn test_key_cmp() {
-    //     type MyRoot = GhtType!(u16, u32 => u64);
-    //     let mut trie1 = MyRoot::default();
-    //     (*trie1.get_mut_trie()).insert(var_expr!(1, 2, 3));
-    //     let mut trie2 = MyRoot::default();
-    //     (*trie2.get_mut_trie()).insert(var_expr!(1, 2, 4));
-
-    //     let tup1 = trie1.recursive_iter_keys().next().unwrap();
-    //     let (k1, _v1) = MyRoot::split_key_val(tup1);
-    //     let tup2 = trie2.recursive_iter_keys().next().unwrap();
-    //     let (k2, _v2) = MyRoot::split_key_val(tup2);
-    //     assert!(tup1 != tup2);
-    //     assert_eq!(k1, k2);
     // }
 
     use variadics_macro::tuple;
@@ -896,78 +785,6 @@ mod test {
     }
 
     #[test]
-    fn test_ght_forest() {
-        // [[𝑅(𝑥),𝑆(𝑥),𝑇(𝑥),T'(x)], [𝑅(𝑎)], [𝑆(𝑏)], [T'(c), 𝑇(𝑐)]]
-        //
-        // R(a, x, y), S(a, x, c), T(a, x, c)
-        // [[R(a, x),S(a, x),T(a, x)], [T(a, c), S(a, c)]]
-        type LeafType = GhtType!(() => u16, u32, u64: VariadicColumnMultiset);
-
-        let table_r = LeafType::new_from(vec![
-            var_expr!(0, 1, 1),
-            var_expr!(0, 1, 2),
-            var_expr!(0, 1, 3),
-            var_expr!(1, 2, 1),
-            var_expr!(1, 3, 1),
-        ]);
-        let table_s = LeafType::new_from(vec![
-            var_expr!(0, 1, 1),
-            var_expr!(0, 1, 2),
-            var_expr!(0, 1, 3),
-            var_expr!(0, 2, 1),
-            var_expr!(0, 2, 2),
-            var_expr!(0, 2, 3),
-            var_expr!(1, 2, 1),
-            var_expr!(1, 2, 2),
-            var_expr!(1, 2, 3),
-            var_expr!(1, 3, 1),
-            var_expr!(1, 3, 2),
-            var_expr!(1, 3, 3),
-        ]);
-        let table_t = LeafType::new_from(vec![
-            var_expr!(0, 1, 1),
-            var_expr!(0, 1, 2),
-            var_expr!(0, 1, 3),
-            var_expr!(1, 3, 1),
-        ]);
-
-        // set up S forest
-        type SForest = ColtType!(u16, u32, u64);
-        let mut s_forest = SForest::default();
-        s_forest.0 = table_s;
-        assert!(s_forest.0.height() == 0);
-        assert!(s_forest.1 .0.height() == 1);
-        assert!(s_forest.1 .1 .0.height() == 2);
-
-        // set up T forest
-        type TForest = ColtType!(u16, u32, u64);
-        let mut t_forest = TForest::default();
-        t_forest.0 = table_t;
-
-        // remainder of original test
-        for r in table_r.elements {
-            println!("r tup is {:?}", r);
-            // s_forest.find_containing_leaf(r.as_ref_var());
-
-            // walk forest and look for (r.0, r.1, *)
-            // first check s_forest.0
-
-            // fn check_prefix_iter<'a, T0, T1>(_s_forest: &'a var_type!(T0, T1))
-            // where
-            //     T1: HtPrefixIter<var_type!(&'a u16, &'a u32, &'a var_type!(u64))>,
-            // {
-            // }
-            // check_prefix_iter(&s_forest);
-
-            // if contains_key(s_forest.as_mut_var(), r, key_len)
-            //     && contains_key(t_forest.as_mut_var(), r, key_len)
-            // {
-            //     println!("matched {:?}", r);
-            // }
-        }
-    }
-
-    #[test]
     fn test_forest_macro() {
         type Forest4 = ColtType!(u8, u16, u32, u64);
         let _f4 = Forest4::default();
@@ -983,7 +800,7 @@ mod test {
 
         type Forest01 = ColtType!(() => u16);
         let _f01 = Forest01::default();
-        
+
         type Forest02 = ColtType!(() => u8, u16);
         let _f02 = Forest02::default();
 
@@ -1016,7 +833,6 @@ mod test {
         // type Force = crate::ght::GhtInner<u8, GhtLeaf<(u8, ()), (), VariadicColumnMultiset<(u8, ())>>>;
         // let force: Force = forest.0.force().unwrap();
 
-
         forest.0.insert(var_expr!(1));
         forest.0.insert(var_expr!(2));
         forest.0.insert(var_expr!(3));
@@ -1028,132 +844,6 @@ mod test {
         // println!("forest after get: {:?}", forest2);
         println!("result.len() = {}", result.len());
     }
-
-
-    // #[test]
-    // fn test_build_forest() {
-    //     type MyForest = GhtForestType!(u8, u16, u32, u64);
-    //     let mut forest = MyForest::default();
-    //     forest.0.insert(var_expr!(1, 1, 1, 1));
-    //     forest.1 .0.insert(var_expr!(2, 2, 2, 2));
-    //     forest.1 .1 .0.insert(var_expr!(3, 3, 3, 3));
-
-    //     // let i = <MyForest as GhtForest<<var_type!(u8, u16, u32, u64) as VariadicExt>::AsRefVar<'_>>>::find_matching_trie(&forest, var_expr!(1, 1, 1, 1).as_ref_var(), 0);
-    //     assert_eq!(
-    //         // println!(
-    //         //     "found in trie {}",
-    //         ForestFindLeaf::<
-    //             var_type!(u8, u16, u32, u64),
-    //             VariadicColumnMultiset<var_type!(u8, u16, u32, u64)>,
-    //         >::find_containing_leaf(
-    //             &forest, var_expr!(1_u8, 1_u16, 1_u32, 1_u64).as_ref_var()
-    //         )
-    //         .unwrap()
-    //         .iter_tuples()
-    //         .next()
-    //         .unwrap(),
-    //         var_expr!(1, 1, 1, 1).as_ref_var()
-    //     );
-    //     assert_eq!(
-    //         // println!(
-    //         //     "found in trie {}",
-    //         ForestFindLeaf::<
-    //             var_type!(u8, u16, u32, u64),
-    //             VariadicColumnMultiset<var_type!(u8, u16, u32, u64)>,
-    //         >::find_containing_leaf(&forest, var_expr!(2, 2, 2, 2).as_ref_var())
-    //         .unwrap()
-    //         .iter_tuples()
-    //         .next()
-    //         .unwrap(),
-    //         var_expr!(2, 2, 2, 2).as_ref_var()
-    //     );
-    //     assert_eq!(
-    //         // println!(
-    //         //     "found in trie {}",
-    //         ForestFindLeaf::<
-    //             var_type!(u8, u16, u32, u64),
-    //             VariadicColumnMultiset<var_type!(u8, u16, u32, u64)>,
-    //         >::find_containing_leaf(&forest, var_expr!(3, 3, 3, 3).as_ref_var())
-    //         .unwrap()
-    //         .iter_tuples()
-    //         .next()
-    //         .unwrap(),
-    //         var_expr!(3, 3, 3, 3).as_ref_var()
-    //     );
-    //     assert!(
-    //         // println!(
-    //         //     "found in trie {}",
-    //         ForestFindLeaf::<
-    //             var_type!(u8, u16, u32, u64),
-    //             VariadicColumnMultiset<var_type!(u8, u16, u32, u64)>,
-    //         >::find_containing_leaf(&forest, var_expr!(4, 4, 4, 4).as_ref_var())
-    //         .is_none()
-    //     );
-    //     // println!("{:?}", forest.forest);
-    // }
-
-    // #[test]
-    // fn test_force_forest() {
-    //     type MyForest = GhtForestType!(u8, u16, u32, u64);
-    //     let mut forest = MyForest::default();
-    //     forest.0.insert(var_expr!(1, 1, 1, 1));
-    //     forest.0.insert(var_expr!(2, 2, 2, 2));
-    //     forest.0.insert(var_expr!(3, 3, 3, 3));
-
-    //     GhtForest::<var_type!(u8, u16, u32, u64)>::find_and_force(
-    //         &mut forest,
-    //         var_expr!(1, 1, 1, 1),
-    //     );
-    //     println!("Forest after forcing (1, 1, 1, 1): {:?}", forest);
-    //     GhtForest::<var_type!(u8, u16, u32, u64)>::find_and_force(
-    //         &mut forest,
-    //         var_expr!(2, 1, 1, 1),
-    //     );
-    //     println!("Forest after forcing (2, 1, 1, 1): {:?}", forest);
-    //     GhtForest::<var_type!(u8, u16, u32, u64)>::find_and_force(
-    //         &mut forest,
-    //         var_expr!(3, 3, 3, 3),
-    //     );
-    //     println!("Forest after forcing (3, 3, 3, 3): {:?}", forest);
-
-    //     println!(
-    //         "(1, 1, 1, 1) leaf: {:?}",
-    //         forest.find_containing_leaf(var_expr!(1, 1, 1, 1).as_ref_var())
-    //     );
-    //     println!(
-    //         "(2, 1, 1, 1) leaf: {:?}",
-    //         forest.find_containing_leaf(var_expr!(2, 1, 1, 1).as_ref_var())
-    //     );
-    //     println!(
-    //         "(3, 3, 3, 3) leaf: {:?}",
-    //         forest.find_containing_leaf(var_expr!(3, 3, 3, 3).as_ref_var())
-    //     );
-    // }
-
-    // #[test]
-    // fn test_scale_forest() {
-    //     type MyForest = GhtForestType!(bool, usize, &'static str => i32);
-    //     let mut forest = MyForest::default();
-
-    //     forest.0.insert(var_expr!(true, 1, "hello", -5));
-    //     assert_eq!(forest.0.recursive_iter().count(), 1);
-    //     for i in 1..1000000 {
-    //         forest.0.insert(var_expr!(true, 1, "hello", i));
-    //     }
-    //     for i in 1..10 {
-    //         forest.0.insert(var_expr!(true, 2, "hello", i));
-    //     }
-    //     assert_eq!(forest.0.recursive_iter().count(), 1000009);
-    //     let leaf = ForestFindLeaf::<
-    //         var_type!(bool, usize, &'static str, i32),
-    //         VariadicColumnMultiset<var_type!(bool, usize, &'static str, i32)>,
-    //     >::find_containing_leaf(
-    //         &forest, var_expr!(true, 2, "hello", 2).as_ref_var()
-    //     );
-    //     println!("leaf size: {}", leaf.unwrap().elements.len());
-    //     // println!("forest.0: {:?}", forest.0);
-    //     println!("forest.1: {:?}", forest.1 .0);
-    // }
 
     #[test]
     fn test_colt_get() {
