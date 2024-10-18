@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::time::Duration;
 
 use gossip_protocol::membership::{MemberData, MemberId};
 use gossip_protocol::model::{
@@ -17,6 +18,8 @@ use hydroflow::lattices::{Lattice, PairBimorphism};
 use hydroflow::scheduled::graph::Hydroflow;
 use lattices::set_union::SetUnion;
 use lattices::{IsTop, Max, Pair};
+use lazy_static::lazy_static;
+use prometheus::{register_int_counter, IntCounter};
 use rand::seq::IteratorRandom;
 use rand::thread_rng;
 use serde::de::DeserializeOwned;
@@ -47,6 +50,11 @@ pub struct InfectingWrite {
 }
 
 pub type MessageId = String;
+
+lazy_static! {
+    pub static ref EXAMPLE_COUNTER: IntCounter =
+        register_int_counter!("example_counter", "Counts the number of examples.").unwrap();
+}
 
 /// Creates a L0 key-value store server using Hydroflow.
 ///
@@ -96,6 +104,8 @@ where
 
         on_start = initialize() -> tee();
         on_start -> for_each(|_| info!("{:?}: Transducer started.", context.current_tick()));
+
+        source_interval(Duration::from_secs(10)) -> for_each(|_| EXAMPLE_COUNTER.inc());
 
         seed_nodes = source_stream(seed_node_stream)
             -> fold::<'static>(|| Box::new(seed_nodes), |last_seed_nodes, new_seed_nodes: Vec<SeedNode<Addr>>| {
