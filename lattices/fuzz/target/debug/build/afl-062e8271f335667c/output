@@ -1,0 +1,2 @@
+cargo:warning=You appear to be building `afl` not under `cargo-afl`.
+cargo:warning=Perhaps you used `cargo build` instead of `cargo afl build`?
