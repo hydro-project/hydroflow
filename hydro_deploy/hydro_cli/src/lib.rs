@@ -161,7 +161,11 @@ impl Deployment {
 
     #[allow(non_snake_case)]
     fn PodHost(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let arc = self.underlying.blocking_write().PodHost();
+        let arc = self.underlying.blocking_write().add_host(|id| {
+            core::PodHost::new(
+                id
+            )
+        });
 
         Ok(Py::new(
             py,
@@ -371,15 +375,13 @@ impl LocalhostHost {
 
 #[pyclass(extends=Host, subclass)]
 struct KubernetesPodHost {
-    underlying: Arc<RwLock<core::PodHost>>,
+    underlying: Arc<core::PodHost>,
 }
 
 #[pymethods]
 impl KubernetesPodHost {
     fn client_only(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let arc = Arc::new(RwLock::new(
-            self.underlying.try_read().unwrap().client_only(),
-        ));
+        let arc = Arc::new(self.underlying.client_only());
 
         Ok(Py::new(
             py,

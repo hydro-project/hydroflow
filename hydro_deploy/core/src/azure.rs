@@ -401,7 +401,7 @@ impl Host for AzureHost {
             .map(|a| a.clone() as Arc<dyn LaunchedHost>)
     }
 
-    fn provision(&self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
+    async fn provision(&self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         self.launched
             .get_or_init(|| {
                 let id = self.id;

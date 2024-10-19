@@ -1,12 +1,12 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::OnceLock};
 use std::net::SocketAddr;
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use hydroflow_cli_integration::ServerBindConfig;
-use tokio::sync::RwLock;
+use hydroflow_deploy_integration::ServerBindConfig;
+
+use crate::hydroflow_crate::{build::BuildOutput, tracing_options::TracingOptions};
 
 use super::{
     ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
@@ -32,7 +32,7 @@ pub use launched_binary::*;
 pub struct PodHost {
     pub id: usize,
     client_only: bool,
-    launched: Option<Arc<LaunchedPod>>,
+    pub launched: OnceLock<Arc<LaunchedPod>>,
 }
 
 impl PodHost {
@@ -40,7 +40,7 @@ impl PodHost {
         PodHost {
             id,
             client_only: false,
-            launched: None,
+            launched: OnceLock::new(),
         }
     }
 
@@ -48,7 +48,7 @@ impl PodHost {
         PodHost {
             id: self.id,
             client_only: true,
-            launched: None,
+            launched: OnceLock::new(),
         }
     }
 }
@@ -59,9 +59,9 @@ impl Host for PodHost {
         HostTargetType::Linux(crate::LinuxArchitecture::AARCH64)
     }
 
-    fn request_port(&mut self, _bind_type: &ServerStrategy) {}
+    fn request_port(&self, _bind_type: &ServerStrategy) {}
     fn collect_resources(&self, _resource_batch: &mut ResourceBatch) {}
-    fn request_custom_binary(&mut self) {}
+    fn request_custom_binary(&self) {}
 
     fn id(&self) -> usize {
         self.id
@@ -71,18 +71,14 @@ impl Host for PodHost {
         self
     }
 
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-
     fn launched(&self) -> Option<Arc<dyn LaunchedHost>> {
         self.launched
-            .as_ref()
+            .get()
             .map(|a| a.clone() as Arc<dyn LaunchedHost>)
     }
 
-    async fn provision(&mut self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
-        if self.launched.is_none() {
+    async fn provision(&self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
+        if self.launched.get().is_none() {
             let client = Client::try_default().await.unwrap();
             let alphabet = [
                 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p','q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'
@@ -146,16 +142,15 @@ impl Host for PodHost {
 
             let internal_ip = pods.get_status(pod_name.as_str()).await.unwrap().status.unwrap().pod_ip.unwrap();
 
-            self.launched = Some(Arc::new(LaunchedPod {
+            self.launched.set(Arc::new(LaunchedPod {
                 internal_ip,
                 pod_name,
-            }))
-
+            })).unwrap();
         }
 
         ProgressTracker::println("finished provisioning");
 
-        self.launched.as_ref().unwrap().clone()
+        self.launched.get().unwrap().clone()
     }
 
     fn strategy_as_server<'a>(
@@ -163,7 +158,7 @@ impl Host for PodHost {
         connection_from: &dyn Host,
     ) -> Result<(
         ClientStrategy<'a>,
-        Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>,
+        Box<dyn FnOnce(& dyn std::any::Any) -> ServerStrategy>,
     )> {
         if self.client_only {
             anyhow::bail!("Pod cannot be a server if it is client only")
@@ -241,16 +236,16 @@ impl LaunchedHost for LaunchedPod {
         }
     }
 
-    async fn copy_binary(&self, binary: Arc<(String, Vec<u8>, PathBuf)>) -> Result<()> {
+    async fn copy_binary(&self, binary: &BuildOutput) -> Result<()> {
         // Create a new pod in the running kubernetes cluster (we assume the user already has one up)
         ProgressTracker::println("Copying binary to pod");
         let client = Client::try_default().await?;
         let pods: Api<Pod> = Api::default_namespaced(client);
 
-        let file_name = format!("hydro-{}-binary", binary.0);
+        let file_name = format!("hydro-{}-binary", binary.unique_id);
         // let metadata = std::fs::metadata("/Users/nickjiang/Nick/Hydro/hydroflow/hydro_deploy/core/src/kubernetes/hello_world_aarch64_musl")?;  // importantly, this file has executable permissions
         {
-            let binary_data = binary.1.clone();
+            let binary_data = binary.bin_data.clone();
             let mut header = tar::Header::new_gnu();
             header.set_path(file_name).unwrap();
             header.set_size(binary_data.len() as u64);
@@ -289,15 +284,16 @@ impl LaunchedHost for LaunchedPod {
     async fn launch_binary(
         &self,
         id: String,
-        binary: Arc<(String, Vec<u8>, PathBuf)>,
+        binary: &BuildOutput,
         args: &[String],
-    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
+        _perf: Option<TracingOptions>,
+    ) -> Result<Box<dyn LaunchedBinary>> {
         ProgressTracker::println("Launching binary in Pod");
 
         let client = Client::try_default().await?;
         let pods: Api<Pod> = Api::default_namespaced(client);
         let pod_name = &self.pod_name;
-        let file_name = format!("hydro-{}-binary", binary.0);
+        let file_name = format!("hydro-{}-binary", binary.unique_id);
 
         // Construct arguments
         let mut args_list = vec![format!("./{file_name}")];
@@ -315,9 +311,9 @@ impl LaunchedHost for LaunchedPod {
 
         // ProgressTracker::println(&format!("Launched binary in pod {:?}", pod_name));
 
-        Ok(Arc::new(RwLock::new(LaunchedPodBinary::new(
+        Ok(Box::new(LaunchedPodBinary::new(
             &mut launch_binary, id,
-        ))))
+        )))
     }
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr> {

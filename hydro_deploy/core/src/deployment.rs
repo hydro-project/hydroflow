@@ -8,7 +8,7 @@ use tokio::sync::RwLock;
 
 use super::gcp::GcpNetwork;
 use super::{
-    progress, CustomService, GCPComputeEngineHost, Host, LocalhostHost, ResourcePool,
+    progress, CustomService, GcpComputeEngineHost, Host, LocalhostHost, ResourcePool,
     ResourceResult, Service, PodHost
 };
 use crate::{AzureHost, ServiceBuilder};
@@ -46,28 +46,8 @@ impl Deployment {
     }
 
     #[allow(non_snake_case)]
-    pub fn Localhost(&mut self) -> Arc<RwLock<LocalhostHost>> {
-        self.add_host(LocalhostHost::new)
-    }
-
-    #[allow(non_snake_case)]
-    pub fn PodHost(&mut self) -> Arc<RwLock<PodHost>> {
-        self.add_host(PodHost::new)
-    }
-
-    #[allow(non_snake_case)]
-    pub fn GCPComputeEngineHost(
-        &mut self,
-        project: impl Into<String>,
-        machine_type: impl Into<String>,
-        image: impl Into<String>,
-        region: impl Into<String>,
-        network: Arc<RwLock<GCPNetwork>>,
-        user: Option<String>,
-    ) -> Arc<RwLock<GCPComputeEngineHost>> {
-        self.add_host(|id| {
-            GCPComputeEngineHost::new(id, project, machine_type, image, region, network, user)
-        })
+    pub fn Localhost(&self) -> Arc<LocalhostHost> {
+        self.localhost_host.clone().unwrap()
     }
 
     #[allow(non_snake_case)]
@@ -119,7 +99,7 @@ impl Deployment {
             self.last_resource_result = Some(resource_result.clone());
 
             for host in self.hosts.iter().filter_map(Weak::upgrade) {
-                host.provision(&resource_result);
+                host.provision(&resource_result).await;
             }
 
             let upgraded_services = self
@@ -259,5 +239,13 @@ impl Deployment {
         user: Option<String>,
     ) -> Arc<AzureHost> {
         self.add_host(|id| AzureHost::new(id, project, os_type, machine_size, image, region, user))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    #[builder(entry = "PodHost", exit = "add")]
+    pub fn add_pod_host(
+        &mut self,
+    ) -> Arc<PodHost> {
+        self.add_host(|id| PodHost::new(id))
     }
 }
