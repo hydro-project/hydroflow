@@ -5,6 +5,7 @@ version = "0.9.0"
 edition = "2021"
 license = "Apache-2.0"
 documentation = "https://docs.rs/hydroflow_datalog_core/"
+repository = "https://github.com/hydro-project/hydroflow"
 description = "Datalog implementation for Hydroflow"
 
 [lints]
