@@ -90,48 +90,57 @@ where
     Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
 {
     fn partial_cmp(&self, other: &GhtInner<Head, Node>) -> Option<Ordering> {
-        if self.children.is_empty() && other.children.is_empty() {
-            Some(Equal)
+        let (smaller, larger) = if self.children.len() < other.children.len() {
+            (self, other)
         } else {
-            // across all keys, determine if we have stuff in self that's not in other
-            // and vice versa
-            let (selfonly, mut otheronly) =
-                self.children
-                    .iter()
-                    .fold((false, false), |mut accum, (k, v)| {
-                        if !other.children.contains_key(k) {
-                            accum.0 = true; // selfonly is true
-                            accum
-                        } else {
-                            match v.partial_cmp(other.children.get(k).unwrap()) {
-                                Some(Greater) | None => {
-                                    accum.0 = true; // selfonly is true
-                                    accum
-                                }
-                                Some(Less) => {
-                                    accum.1 = true; // otheronly is true
-                                    accum
-                                }
-                                Some(Equal) => accum, // no changes
+            (other, self)
+        };
+        if larger.children.is_empty() {
+            return Some(Equal);
+        }
+        // across all keys, determine if we have stuff in smaller that's not in larger
+        // and vice versa
+        let (smallonly, mut largeonly) =
+            smaller
+                .children
+                .iter()
+                .fold((false, false), |mut accum, (k, v)| {
+                    if !larger.children.contains_key(k) {
+                        accum.0 = true; // smallonly is true
+                        accum
+                    } else {
+                        match v.partial_cmp(larger.children.get(k).unwrap()) {
+                            Some(Greater) | None => {
+                                accum.0 = true; // smallonly is true
+                                accum
                             }
+                            Some(Less) => {
+                                accum.1 = true; // largeonly is true
+                                accum
+                            }
+                            Some(Equal) => accum, // no changes
                         }
-                    });
-            // now check if other has keys that are missing in self
-            otheronly |= !other.children.keys().all(|k| self.children.contains_key(k));
+                    }
+                });
+        // we've already deep-compared all matching keys and their subtrees.
+        // all that's left is to shallow-compare if larger has any *keys* that are missing in smaller
+        largeonly |= !larger
+            .children
+            .keys()
+            .all(|k| smaller.children.contains_key(k));
 
-            if selfonly && otheronly {
-                // unique stuff on both sides: order is incomparable
-                None
-            } else if selfonly && !otheronly {
-                // unique stuff only in self
-                Some(Greater)
-            } else if !selfonly && otheronly {
-                // unique stuff only in other
-                Some(Less)
-            } else {
-                // nothing unique on either side
-                Some(Equal)
-            }
+        if smallonly && largeonly {
+            // unique stuff on both sides: order is incomparable
+            None
+        } else if smallonly && !largeonly {
+            // unique stuff only in self
+            Some(Greater)
+        } else if !smallonly && largeonly {
+            // unique stuff only in other
+            Some(Less)
+        } else {
+            // nothing unique on either side
+            Some(Equal)
         }
     }
 }
@@ -242,8 +251,8 @@ where
 // BiMorphisms for GHT
 //
 
-/// Bimorphism for the cartesian product of two GHT *subtries*. 
-/// 
+/// Bimorphism for the cartesian product of two GHT *subtries*.
+///
 /// Output is a set of all possible pairs of
 /// *suffixes* from the two subtries. If you use this at the root of a GHT, it's a full cross-product.
 /// If you use this at an internal node, it provides a 'factorized' representation with only the suffix
@@ -299,10 +308,10 @@ impl<GhtOut> Default for GhtValTypeProductBimorphism<GhtOut> {
 impl<'a, 'b, GhtA, GhtB, GhtOut> LatticeBimorphism<&'a GhtA, &'b GhtB>
     for GhtValTypeProductBimorphism<GhtOut>
 where
-GhtA: GeneralizedHashTrieNode,
-GhtA::Storage: VariadicSet<Schema = GhtA::Schema>, // multiset is not a lattice!
-GhtB: GeneralizedHashTrieNode,
-GhtB::Storage: VariadicSet<Schema = GhtB::Schema>, // multiset is not a lattice!
+    GhtA: GeneralizedHashTrieNode,
+    GhtA::Storage: VariadicSet<Schema = GhtA::Schema>, // multiset is not a lattice!
+    GhtB: GeneralizedHashTrieNode,
+    GhtB::Storage: VariadicSet<Schema = GhtB::Schema>, // multiset is not a lattice!
     GhtOut: FromIterator<var_type!(...GhtA::Schema, ...GhtB::ValType)>,
     GhtA::Schema: Eq + Hash + CloneVariadic,
     GhtB::Schema: Eq + Hash + SplitBySuffix<GhtB::ValType>,
@@ -344,10 +353,10 @@ impl<Bimorphism> GhtBimorphism<Bimorphism> {
 
 impl<GhtA, GhtB, ValFunc, GhtOut> LatticeBimorphism<GhtA, GhtB> for GhtBimorphism<ValFunc>
 where
-GhtA: GeneralizedHashTrieNode,
-GhtA::Storage: VariadicSet<Schema = GhtA::Schema>, // multiset is not a lattice!
-GhtB: GeneralizedHashTrieNode,
-GhtB::Storage: VariadicSet<Schema = GhtB::Schema>, // multiset is not a lattice!
+    GhtA: GeneralizedHashTrieNode,
+    GhtA::Storage: VariadicSet<Schema = GhtA::Schema>, // multiset is not a lattice!
+    GhtB: GeneralizedHashTrieNode,
+    GhtB::Storage: VariadicSet<Schema = GhtB::Schema>, // multiset is not a lattice!
     GhtOut: GeneralizedHashTrieNode, // FromIterator<var_type!(...GhtA::Schema, ...GhtB::ValType)>,
     for<'a, 'b> ValFunc: LatticeBimorphism<&'a GhtA, &'b GhtB, Output = GhtOut>,
 {
@@ -381,7 +390,7 @@ where
     GhtA: GeneralizedHashTrieNode<Head = Head> + GhtGet,
     GhtB: GeneralizedHashTrieNode<Head = Head, Schema = GhtA::Schema> + GhtGet,
     GhtA::Storage: VariadicSet<Schema = GhtA::Schema>, // multiset is not a lattice!
-        GhtB::Storage: VariadicSet<Schema = GhtB::Schema>, // multiset is not a lattice!
+    GhtB::Storage: VariadicSet<Schema = GhtB::Schema>, // multiset is not a lattice!
     <GhtA::SuffixSchema as VariadicExt>::AsRefVar<'a>: CloneVariadic,
     <GhtB::SuffixSchema as VariadicExt>::AsRefVar<'b>: CloneVariadic,
 {

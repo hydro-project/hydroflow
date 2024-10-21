@@ -1,16 +1,19 @@
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
-    use std::io::{self, Write};
 
-    use variadics::variadic_collections::{VariadicCollection, VariadicCountedHashSet};
+    use variadics::variadic_collections::{
+        VariadicCollection, VariadicCountedHashSet, VariadicHashSet,
+    };
     use variadics::{var_expr, var_type, VariadicExt};
 
-    use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtLeaf, GhtPrefixIter};
+    use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf, GhtPrefixIter};
     use crate::ght_lattice::{
         //     DeepJoinLatticeBimorphism, GhtBimorphism,
+        DeepJoinLatticeBimorphism,
         GhtCartesianProductBimorphism,
-        //     GhtNodeKeyedBimorphism, GhtValTypeProductBimorphism,
+        GhtNodeKeyedBimorphism,
+        GhtValTypeProductBimorphism, //     GhtNodeKeyedBimorphism, GhtValTypeProductBimorphism,
     };
     use crate::ght_lazy::{ColtForestNode, ColtGet};
     use crate::{ColtType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
@@ -107,7 +110,6 @@ mod test {
         let mut htrie = LongKeyLongValTrie::new_from(vec![var_expr!(1, 999, 222, "hello")]);
         htrie.insert(var_expr!(1, 999, 111, "bye"));
         htrie.insert(var_expr!(1, 1000, 123, "cya"));
-        // println!("htrie: {:?}", htrie);
         assert!(htrie.contains(var_expr!(&1, &999, &222, &"hello")));
         assert!(htrie.contains(var_expr!(&1, &999, &111, &"bye")));
         assert!(htrie.contains(var_expr!(&1, &1000, &123, &"cya")));
@@ -128,7 +130,6 @@ mod test {
     fn test_contains() {
         type MyGht = GhtType!(u16, u32 => u64: VariadicCountedHashSet);
         let htrie = MyGht::new_from(vec![var_expr!(42_u16, 314_u32, 43770_u64)]);
-        // println!("HTrie: {:?}", htrie);
         let x = var_expr!(&42, &314, &43770);
         assert!(htrie.contains(x));
         assert!(htrie.contains(var_expr!(42, 314, 43770).as_ref_var()));
@@ -152,21 +153,21 @@ mod test {
         assert_eq!(t, var_expr!(42, 314, 43770).as_ref_var());
     }
 
-    // #[test]
-    // fn test_iter() {
-    //     type MyGht = GhtType!(u32, u32 => u32);
-    //     let ht_root = MyGht::new_from(vec![var_expr!(42, 314, 43770)]);
-    //     let inner_key = ht_root.iter().next().unwrap();
-    //     let inner = ht_root.get(inner_key).unwrap();
-    //     let t = inner.recursive_iter().next().unwrap();
-    //     assert_eq!(t, var_expr!(&42, &314, &43770));
+    #[test]
+    fn test_iter() {
+        type MyGht = GhtType!(u32, u32 => u32: VariadicCountedHashSet);
+        let ht_root = MyGht::new_from(vec![var_expr!(42, 314, 43770)]);
+        let inner_key = ht_root.iter().next().unwrap();
+        let inner = ht_root.get(&inner_key).unwrap();
+        let t = inner.recursive_iter().next().unwrap();
+        assert_eq!(t, var_expr!(&42, &314, &43770));
 
-    //     let leaf_key = inner.iter().next().unwrap();
-    //     let leaf = inner.get(GhtHead::Head(leaf_key)).unwrap();
-    //     // Should not be possible to call iter() on leaf
-    //     // let t = leaf.iter().next();
-    //     // assert!(leaf.iter().next().is_none());
-    // }
+        let leaf_key = inner.iter().next().unwrap();
+        let leaf = inner.get(&leaf_key).unwrap();
+        // iter() on leaf should return None
+        let t = leaf.iter().next();
+        assert!(t.is_none());
+    }
 
     #[test]
     fn test_recursive_iter() {
@@ -249,10 +250,9 @@ mod test {
             .collect();
         assert_eq!(v, result);
 
-        // // Too long:
-        // for row in htrie.prefix_iter(var_expr!(42, 315, 43770).as_ref_var()) {
-        //     println!("42,315,43770: {:?}", row);
-        // }
+        for row in htrie.prefix_iter(var_expr!(42, 315, 43770).as_ref_var()) {
+            assert_eq!(row, var_expr!(&42, &315, &43770));
+        }
     }
 
     #[test]
@@ -295,6 +295,7 @@ mod test {
             .collect();
         assert_eq!(v, result);
     }
+
     #[test]
     fn test_merge() {
         type MyGht = GhtType!(u32, u64 => u16, &'static str: VariadicHashSet);
@@ -333,6 +334,7 @@ mod test {
             assert!(test_ght1.contains(k))
         }
     }
+
     #[test]
     fn test_node_lattice() {
         type MyGht = GhtType!(u32, u64 => u16, &'static str: VariadicHashSet);
@@ -384,177 +386,70 @@ mod test {
         );
     }
 
-    // #[test]
-    // fn test_join_bimorphism() {
-    //     type MyGhtATrie = GhtType!(u32, u64, u16 => &'static str: VariadicCountedHashSet);
-    //     type MyGhtBTrie = GhtType!(u32, u64, u16 => &'static str: VariadicCountedHashSet);
+    #[test]
+    fn test_join_bimorphism() {
+        type ResultSchemaType = var_type!(u32, u64, u16, &'static str, &'static str);
+        type ResultSchemaRefType<'a> = var_type!(
+            &'a u32,
+            &'a u64,
+            &'a u16,
+            &'a &'static str,
+            &'a &'static str
+        );
+        type MyGhtATrie = GhtType!(u32, u64, u16 => &'static str: VariadicHashSet);
+        type MyGhtBTrie = GhtType!(u32, u64, u16 => &'static str: VariadicHashSet);
 
-    //     let mut ght_a = MyGhtATrie::default();
-    //     let mut ght_b = MyGhtBTrie::default();
+        let mut ght_a = MyGhtATrie::default();
+        let mut ght_b = MyGhtBTrie::default();
 
-    //     ght_a.insert(var_expr!(123, 2, 5, "hello"));
-    //     ght_a.insert(var_expr!(50, 1, 1, "hi"));
-    //     ght_a.insert(var_expr!(5, 1, 7, "hi"));
+        ght_a.insert(var_expr!(123, 2, 5, "hello"));
+        ght_a.insert(var_expr!(50, 1, 1, "hi"));
+        ght_a.insert(var_expr!(5, 1, 7, "hi"));
 
-    //     ght_b.insert(var_expr!(5, 1, 8, "hi"));
-    //     ght_b.insert(var_expr!(5, 1, 7, "world"));
-    //     ght_b.insert(var_expr!(10, 1, 2, "hi"));
-    //     ght_b.insert(var_expr!(12, 10, 98, "bye"));
+        ght_b.insert(var_expr!(5, 1, 8, "hi"));
+        ght_b.insert(var_expr!(5, 1, 7, "world"));
+        ght_b.insert(var_expr!(10, 1, 2, "hi"));
+        ght_b.insert(var_expr!(12, 10, 98, "bye"));
 
-    //     {
-    //         type MyResultType<'a> = var_type!(
-    //             &'a u32,
-    //             &'a u64,
-    //             &'a u16,
-    //             &'a &'static str,
-    //             &'a u64,
-    //             &'a u16,
-    //             &'a &'static str
-    //         );
-    //         let result: HashSet<MyResultType> = [
-    //             var_expr!(&5, &1, &7, &"hi", &1, &7, &"world"),
-    //             var_expr!(&5, &1, &7, &"hi", &1, &8, &"hi"),
-    //         ]
-    //         .iter()
-    //         .copied()
-    //         .collect();
-    //         // type CartProdOld = GhtType!(() => u64, u16, &'static str, u64, u16, &'static str);
-    //         type CartProd = GhtLeaf<
-    //             var_type!(u32, u64, u16, &'static str, u32, u64, u16, &'static str),
-    //             var_type!(),
-    //             VariadicCountedHashSet<
-    //                 var_type!(u32, u64, u16, &'static str, u32, u64, u16, &'static str),
-    //             >,
-    //         >;
-    //         // let _cp = ValTypeProd::default();
-    //         let mut bim =
-    //             crate::ght_lattice::GhtNodeKeyedBimorphism::new(GhtCartesianProductBimorphism::<
-    //                 CartProd,
-    //             >::default());
-    //         let out = LatticeBimorphism::call(&mut bim, &ght_a, &ght_b);
-    //         let out: HashSet<MyResultType> = out.recursive_iter().collect();
-    //         assert_eq!(out, result.iter().copied().collect());
-
-    //         // var!(a, b, c, d)
-    //         // var!(a, b, c, d)
-    //         // out: (a, b, c, d, b, c, d)
-    //         // GhtNodeKeyedBimorphism<GhtCartesianProductBimorphism<Ght<var!(b, c, d, b, c, d)>>
-    //         //
-    //         // So what does GhtCartesianProduct bimorphism need to do?
-    //         //
-    //     }
-
-    //     {
-    //         type MyResultType<'a> = var_type!(
-    //             &'a u32,
-    //             &'a u64,
-    //             &'a u16,
-    //             &'a &'static str,
-    //             &'a u16,
-    //             &'a &'static str
-    //         );
-    //         let result: HashSet<MyResultType> = [
-    //             var_expr!(&5, &1, &7, &"hi", &7, &"world"),
-    //             var_expr!(&5, &1, &7, &"hi", &8, &"hi"),
-    //         ]
-    //         .iter()
-    //         .copied()
-    //         .collect();
-    //         // type CartProd = GhtType!(u16, &'static str, u16 => &'static str);
-    //         type CartProd = GhtInner<
-    //             u16,
-    //             GhtInner<
-    //                 &'static str,
-    //                 GhtInner<
-    //                     u16,
-    //                     GhtLeaf<
-    //                         var_type!(u32, u64, u16, &'static str, u16, &'static str),
-    //                         var_type!(&'static str),
-    //                     >,
-    //                 >,
-    //             >,
-    //         >;
-    //         let mut bim = GhtNodeKeyedBimorphism::new(GhtNodeKeyedBimorphism::new(
-    //             GhtValTypeProductBimorphism::<CartProd>::default(),
-    //         ));
-    //         let out = LatticeBimorphism::call(&mut bim, &ght_a, &ght_b);
-    //         let out: HashSet<MyResultType> = out.recursive_iter().collect();
-    //         assert_eq!(out, result.iter().copied().collect());
-    //     }
-
-    //     {
-    //         type MyResultType<'a> = var_type!(
-    //             &'a u32,
-    //             &'a u64,
-    //             &'a u16,
-    //             &'a &'static str,
-    //             &'a &'static str
-    //         );
-    //         let result: HashSet<MyResultType> = [var_expr!(&5, &1, &7, &"hi", &"world")]
-    //             .iter()
-    //             .copied()
-    //             .collect();
-    //         // type MyGhtOut = GhtType!(&'static str => &'static str);
-    //         type MyGhtOut = GhtInner<
-    //             &'static str,
-    //             GhtLeaf<
-    //                 var_type!(u32, u64, u16, &'static str, &'static str),
-    //                 var_type!(&'static str),
-    //             >,
-    //         >;
-    //         let mut bim = GhtNodeKeyedBimorphism::new(GhtNodeKeyedBimorphism::new(
-    //             GhtNodeKeyedBimorphism::new(GhtValTypeProductBimorphism::<MyGhtOut>::default()),
-    //         ));
-    //         let out = bim.call(&ght_a, &ght_b);
-    //         let out: HashSet<MyResultType> = out.recursive_iter().collect();
-    //         assert_eq!(out, result.iter().copied().collect());
-    //     }
-    //     {
-    //         // This is a more compact representation of the block above.
-    //         type MyResultType<'a> = var_type!(
-    //             &'a u32,
-    //             &'a u64,
-    //             &'a u16,
-    //             &'a &'static str,
-    //             &'a &'static str
-    //         );
-    //         let result: HashSet<MyResultType> = [var_expr!(&5, &1, &7, &"hi", &"world")]
-    //             .iter()
-    //             .copied()
-    //             .collect();
-    //         type MyNodeBim =
-    //             <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
-    //         let mut bim = <MyNodeBim as Default>::default();
-    //         // let out = <MyNodeBim as LatticeBimorphism<&MyGhtATrie, &MyGhtBTrie>>::call(
-    //         //     &mut bim, &ght_a, &ght_b,
-    //         // );
-    //         let out = bim.call(&ght_a, &ght_b);
-    //         let out: HashSet<MyResultType> = out.recursive_iter().collect();
-    //         assert_eq!(out, result.iter().copied().collect());
-    //     }
-    //     {
-    //         // This is an even more compact representation of the block above.
-    //         type MyResultType<'a> = var_type!(
-    //             &'a u32,
-    //             &'a u64,
-    //             &'a u16,
-    //             &'a &'static str,
-    //             &'a &'static str
-    //         );
-    //         let result: HashSet<MyResultType> = [var_expr!(&5, &1, &7, &"hi", &"world")]
-    //             .iter()
-    //             .copied()
-    //             .collect();
-    //         type MyNodeBim = <MyGhtATrie as GeneralizedHashTrieNode>::DeepJoin<MyGhtBTrie>;
-    //         let mut bim = <MyNodeBim as Default>::default();
-    //         // let out = <MyNodeBim as LatticeBimorphism<&MyGhtATrie, &MyGhtBTrie>>::call(
-    //         //     &mut bim, &ght_a, &ght_b,
-    //         // );
-    //         let out = bim.call(&ght_a, &ght_b);
-    //         let out: HashSet<MyResultType> = out.recursive_iter().collect();
-    //         assert_eq!(out, result.iter().copied().collect());
-    //     }
-    // }
+        let result: HashSet<ResultSchemaRefType> = [var_expr!(&5, &1, &7, &"hi", &"world")]
+            .iter()
+            .copied()
+            .collect();
+        {
+            // here we manually construct the proper bimorphism stack.
+            // note that the bottommost bimorphism is GhtValTypeProductBimorphism,
+            // which ensures that the Schema of the resulting output GhtLeaf and GhtInner
+            // nodes correctly includes the key columns, not just the cross-product of the values.
+            type MyGhtOut = GhtInner<
+                &'static str,
+                GhtLeaf<
+                    ResultSchemaType,
+                    var_type!(&'static str),
+                    VariadicCountedHashSet<ResultSchemaType>,
+                >,
+            >;
+            // let mut bim = GhtNodeKeyedBimorphism::new(GhtNodeKeyedBimorphism::new(
+            //     GhtNodeKeyedBimorphism::new(GhtValTypeProductBimorphism::<MyGhtOut>::default()),
+            // ));
+            let mut bim = GhtNodeKeyedBimorphism::new(GhtNodeKeyedBimorphism::new(
+                GhtNodeKeyedBimorphism::new(GhtValTypeProductBimorphism::<MyGhtOut>::default()),
+            ));
+            let out = bim.call(&ght_a, &ght_b);
+            let out: HashSet<ResultSchemaRefType> = out.recursive_iter().collect();
+            assert_eq!(out, result.iter().copied().collect());
+        }
+        {
+            // Here we use DeepJoinLatticeBimorphism as a more compact representation of the
+            // manual stack of bimorphisms above. This is the recommended approach.
+            type MyNodeBim<'a> = <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism<
+                VariadicHashSet<ResultSchemaType>,
+            >>::DeepJoinLatticeBimorphism;
+            let mut bim = <MyNodeBim as Default>::default();
+            let out = bim.call(&ght_a, &ght_b);
+            let out: HashSet<ResultSchemaRefType> = out.recursive_iter().collect();
+            assert_eq!(out, result.iter().copied().collect());
+        }
+    }
 
     use variadics_macro::tuple;
 
@@ -571,9 +466,7 @@ mod test {
         type MyRoot = GhtType!(u16, u32 => u64: VariadicCountedHashSet);
 
         let mut trie1 = MyRoot::default();
-        // Can get the len, but cannot pass it into tuple! macro anyhow
-        // let len = <<MyRoot as GeneralizedHashTrie>::Schema as VariadicExt>::LEN;
-        // println!("schema_length: {}", len);
+        assert_eq!(3, <<MyRoot as GeneralizedHashTrieNode>::Schema>::LEN);
         trie1.insert(var_expr!(1, 2, 3));
         let t = trie1.recursive_iter().next().unwrap();
         let tup = tuple!(t, 3);
@@ -600,17 +493,9 @@ mod test {
             .map(|i| (0, i))
             .chain((1..MATCHES).map(|i| (i, 0)));
 
-        println!("Building GHT for rx");
-        io::stdout().flush().unwrap();
         let rx_ght = MyGht::new_from(r_iter.clone().map(|(x, y)| var_expr!(x, y)));
-        println!("Building GHT for sb");
-        io::stdout().flush().unwrap();
         let sb_ght = MyGht::new_from(s_iter.clone().map(|(y, b)| var_expr!(b, y)));
-        println!("Building GHT for tx");
-        io::stdout().flush().unwrap();
         let tx_ght = MyGht::new_from(t_iter.clone().map(|(z, x)| var_expr!(x, z)));
-        println!("GHTs built");
-        io::stdout().flush().unwrap();
 
         let r_x = r_iter
             .clone()
@@ -621,11 +506,10 @@ mod test {
             .map(|(_z, x)| x)
             .collect::<HashSet<_, BuildHasherDefault<FnvHasher>>>();
         let x_inter = r_x.intersection(&t_x);
-        // let len = x_inter.clone().count();
-        // if len > 1 {
-        //     println!("x intersection size: {:?}", len);
-        // }
-        // io::stdout().flush().unwrap();
+        let len = x_inter.clone().count();
+        if len > 1 {
+            assert_eq!(1000, len);
+        }
 
         let mut output: Vec<(u32, u32, u32)> = Vec::new();
         let mut x_iters = 0usize;
@@ -642,11 +526,10 @@ mod test {
                 .map(|(y, _z)| y)
                 .collect::<HashSet<_, BuildHasherDefault<FnvHasher>>>();
             let y_inter = r.intersection(&s_y);
-            // let len = y_inter.clone().count();
-            // if len > 1 {
-            //     println!("y intersection size of a = {}: {:?}", a, len);
-            // }
-            // io::stdout().flush().unwrap();
+            let len = y_inter.clone().count();
+            if len > 1 {
+                assert_eq!(1000, len);
+            }
             for b in y_inter {
                 y_iters += 1;
                 let s = sb_ght
@@ -658,29 +541,21 @@ mod test {
                     .map(|(_x, (z, ()))| *z)
                     .collect::<HashSet<_, BuildHasherDefault<FnvHasher>>>();
                 let z_inter = s.intersection(&t);
-                // let len = z_inter.clone().count();
-                // if len > 1 {
-                //     println!("intersection size of a = {}, b = {}: {:?}", a, b, len);
-                // }
-                // io::stdout().flush().unwrap();
+                let len = z_inter.clone().count();
+                if len > 1 {
+                    assert_eq!(1000, len);
+                }
                 for c in z_inter {
                     z_iters += 1;
-                    // println!("Inserting ({}, {}, {})", a, b, c);
                     output.push((*a, *b, *c));
                 }
             }
         }
-        // let mut output = Vec::from_iter(output.iter());
-        // output.sort();
-        // output
-        //     .iter()
-        //     .enumerate()
-        //     .for_each(|(i, (a, b, c))| println!("gj #{}: ({}, {}, {})", i, a, b, c));
-        println!("output size: {}", output.len());
-        println!(
-            "x_iters: {}, y_iters: {}, z_iters:{}",
-            x_iters, y_iters, z_iters
-        );
+
+        assert_eq!(1000, x_iters);
+        assert_eq!(1999, y_iters);
+        assert_eq!(2998, z_iters);
+        assert_eq!(2998, output.len());
     }
 
     fn clover_setup(
@@ -709,11 +584,6 @@ mod test {
     #[test]
     fn clover_generic_join() {
         const MATCHES: usize = 1000;
-
-        // let r_iter = (0..MATCHES)
-        //     .map(|i| (0, i))
-        //     .chain((1..MATCHES).map(|i| (i, 0)));
-
         let (r_iter, s_iter, t_iter) = clover_setup(MATCHES);
 
         type MyGht = GhtType!(u32 => u32: VariadicCountedHashSet);
@@ -726,7 +596,6 @@ mod test {
                 for a in r.iter() {
                     for b in s.iter() {
                         for c in t.iter() {
-                            println!("clover output: ({:?}, {}, {}, {})", x, a, b, c);
                             assert_eq!((x, a, b, c), (0, 0, 0, 0));
                         }
                     }
@@ -737,14 +606,10 @@ mod test {
             }
         }
     }
+
     #[test]
     fn clover_factorized_join() {
         const MATCHES: usize = 1000;
-
-        // let r_iter = (0..MATCHES)
-        //     .map(|i| (0, i))
-        //     .chain((1..MATCHES).map(|i| (i, 0)));
-
         let (r_iter, s_iter, t_iter) = clover_setup(MATCHES);
 
         type Ght1 = GhtType!(() => u32, u32: VariadicCountedHashSet);
@@ -759,7 +624,6 @@ mod test {
                 // All unwraps succeeded, use `s`, `t` here
                 for b in s.iter() {
                     for c in t.iter() {
-                        println!("clover output: ({}, {}, {}, {})", x, a, b, c);
                         assert_eq!((x, a, b, c), (&0, &0, 0, 0));
                     }
                 }
@@ -780,7 +644,6 @@ mod test {
             var_expr!(2, 4, 4),
         ]);
         let out = n.force().unwrap();
-        // println!("resulting trie is {:?}", out);
         assert_eq!(out.height(), 1);
     }
 
@@ -827,22 +690,19 @@ mod test {
     fn test_colt_little_get() {
         type MyForest = ColtType!(u8);
 
-        // debugging info
-        // type MyForest = (GhtLeaf<(u8, ()), (u8, ()), VariadicColumnMultiset<(u8, ())>>, (GhtInner<u8, GhtLeaf<(u8, ()), (), VariadicColumnMultiset<(u8, ())>>>, ()));
         let mut forest = MyForest::default();
-        // type Force = crate::ght::GhtInner<u8, GhtLeaf<(u8, ()), (), VariadicColumnMultiset<(u8, ())>>>;
-        // let force: Force = forest.0.force().unwrap();
 
         forest.0.insert(var_expr!(1));
         forest.0.insert(var_expr!(2));
         forest.0.insert(var_expr!(3));
 
-        println!("forest.len() = {}", forest.len());
-        println!("forest before get: {:?}", forest);
+        assert_eq!(2, forest.len());
+        assert_eq!(3, forest.0.elements.len());
 
         let result = ColtGet::get(forest.as_mut_var(), &3);
-        // println!("forest after get: {:?}", forest2);
-        println!("result.len() = {}", result.len());
+        assert_eq!(1, result.len());
+        assert_eq!(0, forest.0.elements.len());
+        assert!(forest.0.forced);
     }
 
     #[test]
@@ -853,28 +713,82 @@ mod test {
         forest.0.insert(var_expr!(2, 2, 2, 2));
         forest.0.insert(var_expr!(3, 3, 3, 3));
 
-        // GhtForest::<var_type!(u8, u16, u32, u64)>::force(&mut forest, var_expr!(1, 1, 1, 1));
         let len = forest.len();
-        // println!("Forest after forcing (1, 1, 1, 1): {:?}", forest);
+        assert_eq!(5, len);
         {
             let get_result = ColtGet::get(forest.as_mut_var(), &1);
             assert_eq!(get_result.len(), len - 1);
             assert_eq!(get_result.0.height(), 0);
             let get_result2 = ColtGet::get(get_result, &1);
             assert_eq!(get_result2.len(), len - 2);
-            // assert!(get_result2.0.is_none());
             let get_result3 = ColtGet::get(get_result2, &1);
-            // assert!(get_result3.1 .0.is_none());
             assert_eq!(get_result3.len(), len - 3);
-            println!("initial result: {:?}", get_result3);
+            assert_eq!(
+                get_result3.0.elements.iter().next(),
+                Some(var_expr!(1, 1, 1, 1).as_ref_var())
+            );
+            assert_eq!(get_result3.1 .0.children.len(), 0);
         }
         {
             let get_result = ColtGet::get(forest.as_mut_var(), &3);
             assert_eq!(get_result.len(), len - 1);
             let get_result2 = ColtGet::get(get_result, &3);
-            println!("secondary result: {:?}", get_result2);
+            assert_eq!(get_result2.len(), len - 2);
+            assert_eq!(
+                get_result2.0.elements.iter().next(),
+                Some(var_expr!(3, 3, 3, 3).as_ref_var())
+            );
+            assert_eq!(get_result2.1 .0.children.len(), 0);
         }
-        println!("final forest: {:#?}", forest);
+        assert!(forest.0.forced);
+        assert_eq!(3, forest.1 .0.children.len()); // keys 1, 2 and 3
+        assert_eq!(0, forest.1 .0.get(&1).unwrap().elements.len());
+        assert_eq!(1, forest.1 .0.get(&2).unwrap().elements.len());
+        assert_eq!(0, forest.1 .0.get(&3).unwrap().elements.len());
+        assert_eq!(2, forest.1 .1 .0.children.len()); // keys 1 and 3
+        assert_eq!(
+            0,
+            forest
+                .1
+                 .1
+                 .0
+                .get(&1)
+                .unwrap()
+                .get(&1)
+                .unwrap()
+                .elements
+                .len()
+        );
+        assert!(forest.1 .1 .0.get(&2).is_none());
+        assert_eq!(
+            1,
+            forest
+                .1
+                 .1
+                 .0
+                .get(&3)
+                .unwrap()
+                .get(&3)
+                .unwrap()
+                .elements
+                .len()
+        );
+        assert_eq!(
+            1,
+            forest
+                .1
+                 .1
+                 .1
+                 .0
+                .get(&1)
+                .unwrap()
+                .get(&1)
+                .unwrap()
+                .get(&1)
+                .unwrap()
+                .elements
+                .len()
+        );
     }
 
     #[test]
@@ -886,7 +800,7 @@ mod test {
         }
         {
             let result = forest.as_mut_var().get(&3);
-            println!("result: {:?}", result);
+            assert_eq!(result.len(), 4);
         }
         // check: first Leaf trie is forced
         assert!(forest.0.forced);
@@ -894,7 +808,7 @@ mod test {
         {
             let result = forest.as_mut_var().get(&3);
             let result2 = result.get(&true);
-            println!("result2: {:?}", result2);
+            assert_eq!(result2.len(), 3);
         }
         {
             // check: leaf below 3 in first non-empty trie is forced
@@ -910,16 +824,18 @@ mod test {
             .prefix_iter(var_expr!(3, true).as_ref_var())
             .next()
             .is_some());
-        // println!("forest.1.1.0: {:?}", forest.1.1.0);
         {
             let result = forest.as_mut_var().get(&3);
             let result2 = result.get(&true);
-            println!("result2: {:?}", result2);
+            assert_eq!(result2.len(), 3);
             let result3 = result2.get(&1);
-            println!("result3: {:?}", result3);
-            // println!("forest.1.1.1: {:?}", forest.1.1.1);
+            assert_eq!(result3.len(), 2);
             let result4 = result3.get(&"hello");
-            println!("result4: {:?}", result4);
+            assert_eq!(result4.0.elements.len(), 1);
+            assert_eq!(
+                result4.0.elements.iter().next(),
+                Some(var_expr!(3, true, 1, "hello").as_ref_var())
+            );
         }
     }
 }

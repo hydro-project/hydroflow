@@ -9,7 +9,7 @@ use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionS
 use lattices::GhtType;
 use multiplatform_test::multiplatform_test;
 use variadics::variadic_collections::VariadicHashSet;
-use variadics::{var_expr, CloneVariadic};
+use variadics::CloneVariadic;
 
 #[multiplatform_test]
 pub fn test_cartesian_product() {
@@ -142,17 +142,13 @@ pub fn test_cartesian_product_tick_state() {
 
 #[test]
 fn test_ght_join_bimorphism() {
-    // type MyGhtA = GhtType!(u32, u64, u16 => &'static str);
-    // type MyGhtB = GhtType!(u32, u64, u16 => &'static str);
-    // type MyGhtATrie = <MyGhtA as GeneralizedHashTrie>::Trie;
-    // type MyGhtBTrie = <MyGhtB as GeneralizedHashTrie>::Trie;
     type MyGhtATrie = GhtType!(u32, u64, u16 => &'static str: VariadicHashSet);
     type MyGhtBTrie = GhtType!(u32, u64, u16 => &'static str: VariadicHashSet);
 
-    type Output = variadics::var_type!(u32, u64, u16, &'static str, &'static str);
+    type JoinSchema = variadics::var_type!(u32, u64, u16, &'static str, &'static str);
 
     type MyNodeBim = <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism<
-        VariadicHashSet<Output>,
+        VariadicHashSet<JoinSchema>,
     >>::DeepJoinLatticeBimorphism;
     type MyBim = GhtBimorphism<MyNodeBim>;
 
@@ -183,7 +179,7 @@ fn test_ght_join_bimorphism() {
             -> lattice_reduce()
             -> enumerate()
             -> inspect(|x| println!("{:?} {:#?}", context.current_tick(), x))
-            -> flat_map(|(_num, ght)| ght.recursive_iter().map(<Output as CloneVariadic>::clone_ref_var).collect::<Vec<_>>())
+            -> flat_map(|(_num, ght)| ght.recursive_iter().map(<JoinSchema as CloneVariadic>::clone_ref_var).collect::<Vec<_>>())
             -> null();
             // -> for_each(|x| println!("{:#?}\n", x));
     };
