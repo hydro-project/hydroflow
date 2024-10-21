@@ -94,6 +94,7 @@ pub async fn bind_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>
         loop {
             // Calling methods in a loop, futures must be cancel-safe.
             select! {
+                // Prioritize accepting clients first, then sending outgoing messages, then receiving more messages.
                 biased;
                 // Accept new clients.
                 new_peer = listener.accept() => {
@@ -116,6 +117,7 @@ pub async fn bind_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>
                 // Send outgoing messages.
                 msg_send = recv_egress.next() => {
                     let Some((payload, peer_addr)) = msg_send else {
+                        // `None` if the send side has been dropped (no more send messages will ever come).
                         continue;
                     };
                     let Some(stream) = peers_send.get_mut(&peer_addr) else {
@@ -161,10 +163,12 @@ pub fn connect_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>(
         loop {
             // Calling methods in a loop, futures must be cancel-safe.
             select! {
+                // Prioritize sending outgoing messages before receiving more.
                 biased;
                 // Send outgoing messages.
                 msg_send = recv_egress.next() => {
                     let Some((payload, peer_addr)) = msg_send else {
+                        // `None` if the send side has been dropped (no more send messages will ever come).
                         continue;
                     };
 
