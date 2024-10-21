@@ -203,22 +203,22 @@
         HfPlusNode::Delta(<span class="kw">box </span>HfPlusNode::Persist(<span class="kw">box </span>behind_persist)) =&gt; behind_persist,
 
         HfPlusNode::Tee { inner } =&gt; {
-            <span class="kw">if </span>persist_pulled_tees.contains(<span class="kw-2">&amp;</span>(inner.<span class="number">0</span>.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;)) {
+            <span class="kw">if </span>persist_pulled_tees.contains(<span class="kw-2">&amp;</span>(inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;)) {
                 HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
-                    inner: TeeNode(inner.<span class="number">0</span>.clone()),
+                    inner: inner.clone(),
                 }))
-            } <span class="kw">else if </span><span class="macro">matches!</span>(<span class="kw-2">*</span>inner.<span class="number">0</span>.borrow(), HfPlusNode::Persist(<span class="kw">_</span>)) {
-                persist_pulled_tees.insert(inner.<span class="number">0</span>.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;);
+            } <span class="kw">else if </span><span class="macro">matches!</span>(<span class="kw-2">*</span>inner.borrow(), HfPlusNode::Persist(<span class="kw">_</span>)) {
+                persist_pulled_tees.insert(inner.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;);
                 <span class="kw">if let </span>HfPlusNode::Persist(<span class="kw">box </span>behind_persist) =
-                    inner.<span class="number">0</span>.replace(HfPlusNode::Placeholder)
+                    inner.replace(HfPlusNode::Placeholder)
                 {
-                    <span class="kw-2">*</span>inner.<span class="number">0</span>.borrow_mut() = behind_persist;
+                    <span class="kw-2">*</span>inner.borrow_mut() = behind_persist;
                 } <span class="kw">else </span>{
                     <span class="macro">unreachable!</span>()
                 }
 
                 HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
-                    inner: TeeNode(inner.<span class="number">0</span>.clone()),
+                    inner: inner.clone(),
                 }))
             } <span class="kw">else </span>{
                 HfPlusNode::Tee { inner }

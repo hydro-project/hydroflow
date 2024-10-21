@@ -174,8 +174,6 @@
 <a href="#174" id="174">174</a>
 <a href="#175" id="175">175</a>
 <a href="#176" id="176">176</a>
-<a href="#177" id="177">177</a>
-<a href="#178" id="178">178</a>
 </pre></div><pre class="rust"><code><span class="attr">#![feature(box_patterns)]
 
 </span><span class="macro">stageleft::stageleft_no_entry_crate!</span>();
@@ -203,7 +201,7 @@
 <span class="kw">pub use </span>singleton::{Optional, Singleton};
 
 <span class="kw">pub mod </span>location;
-<span class="kw">pub use </span>location::{Cluster, ClusterId, Location, Process};
+<span class="kw">pub use </span>location::{Cluster, Location, Process};
 
 <span class="kw">pub mod </span>deploy;
 <span class="kw">pub use </span>deploy::{ClusterSpec, Deploy, ProcessSpec};
@@ -220,8 +218,6 @@
 <span class="kw">pub mod </span>profiler;
 
 <span class="kw">pub mod </span>properties;
-
-<span class="kw">mod </span>staging_util;
 
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>RuntimeContext&lt;<span class="lifetime">'a</span>&gt; {
