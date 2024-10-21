@@ -1,6 +1,6 @@
 #[macro_export]
 /// Internal macro for constructing a Ght struct with the given schema and storage type
-/// 
+///
 /// Should not be used directly, use `GhtType!` instead
 macro_rules! GhtTypeWithSchema {
     // Empty key & Val (Leaf)
@@ -36,12 +36,12 @@ macro_rules! GhtTypeWithSchema {
 
 #[macro_export]
 /// Public macro for constructing a Ght struct with the given schema and storage type
-/// 
+///
 /// # Example
 /// ```
 /// use lattices::GhtType;
 /// use variadics::variadic_collections::VariadicHashSet;
-/// 
+///
 /// type MyGht = GhtType!(u16, u32 => u64: VariadicHashSet);
 /// ```
 macro_rules! GhtType {
@@ -63,11 +63,11 @@ macro_rules! GhtType {
 
 #[macro_export]
 /// Construct a forest of Ghts (i.e. a ColtForest) with the given schema and storage type.
-/// 
+///
 /// # Example
 /// ```
 /// use lattices::ColtType;
-/// 
+///
 /// type MyColt = ColtType!(u16, u32, u64);
 /// ```
 

@@ -13,7 +13,7 @@ use variadics::{
 /// The Ght, defined by Wang/Willsey/Suciu, is a hash-based trie for storing tuples.
 /// It is parameterized by an ordered schema [`VariadicExt`] of the relation stored in the trie.
 /// It is a tree of [`GhtInner`] nodes, with [`GhtLeaf`] nodes at the leaves.
-/// The trie is keyed on a prefix of the schema [`Self::KeyType`], 
+/// The trie is keyed on a prefix of the schema [`Self::KeyType`],
 /// and the remaining columns [`Self::ValType`] are stored in the leaf.
 /// All leaf nodes use the same `[Self::Storage]` type to store the data.
 pub trait GeneralizedHashTrieNode: Default {
@@ -143,7 +143,8 @@ where
     }
 
     fn insert(&mut self, row: Self::Schema) -> bool {
-        let (_prefix, var_args!(head, ..._rest)) = Self::Schema::split_by_suffix_ref(row.as_ref_var());
+        let (_prefix, var_args!(head, ..._rest)) =
+            Self::Schema::split_by_suffix_ref(row.as_ref_var());
         self.children.entry(head.clone()).or_default().insert(row)
     }
 
@@ -205,7 +206,7 @@ where
 {
     pub(crate) elements: Storage,
     pub(crate) forced: bool,
-    pub(crate) _suffix_schema: PhantomData<ValType>, // defines ValType for the parents, recursively
+    pub(crate) _suffix_schema: PhantomData<ValType>, /* defines ValType for the parents, recursively */
 }
 impl<Schema, ValType, Storage> Default for GhtLeaf<Schema, ValType, Storage>
 where
@@ -553,16 +554,12 @@ where
     where
         Self::Item: 'a,
     {
-        self.elements
-            .iter()
-            .filter(move |&row| {
-                let (_row_prefix, row_mid_suffix) =
-                    <Schema as SplitBySuffix<ValType>>::split_by_suffix_ref(row);
-                let (row_mid, _row_suffix): (
-                    <KeyPrefixRef::UnRefVar as VariadicExt>::AsRefVar<'_>,
-                    _,
-                ) = <ValType as Split<KeyPrefixRef::UnRefVar>>::split_ref(row_mid_suffix);
-                <KeyPrefixRef::UnRefVar as PartialEqVariadic>::eq_ref(prefix.unref_ref(), row_mid)
-            })
+        self.elements.iter().filter(move |&row| {
+            let (_row_prefix, row_mid_suffix) =
+                <Schema as SplitBySuffix<ValType>>::split_by_suffix_ref(row);
+            let (row_mid, _row_suffix): (<KeyPrefixRef::UnRefVar as VariadicExt>::AsRefVar<'_>, _) =
+                <ValType as Split<KeyPrefixRef::UnRefVar>>::split_ref(row_mid_suffix);
+            <KeyPrefixRef::UnRefVar as PartialEqVariadic>::eq_ref(prefix.unref_ref(), row_mid)
+        })
     }
 }

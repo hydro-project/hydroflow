@@ -547,11 +547,12 @@ where
     }
 }
 
-impl<Schema> VariadicMultiset for VariadicColumnMultiset<Schema> 
-where 
-    Schema: PartialEqVariadic + Eq + Hash, 
-    for<'a> <Schema as VariadicExt>::AsRefVar<'a>: Hash 
-{}
+impl<Schema> VariadicMultiset for VariadicColumnMultiset<Schema>
+where
+    Schema: PartialEqVariadic + Eq + Hash,
+    for<'a> <Schema as VariadicExt>::AsRefVar<'a>: Hash,
+{
+}
 
 impl<T> fmt::Debug for VariadicColumnMultiset<T>
 where

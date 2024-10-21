@@ -13,12 +13,12 @@ mod conflict;
 mod dom_pair;
 /// GHT from the Wang/Willsey/Suciu Freejoin work
 pub mod ght;
-/// Macros for GHT
-pub mod ght_macros;
 /// Lattice methods for GHT
 pub mod ght_lattice;
 /// COLT from the Wang/Willsey/Suciu Freejoin work
 pub mod ght_lazy;
+/// Macros for GHT
+pub mod ght_macros;
 /// Tests for GHT
 pub mod ght_test;
 pub mod map_union;
