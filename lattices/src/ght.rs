@@ -56,7 +56,7 @@ pub trait GeneralizedHashTrieNode: Default {
     fn insert(&mut self, row: Self::Schema) -> bool;
 
     /// Returns `true` if the (entire) row is found below in the trie, `false` otherwise.
-    /// See [`Self::get`] to look just for "head" keys in this node
+    /// See [`GhtGet::get`] to look just for "head" keys in this node
     fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool;
 
     /// Iterate through (entire) rows stored in this HashTrie.
