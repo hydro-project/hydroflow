@@ -181,7 +181,7 @@
 </span><span class="macro">macro_rules!</span> ColtType {
     <span class="comment">// Base case: single type to empty
     </span>(<span class="macro-nonterminal">$a</span>:ty =&gt; ()) =&gt; {
-        <span class="macro">var_type!</span>(<span class="macro-nonterminal">$</span><span class="macro">crate::GhtType!</span>(<span class="macro-nonterminal">$a </span>=&gt; (): VariadicColumnMultiset))
+        <span class="macro-nonterminal">$</span><span class="macro">crate::variadics::var_type!</span>(<span class="macro-nonterminal">$</span><span class="macro">crate::GhtType!</span>(<span class="macro-nonterminal">$a </span>=&gt; (): VariadicColumnMultiset))
     };
     <span class="comment">// Base case: single type to single type
     </span>(<span class="macro-nonterminal">$a</span>:ty =&gt; <span class="macro-nonterminal">$c</span>:ty) =&gt; {
@@ -193,7 +193,7 @@
     };
     <span class="comment">// Base case: multiple types to empty
     </span>(<span class="macro-nonterminal">$a</span>:ty, $( <span class="macro-nonterminal">$b</span>:ty ),* =&gt; ()) =&gt; {
-        <span class="macro">var_type!</span>(<span class="macro-nonterminal">$</span><span class="macro">crate::GhtType!</span>(<span class="macro-nonterminal">$a</span>, $( <span class="macro-nonterminal">$b </span>),* =&gt; (): VariadicColumnMultiset))
+        <span class="macro-nonterminal">$</span><span class="macro">crate::variadics::var_type!</span>(<span class="macro-nonterminal">$</span><span class="macro">crate::GhtType!</span>(<span class="macro-nonterminal">$a</span>, $( <span class="macro-nonterminal">$b </span>),* =&gt; (): VariadicColumnMultiset))
     };
     <span class="comment">// Base case: multiple types to single type
     </span>(<span class="macro-nonterminal">$a</span>:ty, $( <span class="macro-nonterminal">$b</span>:ty ),* =&gt; <span class="macro-nonterminal">$c</span>:ty) =&gt; {

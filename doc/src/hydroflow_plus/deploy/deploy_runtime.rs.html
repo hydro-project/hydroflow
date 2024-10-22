@@ -154,13 +154,15 @@
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
-<span class="kw">use </span>hydroflow::util::deploy::{
-    ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, DeployPorts,
-};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
+
+<span class="kw">use </span><span class="kw">crate</span>::util::deploy::{
+    ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, DeployPorts,
+};
 
 <span class="attr">#[derive(Default, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>HydroflowPlusMeta {
