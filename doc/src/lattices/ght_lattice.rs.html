@@ -448,15 +448,6 @@
 <a href="#448" id="448">448</a>
 <a href="#449" id="449">449</a>
 <a href="#450" id="450">450</a>
-<a href="#451" id="451">451</a>
-<a href="#452" id="452">452</a>
-<a href="#453" id="453">453</a>
-<a href="#454" id="454">454</a>
-<a href="#455" id="455">455</a>
-<a href="#456" id="456">456</a>
-<a href="#457" id="457">457</a>
-<a href="#458" id="458">458</a>
-<a href="#459" id="459">459</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::cmp::Ordering::{Equal, Greater, Less};
 <span class="kw">use </span>std::cmp::Ordering;
 <span class="kw">use </span>std::collections::HashMap;
@@ -549,57 +540,48 @@
     </span>Node::Schema: SplitBySuffix&lt;<span class="macro">var_type!</span>(Head, ...Node::SuffixSchema)&gt;,
 {
     <span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>GhtInner&lt;Head, Node&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Ordering&gt; {
-        <span class="kw">let </span>(smaller, larger) = <span class="kw">if </span><span class="self">self</span>.children.len() &lt; other.children.len() {
-            (<span class="self">self</span>, other)
+        <span class="kw">if </span><span class="self">self</span>.children.is_empty() &amp;&amp; other.children.is_empty() {
+            <span class="prelude-val">Some</span>(Equal)
         } <span class="kw">else </span>{
-            (other, <span class="self">self</span>)
-        };
-        <span class="kw">if </span>larger.children.is_empty() {
-            <span class="kw">return </span><span class="prelude-val">Some</span>(Equal);
-        }
-        <span class="comment">// across all keys, determine if we have stuff in smaller that's not in larger
-        // and vice versa
-        </span><span class="kw">let </span>(smallonly, <span class="kw-2">mut </span>largeonly) =
-            smaller
-                .children
-                .iter()
-                .fold((<span class="bool-val">false</span>, <span class="bool-val">false</span>), |<span class="kw-2">mut </span>accum, (k, v)| {
-                    <span class="kw">if </span>!larger.children.contains_key(k) {
-                        accum.<span class="number">0 </span>= <span class="bool-val">true</span>; <span class="comment">// smallonly is true
-                        </span>accum
-                    } <span class="kw">else </span>{
-                        <span class="kw">match </span>v.partial_cmp(larger.children.get(k).unwrap()) {
-                            <span class="prelude-val">Some</span>(Greater) | <span class="prelude-val">None </span>=&gt; {
-                                accum.<span class="number">0 </span>= <span class="bool-val">true</span>; <span class="comment">// smallonly is true
-                                </span>accum
-                            }
-                            <span class="prelude-val">Some</span>(Less) =&gt; {
-                                accum.<span class="number">1 </span>= <span class="bool-val">true</span>; <span class="comment">// largeonly is true
-                                </span>accum
-                            }
-                            <span class="prelude-val">Some</span>(Equal) =&gt; accum, <span class="comment">// no changes
-                        </span>}
-                    }
-                });
-        <span class="comment">// we've already deep-compared all matching keys and their subtrees.
-        // all that's left is to shallow-compare if larger has any *keys* that are missing in smaller
-        </span>largeonly |= !larger
-            .children
-            .keys()
-            .all(|k| smaller.children.contains_key(k));
+            <span class="comment">// across all keys, determine if we have stuff in self that's not in other
+            // and vice versa
+            </span><span class="kw">let </span>(selfonly, <span class="kw-2">mut </span>otheronly) =
+                <span class="self">self</span>.children
+                    .iter()
+                    .fold((<span class="bool-val">false</span>, <span class="bool-val">false</span>), |<span class="kw-2">mut </span>accum, (k, v)| {
+                        <span class="kw">if </span>!other.children.contains_key(k) {
+                            accum.<span class="number">0 </span>= <span class="bool-val">true</span>; <span class="comment">// selfonly is true
+                            </span>accum
+                        } <span class="kw">else </span>{
+                            <span class="kw">match </span>v.partial_cmp(other.children.get(k).unwrap()) {
+                                <span class="prelude-val">Some</span>(Greater) | <span class="prelude-val">None </span>=&gt; {
+                                    accum.<span class="number">0 </span>= <span class="bool-val">true</span>; <span class="comment">// selfonly is true
+                                    </span>accum
+                                }
+                                <span class="prelude-val">Some</span>(Less) =&gt; {
+                                    accum.<span class="number">1 </span>= <span class="bool-val">true</span>; <span class="comment">// otheronly is true
+                                    </span>accum
+                                }
+                                <span class="prelude-val">Some</span>(Equal) =&gt; accum, <span class="comment">// no changes
+                            </span>}
+                        }
+                    });
+            <span class="comment">// now check if other has keys that are missing in self
+            </span>otheronly |= !other.children.keys().all(|k| <span class="self">self</span>.children.contains_key(k));
 
-        <span class="kw">if </span>smallonly &amp;&amp; largeonly {
-            <span class="comment">// unique stuff on both sides: order is incomparable
-            </span><span class="prelude-val">None
-        </span>} <span class="kw">else if </span>smallonly &amp;&amp; !largeonly {
-            <span class="comment">// unique stuff only in self
-            </span><span class="prelude-val">Some</span>(Greater)
-        } <span class="kw">else if </span>!smallonly &amp;&amp; largeonly {
-            <span class="comment">// unique stuff only in other
-            </span><span class="prelude-val">Some</span>(Less)
-        } <span class="kw">else </span>{
-            <span class="comment">// nothing unique on either side
-            </span><span class="prelude-val">Some</span>(Equal)
+            <span class="kw">if </span>selfonly &amp;&amp; otheronly {
+                <span class="comment">// unique stuff on both sides: order is incomparable
+                </span><span class="prelude-val">None
+            </span>} <span class="kw">else if </span>selfonly &amp;&amp; !otheronly {
+                <span class="comment">// unique stuff only in self
+                </span><span class="prelude-val">Some</span>(Greater)
+            } <span class="kw">else if </span>!selfonly &amp;&amp; otheronly {
+                <span class="comment">// unique stuff only in other
+                </span><span class="prelude-val">Some</span>(Less)
+            } <span class="kw">else </span>{
+                <span class="comment">// nothing unique on either side
+                </span><span class="prelude-val">Some</span>(Equal)
+            }
         }
     }
 }
