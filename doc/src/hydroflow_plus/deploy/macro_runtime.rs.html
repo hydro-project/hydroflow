@@ -320,12 +320,12 @@
 <span class="kw">use </span>std::pin::Pin;
 <span class="kw">use </span>std::rc::Rc;
 
+<span class="kw">use </span>hydroflow::util::deploy::DeployPorts;
 <span class="kw">use </span>stageleft::{Quoted, RuntimeData};
 
 <span class="kw">use </span><span class="kw">super</span>::HydroflowPlusMeta;
 <span class="kw">use </span><span class="kw">crate</span>::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
 <span class="kw">use </span><span class="kw">crate</span>::lang::graph::HydroflowGraph;
-<span class="kw">use </span><span class="kw">crate</span>::util::deploy::DeployPorts;
 
 <span class="kw">pub struct </span>DeployRuntime {}
 
