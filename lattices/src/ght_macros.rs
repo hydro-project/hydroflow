@@ -74,7 +74,7 @@ macro_rules! GhtType {
 macro_rules! ColtType {
     // Base case: single type to empty
     ($a:ty => ()) => {
-        var_type!($crate::GhtType!($a => (): VariadicColumnMultiset))
+        $crate::variadics::var_type!($crate::GhtType!($a => (): VariadicColumnMultiset))
     };
     // Base case: single type to single type
     ($a:ty => $c:ty) => {
@@ -86,7 +86,7 @@ macro_rules! ColtType {
     };
     // Base case: multiple types to empty
     ($a:ty, $( $b:ty ),* => ()) => {
-        var_type!($crate::GhtType!($a, $( $b ),* => (): VariadicColumnMultiset))
+        $crate::variadics::var_type!($crate::GhtType!($a, $( $b ),* => (): VariadicColumnMultiset))
     };
     // Base case: multiple types to single type
     ($a:ty, $( $b:ty ),* => $c:ty) => {
