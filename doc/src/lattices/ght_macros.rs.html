@@ -104,7 +104,6 @@
 <a href="#104" id="104">104</a>
 <a href="#105" id="105">105</a>
 <a href="#106" id="106">106</a>
-<a href="#107" id="107">107</a>
 </pre></div><pre class="rust"><code><span class="attr">#[macro_export]
 </span><span class="doccomment">/// Internal macro for constructing a Ght struct with the given schema and storage type
 ///
@@ -177,7 +176,6 @@
 ///
 /// type MyColt = ColtType!(u16, u32, u64);
 /// ```
-
 </span><span class="macro">macro_rules!</span> ColtType {
     <span class="comment">// Base case: single type to empty
     </span>(<span class="macro-nonterminal">$a</span>:ty =&gt; ()) =&gt; {

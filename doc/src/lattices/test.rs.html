@@ -704,8 +704,8 @@
             (size, <span class="prelude-val">Some</span>(size))
         }
     }
-    <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, <span class="kw">const </span>N: usize&gt; ExactSizeIterator <span class="kw">for </span>CartesianPower&lt;<span class="lifetime">'a</span>, T, N&gt; {}
-    <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, <span class="kw">const </span>N: usize&gt; Clone <span class="kw">for </span>CartesianPower&lt;<span class="lifetime">'a</span>, T, N&gt; {
+    <span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; ExactSizeIterator <span class="kw">for </span>CartesianPower&lt;<span class="lifetime">'_</span>, T, N&gt; {}
+    <span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; Clone <span class="kw">for </span>CartesianPower&lt;<span class="lifetime">'_</span>, T, N&gt; {
         <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
             <span class="self">Self </span>{
                 items: <span class="self">self</span>.items,
