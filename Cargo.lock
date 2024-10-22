@@ -2450,9 +2450,7 @@ dependencies = [
 [[package]]
 name = "rust-sitter-common"
 version = "0.4.3"
-version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d8e1c8d26b8d5fb23415a5123588669e776ad934abbfbe6d8677ed322694216"
 checksum = "3d8e1c8d26b8d5fb23415a5123588669e776ad934abbfbe6d8677ed322694216"
 dependencies = [
  "quote",
@@ -2462,9 +2460,7 @@ dependencies = [
 [[package]]
 name = "rust-sitter-macro"
 version = "0.4.3"
-version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07defe73314513d2b671b4c81603a236193eabe8ec7afd480dd3ed769dd75fb6"
 checksum = "07defe73314513d2b671b4c81603a236193eabe8ec7afd480dd3ed769dd75fb6"
 dependencies = [
  "proc-macro2",
@@ -2477,7 +2473,6 @@ dependencies = [
 name = "rust-sitter-tool"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e666bbe8cf47a6ba0c88da4f2b98ebadb98bc1b5b9723aa5784137ae93f9436"
 checksum = "9e666bbe8cf47a6ba0c88da4f2b98ebadb98bc1b5b9723aa5784137ae93f9436"
 dependencies = [
  "cc",
@@ -3263,9 +3258,7 @@ dependencies = [
 [[package]]
 name = "tree-sitter"
 version = "0.24.3"
-version = "0.24.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9871f16d6cf5c4757dcf30d5d2172a2df6987c510c017bbb7abfb7f9aa24d06"
 checksum = "f9871f16d6cf5c4757dcf30d5d2172a2df6987c510c017bbb7abfb7f9aa24d06"
 dependencies = [
  "cc",
@@ -3278,9 +3271,7 @@ dependencies = [
 [[package]]
 name = "tree-sitter-c2rust"
 version = "0.24.3"
-version = "0.24.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5f97c8ed19295f92e02af90c915c72d0836e08132f155709bc45b66acdfde35"
 checksum = "a5f97c8ed19295f92e02af90c915c72d0836e08132f155709bc45b66acdfde35"
 dependencies = [
  "c2rust-bitfields",
