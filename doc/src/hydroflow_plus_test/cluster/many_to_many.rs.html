@@ -131,7 +131,7 @@
                 <span class="kw">for </span>value <span class="kw">in </span><span class="number">0</span>..<span class="number">2 </span>{
                     <span class="macro">assert_eq!</span>(
                         node_outs.next().unwrap(),
-                        <span class="macro">format!</span>(<span class="string">"cluster received: ({}, {})"</span>, sender, value)
+                        <span class="macro">format!</span>(<span class="string">"cluster received: (ClusterId::&lt;()&gt;({}), {})"</span>, sender, value)
                     );
                 }
             }
