@@ -90,57 +90,48 @@ where
     Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
 {
     fn partial_cmp(&self, other: &GhtInner<Head, Node>) -> Option<Ordering> {
-        let (smaller, larger) = if self.children.len() < other.children.len() {
-            (self, other)
-        } else {
-            (other, self)
-        };
-        if larger.children.is_empty() {
-            return Some(Equal);
-        }
-        // across all keys, determine if we have stuff in smaller that's not in larger
-        // and vice versa
-        let (smallonly, mut largeonly) =
-            smaller
-                .children
-                .iter()
-                .fold((false, false), |mut accum, (k, v)| {
-                    if !larger.children.contains_key(k) {
-                        accum.0 = true; // smallonly is true
-                        accum
-                    } else {
-                        match v.partial_cmp(larger.children.get(k).unwrap()) {
-                            Some(Greater) | None => {
-                                accum.0 = true; // smallonly is true
-                                accum
-                            }
-                            Some(Less) => {
-                                accum.1 = true; // largeonly is true
-                                accum
-                            }
-                            Some(Equal) => accum, // no changes
-                        }
-                    }
-                });
-        // we've already deep-compared all matching keys and their subtrees.
-        // all that's left is to shallow-compare if larger has any *keys* that are missing in smaller
-        largeonly |= !larger
-            .children
-            .keys()
-            .all(|k| smaller.children.contains_key(k));
-
-        if smallonly && largeonly {
-            // unique stuff on both sides: order is incomparable
-            None
-        } else if smallonly && !largeonly {
-            // unique stuff only in self
-            Some(Greater)
-        } else if !smallonly && largeonly {
-            // unique stuff only in other
-            Some(Less)
-        } else {
-            // nothing unique on either side
+        if self.children.is_empty() && other.children.is_empty() {
             Some(Equal)
+        } else {
+            // across all keys, determine if we have stuff in self that's not in other
+            // and vice versa
+            let (selfonly, mut otheronly) =
+                self.children
+                    .iter()
+                    .fold((false, false), |mut accum, (k, v)| {
+                        if !other.children.contains_key(k) {
+                            accum.0 = true; // selfonly is true
+                            accum
+                        } else {
+                            match v.partial_cmp(other.children.get(k).unwrap()) {
+                                Some(Greater) | None => {
+                                    accum.0 = true; // selfonly is true
+                                    accum
+                                }
+                                Some(Less) => {
+                                    accum.1 = true; // otheronly is true
+                                    accum
+                                }
+                                Some(Equal) => accum, // no changes
+                            }
+                        }
+                    });
+            // now check if other has keys that are missing in self
+            otheronly |= !other.children.keys().all(|k| self.children.contains_key(k));
+
+            if selfonly && otheronly {
+                // unique stuff on both sides: order is incomparable
+                None
+            } else if selfonly && !otheronly {
+                // unique stuff only in self
+                Some(Greater)
+            } else if !selfonly && otheronly {
+                // unique stuff only in other
+                Some(Less)
+            } else {
+                // nothing unique on either side
+                Some(Equal)
+            }
         }
     }
 }
