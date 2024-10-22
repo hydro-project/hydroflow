@@ -2,9 +2,8 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints,
-    OperatorInstance, OperatorWriteOutput, Persistence, PortIndexValue, WriteContextArgs, RANGE_0,
-    RANGE_1,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, Persistence, PortIndexValue, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
 
@@ -22,7 +21,6 @@ use crate::diagnostic::{Diagnostic, Level};
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
 /// diff = anti_join_multiset() -> assert_eq([("elephant", 3), ("elephant", 3)]);
 /// ```
-
 // This implementation is largely redundant to ANTI_JOIN and should be DRY'ed
 pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
     name: "anti_join_multiset",
