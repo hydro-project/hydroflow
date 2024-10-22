@@ -193,15 +193,12 @@
 <a href="#193" id="193">193</a>
 <a href="#194" id="194">194</a>
 <a href="#195" id="195">195</a>
-<a href="#196" id="196">196</a>
-<a href="#197" id="197">197</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use super</span>::{
-    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints,
-    OperatorInstance, OperatorWriteOutput, Persistence, PortIndexValue, WriteContextArgs, RANGE_0,
-    RANGE_1,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, Persistence, PortIndexValue, WriteContextArgs, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 
@@ -219,7 +216,6 @@
 /// source_iter(vec!["dog", "cat", "gorilla"]) -&gt; [neg]diff;
 /// diff = anti_join_multiset() -&gt; assert_eq([("elephant", 3), ("elephant", 3)]);
 /// ```
-
 </span><span class="comment">// This implementation is largely redundant to ANTI_JOIN and should be DRY'ed
 </span><span class="kw">pub const </span>ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
     name: <span class="string">"anti_join_multiset"</span>,

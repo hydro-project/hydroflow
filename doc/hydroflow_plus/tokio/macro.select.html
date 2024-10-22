@@ -63,13 +63,13 @@ state.</li>
 <li>Aggregate the <code>&lt;async expression&gt;</code>s from each branch, including the
 disabled ones. If the branch is disabled, <code>&lt;async expression&gt;</code> is still
 evaluated, but the resulting future is not polled.</li>
+<li>If <strong>all</strong> branches are disabled: go to step 6.</li>
 <li>Concurrently await on the results for all remaining <code>&lt;async expression&gt;</code>s.</li>
-<li>Once an <code>&lt;async expression&gt;</code> returns a value, attempt to apply the value
-to the provided <code>&lt;pattern&gt;</code>, if the pattern matches, evaluate <code>&lt;handler&gt;</code>
-and return. If the pattern <strong>does not</strong> match, disable the current branch
-and for the remainder of the current call to <code>select!</code>. Continue from step 3.</li>
-<li>If <strong>all</strong> branches are disabled, evaluate the <code>else</code> expression. If no
-else branch is provided, panic.</li>
+<li>Once an <code>&lt;async expression&gt;</code> returns a value, attempt to apply the value to the
+provided <code>&lt;pattern&gt;</code>. If the pattern matches, evaluate the <code>&lt;handler&gt;</code> and return.
+If the pattern <strong>does not</strong> match, disable the current branch for the remainder of
+the current call to <code>select!</code>. Continue from step 3.</li>
+<li>Evaluate the <code>else</code> expression. If no else expression is provided, panic.</li>
 </ol>
 <h2 id="runtime-characteristics"><a class="doc-anchor" href="#runtime-characteristics">§</a>Runtime characteristics</h2>
 <p>By running all async expressions on the current task, the expressions are

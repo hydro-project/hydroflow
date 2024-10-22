@@ -50,11 +50,10 @@ at a time.</p>
 <code>AsyncFd</code>.  It implements the read/write operations both as an <code>async fn</code>
 and using the IO traits <a href="../trait.AsyncRead.html" title="trait hydroflow_plus::tokio::io::AsyncRead"><code>AsyncRead</code></a> and <a href="../trait.AsyncWrite.html" title="trait hydroflow_plus::tokio::io::AsyncWrite"><code>AsyncWrite</code></a>.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>futures::ready;
-<span class="kw">use </span>std::io::{<span class="self">self</span>, Read, Write};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::io::{<span class="self">self</span>, Read, Write};
 <span class="kw">use </span>std::net::TcpStream;
 <span class="kw">use </span>std::pin::Pin;
-<span class="kw">use </span>std::task::{Context, Poll};
+<span class="kw">use </span>std::task::{ready, Context, Poll};
 <span class="kw">use </span>tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 <span class="kw">use </span>tokio::io::unix::AsyncFd;
 
