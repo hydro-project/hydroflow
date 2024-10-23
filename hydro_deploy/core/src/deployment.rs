@@ -234,11 +234,12 @@ impl Deployment {
         project: String,
         os_type: String, // linux or windows
         machine_size: String,
+        architecture: Option<String>,
         image: Option<HashMap<String, String>>,
         region: String,
         user: Option<String>,
     ) -> Arc<AzureHost> {
-        self.add_host(|id| AzureHost::new(id, project, os_type, machine_size, image, region, user))
+        self.add_host(|id| AzureHost::new(id, project, os_type, machine_size, architecture, image, region, user))
     }
 
     #[allow(clippy::too_many_arguments)]

@@ -90,16 +90,20 @@ pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildO
             ProgressTracker::rich_leaf("build", move |set_msg| async move {
                 tokio::task::spawn_blocking(move || {
                     let mut command = Command::new("cargo");
-                    command.args(["build"]);
+                    command.args([
+                        "build".to_string(),
+                        "--profile".to_string(),
+                        params.profile.unwrap_or("release".to_string()),
+                    ]);
                     // command.args([
                     //     "zigbuild".to_string(),
                     //     "--profile".to_string(),
-                    //     profile.unwrap_or("release".to_string()),
+                    //     params.profile.unwrap_or("release".to_string()),
                     // ]);
 
-                    if let Some(profile) = params.profile.as_ref() {
-                        command.args(["--profile", profile]);
-                    }
+                    // if let Some(profile) = params.profile.as_ref() {
+                    //     command.args(["--profile", profile]);
+                    // }
 
                     if let Some(bin) = params.bin.as_ref() {
                         command.args(["--bin", bin]);
@@ -136,6 +140,8 @@ pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildO
                     if let Some(target_dir) = params.target_dir.as_ref() {
                         command.env("CARGO_TARGET_DIR", target_dir);
                     }
+
+                    ProgressTracker::println(&format!("Command to be executed: {:?}", command));
 
                     let mut spawned = command
                         .current_dir(&params.src)

@@ -50,6 +50,7 @@ pub struct AzureHost {
     project: String,
     os_type: String, // linux or windows
     machine_size: String,
+    architecture: Option<String>, // default to x86_64
     image: Option<HashMap<String, String>>,
     region: String,
     user: Option<String>,
@@ -63,6 +64,7 @@ impl AzureHost {
         project: String,
         os_type: String, // linux or windows
         machine_size: String,
+        architecture: Option<String>, // default to x86_64
         image: Option<HashMap<String, String>>,
         region: String,
         user: Option<String>,
@@ -73,6 +75,7 @@ impl AzureHost {
             os_type,
             machine_size,
             image,
+            architecture,
             region,
             user,
             launched: OnceLock::new(),
@@ -84,7 +87,10 @@ impl AzureHost {
 #[async_trait]
 impl Host for AzureHost {
     fn target_type(&self) -> HostTargetType {
-        HostTargetType::Linux(crate::LinuxArchitecture::AARCH64)
+        match self.architecture.as_deref() {
+            Some("aarch64") => HostTargetType::Linux(crate::LinuxArchitecture::AARCH64),
+            _ => HostTargetType::Linux(crate::LinuxArchitecture::X86_64),
+        }
     }
 
     fn request_port(&self, bind_type: &ServerStrategy) {

@@ -28,6 +28,11 @@ use super::progress::ProgressTracker;
 pub mod launched_binary;
 pub use launched_binary::*;
 
+const ALPHABET: [char; 36] = [
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
+    't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+];
+
 #[derive(Debug)]
 pub struct PodHost {
     pub id: usize,
@@ -80,10 +85,7 @@ impl Host for PodHost {
     async fn provision(&self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         if self.launched.get().is_none() {
             let client = Client::try_default().await.unwrap();
-            let alphabet = [
-                'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p','q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'
-            ];
-            let pod_id = nanoid!(10, &alphabet); // pod names can only contain alphanumeric characters
+            let pod_id = nanoid!(10, &ALPHABET); // pod names can only contain alphanumeric characters
             let pod_name = format!("hydro-{}", pod_id);
 
             // Blank template for a new pod
@@ -106,37 +108,55 @@ impl Host for PodHost {
             // Check if pod_name has already been created. If not, create it.
             let lp = ListParams::default().fields(&format!("metadata.name={}", pod_name)); // only want results for our pod
             let mut found_existing_pod = false;
-            for p in pods.list(&lp).await.unwrap() {
-                // ProgressTracker::println(format!("Found Pod: {}", p.name_any()).as_str());
-                if p.name_any() == pod_name {
-                    found_existing_pod = true;
+            match pods.list(&lp).await {
+                Ok(pod_list) => {
+                    for p in pod_list {
+                        if p.name_any() == pod_name {
+                            found_existing_pod = true;
+                        }
+                    }
+                }
+                Err(e) => {
+                    ProgressTracker::println(format!("Error listing pods: {:?}. Maybe your kubernetes cluster is not up?", e).as_str());
                 }
             }
             if !found_existing_pod {
-                // ProgressTracker::println(format!("Creating new pod {:?}", pod_name).as_str());
+                ProgressTracker::println(format!("Creating new pod {:?}", pod_name).as_str());
                 let res = pods.create(&PostParams::default(), &p).await;
                 match res {
                     Err(e) => ProgressTracker::println(format!("{:?}", e).as_str()),
                     Ok(_) => (),
                 }
             }
+            ProgressTracker::println("Check 1");
 
             // Wait until the pod is running, otherwise we get 500 error.
             let wp = WatchParams::default().fields(format!("metadata.name={}", pod_name).as_str()).timeout(10);
             let mut stream = pods.watch(&wp, "0").await.unwrap().boxed();
-            while let Some(status) = stream.try_next().await.unwrap() {
-                match status {
-                    WatchEvent::Added(o) => {
-                        ProgressTracker::println(&format!("Got {}", o.name_any()));
-                    }
-                    WatchEvent::Modified(o) => {
-                        let s = o.status.as_ref().expect("status exists on pod");
-                        if s.phase.clone().unwrap_or_default() == "Running" {
-                            ProgressTracker::println(&format!("Ready to attach to {}", o.name_any()));
-                            break;
+            loop {
+                let status_result = stream.try_next().await;
+                match status_result {
+                    Ok(Some(status)) => match status {
+                        WatchEvent::Added(o) => {
+                            ProgressTracker::println(&format!("Found pod {}", o.name_any()));
                         }
+                        WatchEvent::Modified(o) => {
+                            let s = o.status.as_ref().expect("status exists on pod");
+                            if s.phase.clone().unwrap_or_default() == "Running" {
+                                ProgressTracker::println(&format!("Ready to attach to {}", o.name_any()));
+                                break;
+                            }
+                        }
+                        _ => {}
+                    },
+                    Ok(None) => {
+                        // Pod still being created, likely -- restart the watch stream
+                        stream = pods.watch(&wp, "0").await.unwrap().boxed();
                     }
-                    _ => {}
+                    Err(e) => {
+                        ProgressTracker::println(&format!("Error watching pod events: {:?}", e));
+                        break;
+                    }
                 }
             }
 
@@ -147,8 +167,6 @@ impl Host for PodHost {
                 pod_name,
             })).unwrap();
         }
-
-        ProgressTracker::println("finished provisioning");
 
         self.launched.get().unwrap().clone()
     }
@@ -262,15 +280,23 @@ impl LaunchedHost for LaunchedPod {
                 .exec(self.pod_name.as_str(), vec!["tar", "xf", "-", "-C", "/"], &ap)
                 .await?;
             let mut tar_stdin = tar.stdin().unwrap();
-            tar_stdin.write_all(&data).await?;
+            // tar_stdin.write_all(&data).await?;
+            if let Err(e) = tar_stdin.write_all(&data).await {
+                ProgressTracker::println(&format!("Error writing to stdin: {:?}", e));
+                return Err(e.into());
+            }
             ProgressTracker::println("Wrote all the stdin");
 
             // Flush the stdin to finish sending the file through
-            tar_stdin.flush().await?;
+            if let Err(e) = tar_stdin.flush().await {
+                ProgressTracker::println(&format!("Error flushing stdin: {:?}", e));
+                return Err(e.into());
+            }
 
             ProgressTracker::println("Flushed!");
             drop(tar_stdin); // Ensure stdin is closed before joining
             let result = tar.join().await;
+            // tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             match result {
                 Ok(_) => ProgressTracker::println("Successfully copied binary to pod"),
                 Err(e) => ProgressTracker::println(&format!("Failed to copy binary to pod: {:?}", e)),
@@ -301,6 +327,7 @@ impl LaunchedHost for LaunchedPod {
 
         // Execute binary inside the new pod
         let ap = AttachParams::default().stdin(true).stdout(true).stderr(true);
+        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
         let mut launch_binary = match pods.exec(pod_name, args_list, &ap).await {
             Ok(exec) => exec,
             Err(e) => {
@@ -308,8 +335,6 @@ impl LaunchedHost for LaunchedPod {
                 return Err(e.into());
             }
         };
-
-        // ProgressTracker::println(&format!("Launched binary in pod {:?}", pod_name));
 
         Ok(Box::new(LaunchedPodBinary::new(
             &mut launch_binary, id,
