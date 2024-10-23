@@ -8,11 +8,11 @@ error[E0277]: the trait bound `String: Merge<String>` is not satisfied
             `()` implements `Merge<()>`
             `Conflict<T>` implements `Merge<Conflict<O>>`
             `DomPair<KeySelf, ValSelf>` implements `Merge<DomPair<KeyOther, ValOther>>`
+            `GhtInner<Head, Node>` implements `Merge<GhtInner<Head, Node>>`
+            `GhtLeaf<Schema, ValType, Storage>` implements `Merge<GhtLeaf<Schema, ValType, Storage>>`
             `MapUnion<MapSelf>` implements `Merge<MapUnion<MapOther>>`
             `MapUnionWithTombstones<MapSelf, TombstoneSetSelf>` implements `Merge<MapUnionWithTombstones<MapOther, TombstoneSetOther>>`
             `Max<T>` implements `Merge<Max<T>>`
-            `Min<T>` implements `Merge<Min<T>>`
-            `NotALattice` implements `Merge<NotALattice>`
           and $N others
   = help: see issue #48214
   = note: this error originates in the derive macro `Lattice` (in Nightly builds, run with -Z macro-backtrace for more info)
@@ -31,11 +31,11 @@ error[E0277]: the trait bound `String: IsBot` is not satisfied
             ()
             Conflict<T>
             DomPair<Key, Val>
+            GhtInner<Head, Node>
+            GhtLeaf<Schema, SuffixSchema, Storage>
             MapUnion<Map>
             MapUnionWithTombstones<Map, TombstoneSet>
             Max<()>
-            Max<bool>
-            Max<char>
           and $N others
   = help: see issue #48214
   = note: this error originates in the derive macro `Lattice` (in Nightly builds, run with -Z macro-backtrace for more info)
@@ -54,11 +54,11 @@ error[E0277]: the trait bound `String: IsTop` is not satisfied
             ()
             Conflict<T>
             DomPair<Key, Val>
+            GhtInner<Head, Node>
+            GhtLeaf<Schema, SuffixSchema, Storage>
             MapUnion<Map>
             MapUnionWithTombstones<Map, TombstoneSet>
             Max<()>
-            Max<bool>
-            Max<char>
           and $N others
   = help: see issue #48214
   = note: this error originates in the derive macro `Lattice` (in Nightly builds, run with -Z macro-backtrace for more info)
