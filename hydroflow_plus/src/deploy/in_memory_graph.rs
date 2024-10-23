@@ -7,6 +7,7 @@ pub struct SingleProcessGraph {}
 impl<'a> LocalDeploy<'a> for SingleProcessGraph {
     type Process = SingleNode;
     type Cluster = SingleNode;
+    type ExternalProcess = SingleNode;
     type Meta = ();
     type GraphId = ();
 
@@ -58,6 +59,7 @@ pub struct MultiGraph {}
 impl<'a> LocalDeploy<'a> for MultiGraph {
     type Process = MultiNode;
     type Cluster = MultiNode;
+    type ExternalProcess = MultiNode;
     type Meta = ();
     type GraphId = usize;
 

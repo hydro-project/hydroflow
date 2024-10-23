@@ -2,7 +2,6 @@
     feature = "diagnostics",
     feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)
 )]
-#![allow(clippy::explicit_auto_deref)]
 
 use std::path::PathBuf;
 
@@ -135,8 +134,8 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
             let part_graph = partition_graph(flat_graph).unwrap();
             let part_mermaid = part_graph.to_mermaid(&Default::default());
 
-            let lit0 = Literal::string(&*flat_mermaid);
-            let lit1 = Literal::string(&*part_mermaid);
+            let lit0 = Literal::string(&flat_mermaid);
+            let lit1 = Literal::string(&part_mermaid);
 
             return quote! {
                 {
@@ -158,7 +157,7 @@ pub fn surface_booktest_operators(input: proc_macro::TokenStream) -> proc_macro:
     let each = hydroflow_lang::graph::ops::OPERATORS.iter().map(|op| {
         let op_ident = Ident::new(op.name, Span::call_site());
         let op_filename = format!("../../docs/docgen/{}.md", op.name);
-        let lit_filename = LitStr::new(&*op_filename, Span::call_site());
+        let lit_filename = LitStr::new(&op_filename, Span::call_site());
         quote! {
             #[doc = include_str!(#lit_filename)]
             mod #op_ident {}

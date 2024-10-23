@@ -63,7 +63,7 @@ mod serde_syn {
         S: Serializer,
         T: quote::ToTokens,
     {
-        serializer.serialize_str(&*value.to_token_stream().to_string())
+        serializer.serialize_str(&value.to_token_stream().to_string())
     }
 
     pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
@@ -72,7 +72,7 @@ mod serde_syn {
         T: syn::parse::Parse,
     {
         let s = String::deserialize(deserializer)?;
-        syn::parse_str(&*s).map_err(<D::Error as serde::de::Error>::custom)
+        syn::parse_str(&s).map_err(<D::Error as serde::de::Error>::custom)
     }
 }
 

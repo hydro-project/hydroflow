@@ -185,7 +185,6 @@ fn ops(c: &mut Criterion) {
                 let dist = Uniform::new(0, 100);
                 let input0: Vec<usize> = (0..NUM_INTS).map(|_| dist.sample(&mut rng)).collect();
 
-                #[allow(clippy::unnecessary_fold)]
                 {
                     hydroflow_syntax! {
                         source_iter(black_box(input0)) -> fold::<'tick>(|| 0, |accum: &mut _, elem| { *accum += elem }) -> for_each(|x| { black_box(x); });

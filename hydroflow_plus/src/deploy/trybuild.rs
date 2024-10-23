@@ -1,12 +1,19 @@
 use std::fs;
 use std::path::PathBuf;
 
-use hydroflow_plus::lang::graph::{partition_graph, HydroflowGraph};
 use stageleft::internal::quote;
 use trybuild_internals_api::cargo::{self, Metadata};
 use trybuild_internals_api::env::Update;
 use trybuild_internals_api::run::{PathDependency, Project};
 use trybuild_internals_api::{dependencies, features, path, Runner};
+
+use crate::lang::graph::{partition_graph, HydroflowGraph};
+
+pub static IS_TEST: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn init_test() {
+    IS_TEST.store(true, std::sync::atomic::Ordering::Relaxed);
+}
 
 pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>) -> syn::File {
     let partitioned_graph = partition_graph(graph).expect("Failed to partition (cycle detected).");
@@ -16,10 +23,12 @@ pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>
         partitioned_graph.as_code(&quote! { hydroflow_plus }, true, quote!(), &mut diagnostics);
 
     let source_ast: syn::File = syn::parse_quote! {
+        #![feature(box_patterns)]
         #![allow(unused_crate_dependencies, missing_docs)]
+        use hydroflow_plus::*;
 
         #[allow(unused)]
-        fn __hfplus_runtime<'a>(__hydroflow_plus_trybuild_cli: &'a hydroflow_plus::util::deploy::DeployPorts<hydroflow_plus_deploy::HydroflowPlusMeta>) -> hydroflow_plus::Hydroflow<'a> {
+        fn __hfplus_runtime<'a>(__hydroflow_plus_trybuild_cli: &'a hydroflow_plus::util::deploy::DeployPorts<hydroflow_plus::deploy::HydroflowPlusMeta>) -> hydroflow_plus::Hydroflow<'a> {
             #(#extra_stmts)*
             #tokens
         }
@@ -38,6 +47,7 @@ pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>
 pub fn create_trybuild(
     source: &str,
     bin: &str,
+    is_test: bool,
 ) -> Result<(PathBuf, PathBuf, Option<Vec<String>>), trybuild_internals_api::error::Error> {
     let Metadata {
         target_directory: target_dir,
@@ -47,7 +57,10 @@ pub fn create_trybuild(
 
     let source_dir = cargo::manifest_dir()?;
     let mut source_manifest = dependencies::get_manifest(&source_dir)?;
-    source_manifest.dev_dependencies.clear();
+
+    if !is_test {
+        source_manifest.dev_dependencies.clear();
+    }
 
     let mut features = features::find();
 
@@ -73,7 +86,7 @@ pub fn create_trybuild(
     fs::create_dir_all(&project_dir)?;
 
     let project_name = format!("{}-hfplus-trybuild", crate_name);
-    let manifest = Runner::make_manifest(
+    let mut manifest = Runner::make_manifest(
         &workspace,
         &project_name,
         &source_dir,
@@ -82,12 +95,19 @@ pub fn create_trybuild(
         source_manifest,
     )?;
 
+    manifest.features.remove("stageleft_devel");
+
     if let Some(enabled_features) = &mut features {
-        enabled_features.retain(|feature| {
-            manifest.features.contains_key(feature)
-                && feature != "default"
-                && feature != "stageleft_devel"
-        });
+        enabled_features
+            .retain(|feature| manifest.features.contains_key(feature) || feature == "default");
+
+        manifest
+            .features
+            .get_mut("default")
+            .iter_mut()
+            .for_each(|v| {
+                v.retain(|f| f != "stageleft_devel");
+            });
     }
 
     let project = Project {

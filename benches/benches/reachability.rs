@@ -289,7 +289,6 @@ fn benchmark_hydroflow(c: &mut Criterion) {
     });
 }
 
-#[allow(clippy::map_clone)]
 fn benchmark_hydroflow_surface_cheating(c: &mut Criterion) {
     c.bench_function("reachability/hydroflow/surface_cheating", |b| {
         b.iter_batched(

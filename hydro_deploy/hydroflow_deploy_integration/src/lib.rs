@@ -25,15 +25,13 @@ use tokio_util::codec::{Framed, LengthDelimitedCodec};
 pub type InitConfig = (HashMap<String, ServerBindConfig>, Option<String>);
 
 #[cfg(not(unix))]
-#[allow(dead_code)]
-type UnixStream = ();
+type UnixStream = std::convert::Infallible;
 
 #[cfg(not(unix))]
-#[allow(dead_code)]
-type UnixListener = ();
+#[expect(dead_code, reason = "conditional compilation placeholder")]
+type UnixListener = std::convert::Infallible;
 
 /// Describes how to connect to a service which is listening on some port.
-#[allow(unreachable_code)]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ServerPort {
     UnixSocket(PathBuf),

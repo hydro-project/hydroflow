@@ -20,12 +20,12 @@ pub trait Polarity: 'static {}
 /// An uninstantiable type used to tag port [`Polarity`] as **send**.
 ///
 /// See also: [`RECV`].
-#[allow(clippy::upper_case_acronyms)]
+#[expect(clippy::upper_case_acronyms, reason = "marker type")]
 pub enum SEND {}
 /// An uninstantiable type used to tag port [`Polarity`] as **receive**.
 ///
 /// See also: [`SEND`].
-#[allow(clippy::upper_case_acronyms)]
+#[expect(clippy::upper_case_acronyms, reason = "marker type")]
 pub enum RECV {}
 #[sealed]
 impl Polarity for SEND {}
@@ -40,7 +40,7 @@ where
     H: Handoff,
 {
     pub(crate) handoff_id: HandoffId,
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity, reason = "phantom data")]
     pub(crate) _marker: PhantomData<(*const S, fn() -> H)>,
 }
 /// Send-specific variant of [`Port`]. An output port.

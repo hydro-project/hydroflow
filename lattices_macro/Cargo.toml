@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/lattices/"
 description = "Procedural macros for the `lattices` crate."
 
+[lints]
+workspace = true
+
 [lib]
 proc-macro = true
 

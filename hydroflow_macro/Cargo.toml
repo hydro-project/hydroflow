@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/hydroflow_macro/"
 description = "Macro for using Hydroflow's Surface Syntax"
 
+[lints]
+workspace = true
+
 [lib]
 proc-macro = true
 

@@ -1,9 +1,10 @@
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn many_to_many(flow: &FlowBuilder) -> Cluster<()> {
+pub fn many_to_many<'a>(flow: &FlowBuilder<'a>) -> Cluster<'a, ()> {
     let cluster = flow.cluster();
-    flow.source_iter(&cluster, q!(0..2))
+    cluster
+        .source_iter(q!(0..2))
         .broadcast_bincode(&cluster)
         .for_each(q!(|n| println!("cluster received: {:?}", n)));
 
@@ -13,7 +14,7 @@ pub fn many_to_many(flow: &FlowBuilder) -> Cluster<()> {
 #[cfg(test)]
 mod tests {
     use hydro_deploy::Deployment;
-    use hydroflow_plus_deploy::{DeployCrateWrapper, TrybuildHost};
+    use hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
 
     #[tokio::test]
     async fn many_to_many() {
@@ -60,7 +61,7 @@ mod tests {
                 for value in 0..2 {
                     assert_eq!(
                         node_outs.next().unwrap(),
-                        format!("cluster received: ({}, {})", sender, value)
+                        format!("cluster received: (ClusterId::<()>({}), {})", sender, value)
                     );
                 }
             }

@@ -13,20 +13,20 @@ pub fn graph_reachability<'a>(
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process::<()>();
 
-    let roots = flow.source_stream(&process, roots).tick_batch();
-    let edges = flow.source_stream(&process, edges);
+    let roots = process.source_stream(roots);
+    let edges = process.source_stream(edges);
 
-    let (set_reached_cycle, reached_cycle) = flow.cycle(&process);
+    let (set_reached_cycle, reached_cycle) = process.cycle();
 
     let reached = roots.union(reached_cycle);
     let reachable = reached
         .clone()
         .map(q!(|r| (r, ())))
-        .join(edges.tick_batch().persist())
+        .join(edges)
         .map(q!(|(_from, (_, to))| to));
     set_reached_cycle.complete(reachable);
 
-    reached.unique().all_ticks().for_each(q!(|v| {
+    reached.unique().for_each(q!(|v| {
         reached_out.send(v).unwrap();
     }));
 

@@ -22,7 +22,7 @@ pub struct PropertyDatabase {
 
 /// Allows us to convert the hydroflow datatype for folds to a binary operation for the algebra
 /// property tests.
-#[allow(dead_code)]
+#[allow(clippy::allow_attributes, dead_code, reason = "staged programming")]
 fn convert_hf_to_binary<I, A: Default, F: Fn(&mut A, I)>(f: F) -> impl Fn(I, I) -> A {
     move |a, b| {
         let mut acc = Default::default();
@@ -39,7 +39,7 @@ impl PropertyDatabase {
         expr: Q,
     ) -> Q {
         let expr_clone = expr.clone();
-        self.commutative.insert(expr_clone.splice());
+        self.commutative.insert(expr_clone.splice_untyped());
         expr
     }
 
@@ -51,10 +51,10 @@ impl PropertyDatabase {
 // Dataflow graph optimization rewrite rules based on algebraic property tags
 // TODO add a test that verifies the space of possible graphs after rewrites is correct for each property
 
-fn properties_optimize_node<'a>(
-    node: &mut HfPlusNode<'a>,
+fn properties_optimize_node(
+    node: &mut HfPlusNode,
     db: &PropertyDatabase,
-    seen_tees: &mut SeenTees<'a>,
+    seen_tees: &mut SeenTees,
 ) {
     node.transform_children(
         |node, seen_tees| properties_optimize_node(node, db, seen_tees),
@@ -68,10 +68,7 @@ fn properties_optimize_node<'a>(
     }
 }
 
-pub fn properties_optimize<'a>(
-    ir: Vec<HfPlusLeaf<'a>>,
-    db: &PropertyDatabase,
-) -> Vec<HfPlusLeaf<'a>> {
+pub fn properties_optimize(ir: Vec<HfPlusLeaf>, db: &PropertyDatabase) -> Vec<HfPlusLeaf> {
     let mut seen_tees = Default::default();
     ir.into_iter()
         .map(|l| {
@@ -87,17 +84,18 @@ pub fn properties_optimize<'a>(
 mod tests {
     use super::*;
     use crate::deploy::SingleProcessGraph;
+    use crate::location::Location;
     use crate::FlowBuilder;
 
     #[test]
     fn test_property_database() {
         let mut db = PropertyDatabase::default();
 
-        assert!(!db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice())));
+        assert!(!db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice_untyped())));
 
         let _ = db.add_commutative_tag(q!(|a: &mut i32, b: i32| *a += b));
 
-        assert!(db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice())));
+        assert!(db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice_untyped())));
     }
 
     #[test]
@@ -110,7 +108,8 @@ mod tests {
         let counter_func = q!(|count: &mut i32, _| *count += 1);
         let _ = database.add_commutative_tag(counter_func);
 
-        flow.source_iter(&process, q!(vec![]))
+        process
+            .source_iter(q!(vec![]))
             .map(q!(|string: String| (string, ())))
             .tick_batch()
             .fold_keyed(q!(|| 0), counter_func)
