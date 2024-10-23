@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/hydroflow_datalog/"
 description = "Datalog proc-macro for Hydroflow"
 
+[lints]
+workspace = true
+
 [lib]
 proc-macro = true
 path = "src/lib.rs"

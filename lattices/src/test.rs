@@ -30,8 +30,11 @@ pub fn check_lattice_ord<T: LatticeOrd + NaiveLatticeOrd + Debug>(items: &[T]) {
 }
 
 /// Checks `PartialOrd` and `PartialEq`'s reflexivity, symmetry, transitivity, and duality.
-#[allow(clippy::eq_op)]
-#[allow(clippy::double_comparisons)]
+#[expect(
+    clippy::eq_op,
+    clippy::double_comparisons,
+    reason = "testing comparison properties"
+)]
 pub fn check_partial_ord_properties<T: PartialOrd + PartialEq + Debug>(items: &[T]) {
     use std::cmp::Ordering::*;
 
@@ -83,7 +86,7 @@ pub fn check_partial_ord_properties<T: PartialOrd + PartialEq + Debug>(items: &[
         assert_eq!(a >= b, a > b || a == b, "`{:?}`, `{:?}`", a, b);
         // PartialEq:
         // a != b if and only if !(a == b).
-        #[allow(clippy::nonminimal_bool)]
+        // #[expect(clippy::nonminimal_bool, reason = "testing comparison properties")]
         {
             assert_eq!(a != b, !(a == b), "`{:?}`, `{:?}`", a, b);
         }

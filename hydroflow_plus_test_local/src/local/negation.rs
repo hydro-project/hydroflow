@@ -12,12 +12,12 @@ pub fn test_difference<'a>(
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process::<()>();
 
-    let mut source = flow.source_iter(&process, q!(0..5)).tick_batch();
+    let mut source = process.source_iter(q!(0..5)).tick_batch();
     if persist1 {
         source = source.persist();
     }
 
-    let mut source2 = flow.source_iter(&process, q!(3..6)).tick_batch();
+    let mut source2 = process.source_iter(q!(3..6)).tick_batch();
     if persist2 {
         source2 = source2.persist();
     }
@@ -39,26 +39,22 @@ pub fn test_anti_join<'a>(
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process::<()>();
 
-    let mut source = flow
-        .source_iter(&process, q!(0..5))
+    let mut source = process
+        .source_iter(q!(0..5))
         .map(q!(|v| (v, v)))
         .tick_batch();
     if persist1 {
         source = source.persist();
     }
 
-    let mut source2 = flow.source_iter(&process, q!(3..6)).tick_batch();
+    let mut source2 = process.source_iter(q!(3..6)).tick_batch();
     if persist2 {
         source2 = source2.persist();
     }
 
-    // TODO(shadaj): inference fails without a for_each type annotation here
-    source
-        .anti_join(source2)
-        .all_ticks()
-        .for_each(q!(|v: (u32, u32)| {
-            output.send(v.0).unwrap();
-        }));
+    source.anti_join(source2).all_ticks().for_each(q!(|v| {
+        output.send(v.0).unwrap();
+    }));
 
     flow.with_default_optimize()
         .compile_no_network::<SingleProcessGraph>()

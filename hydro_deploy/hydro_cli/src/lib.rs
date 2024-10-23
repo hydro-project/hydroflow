@@ -1,5 +1,8 @@
-// TODO(mingwei): For pyo3 generated code.
-#![allow(unused_qualifications, non_local_definitions)]
+#![expect(
+    unused_qualifications,
+    non_local_definitions,
+    reason = "for pyo3 generated code"
+)]
 
 use core::hydroflow_crate::ports::HydroflowSource;
 use std::cell::OnceCell;
@@ -159,7 +162,7 @@ impl Deployment {
         }
     }
 
-    #[allow(non_snake_case)]
+    #[expect(non_snake_case, reason = "pymethods")]
     fn PodHost(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         let arc = self.underlying.blocking_write().add_host(|id| {
             core::PodHost::new(
@@ -177,7 +180,7 @@ impl Deployment {
         .into_py(py))
     }
 
-    #[allow(non_snake_case)]
+    #[expect(non_snake_case, reason = "pymethods")]
     fn Localhost(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         let arc = self.underlying.blocking_read().Localhost();
 
@@ -191,7 +194,7 @@ impl Deployment {
         .into_py(py))
     }
 
-    #[allow(non_snake_case, clippy::too_many_arguments)]
+    #[expect(non_snake_case, clippy::too_many_arguments, reason = "pymethods")]
     fn GcpComputeEngineHost(
         &self,
         py: Python<'_>,
@@ -228,7 +231,7 @@ impl Deployment {
         .into_py(py))
     }
 
-    #[allow(non_snake_case, clippy::too_many_arguments)]
+    #[expect(non_snake_case, clippy::too_many_arguments, reason = "pymethods")]
     fn AzureHost(
         &self,
         py: Python<'_>,
@@ -254,7 +257,7 @@ impl Deployment {
         .into_py(py))
     }
 
-    #[allow(non_snake_case)]
+    #[expect(non_snake_case, reason = "pymethods")]
     fn CustomService(
         &self,
         py: Python<'_>,
@@ -278,7 +281,7 @@ impl Deployment {
         .into_py(py))
     }
 
-    #[allow(non_snake_case, clippy::too_many_arguments)]
+    #[expect(non_snake_case, clippy::too_many_arguments, reason = "pymethods")]
     fn HydroflowCrate(
         &self,
         py: Python<'_>,
@@ -768,7 +771,7 @@ impl ServerPort {
         pythonize(py, &self.underlying).unwrap()
     }
 
-    #[allow(clippy::wrong_self_convention)]
+    #[expect(clippy::wrong_self_convention, reason = "pymethods")]
     fn into_source<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let realized = with_tokio_runtime(|| ServerOrBound::Server((&self.underlying).into()));
 
@@ -781,7 +784,7 @@ impl ServerPort {
         })
     }
 
-    #[allow(clippy::wrong_self_convention)]
+    #[expect(clippy::wrong_self_convention, reason = "pymethods")]
     fn into_sink<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let realized = with_tokio_runtime(|| ServerOrBound::Server((&self.underlying).into()));
 

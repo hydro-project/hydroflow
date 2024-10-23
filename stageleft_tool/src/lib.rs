@@ -72,7 +72,7 @@ pub fn gen_macro(staged_path: &Path, crate_name: &str) {
 
         let proc_macro_wrapper: syn::ItemFn = parse_quote!(
             #[proc_macro]
-            #[allow(non_snake_case, unused_qualifications)]
+            #[expect(unused_qualifications, reason = "generated code")]
             pub fn #underscored_path(input: ::proc_macro::TokenStream) -> ::proc_macro::TokenStream {
                 let input = ::stageleft::internal::TokenStream::from(input);
                 let out = #exported_from_parsed::#underscored_path_impl(input);
@@ -116,6 +116,7 @@ impl VisitMut for InlineTopLevelMod {
 
 struct GenFinalPubVistor {
     current_mod: Option<syn::Path>,
+    test_mode: bool,
 }
 
 impl VisitMut for GenFinalPubVistor {
@@ -142,8 +143,14 @@ impl VisitMut for GenFinalPubVistor {
     fn visit_item_mod_mut(&mut self, i: &mut syn::ItemMod) {
         let is_runtime_or_test = i.attrs.iter().any(|a| {
             a.path().to_token_stream().to_string() == "stageleft :: runtime"
-                || a.to_token_stream().to_string() == "# [cfg (test)]"
+                || a.to_token_stream().to_string() == "# [test]"
+                || a.to_token_stream().to_string() == "# [tokio::test]"
         });
+
+        let is_test_mod = i
+            .attrs
+            .iter()
+            .any(|a| a.to_token_stream().to_string() == "# [cfg (test)]");
 
         if is_runtime_or_test {
             *i = parse_quote! {
@@ -151,6 +158,15 @@ impl VisitMut for GenFinalPubVistor {
                 #i
             };
         } else {
+            if is_test_mod {
+                i.attrs
+                    .retain(|a| a.to_token_stream().to_string() != "# [cfg (test)]");
+
+                if !self.test_mode {
+                    i.attrs.push(parse_quote!(#[cfg(stageleft_macro)]));
+                }
+            }
+
             let old_mod = self.current_mod.clone();
             let i_ident = &i.ident;
             self.current_mod = self
@@ -233,6 +249,22 @@ impl VisitMut for GenFinalPubVistor {
     }
 }
 
+pub fn gen_staged_trybuild(lib_path: &Path, orig_crate_name: String, test_mode: bool) -> syn::File {
+    let mut orig_flow_lib = syn_inline_mod::parse_and_inline_modules(lib_path);
+    InlineTopLevelMod {}.visit_file_mut(&mut orig_flow_lib);
+
+    let mut flow_lib_pub = syn_inline_mod::parse_and_inline_modules(lib_path);
+
+    let orig_crate_ident = syn::Ident::new(&orig_crate_name, Span::call_site());
+    let mut final_pub_visitor = GenFinalPubVistor {
+        current_mod: Some(parse_quote!(#orig_crate_ident)),
+        test_mode,
+    };
+    final_pub_visitor.visit_file_mut(&mut flow_lib_pub);
+
+    flow_lib_pub
+}
+
 pub fn gen_final_helper() {
     let out_dir = env::var_os("OUT_DIR").unwrap();
 
@@ -243,6 +275,7 @@ pub fn gen_final_helper() {
 
     let mut final_pub_visitor = GenFinalPubVistor {
         current_mod: Some(parse_quote!(crate)),
+        test_mode: false,
     };
     final_pub_visitor.visit_file_mut(&mut flow_lib_pub);
 
@@ -260,11 +293,6 @@ pub fn gen_final_helper() {
 #[macro_export]
 macro_rules! gen_final {
     () => {
-        println!(
-            "cargo::rustc-env=STAGELEFT_FINAL_CRATE_NAME={}",
-            env!("CARGO_PKG_NAME")
-        );
-
         #[cfg(not(feature = "stageleft_devel"))]
         $crate::gen_final_helper()
     };

@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/hydro_deploy/"
 description = "Hydro Deploy"
 
+[lints]
+workspace = true
+
 [dependencies]
 anyhow = { version = "1.0.82", features = [ "backtrace" ] }
 async-process = "2.0.0"

@@ -723,7 +723,7 @@ impl HydroflowGraph {
             (false, &GraphNode::Handoff { dst_span, .. }) => dst_span,
             (_, GraphNode::ModuleBoundary { .. }) => panic!(),
         };
-        Ident::new(&*name, span)
+        Ident::new(&name, span)
     }
 
     /// For per-node singleton references. Helper to generate a deterministic `Ident` for the given node.
@@ -802,9 +802,9 @@ impl HydroflowGraph {
                 GraphNode::ModuleBoundary { .. } => panic!(),
             })
             .map(|(node_id, (src_span, dst_span))| {
-                let ident_send = Ident::new(&*format!("hoff_{:?}_send", node_id.data()), dst_span);
-                let ident_recv = Ident::new(&*format!("hoff_{:?}_recv", node_id.data()), src_span);
-                let hoff_name = Literal::string(&*format!("handoff {:?}", node_id));
+                let ident_send = Ident::new(&format!("hoff_{:?}_send", node_id.data()), dst_span);
+                let ident_recv = Ident::new(&format!("hoff_{:?}_recv", node_id.data()), src_span);
+                let hoff_name = Literal::string(&format!("handoff {:?}", node_id));
                 quote! {
                     let (#ident_send, #ident_recv) =
                         #hf.make_edge::<_, #root::scheduled::handoff::VecHandoff<_>>(#hoff_name);
@@ -960,8 +960,8 @@ impl HydroflowGraph {
                                 op_span,
                                 ident: &ident,
                                 is_pull,
-                                inputs: &*inputs,
-                                outputs: &*outputs,
+                                inputs: &inputs,
+                                outputs: &outputs,
                                 singleton_output_ident,
                                 op_name,
                                 op_inst,
@@ -1010,7 +1010,13 @@ impl HydroflowGraph {
                                     })
                                     .ok();
 
-                                #[allow(clippy::unnecessary_literal_unwrap)]
+                                #[cfg_attr(
+                                    not(feature = "diagnostics"),
+                                    expect(
+                                        clippy::unnecessary_literal_unwrap,
+                                        reason = "conditional compilation"
+                                    )
+                                )]
                                 let source_info = source_info.unwrap_or_else(|| {
                                     format!(
                                         "loc_nopath_{}_{}_{}_{}",
@@ -1137,7 +1143,7 @@ impl HydroflowGraph {
                     }
                 };
 
-                let hoff_name = Literal::string(&*format!("Subgraph {:?}", subgraph_id));
+                let hoff_name = Literal::string(&format!("Subgraph {:?}", subgraph_id));
                 let stratum = Literal::usize_unsuffixed(
                     self.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(0),
                 );
@@ -1171,11 +1177,11 @@ impl HydroflowGraph {
         };
 
         let meta_graph_json = serde_json::to_string(&self).unwrap();
-        let meta_graph_json = Literal::string(&*meta_graph_json);
+        let meta_graph_json = Literal::string(&meta_graph_json);
 
         let serde_diagnostics: Vec<_> = diagnostics.iter().map(Diagnostic::to_serde).collect();
         let diagnostics_json = serde_json::to_string(&*serde_diagnostics).unwrap();
-        let diagnostics_json = Literal::string(&*diagnostics_json);
+        let diagnostics_json = Literal::string(&diagnostics_json);
 
         quote! {
             {
@@ -1338,7 +1344,7 @@ impl HydroflowGraph {
             }
             graph_write.write_node(
                 node_id,
-                &*if write_config.op_short_text {
+                &if write_config.op_short_text {
                     node.to_name_string()
                 } else if write_config.op_text_no_imports {
                     // Remove any lines that start with "use" (imports)
@@ -1418,7 +1424,7 @@ impl HydroflowGraph {
                     {
                         assert!(!varname_node_ids.is_empty());
                         graph_write.write_varname(
-                            &*varname.0.to_string(),
+                            &varname.0.to_string(),
                             varname_node_ids.into_iter(),
                             Some(subgraph_id),
                         )?;
@@ -1427,9 +1433,9 @@ impl HydroflowGraph {
                 graph_write.write_subgraph_end()?;
             }
         } else if !write_config.no_varnames {
-            for (varname, varname_node_ids) in varname_nodes.into_iter() {
+            for (varname, varname_node_ids) in varname_nodes {
                 graph_write.write_varname(
-                    &*varname.0.to_string(),
+                    &varname.0.to_string(),
                     varname_node_ids.into_iter(),
                     None,
                 )?;

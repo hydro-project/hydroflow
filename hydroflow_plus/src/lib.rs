@@ -25,7 +25,7 @@ pub mod singleton;
 pub use singleton::{Optional, Singleton};
 
 pub mod location;
-pub use location::{Cluster, Process};
+pub use location::{Cluster, ClusterId, Location, Process};
 
 pub mod deploy;
 pub use deploy::{ClusterSpec, Deploy, ProcessSpec};
@@ -42,6 +42,8 @@ pub mod persist_pullup;
 pub mod profiler;
 
 pub mod properties;
+
+mod staging_util;
 
 #[derive(Clone)]
 pub struct RuntimeContext<'a> {
@@ -111,7 +113,7 @@ impl<'a> HfCompiled<'a, usize> {
         }
 
         let conditioned_tokens: TokenStream = conditioned_tokens.unwrap();
-        let id = id.splice();
+        let id = id.splice_untyped();
         HfBuiltWithId {
             tokens: syn::parse_quote!({
                 let __given_id = #id;
@@ -163,5 +165,14 @@ impl<'a> Quoted<'a, Hydroflow<'a>> for HfBuiltWithId<'a> {}
 impl<'a> FreeVariable<Hydroflow<'a>> for HfBuiltWithId<'a> {
     fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
         (None, Some(self.tokens))
+    }
+}
+
+#[stageleft::runtime]
+#[cfg(test)]
+mod tests {
+    #[ctor::ctor]
+    fn init() {
+        crate::deploy::init_test();
     }
 }

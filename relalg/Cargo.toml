@@ -5,6 +5,9 @@ version = "0.0.0"
 edition = "2021"
 license = "Apache-2.0"
 
+[lints]
+workspace = true
+
 [dependencies]
 anyhow = "1.0.82"
 datadriven = "0.6.0"

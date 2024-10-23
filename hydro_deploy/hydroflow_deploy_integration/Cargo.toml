@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/hydroflow_deploy_integration/"
 description = "`hydro_deploy` integration for Hydroflow"
 
+[lints]
+workspace = true
+
 [dependencies]
 async-recursion = "1.0.0"
 async-trait = "0.1.54"

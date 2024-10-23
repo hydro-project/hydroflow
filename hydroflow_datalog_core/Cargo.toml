@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/hydroflow_datalog_core/"
 description = "Datalog implementation for Hydroflow"
 
+[lints]
+workspace = true
+
 [lib]
 path = "src/lib.rs"
 
@@ -19,11 +22,11 @@ quote = "1.0.35"
 slotmap = "1.0.0"
 syn = { version = "2.0.46", features = [ "parsing", "extra-traits" ] }
 proc-macro2 = "1.0.74"
-rust-sitter = "0.4.2"
+rust-sitter = "0.4.3"
 hydroflow_lang = { path = "../hydroflow_lang", version = "^0.9.0" }
 
 [build-dependencies]
-rust-sitter-tool = "0.4.2"
+rust-sitter-tool = "0.4.3"
 
 [dev-dependencies]
 insta = "1.39"

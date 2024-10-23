@@ -167,7 +167,7 @@ where
     ) -> Result<(), Self::Err> {
         let src_str = format!("{:?}", src_id.data());
         let dest_str = format!("{:?}", dst_id.data());
-        #[allow(clippy::write_literal)]
+        #[expect(clippy::write_literal, reason = "code readability")]
         write!(
             self.write,
             "{src}{arrow_body}{arrow_head}{label}{dst}",

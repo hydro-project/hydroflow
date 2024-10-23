@@ -1,5 +1,3 @@
-#![allow(clippy::let_and_return)]
-
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;

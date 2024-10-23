@@ -1,6 +1,5 @@
-#![allow(dead_code)]
-#![allow(clippy::iter_with_drain)]
-#![allow(clippy::explicit_auto_deref)]
+#![allow(clippy::allow_attributes, dead_code, reason = "deprecated code")]
+
 use anyhow::bail;
 use sexp::Sexp;
 

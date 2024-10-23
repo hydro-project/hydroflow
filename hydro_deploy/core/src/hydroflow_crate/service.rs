@@ -47,7 +47,7 @@ pub struct HydroflowCrateService {
 }
 
 impl HydroflowCrateService {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments, reason = "internal code")]
     pub fn new(
         id: usize,
         src: PathBuf,

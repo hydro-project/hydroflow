@@ -45,12 +45,12 @@ impl Deployment {
         ret
     }
 
-    #[allow(non_snake_case)]
+    #[expect(non_snake_case, reason = "constructor-esque")]
     pub fn Localhost(&self) -> Arc<LocalhostHost> {
         self.localhost_host.clone().unwrap()
     }
 
-    #[allow(non_snake_case)]
+    #[expect(non_snake_case, reason = "constructor-esque")]
     pub fn CustomService(
         &mut self,
         on: Arc<dyn Host>,
@@ -69,9 +69,27 @@ impl Deployment {
         Ok(())
     }
 
+    /// Runs `start()`, waits for the trigger future, then runs `stop()`.
+    /// This is useful if you need to initiate external network connections between
+    /// `deploy()` and `start()`.
+    pub async fn start_until(&mut self, trigger: impl Future<Output = ()>) -> Result<()> {
+        // TODO(mingwei): should `trigger` interrupt `deploy()` and `start()`? If so make sure shutdown works as expected.
+        self.start().await?;
+        trigger.await;
+        self.stop().await?;
+        Ok(())
+    }
+
     /// Runs `deploy()`, and `start()`, waits for CTRL+C, then runs `stop()`.
     pub async fn run_ctrl_c(&mut self) -> Result<()> {
         self.run_until(tokio::signal::ctrl_c().map(|_| ())).await
+    }
+
+    /// Runs `start()`, waits for CTRL+C, then runs `stop()`.
+    /// This is useful if you need to initiate external network connections between
+    /// `deploy()` and `start()`.
+    pub async fn start_ctrl_c(&mut self) -> Result<()> {
+        self.start_until(tokio::signal::ctrl_c().map(|_| ())).await
     }
 
     pub async fn deploy(&mut self) -> Result<()> {
@@ -201,7 +219,6 @@ impl Deployment {
 /// Buildstructor methods.
 #[buildstructor::buildstructor]
 impl Deployment {
-    #[allow(clippy::too_many_arguments)]
     #[builder(entry = "GcpComputeEngineHost", exit = "add")]
     pub fn add_gcp_compute_engine_host(
         &mut self,
@@ -229,7 +246,6 @@ impl Deployment {
         })
     }
 
-    #[allow(clippy::too_many_arguments)]
     #[builder(entry = "AzureHost", exit = "add")]
     pub fn add_azure_host(
         &mut self,

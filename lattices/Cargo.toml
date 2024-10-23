@@ -7,6 +7,9 @@ license = "Apache-2.0"
 documentation = "https://docs.rs/lattices/"
 description = "Lattice data types for simplifying distributed state by providing associativity, commutativity, and idempotence."
 
+[lints]
+workspace = true
+
 [features]
 default = []
 serde = ["dep:serde"]

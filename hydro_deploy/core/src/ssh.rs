@@ -447,7 +447,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
         let port = addr.port();
 
         tokio::spawn(async move {
-            #[allow(clippy::never_loop)]
+            #[expect(clippy::never_loop, reason = "tcp accept loop pattern")]
             while let Ok((mut local_stream, _)) = local_port.accept().await {
                 let mut channel = session
                     .channel_direct_tcpip(&internal_ip, port, None)

@@ -1,12 +1,42 @@
+use std::future::Future;
+use std::io::Error;
+use std::pin::Pin;
+
+use hydroflow::bytes::Bytes;
+use hydroflow::futures::{Sink, Stream};
 use hydroflow_lang::graph::HydroflowGraph;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use stageleft::Quoted;
 
-pub mod graphs;
-pub use graphs::*;
+#[cfg(feature = "deploy_runtime")]
+pub mod macro_runtime;
+
+#[cfg(feature = "deploy")]
+pub(crate) mod trybuild;
+
+pub use macro_runtime::*;
+#[cfg(feature = "deploy")]
+pub use trybuild::init_test;
+
+#[cfg(feature = "deploy_runtime")]
+pub mod deploy_runtime;
+#[cfg(feature = "deploy_runtime")]
+pub use deploy_runtime::HydroflowPlusMeta;
+
+#[cfg(feature = "deploy")]
+pub mod deploy_graph;
+
+#[cfg(feature = "deploy")]
+pub use deploy_graph::*;
+
+pub mod in_memory_graph;
+pub use in_memory_graph::*;
 
 pub trait LocalDeploy<'a> {
     type Process: Node<Meta = Self::Meta>;
     type Cluster: Node<Meta = Self::Meta>;
+    type ExternalProcess: Node<Meta = Self::Meta>;
     type Meta: Default;
     type GraphId;
 
@@ -29,8 +59,10 @@ pub trait Deploy<'a> {
 
     type Process: Node<Meta = Self::Meta, InstantiateEnv = Self::InstantiateEnv> + Clone;
     type Cluster: Node<Meta = Self::Meta, InstantiateEnv = Self::InstantiateEnv> + Clone;
-    type ProcessPort;
-    type ClusterPort;
+    type ExternalProcess: Node<Meta = Self::Meta, InstantiateEnv = Self::InstantiateEnv>
+        + RegisterPort<'a, Self>;
+    type Port: Clone;
+    type ExternalRawPort;
     type Meta: Default;
 
     /// Type of ID used to switch between different subgraphs at runtime.
@@ -48,64 +80,93 @@ pub trait Deploy<'a> {
         panic!("No trivial cluster")
     }
 
-    fn allocate_process_port(process: &Self::Process) -> Self::ProcessPort;
-    fn allocate_cluster_port(cluster: &Self::Cluster) -> Self::ClusterPort;
+    fn allocate_process_port(process: &Self::Process) -> Self::Port;
+    fn allocate_cluster_port(cluster: &Self::Cluster) -> Self::Port;
+    fn allocate_external_port(external: &Self::ExternalProcess) -> Self::Port;
 
     fn o2o_sink_source(
         compile_env: &Self::CompileEnv,
         p1: &Self::Process,
-        p1_port: &Self::ProcessPort,
+        p1_port: &Self::Port,
         p2: &Self::Process,
-        p2_port: &Self::ProcessPort,
+        p2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr);
     fn o2o_connect(
         p1: &Self::Process,
-        p1_port: &Self::ProcessPort,
+        p1_port: &Self::Port,
         p2: &Self::Process,
-        p2_port: &Self::ProcessPort,
-    );
+        p2_port: &Self::Port,
+    ) -> Box<dyn FnOnce()>;
 
     fn o2m_sink_source(
         compile_env: &Self::CompileEnv,
         p1: &Self::Process,
-        p1_port: &Self::ProcessPort,
+        p1_port: &Self::Port,
         c2: &Self::Cluster,
-        c2_port: &Self::ClusterPort,
+        c2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr);
     fn o2m_connect(
         p1: &Self::Process,
-        p1_port: &Self::ProcessPort,
+        p1_port: &Self::Port,
         c2: &Self::Cluster,
-        c2_port: &Self::ClusterPort,
-    );
+        c2_port: &Self::Port,
+    ) -> Box<dyn FnOnce()>;
 
     fn m2o_sink_source(
         compile_env: &Self::CompileEnv,
         c1: &Self::Cluster,
-        c1_port: &Self::ClusterPort,
+        c1_port: &Self::Port,
         p2: &Self::Process,
-        p2_port: &Self::ProcessPort,
+        p2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr);
     fn m2o_connect(
         c1: &Self::Cluster,
-        c1_port: &Self::ClusterPort,
+        c1_port: &Self::Port,
         p2: &Self::Process,
-        p2_port: &Self::ProcessPort,
-    );
+        p2_port: &Self::Port,
+    ) -> Box<dyn FnOnce()>;
 
     fn m2m_sink_source(
         compile_env: &Self::CompileEnv,
         c1: &Self::Cluster,
-        c1_port: &Self::ClusterPort,
+        c1_port: &Self::Port,
         c2: &Self::Cluster,
-        c2_port: &Self::ClusterPort,
+        c2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr);
     fn m2m_connect(
         c1: &Self::Cluster,
-        c1_port: &Self::ClusterPort,
+        c1_port: &Self::Port,
         c2: &Self::Cluster,
-        c2_port: &Self::ClusterPort,
-    );
+        c2_port: &Self::Port,
+    ) -> Box<dyn FnOnce()>;
+
+    fn e2o_source(
+        compile_env: &Self::CompileEnv,
+        p1: &Self::ExternalProcess,
+        p1_port: &Self::Port,
+        p2: &Self::Process,
+        p2_port: &Self::Port,
+    ) -> syn::Expr;
+    fn e2o_connect(
+        p1: &Self::ExternalProcess,
+        p1_port: &Self::Port,
+        p2: &Self::Process,
+        p2_port: &Self::Port,
+    ) -> Box<dyn FnOnce()>;
+
+    fn o2e_sink(
+        compile_env: &Self::CompileEnv,
+        p1: &Self::Process,
+        p1_port: &Self::Port,
+        p2: &Self::ExternalProcess,
+        p2_port: &Self::Port,
+    ) -> syn::Expr;
+    fn o2e_connect(
+        p1: &Self::Process,
+        p1_port: &Self::Port,
+        p2: &Self::ExternalProcess,
+        p2_port: &Self::Port,
+    ) -> Box<dyn FnOnce()>;
 
     fn cluster_ids(
         env: &Self::CompileEnv,
@@ -116,15 +177,17 @@ pub trait Deploy<'a> {
 
 impl<
         'a,
-        T: Deploy<'a, Process = N, Cluster = C, Meta = M, GraphId = R>,
+        T: Deploy<'a, Process = N, Cluster = C, ExternalProcess = E, Meta = M, GraphId = R>,
         N: Node<Meta = M>,
         C: Node<Meta = M>,
+        E: Node<Meta = M>,
         M: Default,
         R,
     > LocalDeploy<'a> for T
 {
     type Process = N;
     type Cluster = C;
+    type ExternalProcess = E;
     type Meta = M;
     type GraphId = R;
 
@@ -149,6 +212,10 @@ pub trait ClusterSpec<'a, D: LocalDeploy<'a> + ?Sized> {
     fn build(self, id: usize, name_hint: &str) -> D::Cluster;
 }
 
+pub trait ExternalSpec<'a, D: LocalDeploy<'a> + ?Sized> {
+    fn build(self, id: usize, name_hint: &str) -> D::ExternalProcess;
+}
+
 pub trait Node {
     type Port;
     type Meta;
@@ -165,4 +232,29 @@ pub trait Node {
         graph: HydroflowGraph,
         extra_stmts: Vec<syn::Stmt>,
     );
+}
+
+pub trait RegisterPort<'a, D: Deploy<'a> + ?Sized>: Clone {
+    fn register(&self, key: usize, port: D::Port);
+    fn raw_port(&self, key: usize) -> D::ExternalRawPort;
+
+    fn as_bytes_sink(
+        &self,
+        key: usize,
+    ) -> impl Future<Output = Pin<Box<dyn Sink<Bytes, Error = Error>>>> + 'a;
+
+    fn as_bincode_sink<T: Serialize + 'static>(
+        &self,
+        key: usize,
+    ) -> impl Future<Output = Pin<Box<dyn Sink<T, Error = Error>>>> + 'a;
+
+    fn as_bytes_source(
+        &self,
+        key: usize,
+    ) -> impl Future<Output = Pin<Box<dyn Stream<Item = Bytes>>>> + 'a;
+
+    fn as_bincode_source<T: DeserializeOwned + 'static>(
+        &self,
+        key: usize,
+    ) -> impl Future<Output = Pin<Box<dyn Stream<Item = T>>>> + 'a;
 }
