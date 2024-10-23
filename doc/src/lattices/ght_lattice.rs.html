@@ -446,9 +446,9 @@
 <a href="#446" id="446">446</a>
 <a href="#447" id="447">447</a>
 <a href="#448" id="448">448</a>
-<a href="#449" id="449">449</a>
-<a href="#450" id="450">450</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>core::cmp::Ordering::{Equal, Greater, Less};
+</pre></div><pre class="rust"><code><span class="doccomment">//! Lattice traits for GHT
+
+</span><span class="kw">use </span>core::cmp::Ordering::{Equal, Greater, Less};
 <span class="kw">use </span>std::cmp::Ordering;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::hash::Hash;
@@ -459,11 +459,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
 <span class="kw">use crate</span>::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
 
-<span class="comment">//////////////////////////
-</span><span class="doccomment">/// Lattice traits for GHT
-</span><span class="comment">//////////////////////////
-
-</span><span class="kw">impl</span>&lt;Head, Node&gt; Merge&lt;GhtInner&lt;Head, Node&gt;&gt; <span class="kw">for </span>GhtInner&lt;Head, Node&gt;
+<span class="kw">impl</span>&lt;Head, Node&gt; Merge&lt;GhtInner&lt;Head, Node&gt;&gt; <span class="kw">for </span>GhtInner&lt;Head, Node&gt;
 <span class="kw">where
     </span>Node: GeneralizedHashTrieNode + Merge&lt;Node&gt;,
     Node::Storage: VariadicSet&lt;Schema = Node::Schema&gt;, <span class="comment">// multiset is not a lattice!
