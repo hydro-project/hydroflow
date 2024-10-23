@@ -200,6 +200,7 @@ impl Deployment {
         image: String,
         region: String,
         network: GcpNetwork,
+        architecture: Option<String>,
         user: Option<String>,
         startup_script: Option<String>,
     ) -> PyResult<Py<PyAny>> {
@@ -208,6 +209,7 @@ impl Deployment {
                 id,
                 project,
                 machine_type,
+                architecture,
                 image,
                 region,
                 network.underlying,

@@ -90,16 +90,16 @@ pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildO
             ProgressTracker::rich_leaf("build", move |set_msg| async move {
                 tokio::task::spawn_blocking(move || {
                     let mut command = Command::new("cargo");
-                    command.args([
-                        "build".to_string(),
-                        "--profile".to_string(),
-                        params.profile.unwrap_or("release".to_string()),
-                    ]);
                     // command.args([
-                    //     "zigbuild".to_string(),
+                    //     "build".to_string(),
                     //     "--profile".to_string(),
                     //     params.profile.unwrap_or("release".to_string()),
                     // ]);
+                    command.args([
+                        "zigbuild".to_string(),
+                        "--profile".to_string(),
+                        params.profile.unwrap_or("release".to_string()),
+                    ]);
 
                     // if let Some(profile) = params.profile.as_ref() {
                     //     command.args(["--profile", profile]);
