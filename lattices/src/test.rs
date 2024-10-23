@@ -329,8 +329,8 @@ pub fn cartesian_power<T, const N: usize>(
             (size, Some(size))
         }
     }
-    impl<'a, T, const N: usize> ExactSizeIterator for CartesianPower<'a, T, N> {}
-    impl<'a, T, const N: usize> Clone for CartesianPower<'a, T, N> {
+    impl<T, const N: usize> ExactSizeIterator for CartesianPower<'_, T, N> {}
+    impl<T, const N: usize> Clone for CartesianPower<'_, T, N> {
         fn clone(&self) -> Self {
             Self {
                 items: self.items,
