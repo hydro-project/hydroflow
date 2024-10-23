@@ -160,8 +160,7 @@ pub enum HostTargetType {
 
 pub type HostStrategyGetter = Box<dyn FnOnce(&dyn std::any::Any) -> ServerStrategy>;
 
-/*
-
+#[async_trait]
 pub trait Host: Send + Sync {
     fn target_type(&self) -> HostTargetType;
 
@@ -169,6 +168,9 @@ pub trait Host: Send + Sync {
 
     /// An identifier for this host, which is unique within a deployment.
     fn id(&self) -> usize;
+
+    /// Returns a reference to the host as a trait object.
+    fn as_any(&self) -> &dyn std::any::Any;
 
     /// Configures the host to support copying and running a custom binary.
     fn request_custom_binary(&self);
@@ -187,44 +189,6 @@ pub trait Host: Send + Sync {
 
     /// Identifies a network type that this host can use for connections if it is the server.
     /// The host will be `None` if the connection is from the same host as the target.
-    fn strategy_as_server<'a>(
-        &'a self,
-        connection_from: &dyn Host,
-    ) -> Result<(ClientStrategy<'a>, HostStrategyGetter)>;
-
-    /// Determines whether this host can connect to another host using the given strategy.
-    fn can_connect_to(&self, typ: ClientStrategy) -> bool;
-
-    /// Returns a reference to the host as a trait object.
-    fn as_any(&self) -> &dyn std::any::Any;
-}
-*/
-#[async_trait]
-pub trait Host: Send + Sync {
-    fn target_type(&self) -> HostTargetType;
-
-    fn request_port(&self, bind_type: &ServerStrategy);
-
-    /// An identifier for this host, which is unique within a deployment.
-    fn id(&self) -> usize;
-
-    /// Returns a reference to the host as a trait object.
-    fn as_any(&self) -> &dyn std::any::Any;
-
-    /// Configures the host to support copying and running a custom binary.
-    fn request_custom_binary(&self);
-
-    /// Makes requests for physical resources (servers) that this host needs to run.
-    fn collect_resources(&self, resource_batch: &mut ResourceBatch);
-
-    /// Connects to the acquired resources and prepares the host to run services.
-    async fn provision(&self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost>;
-
-    fn launched(&self) -> Option<Arc<dyn LaunchedHost>>;
-
-    /// Identifies a network type that this host can use for connections if it is the server.
-    /// The host will be `None` if the connection is from the same host as the target.
-
     fn strategy_as_server<'a>(
         &'a self,
         connection_from: &dyn Host,
