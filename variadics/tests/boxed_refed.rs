@@ -29,7 +29,8 @@ impl<Item, Rest> Refed for (Item, Rest)
 where
     Rest: Refed,
 {
-    type Refed<'a> = (&'a Item, Rest::Refed<'a>)
+    type Refed<'a>
+        = (&'a Item, Rest::Refed<'a>)
     where
         Self: 'a;
     fn refed(&self) -> Self::Refed<'_> {

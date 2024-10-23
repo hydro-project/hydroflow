@@ -284,7 +284,7 @@ pub struct ExternalProcess<'a, P> {
     pub(crate) _phantom: PhantomData<&'a &'a mut P>,
 }
 
-impl<'a, P> Clone for ExternalProcess<'a, P> {
+impl<P> Clone for ExternalProcess<'_, P> {
     fn clone(&self) -> Self {
         ExternalProcess {
             id: self.id,
@@ -385,7 +385,7 @@ pub struct Process<'a, P> {
     pub(crate) _phantom: PhantomData<&'a &'a mut P>,
 }
 
-impl<'a, P> Clone for Process<'a, P> {
+impl<P> Clone for Process<'_, P> {
     fn clone(&self) -> Self {
         Process {
             id: self.id,
@@ -519,7 +519,7 @@ impl<'a, C> Cluster<'a, C> {
     }
 }
 
-impl<'a, C> Clone for Cluster<'a, C> {
+impl<C> Clone for Cluster<'_, C> {
     fn clone(&self) -> Self {
         Cluster {
             id: self.id,

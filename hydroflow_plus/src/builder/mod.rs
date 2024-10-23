@@ -37,13 +37,13 @@ pub struct ClusterIds<'a, C> {
     pub(crate) _phantom: PhantomData<&'a mut &'a C>,
 }
 
-impl<'a, C> Clone for ClusterIds<'a, C> {
+impl<C> Clone for ClusterIds<'_, C> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<'a, C> Copy for ClusterIds<'a, C> {}
+impl<C> Copy for ClusterIds<'_, C> {}
 
 impl<'a, C> FreeVariable<&'a Vec<ClusterId<C>>> for ClusterIds<'a, C> {
     fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>)
@@ -72,15 +72,15 @@ pub(crate) struct ClusterSelfId<'a, C> {
     pub(crate) _phantom: PhantomData<&'a mut &'a C>,
 }
 
-impl<'a, C> Clone for ClusterSelfId<'a, C> {
+impl<C> Clone for ClusterSelfId<'_, C> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<'a, C> Copy for ClusterSelfId<'a, C> {}
+impl<C> Copy for ClusterSelfId<'_, C> {}
 
-impl<'a, C> FreeVariable<ClusterId<C>> for ClusterSelfId<'a, C> {
+impl<C> FreeVariable<ClusterId<C>> for ClusterSelfId<'_, C> {
     fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>)
     where
         Self: Sized,
@@ -118,7 +118,7 @@ pub struct FlowBuilder<'a> {
     _phantom: PhantomData<&'a mut &'a ()>,
 }
 
-impl<'a> Drop for FlowBuilder<'a> {
+impl Drop for FlowBuilder<'_> {
     fn drop(&mut self) {
         if !self.finalized {
             panic!("Dropped FlowBuilder without finalizing, you may have forgotten to call `with_default_optimize`, `optimize_with`, or `finalize`.");
@@ -126,7 +126,7 @@ impl<'a> Drop for FlowBuilder<'a> {
     }
 }
 
-impl<'a> QuotedContext for FlowBuilder<'a> {
+impl QuotedContext for FlowBuilder<'_> {
     fn create() -> Self {
         FlowBuilder::new()
     }

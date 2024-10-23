@@ -12,7 +12,7 @@ where
     pos_state: &'a mut FxHashSet<(Key, V)>,
 }
 
-impl<'a, Key, V, Ipos> Iterator for AntiJoin<'a, Key, V, Ipos>
+impl<Key, V, Ipos> Iterator for AntiJoin<'_, Key, V, Ipos>
 where
     Key: Eq + std::hash::Hash + Clone,
     V: Eq + std::hash::Hash + Clone,

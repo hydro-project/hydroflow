@@ -295,7 +295,7 @@ impl Node for DeployRuntimeCluster {
     }
 }
 
-impl<'a> ProcessSpec<'a, DeployRuntime> for () {
+impl ProcessSpec<'_, DeployRuntime> for () {
     fn build(self, _id: usize, _name_hint: &str) -> DeployRuntimeNode {
         DeployRuntimeNode {
             next_port: Rc::new(RefCell::new(0)),
@@ -303,7 +303,7 @@ impl<'a> ProcessSpec<'a, DeployRuntime> for () {
     }
 }
 
-impl<'cli> ClusterSpec<'cli, DeployRuntime> for () {
+impl ClusterSpec<'_, DeployRuntime> for () {
     fn build(self, _id: usize, _name_hint: &str) -> DeployRuntimeCluster {
         DeployRuntimeCluster {
             next_port: Rc::new(RefCell::new(0)),
@@ -311,7 +311,7 @@ impl<'cli> ClusterSpec<'cli, DeployRuntime> for () {
     }
 }
 
-impl<'cli> ExternalSpec<'cli, DeployRuntime> for () {
+impl ExternalSpec<'_, DeployRuntime> for () {
     fn build(self, _id: usize, _name_hint: &str) -> DeployRuntimeNode {
         panic!()
     }

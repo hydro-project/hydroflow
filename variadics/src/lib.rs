@@ -209,7 +209,10 @@ where
 {
     const LEN: usize = 1 + Rest::LEN;
 
-    type Extend<Suffix> = (Item, Rest::Extend<Suffix>) where Suffix: VariadicExt;
+    type Extend<Suffix>
+        = (Item, Rest::Extend<Suffix>)
+    where
+        Suffix: VariadicExt;
     fn extend<Suffix>(self, suffix: Suffix) -> Self::Extend<Suffix>
     where
         Suffix: VariadicExt,
@@ -232,7 +235,8 @@ where
         out2
     }
 
-    type AsRefVar<'a> = (&'a Item, Rest::AsRefVar<'a>)
+    type AsRefVar<'a>
+        = (&'a Item, Rest::AsRefVar<'a>)
     where
         Self: 'a;
     fn as_ref_var(&self) -> Self::AsRefVar<'_> {
@@ -240,7 +244,8 @@ where
         (item, rest.as_ref_var())
     }
 
-    type AsMutVar<'a> = (&'a mut Item, Rest::AsMutVar<'a>)
+    type AsMutVar<'a>
+        = (&'a mut Item, Rest::AsMutVar<'a>)
     where
         Self: 'a;
     fn as_mut_var(&mut self) -> Self::AsMutVar<'_> {
@@ -248,7 +253,8 @@ where
         (item, rest.as_mut_var())
     }
 
-    type IterAnyRef<'a> = std::iter::Chain<std::iter::Once<&'a dyn Any>, Rest::IterAnyRef<'a>>
+    type IterAnyRef<'a>
+        = std::iter::Chain<std::iter::Once<&'a dyn Any>, Rest::IterAnyRef<'a>>
     where
         Self: 'static;
     fn iter_any_ref(&self) -> Self::IterAnyRef<'_>
@@ -260,7 +266,8 @@ where
         std::iter::once(item).chain(rest.iter_any_ref())
     }
 
-    type IterAnyMut<'a> = std::iter::Chain<std::iter::Once<&'a mut dyn Any>, Rest::IterAnyMut<'a>>
+    type IterAnyMut<'a>
+        = std::iter::Chain<std::iter::Once<&'a mut dyn Any>, Rest::IterAnyMut<'a>>
     where
         Self: 'static;
     fn iter_any_mut(&mut self) -> Self::IterAnyMut<'_>
@@ -289,7 +296,10 @@ where
 impl VariadicExt for () {
     const LEN: usize = 0;
 
-    type Extend<Suffix> = Suffix where Suffix: VariadicExt;
+    type Extend<Suffix>
+        = Suffix
+    where
+        Suffix: VariadicExt;
     fn extend<Suffix>(self, suffix: Suffix) -> Self::Extend<Suffix>
     where
         Suffix: VariadicExt,
@@ -307,7 +317,8 @@ impl VariadicExt for () {
     type AsMutVar<'a> = ();
     fn as_mut_var(&mut self) -> Self::AsMutVar<'_> {}
 
-    type IterAnyRef<'a> = std::iter::Empty<&'a dyn Any>
+    type IterAnyRef<'a>
+        = std::iter::Empty<&'a dyn Any>
     where
         Self: 'static;
     fn iter_any_ref(&self) -> Self::IterAnyRef<'_>
@@ -317,7 +328,8 @@ impl VariadicExt for () {
         std::iter::empty()
     }
 
-    type IterAnyMut<'a> = std::iter::Empty<&'a mut dyn Any>
+    type IterAnyMut<'a>
+        = std::iter::Empty<&'a mut dyn Any>
     where
         Self: 'static;
     fn iter_any_mut(&mut self) -> Self::IterAnyMut<'_>
@@ -820,7 +832,10 @@ where
         std::iter::zip(this, rest.into_zip())
     }
 
-    type Drain<'a> = std::iter::Zip<std::vec::Drain<'a, Item>, Rest::Drain<'a>> where Self: 'a;
+    type Drain<'a>
+        = std::iter::Zip<std::vec::Drain<'a, Item>, Rest::Drain<'a>>
+    where
+        Self: 'a;
     fn drain<R>(&mut self, range: R) -> Self::Drain<'_>
     where
         R: std::ops::RangeBounds<usize> + Clone,
@@ -849,7 +864,10 @@ impl VecVariadic for var_type!() {
         std::iter::repeat(var_expr!())
     }
 
-    type Drain<'a> = std::iter::Repeat<var_type!()> where Self: 'a;
+    type Drain<'a>
+        = std::iter::Repeat<var_type!()>
+    where
+        Self: 'a;
     fn drain<R>(&mut self, _range: R) -> Self::Drain<'_>
     where
         R: std::ops::RangeBounds<usize>,

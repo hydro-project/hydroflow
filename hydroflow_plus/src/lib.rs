@@ -64,7 +64,7 @@ pub struct HfCompiled<'a, ID> {
     _phantom: PhantomData<&'a mut &'a ID>,
 }
 
-impl<'a, ID> HfCompiled<'a, ID> {
+impl<ID> HfCompiled<'_, ID> {
     pub fn hydroflow_ir(&self) -> &BTreeMap<usize, HydroflowGraph> {
         &self.hydroflow_ir
     }

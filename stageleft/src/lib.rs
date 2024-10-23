@@ -102,7 +102,7 @@ pub struct BorrowBounds<'a> {
     _marker: PhantomData<&'a &'a mut ()>,
 }
 
-impl<'a> QuotedContext for BorrowBounds<'a> {
+impl QuotedContext for BorrowBounds<'_> {
     fn create() -> Self {
         BorrowBounds {
             _marker: PhantomData,
@@ -242,9 +242,8 @@ impl<
 }
 
 impl<
-        'a,
         T,
-        F: FnOnce(&mut String, &mut &'static str, &mut TokenStream, &mut CaptureVec, bool) -> T + 'a,
+        F: FnOnce(&mut String, &mut &'static str, &mut TokenStream, &mut CaptureVec, bool) -> T,
     > FreeVariable<T> for F
 {
     fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {

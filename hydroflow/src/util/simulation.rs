@@ -177,7 +177,7 @@ fn sink_from_fn<T>(mut f: impl FnMut(T)) -> impl Sink<T, Error = Infallible> {
     })
 }
 
-impl<'context> TransducerBuilderContext<'context> {
+impl TransducerBuilderContext<'_> {
     /// Create a new inbox on the host with the given interface name. Returns a stream that can
     /// be read by the transducer using the source_stream hydroflow operator.
     pub fn new_inbox<T: 'static>(
