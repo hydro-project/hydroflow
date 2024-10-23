@@ -1,3 +1,4 @@
+#![doc = include_str!("../README.md")]
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
@@ -20,42 +21,19 @@ impl Parse for InputLen {
     }
 }
 
-fn gen_pattern(c: &str, remaining: usize, current: usize) -> proc_macro2::TokenStream {
-    if remaining >= 1 {
-        let identifier = format_ident!("{}", c.repeat(current));
-        let inner = gen_pattern(c, remaining - 1, current + 1);
-        quote! { (#identifier, #inner) }
-    } else {
-        quote! { () }
-    }
-}
-
-fn gen_tuple(c: &str, remaining: usize, current: usize) -> proc_macro2::TokenStream {
-    let identifier = format_ident!("{}", c.repeat(current));
-
-    if remaining > 1 {
-        // Continue to generate the next elements in the tuple.
-        let inner = gen_tuple(c, remaining - 1, current + 1);
-        if current == 1 {
-            // At the first call, wrap all accumulated elements in a tuple.
-            quote! { (#identifier, #inner) }
-        } else {
-            // Accumulate elements by appending them.
-            quote! { #identifier, #inner }
-        }
-    } else {
-        // The base case of recursion: return the last element.
-        quote! { #identifier }
-    }
-}
-
 #[proc_macro]
 pub fn tuple(ts: TokenStream) -> TokenStream {
     let InputLen { input, len } = parse_macro_input!(ts as InputLen);
-    let c = "x";
     let len = len.base10_parse::<usize>().unwrap();
-    let pattern = gen_pattern(c, len, 1);
-    let tuple = gen_tuple(c, len, 1);
+    // let pattern = gen_pattern(len, 1);
+    let pattern = (0..len)
+        .rev()
+        .map(|i| format_ident!("x{}", i))
+        .fold(quote! { () }, |rest, item| quote! { (#item, #rest) });
+    let idents = (0..len).map(|i| format_ident!("x{}", i));
+    let tuple = quote! {
+        ( #( #idents, )* )
+    };
 
     // Create the assignment statement
     let expanded = quote! {

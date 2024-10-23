@@ -454,15 +454,7 @@ mod test {
     use variadics_macro::tuple;
 
     #[test]
-    fn test_tuple_macro() {
-        let tup = var_expr!(1, 2, 3, "four");
-        let a = tuple!(tup, 4);
-        assert_eq!(a, (1, 2, 3, "four"));
-
-        let tup = var_expr!(1, 2, var_expr!(3));
-        let b = tuple!(tup, 3);
-        assert_eq!(b, (1, 2, (3, ())));
-
+    fn test_ght_with_tuple_macro() {
         type MyRoot = GhtType!(u16, u32 => u64: VariadicCountedHashSet);
 
         let mut trie1 = MyRoot::default();
