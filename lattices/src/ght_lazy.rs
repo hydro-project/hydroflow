@@ -16,9 +16,9 @@ use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
 /// starting with a trie of height 0 and continuing until a trie of height |key| - 1.
 /// Our `force` method does not add a node above a leaf L as in the paper. Instead
 /// it `take`s L from the current trie and merges it into the next trie to the right which is 1 taller.
-
-/// A trait for the behavior we need from the nodes in a COLT forest. Every `ColtForestNode`
-/// is a `GeneralizedHashTrieNode` with some extra methods.
+//
+/// The following trait provides the behavior we need from the nodes in a COLT forest. Every
+/// `ColtForestNode` is a `GeneralizedHashTrieNode` with some extra methods.
 pub trait ColtForestNode: GeneralizedHashTrieNode {
     /// result of `force`ing a node
     type Force: GeneralizedHashTrieNode;

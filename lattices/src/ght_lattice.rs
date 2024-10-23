@@ -1,3 +1,5 @@
+//! Lattice traits for GHT
+
 use core::cmp::Ordering::{Equal, Greater, Less};
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -8,10 +10,6 @@ use variadics::{var_expr, var_type, CloneVariadic, PartialEqVariadic, SplitBySuf
 
 use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
 use crate::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
-
-//////////////////////////
-/// Lattice traits for GHT
-//////////////////////////
 
 impl<Head, Node> Merge<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
