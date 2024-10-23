@@ -17,9 +17,9 @@ use super::ops::{
     WriteContextArgs, OPERATORS,
 };
 use super::{
-    change_spans, get_operator_generics, Color, DiMulGraph, GraphEdgeId, GraphNode, GraphNodeId,
-    GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
-    HYDROFLOW, MODULE_BOUNDARY_NODE_STR,
+    change_spans, get_operator_generics, Color, DiMulGraph, GraphEdgeId, GraphLoopId, GraphNode,
+    GraphNodeId, GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT,
+    HANDOFF_NODE_STR, HYDROFLOW, MODULE_BOUNDARY_NODE_STR,
 };
 use crate::diagnostic::{Diagnostic, Level};
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
@@ -47,6 +47,13 @@ pub struct HydroflowGraph {
     graph: DiMulGraph<GraphNodeId, GraphEdgeId>,
     /// Input and output port for each edge.
     ports: SecondaryMap<GraphEdgeId, (PortIndexValue, PortIndexValue)>,
+
+    /// Which loop a node belongs to (or none for top-level).
+    node_loops: SecondaryMap<GraphNodeId, GraphLoopId>,
+    loop_nodes: SlotMap<GraphLoopId, Vec<GraphNodeId>>,
+    /// Loop nesting (`None` for top-level).
+    loop_loops: SecondaryMap<GraphLoopId, Option<GraphLoopId>>,
+
     /// Which subgraph each node belongs to.
     node_subgraph: SecondaryMap<GraphNodeId, GraphSubgraphId>,
 
@@ -198,10 +205,19 @@ impl HydroflowGraph {
     }
 
     /// Insert a node, assigning the given varname.
-    pub fn insert_node(&mut self, node: GraphNode, varname_opt: Option<Ident>) -> GraphNodeId {
+    pub fn insert_node(
+        &mut self,
+        node: GraphNode,
+        varname_opt: Option<Ident>,
+        loop_opt: Option<GraphLoopId>,
+    ) -> GraphNodeId {
         let node_id = self.nodes.insert(node);
         if let Some(varname) = varname_opt {
             self.node_varnames.insert(node_id, Varname(varname));
+        }
+        if let Some(loop_id) = loop_opt {
+            self.node_loops.insert(node_id, loop_id);
+            self.loop_nodes[loop_id].push(node_id);
         }
         node_id
     }
@@ -1518,6 +1534,19 @@ impl HydroflowGraph {
             writeln!(write, "    {:?}-->{:?}", src_key.data(), dst_key.data())?;
         }
         Ok(())
+    }
+}
+
+/// Loops
+impl HydroflowGraph {
+    pub fn insert_loop(&mut self, parent_loop: Option<GraphLoopId>) -> GraphLoopId {
+        let loop_id = self.loop_nodes.insert(Vec::new());
+        self.loop_loops.insert(loop_id, parent_loop);
+        loop_id
+    }
+
+    pub fn node_loop(&self, node_id: GraphNodeId) -> Option<GraphLoopId> {
+        self.node_loops.get(node_id).copied()
     }
 }
 
