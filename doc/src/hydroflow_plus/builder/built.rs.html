@@ -141,9 +141,6 @@
 <a href="#141" id="141">141</a>
 <a href="#142" id="142">142</a>
 <a href="#143" id="143">143</a>
-<a href="#144" id="144">144</a>
-<a href="#145" id="145">145</a>
-<a href="#146" id="146">146</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -164,7 +161,7 @@
     <span class="kw">pub</span>(<span class="kw">super</span>) _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>()&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Drop <span class="kw">for </span>BuiltFlow&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl </span>Drop <span class="kw">for </span>BuiltFlow&lt;<span class="lifetime">'_</span>&gt; {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">if </span>!<span class="self">self</span>.used {
             <span class="macro">panic!</span>(<span class="string">"Dropped BuiltFlow without instantiating, you may have forgotten to call `compile` or `deploy`."</span>);
@@ -172,15 +169,12 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; BuiltFlow&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl </span>BuiltFlow&lt;<span class="lifetime">'_</span>&gt; {
     <span class="kw">pub fn </span>ir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;HfPlusLeaf&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.ir
     }
 
-    <span class="kw">pub fn </span>optimize_with(
-        <span class="kw-2">mut </span><span class="self">self</span>,
-        f: <span class="kw">impl </span>FnOnce(Vec&lt;HfPlusLeaf&gt;) -&gt; Vec&lt;HfPlusLeaf&gt;,
-    ) -&gt; BuiltFlow&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">pub fn </span>optimize_with(<span class="kw-2">mut </span><span class="self">self</span>, f: <span class="kw">impl </span>FnOnce(Vec&lt;HfPlusLeaf&gt;) -&gt; Vec&lt;HfPlusLeaf&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.used = <span class="bool-val">true</span>;
         BuiltFlow {
             ir: f(std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.ir)),

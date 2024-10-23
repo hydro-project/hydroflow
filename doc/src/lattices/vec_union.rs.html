@@ -300,13 +300,13 @@
 {
     <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>VecUnion&lt;LatOther&gt;) -&gt; bool {
         <span class="kw">if </span><span class="self">self</span>.vec.len() != other.vec.len() {
-            <span class="kw">return </span><span class="bool-val">false</span>;
+            <span class="bool-val">false
+        </span>} <span class="kw">else </span>{
+            <span class="self">self</span>.vec
+                .iter()
+                .zip(other.vec.iter())
+                .all(|(val_self, val_other)| val_self == val_other)
         }
-        <span class="kw">return </span><span class="self">self
-            </span>.vec
-            .iter()
-            .zip(other.vec.iter())
-            .all(|(val_self, val_other)| val_self == val_other);
     }
 }
 

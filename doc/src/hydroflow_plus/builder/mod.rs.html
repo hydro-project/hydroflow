@@ -266,13 +266,13 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>C&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, C&gt; Clone <span class="kw">for </span>ClusterIds&lt;<span class="lifetime">'a</span>, C&gt; {
+<span class="kw">impl</span>&lt;C&gt; Clone <span class="kw">for </span>ClusterIds&lt;<span class="lifetime">'_</span>, C&gt; {
     <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         <span class="kw-2">*</span><span class="self">self
     </span>}
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, C&gt; Copy <span class="kw">for </span>ClusterIds&lt;<span class="lifetime">'a</span>, C&gt; {}
+<span class="kw">impl</span>&lt;C&gt; Copy <span class="kw">for </span>ClusterIds&lt;<span class="lifetime">'_</span>, C&gt; {}
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, C&gt; FreeVariable&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>Vec&lt;ClusterId&lt;C&gt;&gt;&gt; <span class="kw">for </span>ClusterIds&lt;<span class="lifetime">'a</span>, C&gt; {
     <span class="kw">fn </span>to_tokens(<span class="self">self</span>) -&gt; (<span class="prelude-ty">Option</span>&lt;TokenStream&gt;, <span class="prelude-ty">Option</span>&lt;TokenStream&gt;)
@@ -301,15 +301,15 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>C&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, C&gt; Clone <span class="kw">for </span>ClusterSelfId&lt;<span class="lifetime">'a</span>, C&gt; {
+<span class="kw">impl</span>&lt;C&gt; Clone <span class="kw">for </span>ClusterSelfId&lt;<span class="lifetime">'_</span>, C&gt; {
     <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         <span class="kw-2">*</span><span class="self">self
     </span>}
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, C&gt; Copy <span class="kw">for </span>ClusterSelfId&lt;<span class="lifetime">'a</span>, C&gt; {}
+<span class="kw">impl</span>&lt;C&gt; Copy <span class="kw">for </span>ClusterSelfId&lt;<span class="lifetime">'_</span>, C&gt; {}
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, C&gt; FreeVariable&lt;ClusterId&lt;C&gt;&gt; <span class="kw">for </span>ClusterSelfId&lt;<span class="lifetime">'a</span>, C&gt; {
+<span class="kw">impl</span>&lt;C&gt; FreeVariable&lt;ClusterId&lt;C&gt;&gt; <span class="kw">for </span>ClusterSelfId&lt;<span class="lifetime">'_</span>, C&gt; {
     <span class="kw">fn </span>to_tokens(<span class="self">self</span>) -&gt; (<span class="prelude-ty">Option</span>&lt;TokenStream&gt;, <span class="prelude-ty">Option</span>&lt;TokenStream&gt;)
     <span class="kw">where
         </span><span class="self">Self</span>: Sized,
@@ -347,7 +347,7 @@
     </span>_phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>()&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Drop <span class="kw">for </span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl </span>Drop <span class="kw">for </span>FlowBuilder&lt;<span class="lifetime">'_</span>&gt; {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">if </span>!<span class="self">self</span>.finalized {
             <span class="macro">panic!</span>(<span class="string">"Dropped FlowBuilder without finalizing, you may have forgotten to call `with_default_optimize`, `optimize_with`, or `finalize`."</span>);
@@ -355,7 +355,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; QuotedContext <span class="kw">for </span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl </span>QuotedContext <span class="kw">for </span>FlowBuilder&lt;<span class="lifetime">'_</span>&gt; {
     <span class="kw">fn </span>create() -&gt; <span class="self">Self </span>{
         FlowBuilder::new()
     }

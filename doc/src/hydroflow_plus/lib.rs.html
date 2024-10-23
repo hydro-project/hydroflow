@@ -242,7 +242,7 @@
     _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>ID&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, ID&gt; HfCompiled&lt;<span class="lifetime">'a</span>, ID&gt; {
+<span class="kw">impl</span>&lt;ID&gt; HfCompiled&lt;<span class="lifetime">'_</span>, ID&gt; {
     <span class="kw">pub fn </span>hydroflow_ir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>BTreeMap&lt;usize, HydroflowGraph&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.hydroflow_ir
     }

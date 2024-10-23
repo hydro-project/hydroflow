@@ -897,7 +897,7 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>P&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P&gt; Clone <span class="kw">for </span>ExternalProcess&lt;<span class="lifetime">'a</span>, P&gt; {
+<span class="kw">impl</span>&lt;P&gt; Clone <span class="kw">for </span>ExternalProcess&lt;<span class="lifetime">'_</span>, P&gt; {
     <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         ExternalProcess {
             id: <span class="self">self</span>.id,
@@ -998,7 +998,7 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>P&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P&gt; Clone <span class="kw">for </span>Process&lt;<span class="lifetime">'a</span>, P&gt; {
+<span class="kw">impl</span>&lt;P&gt; Clone <span class="kw">for </span>Process&lt;<span class="lifetime">'_</span>, P&gt; {
     <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         Process {
             id: <span class="self">self</span>.id,
@@ -1132,7 +1132,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, C&gt; Clone <span class="kw">for </span>Cluster&lt;<span class="lifetime">'a</span>, C&gt; {
+<span class="kw">impl</span>&lt;C&gt; Clone <span class="kw">for </span>Cluster&lt;<span class="lifetime">'_</span>, C&gt; {
     <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         Cluster {
             id: <span class="self">self</span>.id,

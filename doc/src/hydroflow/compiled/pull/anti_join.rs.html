@@ -82,7 +82,7 @@
     pos_state: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>FxHashSet&lt;(Key, V)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, Key, V, Ipos&gt; Iterator <span class="kw">for </span>AntiJoin&lt;<span class="lifetime">'a</span>, Key, V, Ipos&gt;
+<span class="kw">impl</span>&lt;Key, V, Ipos&gt; Iterator <span class="kw">for </span>AntiJoin&lt;<span class="lifetime">'_</span>, Key, V, Ipos&gt;
 <span class="kw">where
     </span>Key: Eq + std::hash::Hash + Clone,
     V: Eq + std::hash::Hash + Clone,

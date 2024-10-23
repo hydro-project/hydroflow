@@ -617,7 +617,7 @@
     })
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'context</span>&gt; TransducerBuilderContext&lt;<span class="lifetime">'context</span>&gt; {
+<span class="kw">impl </span>TransducerBuilderContext&lt;<span class="lifetime">'_</span>&gt; {
     <span class="doccomment">/// Create a new inbox on the host with the given interface name. Returns a stream that can
     /// be read by the transducer using the source_stream hydroflow operator.
     </span><span class="kw">pub fn </span>new_inbox&lt;T: <span class="lifetime">'static</span>&gt;(

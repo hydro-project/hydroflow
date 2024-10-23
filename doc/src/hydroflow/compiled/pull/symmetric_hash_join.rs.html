@@ -188,8 +188,8 @@
     rhs_state: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>RhsState,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, Key, I1, V1, I2, V2, LhsState, RhsState&gt; Iterator
-    <span class="kw">for </span>SymmetricHashJoin&lt;<span class="lifetime">'a</span>, Key, I1, V1, I2, V2, LhsState, RhsState&gt;
+<span class="kw">impl</span>&lt;Key, I1, V1, I2, V2, LhsState, RhsState&gt; Iterator
+    <span class="kw">for </span>SymmetricHashJoin&lt;<span class="lifetime">'_</span>, Key, I1, V1, I2, V2, LhsState, RhsState&gt;
 <span class="kw">where
     </span>Key: Eq + std::hash::Hash + Clone,
     V1: Clone,

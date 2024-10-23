@@ -343,7 +343,7 @@
         W: <span class="lifetime">'static </span>+ Handoff + CanReceive&lt;T&gt;;
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; GraphExt <span class="kw">for </span>Hydroflow&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl </span>GraphExt <span class="kw">for </span>Hydroflow&lt;<span class="lifetime">'_</span>&gt; {
     <span class="macro">subgraph_ext!</span>(<span class="kw">impl </span>add_subgraph_sink, (recv_port: R), ());
     <span class="macro">subgraph_ext!</span>(
         <span class="kw">impl </span>add_subgraph_2sink,
