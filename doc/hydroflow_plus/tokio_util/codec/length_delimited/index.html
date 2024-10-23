@@ -55,34 +55,14 @@ entire frame. There are many configuration parameters enabling
 <a href="../struct.FramedRead.html" title="struct hydroflow_plus::tokio_util::codec::FramedRead"><code>FramedRead</code></a> to handle a wide range of protocols. Here are some
 examples that will cover the various options at a high level.</p>
 <h3 id="example-1"><a class="doc-anchor" href="#example-1">§</a>Example 1</h3>
-<p>The following will parse a <code>u16</code> length field at offset 0, omitting the
-frame head in the yielded <code>BytesMut</code>.</p>
-
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>reader = LengthDelimitedCodec::builder()
-    .length_field_offset(<span class="number">0</span>) <span class="comment">// default value
-    </span>.length_field_type::&lt;u16&gt;()
-    .length_adjustment(<span class="number">0</span>)   <span class="comment">// default value
-    </span>.new_read(io);</code></pre></div>
-<p>The following frame will be decoded as such:</p>
-<div class="example-wrap"><pre class="language-text"><code>         INPUT                        DECODED
-+-- len ---+--- Payload ---+     +--- Payload ---+
-| \x00\x0B |  Hello world  | --&gt; |  Hello world  |
-+----------+---------------+     +---------------+
-</code></pre></div>
-<p>The value of the length field is 11 (<code>\x0B</code>) which represents the length
-of the payload, <code>hello world</code>. By default, <a href="../struct.FramedRead.html" title="struct hydroflow_plus::tokio_util::codec::FramedRead"><code>FramedRead</code></a> assumes that
-the length field represents the number of bytes that <strong>follows</strong> the
-length field. Thus, the entire frame has a length of 13: 2 bytes for the
-frame head + 11 bytes for the payload.</p>
-<h3 id="example-2"><a class="doc-anchor" href="#example-2">§</a>Example 2</h3>
 <p>The following will parse a <code>u16</code> length field at offset 0, including the
 frame head in the yielded <code>BytesMut</code>.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>reader = LengthDelimitedCodec::builder()
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>LengthDelimitedCodec::builder()
     .length_field_offset(<span class="number">0</span>) <span class="comment">// default value
     </span>.length_field_type::&lt;u16&gt;()
-    .length_adjustment(<span class="number">2</span>)   <span class="comment">// Add head size to length
-    </span>.num_skip(<span class="number">0</span>)            <span class="comment">// Do NOT skip the head
+    .length_adjustment(<span class="number">0</span>)   <span class="comment">// default value
+    </span>.num_skip(<span class="number">0</span>) <span class="comment">// Do not strip frame header
     </span>.new_read(io);</code></pre></div>
 <p>The following frame will be decoded as such:</p>
 <div class="example-wrap"><pre class="language-text"><code>         INPUT                           DECODED
@@ -90,25 +70,45 @@ frame head in the yielded <code>BytesMut</code>.</p>
 | \x00\x0B |  Hello world  | --&gt; | \x00\x0B |  Hello world  |
 +----------+---------------+     +----------+---------------+
 </code></pre></div>
-<p>This is similar to the first example, the only difference is that the
-frame head is <strong>included</strong> in the yielded <code>BytesMut</code> value. To achieve
-this, we need to add the header size to the length with <code>length_adjustment</code>,
-and set <code>num_skip</code> to <code>0</code> to prevent skipping the head.</p>
-<h3 id="example-3"><a class="doc-anchor" href="#example-3">§</a>Example 3</h3>
+<p>The value of the length field is 11 (<code>\x0B</code>) which represents the length
+of the payload, <code>hello world</code>. By default, <a href="../struct.FramedRead.html" title="struct hydroflow_plus::tokio_util::codec::FramedRead"><code>FramedRead</code></a> assumes that
+the length field represents the number of bytes that <strong>follows</strong> the
+length field. Thus, the entire frame has a length of 13: 2 bytes for the
+frame head + 11 bytes for the payload.</p>
+<h3 id="example-2"><a class="doc-anchor" href="#example-2">§</a>Example 2</h3>
 <p>The following will parse a <code>u16</code> length field at offset 0, omitting the
+frame head in the yielded <code>BytesMut</code>.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>LengthDelimitedCodec::builder()
+    .length_field_offset(<span class="number">0</span>) <span class="comment">// default value
+    </span>.length_field_type::&lt;u16&gt;()
+    .length_adjustment(<span class="number">0</span>)   <span class="comment">// default value
+    // `num_skip` is not needed, the default is to skip
+    </span>.new_read(io);</code></pre></div>
+<p>The following frame will be decoded as such:</p>
+<div class="example-wrap"><pre class="language-text"><code>         INPUT                        DECODED
++-- len ---+--- Payload ---+     +--- Payload ---+
+| \x00\x0B |  Hello world  | --&gt; |  Hello world  |
++----------+---------------+     +---------------+
+</code></pre></div>
+<p>This is similar to the first example, the only difference is that the
+frame head is <strong>not</strong> included in the yielded <code>BytesMut</code> value.</p>
+<h3 id="example-3"><a class="doc-anchor" href="#example-3">§</a>Example 3</h3>
+<p>The following will parse a <code>u16</code> length field at offset 0, including the
 frame head in the yielded <code>BytesMut</code>. In this case, the length field
 <strong>includes</strong> the frame head length.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>reader = LengthDelimitedCodec::builder()
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>LengthDelimitedCodec::builder()
     .length_field_offset(<span class="number">0</span>) <span class="comment">// default value
     </span>.length_field_type::&lt;u16&gt;()
     .length_adjustment(-<span class="number">2</span>)  <span class="comment">// size of head
-    </span>.new_read(io);</code></pre></div>
+    </span>.num_skip(<span class="number">0</span>)
+    .new_read(io);</code></pre></div>
 <p>The following frame will be decoded as such:</p>
 <div class="example-wrap"><pre class="language-text"><code>         INPUT                           DECODED
-+-- len ---+--- Payload ---+     +--- Payload ---+
-| \x00\x0D |  Hello world  | --&gt; |  Hello world  |
-+----------+---------------+     +---------------+
++-- len ---+--- Payload ---+     +-- len ---+--- Payload ---+
+| \x00\x0D |  Hello world  | --&gt; | \x00\x0D |  Hello world  |
++----------+---------------+     +----------+---------------+
 </code></pre></div>
 <p>In most cases, the length field represents the length of the payload
 only, as shown in the previous examples. However, in some protocols the
@@ -119,10 +119,10 @@ the value provided in the frame head to represent the payload length.</p>
 <p>The following will parse a 3 byte length field at offset 0 in a 5 byte
 frame head, including the frame head in the yielded <code>BytesMut</code>.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>reader = LengthDelimitedCodec::builder()
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>LengthDelimitedCodec::builder()
     .length_field_offset(<span class="number">0</span>) <span class="comment">// default value
     </span>.length_field_length(<span class="number">3</span>)
-    .length_adjustment(<span class="number">3 </span>+ <span class="number">2</span>)  <span class="comment">// len field and remaining head
+    .length_adjustment(<span class="number">2</span>)  <span class="comment">// remaining head
     </span>.num_skip(<span class="number">0</span>)
     .new_read(io);</code></pre></div>
 <p>The following frame will be decoded as such:</p>
@@ -149,7 +149,7 @@ frame head. The first byte and the length field will be omitted from the
 yielded <code>BytesMut</code>, but the trailing 2 bytes of the frame head will be
 included.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>reader = LengthDelimitedCodec::builder()
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>LengthDelimitedCodec::builder()
     .length_field_offset(<span class="number">1</span>) <span class="comment">// length of hdr1
     </span>.length_field_type::&lt;u16&gt;()
     .length_adjustment(<span class="number">1</span>)  <span class="comment">// length of hdr2
@@ -181,7 +181,7 @@ yielded <code>BytesMut</code>, but the trailing 2 bytes of the frame head will b
 included. In this case, the length field <strong>includes</strong> the frame head
 length.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>reader = LengthDelimitedCodec::builder()
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>LengthDelimitedCodec::builder()
     .length_field_offset(<span class="number">1</span>) <span class="comment">// length of hdr1
     </span>.length_field_type::&lt;u16&gt;()
     .length_adjustment(-<span class="number">3</span>)  <span class="comment">// length of hdr1 + LEN, negative
@@ -208,7 +208,7 @@ is read from the byte stream.</p>
 <p>The following will parse a 3 byte length field at offset 0 in a 4 byte
 frame head, excluding the 4th byte from the yielded <code>BytesMut</code>.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>reader = LengthDelimitedCodec::builder()
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>LengthDelimitedCodec::builder()
     .length_field_offset(<span class="number">0</span>) <span class="comment">// default value
     </span>.length_field_length(<span class="number">3</span>)
     .length_adjustment(<span class="number">0</span>)  <span class="comment">// default value

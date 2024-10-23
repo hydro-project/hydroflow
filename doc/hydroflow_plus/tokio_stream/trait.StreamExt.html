@@ -4,35 +4,35 @@
        <span class="where">where Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Unpin.html" title="trait core::marker::Unpin">Unpin</a></span> { ... }
 <span class="item-spacer"></span>    fn <a href="#method.try_next" class="fn">try_next</a>&lt;T, E&gt;(&amp;mut self) -&gt; TryNext&lt;'_, Self&gt;
        <span class="where">where Self: <a class="trait" href="trait.Stream.html" title="trait hydroflow_plus::tokio_stream::Stream">Stream</a>&lt;Item = <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, E&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Unpin.html" title="trait core::marker::Unpin">Unpin</a></span> { ... }
-<span class="item-spacer"></span>    fn <a href="#method.map" class="fn">map</a>&lt;T, F&gt;(self, f: F) -&gt; <a class="struct" href="adapters/struct.Map.html" title="struct hydroflow_plus::tokio_stream::adapters::Map">Map</a>&lt;Self, F&gt;
+<span class="item-spacer"></span>    fn <a href="#method.map" class="fn">map</a>&lt;T, F&gt;(self, f: F) -&gt; Map&lt;Self, F&gt;
        <span class="where">where F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; T,
              Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
-<span class="item-spacer"></span>    fn <a href="#method.map_while" class="fn">map_while</a>&lt;T, F&gt;(self, f: F) -&gt; <a class="struct" href="adapters/struct.MapWhile.html" title="struct hydroflow_plus::tokio_stream::adapters::MapWhile">MapWhile</a>&lt;Self, F&gt;
+<span class="item-spacer"></span>    fn <a href="#method.map_while" class="fn">map_while</a>&lt;T, F&gt;(self, f: F) -&gt; MapWhile&lt;Self, F&gt;
        <span class="where">where F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;T&gt;,
              Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
-<span class="item-spacer"></span>    fn <a href="#method.then" class="fn">then</a>&lt;F, Fut&gt;(self, f: F) -&gt; <a class="struct" href="adapters/struct.Then.html" title="struct hydroflow_plus::tokio_stream::adapters::Then">Then</a>&lt;Self, Fut, F&gt;
+<span class="item-spacer"></span>    fn <a href="#method.then" class="fn">then</a>&lt;F, Fut&gt;(self, f: F) -&gt; Then&lt;Self, Fut, F&gt;
        <span class="where">where F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; Fut,
              Fut: <a class="trait" href="../futures/trait.Future.html" title="trait hydroflow_plus::futures::Future">Future</a>,
              Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
-<span class="item-spacer"></span>    fn <a href="#method.merge" class="fn">merge</a>&lt;U&gt;(self, other: U) -&gt; <a class="struct" href="adapters/struct.Merge.html" title="struct hydroflow_plus::tokio_stream::adapters::Merge">Merge</a>&lt;Self, U&gt;
+<span class="item-spacer"></span>    fn <a href="#method.merge" class="fn">merge</a>&lt;U&gt;(self, other: U) -&gt; Merge&lt;Self, U&gt;
        <span class="where">where U: <a class="trait" href="trait.Stream.html" title="trait hydroflow_plus::tokio_stream::Stream">Stream</a>&lt;Item = Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>&gt;,
              Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
-<span class="item-spacer"></span>    fn <a href="#method.filter" class="fn">filter</a>&lt;F&gt;(self, f: F) -&gt; <a class="struct" href="adapters/struct.Filter.html" title="struct hydroflow_plus::tokio_stream::adapters::Filter">Filter</a>&lt;Self, F&gt;
+<span class="item-spacer"></span>    fn <a href="#method.filter" class="fn">filter</a>&lt;F&gt;(self, f: F) -&gt; Filter&lt;Self, F&gt;
        <span class="where">where F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(&amp;Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>,
              Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
-<span class="item-spacer"></span>    fn <a href="#method.filter_map" class="fn">filter_map</a>&lt;T, F&gt;(self, f: F) -&gt; <a class="struct" href="adapters/struct.FilterMap.html" title="struct hydroflow_plus::tokio_stream::adapters::FilterMap">FilterMap</a>&lt;Self, F&gt;
+<span class="item-spacer"></span>    fn <a href="#method.filter_map" class="fn">filter_map</a>&lt;T, F&gt;(self, f: F) -&gt; FilterMap&lt;Self, F&gt;
        <span class="where">where F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;T&gt;,
              Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
-<span class="item-spacer"></span>    fn <a href="#method.fuse" class="fn">fuse</a>(self) -&gt; <a class="struct" href="adapters/struct.Fuse.html" title="struct hydroflow_plus::tokio_stream::adapters::Fuse">Fuse</a>&lt;Self&gt;
+<span class="item-spacer"></span>    fn <a href="#method.fuse" class="fn">fuse</a>(self) -&gt; Fuse&lt;Self&gt;
        <span class="where">where Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
-<span class="item-spacer"></span>    fn <a href="#method.take" class="fn">take</a>(self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; <a class="struct" href="adapters/struct.Take.html" title="struct hydroflow_plus::tokio_stream::adapters::Take">Take</a>&lt;Self&gt;
+<span class="item-spacer"></span>    fn <a href="#method.take" class="fn">take</a>(self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; Take&lt;Self&gt;
        <span class="where">where Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
-<span class="item-spacer"></span>    fn <a href="#method.take_while" class="fn">take_while</a>&lt;F&gt;(self, f: F) -&gt; <a class="struct" href="adapters/struct.TakeWhile.html" title="struct hydroflow_plus::tokio_stream::adapters::TakeWhile">TakeWhile</a>&lt;Self, F&gt;
+<span class="item-spacer"></span>    fn <a href="#method.take_while" class="fn">take_while</a>&lt;F&gt;(self, f: F) -&gt; TakeWhile&lt;Self, F&gt;
        <span class="where">where F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(&amp;Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>,
              Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
-<span class="item-spacer"></span>    fn <a href="#method.skip" class="fn">skip</a>(self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; <a class="struct" href="adapters/struct.Skip.html" title="struct hydroflow_plus::tokio_stream::adapters::Skip">Skip</a>&lt;Self&gt;
+<span class="item-spacer"></span>    fn <a href="#method.skip" class="fn">skip</a>(self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; Skip&lt;Self&gt;
        <span class="where">where Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
-<span class="item-spacer"></span>    fn <a href="#method.skip_while" class="fn">skip_while</a>&lt;F&gt;(self, f: F) -&gt; <a class="struct" href="adapters/struct.SkipWhile.html" title="struct hydroflow_plus::tokio_stream::adapters::SkipWhile">SkipWhile</a>&lt;Self, F&gt;
+<span class="item-spacer"></span>    fn <a href="#method.skip_while" class="fn">skip_while</a>&lt;F&gt;(self, f: F) -&gt; SkipWhile&lt;Self, F&gt;
        <span class="where">where F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(&amp;Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>,
              Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
 <span class="item-spacer"></span>    fn <a href="#method.all" class="fn">all</a>&lt;F&gt;(&amp;mut self, f: F) -&gt; AllFuture&lt;'_, Self, F&gt;
@@ -41,7 +41,7 @@
 <span class="item-spacer"></span>    fn <a href="#method.any" class="fn">any</a>&lt;F&gt;(&amp;mut self, f: F) -&gt; AnyFuture&lt;'_, Self, F&gt;
        <span class="where">where Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Unpin.html" title="trait core::marker::Unpin">Unpin</a>,
              F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></span> { ... }
-<span class="item-spacer"></span>    fn <a href="#method.chain" class="fn">chain</a>&lt;U&gt;(self, other: U) -&gt; <a class="struct" href="adapters/struct.Chain.html" title="struct hydroflow_plus::tokio_stream::adapters::Chain">Chain</a>&lt;Self, U&gt;
+<span class="item-spacer"></span>    fn <a href="#method.chain" class="fn">chain</a>&lt;U&gt;(self, other: U) -&gt; Chain&lt;Self, U&gt;
        <span class="where">where U: <a class="trait" href="trait.Stream.html" title="trait hydroflow_plus::tokio_stream::Stream">Stream</a>&lt;Item = Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>&gt;,
              Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
 <span class="item-spacer"></span>    fn <a href="#method.fold" class="fn">fold</a>&lt;B, F&gt;(self, init: B, f: F) -&gt; FoldFuture&lt;Self, B, F&gt;
@@ -52,7 +52,7 @@
              Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
 <span class="item-spacer"></span>    fn <a href="#method.timeout" class="fn">timeout</a>(self, duration: <a class="struct" href="../web_time/struct.Duration.html" title="struct hydroflow_plus::web_time::Duration">Duration</a>) -&gt; <a class="struct" href="struct.Timeout.html" title="struct hydroflow_plus::tokio_stream::Timeout">Timeout</a>&lt;Self&gt;
        <span class="where">where Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
-<span class="item-spacer"></span>    fn <a href="#method.timeout_repeating" class="fn">timeout_repeating</a>(self, interval: <a class="struct" href="../tokio/time/struct.Interval.html" title="struct hydroflow_plus::tokio::time::Interval">Interval</a>) -&gt; <a class="struct" href="adapters/struct.TimeoutRepeating.html" title="struct hydroflow_plus::tokio_stream::adapters::TimeoutRepeating">TimeoutRepeating</a>&lt;Self&gt;
+<span class="item-spacer"></span>    fn <a href="#method.timeout_repeating" class="fn">timeout_repeating</a>(self, interval: <a class="struct" href="../tokio/time/struct.Interval.html" title="struct hydroflow_plus::tokio::time::Interval">Interval</a>) -&gt; TimeoutRepeating&lt;Self&gt;
        <span class="where">where Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
 <span class="item-spacer"></span>    fn <a href="#method.throttle" class="fn">throttle</a>(self, duration: <a class="struct" href="../web_time/struct.Duration.html" title="struct hydroflow_plus::web_time::Duration">Duration</a>) -&gt; Throttle&lt;Self&gt;
        <span class="where">where Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
@@ -60,9 +60,9 @@
         self,
         max_size: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>,
         duration: <a class="struct" href="../web_time/struct.Duration.html" title="struct hydroflow_plus::web_time::Duration">Duration</a>,
-    ) -&gt; <a class="struct" href="adapters/struct.ChunksTimeout.html" title="struct hydroflow_plus::tokio_stream::adapters::ChunksTimeout">ChunksTimeout</a>&lt;Self&gt;
+    ) -&gt; ChunksTimeout&lt;Self&gt;
        <span class="where">where Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
-<span class="item-spacer"></span>    fn <a href="#method.peekable" class="fn">peekable</a>(self) -&gt; <a class="struct" href="adapters/struct.Peekable.html" title="struct hydroflow_plus::tokio_stream::adapters::Peekable">Peekable</a>&lt;Self&gt;
+<span class="item-spacer"></span>    fn <a href="#method.peekable" class="fn">peekable</a>(self) -&gt; Peekable&lt;Self&gt;
        <span class="where">where Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a></span> { ... }
 </details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>An extension trait for the <a href="trait.Stream.html" title="trait hydroflow_plus::tokio_stream::Stream"><code>Stream</code></a> trait that provides a variety of
 convenient combinator functions.</p>
@@ -134,7 +134,7 @@ so dropping it will never lose a value.</p>
 <span class="macro">assert_eq!</span>(stream.try_next().<span class="kw">await</span>, <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="number">1</span>)));
 <span class="macro">assert_eq!</span>(stream.try_next().<span class="kw">await</span>, <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="number">2</span>)));
 <span class="macro">assert_eq!</span>(stream.try_next().<span class="kw">await</span>, <span class="prelude-val">Err</span>(<span class="string">"nope"</span>));</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.map" class="method"><h4 class="code-header">fn <a href="#method.map" class="fn">map</a>&lt;T, F&gt;(self, f: F) -&gt; <a class="struct" href="adapters/struct.Map.html" title="struct hydroflow_plus::tokio_stream::adapters::Map">Map</a>&lt;Self, F&gt;<div class="where">where
+</div></details><details class="toggle method-toggle" open><summary><section id="method.map" class="method"><h4 class="code-header">fn <a href="#method.map" class="fn">map</a>&lt;T, F&gt;(self, f: F) -&gt; Map&lt;Self, F&gt;<div class="where">where
     F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; T,
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Maps this stream’s items to a different type, returning a new stream of
 the resulting type.</p>
@@ -153,7 +153,7 @@ standard library.</p>
 <span class="macro">assert_eq!</span>(stream.next().<span class="kw">await</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>));
 <span class="macro">assert_eq!</span>(stream.next().<span class="kw">await</span>, <span class="prelude-val">Some</span>(<span class="number">5</span>));
 <span class="macro">assert_eq!</span>(stream.next().<span class="kw">await</span>, <span class="prelude-val">Some</span>(<span class="number">6</span>));</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.map_while" class="method"><h4 class="code-header">fn <a href="#method.map_while" class="fn">map_while</a>&lt;T, F&gt;(self, f: F) -&gt; <a class="struct" href="adapters/struct.MapWhile.html" title="struct hydroflow_plus::tokio_stream::adapters::MapWhile">MapWhile</a>&lt;Self, F&gt;<div class="where">where
+</div></details><details class="toggle method-toggle" open><summary><section id="method.map_while" class="method"><h4 class="code-header">fn <a href="#method.map_while" class="fn">map_while</a>&lt;T, F&gt;(self, f: F) -&gt; MapWhile&lt;Self, F&gt;<div class="where">where
     F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;T&gt;,
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Map this stream’s items to a different type for as long as determined by
 the provided closure. A stream of the target type will be returned,
@@ -180,7 +180,7 @@ standard library.</p>
 <span class="macro">assert_eq!</span>(stream.next().<span class="kw">await</span>, <span class="prelude-val">Some</span>(<span class="number">5</span>));
 <span class="macro">assert_eq!</span>(stream.next().<span class="kw">await</span>, <span class="prelude-val">Some</span>(<span class="number">6</span>));
 <span class="macro">assert_eq!</span>(stream.next().<span class="kw">await</span>, <span class="prelude-val">None</span>);</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.then" class="method"><h4 class="code-header">fn <a href="#method.then" class="fn">then</a>&lt;F, Fut&gt;(self, f: F) -&gt; <a class="struct" href="adapters/struct.Then.html" title="struct hydroflow_plus::tokio_stream::adapters::Then">Then</a>&lt;Self, Fut, F&gt;<div class="where">where
+</div></details><details class="toggle method-toggle" open><summary><section id="method.then" class="method"><h4 class="code-header">fn <a href="#method.then" class="fn">then</a>&lt;F, Fut&gt;(self, f: F) -&gt; Then&lt;Self, Fut, F&gt;<div class="where">where
     F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; Fut,
     Fut: <a class="trait" href="../futures/trait.Future.html" title="trait hydroflow_plus::futures::Future">Future</a>,
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Maps this stream’s items asynchronously to a different type, returning a
@@ -209,7 +209,7 @@ the example below or put the stream in a <code>Box</code> with <code>Box::pin(st
 <span class="macro">assert_eq!</span>(stream.next().<span class="kw">await</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>));
 <span class="macro">assert_eq!</span>(stream.next().<span class="kw">await</span>, <span class="prelude-val">Some</span>(<span class="number">5</span>));
 <span class="macro">assert_eq!</span>(stream.next().<span class="kw">await</span>, <span class="prelude-val">Some</span>(<span class="number">6</span>));</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.merge" class="method"><h4 class="code-header">fn <a href="#method.merge" class="fn">merge</a>&lt;U&gt;(self, other: U) -&gt; <a class="struct" href="adapters/struct.Merge.html" title="struct hydroflow_plus::tokio_stream::adapters::Merge">Merge</a>&lt;Self, U&gt;<div class="where">where
+</div></details><details class="toggle method-toggle" open><summary><section id="method.merge" class="method"><h4 class="code-header">fn <a href="#method.merge" class="fn">merge</a>&lt;U&gt;(self, other: U) -&gt; Merge&lt;Self, U&gt;<div class="where">where
     U: <a class="trait" href="trait.Stream.html" title="trait hydroflow_plus::tokio_stream::Stream">Stream</a>&lt;Item = Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>&gt;,
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Combine two streams into one by interleaving the output of both as it
 is produced.</p>
@@ -282,7 +282,7 @@ exclusively polls the remaining stream.</p>
    <span class="comment">// The merged stream is consumed
    </span><span class="macro">assert!</span>(rx.next().<span class="kw">await</span>.is_none());
 }</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.filter" class="method"><h4 class="code-header">fn <a href="#method.filter" class="fn">filter</a>&lt;F&gt;(self, f: F) -&gt; <a class="struct" href="adapters/struct.Filter.html" title="struct hydroflow_plus::tokio_stream::adapters::Filter">Filter</a>&lt;Self, F&gt;<div class="where">where
+</div></details><details class="toggle method-toggle" open><summary><section id="method.filter" class="method"><h4 class="code-header">fn <a href="#method.filter" class="fn">filter</a>&lt;F&gt;(self, f: F) -&gt; Filter&lt;Self, F&gt;<div class="where">where
     F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(&amp;Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>,
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Filters the values produced by this stream according to the provided
 predicate.</p>
@@ -305,7 +305,7 @@ standard library.</p>
 <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">6</span>), evens.next().<span class="kw">await</span>);
 <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">8</span>), evens.next().<span class="kw">await</span>);
 <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, evens.next().<span class="kw">await</span>);</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.filter_map" class="method"><h4 class="code-header">fn <a href="#method.filter_map" class="fn">filter_map</a>&lt;T, F&gt;(self, f: F) -&gt; <a class="struct" href="adapters/struct.FilterMap.html" title="struct hydroflow_plus::tokio_stream::adapters::FilterMap">FilterMap</a>&lt;Self, F&gt;<div class="where">where
+</div></details><details class="toggle method-toggle" open><summary><section id="method.filter_map" class="method"><h4 class="code-header">fn <a href="#method.filter_map" class="fn">filter_map</a>&lt;T, F&gt;(self, f: F) -&gt; FilterMap&lt;Self, F&gt;<div class="where">where
     F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;T&gt;,
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Filters the values produced by this stream while simultaneously mapping
 them to a different type according to the provided closure.</p>
@@ -329,7 +329,7 @@ standard library.</p>
 <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">7</span>), evens.next().<span class="kw">await</span>);
 <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">9</span>), evens.next().<span class="kw">await</span>);
 <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, evens.next().<span class="kw">await</span>);</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.fuse" class="method"><h4 class="code-header">fn <a href="#method.fuse" class="fn">fuse</a>(self) -&gt; <a class="struct" href="adapters/struct.Fuse.html" title="struct hydroflow_plus::tokio_stream::adapters::Fuse">Fuse</a>&lt;Self&gt;<div class="where">where
+</div></details><details class="toggle method-toggle" open><summary><section id="method.fuse" class="method"><h4 class="code-header">fn <a href="#method.fuse" class="fn">fuse</a>(self) -&gt; Fuse&lt;Self&gt;<div class="where">where
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Creates a stream which ends after the first <code>None</code>.</p>
 <p>After a stream returns <code>None</code>, behavior is undefined. Future calls to
 <code>poll_next</code> may or may not return <code>Some(T)</code> again or they may panic.
@@ -383,7 +383,7 @@ return <code>None</code> forever.</p>
     <span class="macro">assert_eq!</span>(stream.next().<span class="kw">await</span>, <span class="prelude-val">None</span>);
     <span class="macro">assert_eq!</span>(stream.next().<span class="kw">await</span>, <span class="prelude-val">None</span>);
 }</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.take" class="method"><h4 class="code-header">fn <a href="#method.take" class="fn">take</a>(self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; <a class="struct" href="adapters/struct.Take.html" title="struct hydroflow_plus::tokio_stream::adapters::Take">Take</a>&lt;Self&gt;<div class="where">where
+</div></details><details class="toggle method-toggle" open><summary><section id="method.take" class="method"><h4 class="code-header">fn <a href="#method.take" class="fn">take</a>(self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; Take&lt;Self&gt;<div class="where">where
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Creates a new stream of at most <code>n</code> items of the underlying stream.</p>
 <p>Once <code>n</code> items have been yielded from this stream then it will always
 return that the stream is done.</p>
@@ -396,7 +396,7 @@ return that the stream is done.</p>
 <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">2</span>), stream.next().<span class="kw">await</span>);
 <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">3</span>), stream.next().<span class="kw">await</span>);
 <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, stream.next().<span class="kw">await</span>);</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.take_while" class="method"><h4 class="code-header">fn <a href="#method.take_while" class="fn">take_while</a>&lt;F&gt;(self, f: F) -&gt; <a class="struct" href="adapters/struct.TakeWhile.html" title="struct hydroflow_plus::tokio_stream::adapters::TakeWhile">TakeWhile</a>&lt;Self, F&gt;<div class="where">where
+</div></details><details class="toggle method-toggle" open><summary><section id="method.take_while" class="method"><h4 class="code-header">fn <a href="#method.take_while" class="fn">take_while</a>&lt;F&gt;(self, f: F) -&gt; TakeWhile&lt;Self, F&gt;<div class="where">where
     F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(&amp;Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>,
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Take elements from this stream while the provided predicate
 resolves to <code>true</code>.</p>
@@ -412,7 +412,7 @@ returns false it will always return that the stream is done.</p>
 <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">2</span>), stream.next().<span class="kw">await</span>);
 <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">3</span>), stream.next().<span class="kw">await</span>);
 <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, stream.next().<span class="kw">await</span>);</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.skip" class="method"><h4 class="code-header">fn <a href="#method.skip" class="fn">skip</a>(self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; <a class="struct" href="adapters/struct.Skip.html" title="struct hydroflow_plus::tokio_stream::adapters::Skip">Skip</a>&lt;Self&gt;<div class="where">where
+</div></details><details class="toggle method-toggle" open><summary><section id="method.skip" class="method"><h4 class="code-header">fn <a href="#method.skip" class="fn">skip</a>(self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; Skip&lt;Self&gt;<div class="where">where
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Creates a new stream that will skip the <code>n</code> first items of the
 underlying stream.</p>
 <h5 id="examples-11"><a class="doc-anchor" href="#examples-11">§</a>Examples</h5>
@@ -424,7 +424,7 @@ underlying stream.</p>
 <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">9</span>), stream.next().<span class="kw">await</span>);
 <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">10</span>), stream.next().<span class="kw">await</span>);
 <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, stream.next().<span class="kw">await</span>);</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.skip_while" class="method"><h4 class="code-header">fn <a href="#method.skip_while" class="fn">skip_while</a>&lt;F&gt;(self, f: F) -&gt; <a class="struct" href="adapters/struct.SkipWhile.html" title="struct hydroflow_plus::tokio_stream::adapters::SkipWhile">SkipWhile</a>&lt;Self, F&gt;<div class="where">where
+</div></details><details class="toggle method-toggle" open><summary><section id="method.skip_while" class="method"><h4 class="code-header">fn <a href="#method.skip_while" class="fn">skip_while</a>&lt;F&gt;(self, f: F) -&gt; SkipWhile&lt;Self, F&gt;<div class="where">where
     F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnMut.html" title="trait core::ops::function::FnMut">FnMut</a>(&amp;Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>,
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Skip elements from the underlying stream while the provided predicate
 resolves to <code>true</code>.</p>
@@ -510,7 +510,7 @@ the result will also be <code>true</code>.</p>
 
 <span class="comment">// we can still use `iter`, as there are more elements.
 </span><span class="macro">assert_eq!</span>(iter.next().<span class="kw">await</span>, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="number">2</span>));</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.chain" class="method"><h4 class="code-header">fn <a href="#method.chain" class="fn">chain</a>&lt;U&gt;(self, other: U) -&gt; <a class="struct" href="adapters/struct.Chain.html" title="struct hydroflow_plus::tokio_stream::adapters::Chain">Chain</a>&lt;Self, U&gt;<div class="where">where
+</div></details><details class="toggle method-toggle" open><summary><section id="method.chain" class="method"><h4 class="code-header">fn <a href="#method.chain" class="fn">chain</a>&lt;U&gt;(self, other: U) -&gt; Chain&lt;Self, U&gt;<div class="where">where
     U: <a class="trait" href="trait.Stream.html" title="trait hydroflow_plus::tokio_stream::Stream">Stream</a>&lt;Item = Self::<a class="associatedtype" href="trait.Stream.html#associatedtype.Item" title="type hydroflow_plus::tokio_stream::Stream::Item">Item</a>&gt;,
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Combine two streams into one by first returning all values from the
 first stream then all values from the second stream.</p>
@@ -662,7 +662,7 @@ unless the wrapped stream yields a value (timeouts do not repeat).</p>
 </span><span class="macro">assert!</span>(timeout_stream.try_next().<span class="kw">await</span>.is_ok());
 <span class="macro">assert!</span>(timeout_stream.try_next().<span class="kw">await</span>.is_err(), <span class="string">"expected one timeout"</span>);
 <span class="macro">assert!</span>(timeout_stream.try_next().<span class="kw">await</span>.is_ok(), <span class="string">"expected no more timeouts"</span>);</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.timeout_repeating" class="method"><h4 class="code-header">fn <a href="#method.timeout_repeating" class="fn">timeout_repeating</a>(self, interval: <a class="struct" href="../tokio/time/struct.Interval.html" title="struct hydroflow_plus::tokio::time::Interval">Interval</a>) -&gt; <a class="struct" href="adapters/struct.TimeoutRepeating.html" title="struct hydroflow_plus::tokio_stream::adapters::TimeoutRepeating">TimeoutRepeating</a>&lt;Self&gt;<div class="where">where
+</div></details><details class="toggle method-toggle" open><summary><section id="method.timeout_repeating" class="method"><h4 class="code-header">fn <a href="#method.timeout_repeating" class="fn">timeout_repeating</a>(self, interval: <a class="struct" href="../tokio/time/struct.Interval.html" title="struct hydroflow_plus::tokio::time::Interval">Interval</a>) -&gt; TimeoutRepeating&lt;Self&gt;<div class="where">where
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Applies a per-item timeout to the passed stream.</p>
 <p><code>timeout_repeating()</code> takes an <a href="../tokio/time/struct.Interval.html" title="struct hydroflow_plus::tokio::time::Interval"><code>Interval</code></a> that controls the time each
 element of the stream has to complete before timing out.</p>
@@ -741,7 +741,7 @@ until the wrapped stream yields a value.</p>
     self,
     max_size: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>,
     duration: <a class="struct" href="../web_time/struct.Duration.html" title="struct hydroflow_plus::web_time::Duration">Duration</a>,
-) -&gt; <a class="struct" href="adapters/struct.ChunksTimeout.html" title="struct hydroflow_plus::tokio_stream::adapters::ChunksTimeout">ChunksTimeout</a>&lt;Self&gt;<div class="where">where
+) -&gt; ChunksTimeout&lt;Self&gt;<div class="where">where
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Batches the items in the given stream using a maximum duration and size for each batch.</p>
 <p>This stream returns the next batch of items in the following situations:</p>
 <ol>
@@ -780,7 +780,7 @@ will not be emitted if no items are received upstream.</p>
     <span class="comment">// last element in the stream
     </span><span class="macro">assert_eq!</span>(chunk_stream.next().<span class="kw">await</span>, <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[<span class="number">5</span>]));
 }</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.peekable" class="method"><h4 class="code-header">fn <a href="#method.peekable" class="fn">peekable</a>(self) -&gt; <a class="struct" href="adapters/struct.Peekable.html" title="struct hydroflow_plus::tokio_stream::adapters::Peekable">Peekable</a>&lt;Self&gt;<div class="where">where
+</div></details><details class="toggle method-toggle" open><summary><section id="method.peekable" class="method"><h4 class="code-header">fn <a href="#method.peekable" class="fn">peekable</a>(self) -&gt; Peekable&lt;Self&gt;<div class="where">where
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class="docblock"><p>Turns the stream into a peekable stream, whose next element can be peeked at without being
 consumed.</p>
 

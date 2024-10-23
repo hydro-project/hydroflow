@@ -1172,56 +1172,6 @@
 <a href="#1172" id="1172">1172</a>
 <a href="#1173" id="1173">1173</a>
 <a href="#1174" id="1174">1174</a>
-<a href="#1175" id="1175">1175</a>
-<a href="#1176" id="1176">1176</a>
-<a href="#1177" id="1177">1177</a>
-<a href="#1178" id="1178">1178</a>
-<a href="#1179" id="1179">1179</a>
-<a href="#1180" id="1180">1180</a>
-<a href="#1181" id="1181">1181</a>
-<a href="#1182" id="1182">1182</a>
-<a href="#1183" id="1183">1183</a>
-<a href="#1184" id="1184">1184</a>
-<a href="#1185" id="1185">1185</a>
-<a href="#1186" id="1186">1186</a>
-<a href="#1187" id="1187">1187</a>
-<a href="#1188" id="1188">1188</a>
-<a href="#1189" id="1189">1189</a>
-<a href="#1190" id="1190">1190</a>
-<a href="#1191" id="1191">1191</a>
-<a href="#1192" id="1192">1192</a>
-<a href="#1193" id="1193">1193</a>
-<a href="#1194" id="1194">1194</a>
-<a href="#1195" id="1195">1195</a>
-<a href="#1196" id="1196">1196</a>
-<a href="#1197" id="1197">1197</a>
-<a href="#1198" id="1198">1198</a>
-<a href="#1199" id="1199">1199</a>
-<a href="#1200" id="1200">1200</a>
-<a href="#1201" id="1201">1201</a>
-<a href="#1202" id="1202">1202</a>
-<a href="#1203" id="1203">1203</a>
-<a href="#1204" id="1204">1204</a>
-<a href="#1205" id="1205">1205</a>
-<a href="#1206" id="1206">1206</a>
-<a href="#1207" id="1207">1207</a>
-<a href="#1208" id="1208">1208</a>
-<a href="#1209" id="1209">1209</a>
-<a href="#1210" id="1210">1210</a>
-<a href="#1211" id="1211">1211</a>
-<a href="#1212" id="1212">1212</a>
-<a href="#1213" id="1213">1213</a>
-<a href="#1214" id="1214">1214</a>
-<a href="#1215" id="1215">1215</a>
-<a href="#1216" id="1216">1216</a>
-<a href="#1217" id="1217">1217</a>
-<a href="#1218" id="1218">1218</a>
-<a href="#1219" id="1219">1219</a>
-<a href="#1220" id="1220">1220</a>
-<a href="#1221" id="1221">1221</a>
-<a href="#1222" id="1222">1222</a>
-<a href="#1223" id="1223">1223</a>
-<a href="#1224" id="1224">1224</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Simple singleton or array collection with [`cc_traits`] implementations.
 
 </span><span class="kw">use </span>std::borrow::Borrow;
@@ -1308,8 +1258,7 @@
     }
 }
 <span class="kw">impl</span>&lt;T&gt; CollectionRef <span class="kw">for </span>VecSet&lt;T&gt; {
-    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
+    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1328,8 +1277,7 @@
     }
 }
 <span class="kw">impl</span>&lt;T&gt; CollectionMut <span class="kw">for </span>VecSet&lt;T&gt; {
-    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">Self</span>::Item
+    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">Self</span>::Item
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1345,8 +1293,7 @@
     }
 }
 <span class="kw">impl</span>&lt;T&gt; Iter <span class="kw">for </span>VecSet&lt;T&gt; {
-    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt;
-        = std::slice::Iter&lt;<span class="lifetime">'a</span>, T&gt;
+    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt; = std::slice::Iter&lt;<span class="lifetime">'a</span>, T&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1355,8 +1302,7 @@
     }
 }
 <span class="kw">impl</span>&lt;T&gt; IterMut <span class="kw">for </span>VecSet&lt;T&gt; {
-    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt;
-        = std::slice::IterMut&lt;<span class="lifetime">'a</span>, T&gt;
+    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt; = std::slice::IterMut&lt;<span class="lifetime">'a</span>, T&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1404,8 +1350,7 @@
     }
 }
 <span class="kw">impl</span>&lt;K, V&gt; CollectionRef <span class="kw">for </span>VecMap&lt;K, V&gt; {
-    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
+    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1427,8 +1372,7 @@
     }
 }
 <span class="kw">impl</span>&lt;K, V&gt; CollectionMut <span class="kw">for </span>VecMap&lt;K, V&gt; {
-    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">Self</span>::Item
+    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">Self</span>::Item
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1450,8 +1394,7 @@
     <span class="kw">type </span>Key = K;
 }
 <span class="kw">impl</span>&lt;K, V&gt; KeyedRef <span class="kw">for </span>VecMap&lt;K, V&gt; {
-    <span class="kw">type </span>KeyRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Key
+    <span class="kw">type </span>KeyRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Key
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1485,20 +1428,18 @@
     <span class="macro">simple_keyed_ref!</span>();
 }
 <span class="kw">impl</span>&lt;K, V&gt; MapIter <span class="kw">for </span>VecMap&lt;K, V&gt; {
-    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt;
-        = std::iter::Zip&lt;std::slice::Iter&lt;<span class="lifetime">'a</span>, K&gt;, std::slice::Iter&lt;<span class="lifetime">'a</span>, V&gt;&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt; = std::iter::Zip&lt;std::slice::Iter&lt;<span class="lifetime">'a</span>, K&gt;, std::slice::Iter&lt;<span class="lifetime">'a</span>, V&gt;&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">'_</span>&gt; {
         <span class="self">self</span>.keys.iter().zip(<span class="self">self</span>.vals.iter())
     }
 }
 <span class="kw">impl</span>&lt;K, V&gt; MapIterMut <span class="kw">for </span>VecMap&lt;K, V&gt; {
-    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt;
-        = std::iter::Zip&lt;std::slice::Iter&lt;<span class="lifetime">'a</span>, K&gt;, std::slice::IterMut&lt;<span class="lifetime">'a</span>, V&gt;&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt; = std::iter::Zip&lt;std::slice::Iter&lt;<span class="lifetime">'a</span>, K&gt;, std::slice::IterMut&lt;<span class="lifetime">'a</span>, V&gt;&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="self">Self</span>::IterMut&lt;<span class="lifetime">'_</span>&gt; {
         <span class="self">self</span>.keys.iter().zip(<span class="self">self</span>.vals.iter_mut())
@@ -1540,10 +1481,7 @@
 }
 
 <span class="kw">impl</span>&lt;T&gt; CollectionRef <span class="kw">for </span>EmptySet&lt;T&gt; {
-    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
-    <span class="kw">where
-        </span><span class="self">Self</span>::Item: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item <span class="kw">where </span><span class="self">Self</span>::Item: <span class="lifetime">'a</span>;
 
     <span class="macro">covariant_item_ref!</span>();
 }
@@ -1564,10 +1502,7 @@
 }
 
 <span class="kw">impl</span>&lt;T&gt; Iter <span class="kw">for </span>EmptySet&lt;T&gt; {
-    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt;
-        = std::iter::Empty&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>T&gt;
-    <span class="kw">where
-        </span>T: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt; = std::iter::Empty&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>T&gt; <span class="kw">where </span>T: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">'_</span>&gt; {
         std::iter::empty()
@@ -1610,8 +1545,7 @@
     </span>}
 }
 <span class="kw">impl</span>&lt;T&gt; CollectionRef <span class="kw">for </span>SingletonSet&lt;T&gt; {
-    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
+    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1630,8 +1564,7 @@
     }
 }
 <span class="kw">impl</span>&lt;T&gt; CollectionMut <span class="kw">for </span>SingletonSet&lt;T&gt; {
-    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T
+    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1647,18 +1580,16 @@
     }
 }
 <span class="kw">impl</span>&lt;T&gt; Iter <span class="kw">for </span>SingletonSet&lt;T&gt; {
-    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt;
-        = std::iter::Once&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>T&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt; = std::iter::Once&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>T&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">'_</span>&gt; {
         std::iter::once(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>)
     }
 }
 <span class="kw">impl</span>&lt;T&gt; IterMut <span class="kw">for </span>SingletonSet&lt;T&gt; {
-    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt;
-        = std::iter::Once&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T&gt;
+    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt; = std::iter::Once&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1700,8 +1631,7 @@
     </span>}
 }
 <span class="kw">impl</span>&lt;K, V&gt; CollectionRef <span class="kw">for </span>EmptyMap&lt;K, V&gt; {
-    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
+    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1720,8 +1650,7 @@
     </span>}
 }
 <span class="kw">impl</span>&lt;K, V&gt; CollectionMut <span class="kw">for </span>EmptyMap&lt;K, V&gt; {
-    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">Self</span>::Item
+    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">Self</span>::Item
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1740,10 +1669,9 @@
     <span class="kw">type </span>Key = K;
 }
 <span class="kw">impl</span>&lt;K, V&gt; KeyedRef <span class="kw">for </span>EmptyMap&lt;K, V&gt; {
-    <span class="kw">type </span>KeyRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Key
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>KeyRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Key
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="macro">covariant_key_ref!</span>();
 }
@@ -1766,10 +1694,9 @@
     </span>}
 }
 <span class="kw">impl</span>&lt;K, V&gt; Iter <span class="kw">for </span>EmptyMap&lt;K, V&gt; {
-    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt;
-        = std::iter::Empty&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>V&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt; = std::iter::Empty&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>V&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">'_</span>&gt; {
         std::iter::empty()
@@ -1779,20 +1706,18 @@
     <span class="macro">simple_keyed_ref!</span>();
 }
 <span class="kw">impl</span>&lt;K, V&gt; MapIter <span class="kw">for </span>EmptyMap&lt;K, V&gt; {
-    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt;
-        = std::iter::Empty&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt; = std::iter::Empty&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">'_</span>&gt; {
         std::iter::empty()
     }
 }
 <span class="kw">impl</span>&lt;K, V&gt; MapIterMut <span class="kw">for </span>EmptyMap&lt;K, V&gt; {
-    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt;
-        = std::iter::Empty&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V)&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt; = std::iter::Empty&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V)&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="self">Self</span>::IterMut&lt;<span class="lifetime">'_</span>&gt; {
         std::iter::empty()
@@ -1825,8 +1750,7 @@
     </span>}
 }
 <span class="kw">impl</span>&lt;K, V&gt; CollectionRef <span class="kw">for </span>SingletonMap&lt;K, V&gt; {
-    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
+    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1845,8 +1769,7 @@
     }
 }
 <span class="kw">impl</span>&lt;K, V&gt; CollectionMut <span class="kw">for </span>SingletonMap&lt;K, V&gt; {
-    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">Self</span>::Item
+    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">Self</span>::Item
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1865,10 +1788,9 @@
     <span class="kw">type </span>Key = K;
 }
 <span class="kw">impl</span>&lt;K, V&gt; KeyedRef <span class="kw">for </span>SingletonMap&lt;K, V&gt; {
-    <span class="kw">type </span>KeyRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Key
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>KeyRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Key
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="macro">covariant_key_ref!</span>();
 }
@@ -1891,10 +1813,9 @@
     }
 }
 <span class="kw">impl</span>&lt;K, V&gt; Iter <span class="kw">for </span>SingletonMap&lt;K, V&gt; {
-    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt;
-        = std::iter::Once&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>V&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt; = std::iter::Once&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>V&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">'_</span>&gt; {
         std::iter::once(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
@@ -1904,20 +1825,18 @@
     <span class="macro">simple_keyed_ref!</span>();
 }
 <span class="kw">impl</span>&lt;K, V&gt; MapIter <span class="kw">for </span>SingletonMap&lt;K, V&gt; {
-    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt;
-        = std::iter::Once&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt; = std::iter::Once&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">'_</span>&gt; {
         std::iter::once((<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>))
     }
 }
 <span class="kw">impl</span>&lt;K, V&gt; MapIterMut <span class="kw">for </span>SingletonMap&lt;K, V&gt; {
-    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt;
-        = std::iter::Once&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V)&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt; = std::iter::Once&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V)&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="self">Self</span>::IterMut&lt;<span class="lifetime">'_</span>&gt; {
         std::iter::once((<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">1</span>))
@@ -1971,8 +1890,7 @@
     }
 }
 <span class="kw">impl</span>&lt;T&gt; CollectionRef <span class="kw">for </span>OptionSet&lt;T&gt; {
-    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
+    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -1991,8 +1909,7 @@
     }
 }
 <span class="kw">impl</span>&lt;T&gt; CollectionMut <span class="kw">for </span>OptionSet&lt;T&gt; {
-    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T
+    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -2008,18 +1925,16 @@
     }
 }
 <span class="kw">impl</span>&lt;T&gt; Iter <span class="kw">for </span>OptionSet&lt;T&gt; {
-    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt;
-        = std::option::Iter&lt;<span class="lifetime">'a</span>, T&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt; = std::option::Iter&lt;<span class="lifetime">'a</span>, T&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">'_</span>&gt; {
         <span class="self">self</span>.<span class="number">0</span>.iter()
     }
 }
 <span class="kw">impl</span>&lt;T&gt; IterMut <span class="kw">for </span>OptionSet&lt;T&gt; {
-    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt;
-        = std::option::IterMut&lt;<span class="lifetime">'a</span>, T&gt;
+    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt; = std::option::IterMut&lt;<span class="lifetime">'a</span>, T&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -2062,8 +1977,7 @@
     }
 }
 <span class="kw">impl</span>&lt;K, V&gt; CollectionRef <span class="kw">for </span>OptionMap&lt;K, V&gt; {
-    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
+    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -2085,8 +1999,7 @@
     }
 }
 <span class="kw">impl</span>&lt;K, V&gt; CollectionMut <span class="kw">for </span>OptionMap&lt;K, V&gt; {
-    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">Self</span>::Item
+    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">Self</span>::Item
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -2108,10 +2021,9 @@
     <span class="kw">type </span>Key = K;
 }
 <span class="kw">impl</span>&lt;K, V&gt; KeyedRef <span class="kw">for </span>OptionMap&lt;K, V&gt; {
-    <span class="kw">type </span>KeyRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Key
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>KeyRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Key
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="macro">covariant_key_ref!</span>();
 }
@@ -2140,10 +2052,9 @@
     }
 }
 <span class="kw">impl</span>&lt;K, V&gt; Iter <span class="kw">for </span>OptionMap&lt;K, V&gt; {
-    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt;
-        = std::option::IntoIter&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>V&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt; = std::option::IntoIter&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>V&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">'_</span>&gt; {
         <span class="self">self</span>.<span class="number">0</span>.as_ref().map(|(_k, v)| v).into_iter()
@@ -2153,20 +2064,18 @@
     <span class="macro">simple_keyed_ref!</span>();
 }
 <span class="kw">impl</span>&lt;K, V&gt; MapIter <span class="kw">for </span>OptionMap&lt;K, V&gt; {
-    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt;
-        = std::option::IntoIter&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt; = std::option::IntoIter&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>V)&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">'_</span>&gt; {
         <span class="self">self</span>.<span class="number">0</span>.as_ref().map(|(k, v)| (k, v)).into_iter()
     }
 }
 <span class="kw">impl</span>&lt;K, V&gt; MapIterMut <span class="kw">for </span>OptionMap&lt;K, V&gt; {
-    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt;
-        = std::option::IntoIter&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V)&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt; = std::option::IntoIter&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>V)&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="self">Self</span>::IterMut&lt;<span class="lifetime">'_</span>&gt; {
         <span class="self">self</span>.<span class="number">0</span>.as_mut().map(|(k, v)| (<span class="kw-2">&amp;*</span>k, v)).into_iter()
@@ -2210,8 +2119,7 @@
     }
 }
 <span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; CollectionRef <span class="kw">for </span>ArraySet&lt;T, N&gt; {
-    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>T
+    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>T
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -2233,8 +2141,7 @@
     }
 }
 <span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; CollectionMut <span class="kw">for </span>ArraySet&lt;T, N&gt; {
-    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T
+    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -2253,10 +2160,9 @@
     }
 }
 <span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; Iter <span class="kw">for </span>ArraySet&lt;T, N&gt; {
-    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt;
-        = std::slice::Iter&lt;<span class="lifetime">'a</span>, T&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt; = std::slice::Iter&lt;<span class="lifetime">'a</span>, T&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">'_</span>&gt; {
         <span class="self">self</span>.<span class="number">0</span>.iter()
@@ -2303,8 +2209,7 @@
     }
 }
 <span class="kw">impl</span>&lt;K, V, <span class="kw">const </span>N: usize&gt; CollectionRef <span class="kw">for </span>ArrayMap&lt;K, V, N&gt; {
-    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
+    <span class="kw">type </span>ItemRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Item
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -2326,8 +2231,7 @@
     }
 }
 <span class="kw">impl</span>&lt;K, V, <span class="kw">const </span>N: usize&gt; CollectionMut <span class="kw">for </span>ArrayMap&lt;K, V, N&gt; {
-    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">Self</span>::Item
+    <span class="kw">type </span>ItemMut&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">Self</span>::Item
     <span class="kw">where
         </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
@@ -2349,10 +2253,9 @@
     <span class="kw">type </span>Key = K;
 }
 <span class="kw">impl</span>&lt;K, V, <span class="kw">const </span>N: usize&gt; KeyedRef <span class="kw">for </span>ArrayMap&lt;K, V, N&gt; {
-    <span class="kw">type </span>KeyRef&lt;<span class="lifetime">'a</span>&gt;
-        = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Key
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>KeyRef&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>::Key
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="macro">covariant_key_ref!</span>();
 }
@@ -2381,10 +2284,9 @@
     }
 }
 <span class="kw">impl</span>&lt;K, V, <span class="kw">const </span>N: usize&gt; Iter <span class="kw">for </span>ArrayMap&lt;K, V, N&gt; {
-    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt;
-        = std::slice::Iter&lt;<span class="lifetime">'a</span>, V&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt; = std::slice::Iter&lt;<span class="lifetime">'a</span>, V&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">'_</span>&gt; {
         <span class="self">self</span>.vals.iter()
@@ -2394,20 +2296,18 @@
     <span class="macro">simple_keyed_ref!</span>();
 }
 <span class="kw">impl</span>&lt;K, V, <span class="kw">const </span>N: usize&gt; MapIter <span class="kw">for </span>ArrayMap&lt;K, V, N&gt; {
-    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt;
-        = std::iter::Zip&lt;std::slice::Iter&lt;<span class="lifetime">'a</span>, K&gt;, std::slice::Iter&lt;<span class="lifetime">'a</span>, V&gt;&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>Iter&lt;<span class="lifetime">'a</span>&gt; = std::iter::Zip&lt;std::slice::Iter&lt;<span class="lifetime">'a</span>, K&gt;, std::slice::Iter&lt;<span class="lifetime">'a</span>, V&gt;&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">'_</span>&gt; {
         <span class="self">self</span>.keys.iter().zip(<span class="self">self</span>.vals.iter())
     }
 }
 <span class="kw">impl</span>&lt;K, V, <span class="kw">const </span>N: usize&gt; MapIterMut <span class="kw">for </span>ArrayMap&lt;K, V, N&gt; {
-    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt;
-        = std::iter::Zip&lt;std::slice::Iter&lt;<span class="lifetime">'a</span>, K&gt;, std::slice::IterMut&lt;<span class="lifetime">'a</span>, V&gt;&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+    <span class="kw">type </span>IterMut&lt;<span class="lifetime">'a</span>&gt; = std::iter::Zip&lt;std::slice::Iter&lt;<span class="lifetime">'a</span>, K&gt;, std::slice::IterMut&lt;<span class="lifetime">'a</span>, V&gt;&gt;
+	<span class="kw">where
+		</span><span class="self">Self</span>: <span class="lifetime">'a</span>;
 
     <span class="kw">fn </span>iter_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="self">Self</span>::IterMut&lt;<span class="lifetime">'_</span>&gt; {
         <span class="self">self</span>.keys.iter().zip(<span class="self">self</span>.vals.iter_mut())

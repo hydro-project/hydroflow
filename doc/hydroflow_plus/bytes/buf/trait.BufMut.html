@@ -614,7 +614,7 @@ buf.put_int_ne(<span class="number">0x010203</span>, <span class="number">3</spa
 <h5 id="panics-34"><a class="doc-anchor" href="#panics-34">§</a>Panics</h5>
 <p>This function panics if there is not enough remaining capacity in
 <code>self</code> or if <code>nbytes</code> is greater than 8.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.put_f32" class="method"><h4 class="code-header">fn <a href="#method.put_f32" class="fn">put_f32</a>(&amp;mut self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Writes an IEEE754 single-precision (4 bytes) floating point number to
+</div></details><details class="toggle method-toggle" open><summary><section id="method.put_f32" class="method"><h4 class="code-header">fn <a href="#method.put_f32" class="fn">put_f32</a>(&amp;mut self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Writes  an IEEE754 single-precision (4 bytes) floating point number to
 <code>self</code> in big-endian byte order.</p>
 <p>The current position is advanced by 4.</p>
 <h5 id="examples-37"><a class="doc-anchor" href="#examples-37">§</a>Examples</h5>
@@ -626,7 +626,7 @@ buf.put_f32(<span class="number">1.2f32</span>);
 <h5 id="panics-35"><a class="doc-anchor" href="#panics-35">§</a>Panics</h5>
 <p>This function panics if there is not enough remaining capacity in
 <code>self</code>.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.put_f32_le" class="method"><h4 class="code-header">fn <a href="#method.put_f32_le" class="fn">put_f32_le</a>(&amp;mut self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Writes an IEEE754 single-precision (4 bytes) floating point number to
+</div></details><details class="toggle method-toggle" open><summary><section id="method.put_f32_le" class="method"><h4 class="code-header">fn <a href="#method.put_f32_le" class="fn">put_f32_le</a>(&amp;mut self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Writes  an IEEE754 single-precision (4 bytes) floating point number to
 <code>self</code> in little-endian byte order.</p>
 <p>The current position is advanced by 4.</p>
 <h5 id="examples-38"><a class="doc-anchor" href="#examples-38">§</a>Examples</h5>
@@ -654,7 +654,7 @@ buf.put_f32_ne(<span class="number">1.2f32</span>);
 <h5 id="panics-37"><a class="doc-anchor" href="#panics-37">§</a>Panics</h5>
 <p>This function panics if there is not enough remaining capacity in
 <code>self</code>.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.put_f64" class="method"><h4 class="code-header">fn <a href="#method.put_f64" class="fn">put_f64</a>(&amp;mut self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>)</h4></section></summary><div class="docblock"><p>Writes an IEEE754 double-precision (8 bytes) floating point number to
+</div></details><details class="toggle method-toggle" open><summary><section id="method.put_f64" class="method"><h4 class="code-header">fn <a href="#method.put_f64" class="fn">put_f64</a>(&amp;mut self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>)</h4></section></summary><div class="docblock"><p>Writes  an IEEE754 double-precision (8 bytes) floating point number to
 <code>self</code> in big-endian byte order.</p>
 <p>The current position is advanced by 8.</p>
 <h5 id="examples-40"><a class="doc-anchor" href="#examples-40">§</a>Examples</h5>
@@ -666,7 +666,7 @@ buf.put_f64(<span class="number">1.2f64</span>);
 <h5 id="panics-38"><a class="doc-anchor" href="#panics-38">§</a>Panics</h5>
 <p>This function panics if there is not enough remaining capacity in
 <code>self</code>.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.put_f64_le" class="method"><h4 class="code-header">fn <a href="#method.put_f64_le" class="fn">put_f64_le</a>(&amp;mut self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>)</h4></section></summary><div class="docblock"><p>Writes an IEEE754 double-precision (8 bytes) floating point number to
+</div></details><details class="toggle method-toggle" open><summary><section id="method.put_f64_le" class="method"><h4 class="code-header">fn <a href="#method.put_f64_le" class="fn">put_f64_le</a>(&amp;mut self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>)</h4></section></summary><div class="docblock"><p>Writes  an IEEE754 double-precision (8 bytes) floating point number to
 <code>self</code> in little-endian byte order.</p>
 <p>The current position is advanced by 8.</p>
 <h5 id="examples-41"><a class="doc-anchor" href="#examples-41">§</a>Examples</h5>
@@ -678,7 +678,7 @@ buf.put_f64_le(<span class="number">1.2f64</span>);
 <h5 id="panics-39"><a class="doc-anchor" href="#panics-39">§</a>Panics</h5>
 <p>This function panics if there is not enough remaining capacity in
 <code>self</code>.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.put_f64_ne" class="method"><h4 class="code-header">fn <a href="#method.put_f64_ne" class="fn">put_f64_ne</a>(&amp;mut self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>)</h4></section></summary><div class="docblock"><p>Writes an IEEE754 double-precision (8 bytes) floating point number to
+</div></details><details class="toggle method-toggle" open><summary><section id="method.put_f64_ne" class="method"><h4 class="code-header">fn <a href="#method.put_f64_ne" class="fn">put_f64_ne</a>(&amp;mut self, n: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>)</h4></section></summary><div class="docblock"><p>Writes  an IEEE754 double-precision (8 bytes) floating point number to
 <code>self</code> in native-endian byte order.</p>
 <p>The current position is advanced by 8.</p>
 <h5 id="examples-42"><a class="doc-anchor" href="#examples-42">§</a>Examples</h5>

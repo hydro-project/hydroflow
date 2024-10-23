@@ -231,11 +231,7 @@ since Cargo <a href="https://internals.rust-lang.org/t/feature-request-unstable-
 <p>You can specify it in your project’s <code>.cargo/config.toml</code> file:</p>
 <div class="example-wrap"><pre class="language-toml"><code>[build]
 rustflags = [&quot;--cfg&quot;, &quot;tokio_unstable&quot;]
-</code></pre></div><div class="warning">
-The <code>[build]</code> section does <strong>not</strong> go in a
-<code>Cargo.toml</code> file. Instead it must be placed in the Cargo config
-file <code>.cargo/config.toml</code>.
-</div>
+</code></pre></div>
 <p>Alternatively, you can specify it with an environment variable:</p>
 <div class="example-wrap"><pre class="language-sh"><code>## Many *nix shells:
 export RUSTFLAGS=&quot;--cfg tokio_unstable&quot;

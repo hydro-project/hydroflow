@@ -266,39 +266,19 @@
 <a href="#266" id="266">266</a>
 <a href="#267" id="267">267</a>
 <a href="#268" id="268">268</a>
-<a href="#269" id="269">269</a>
-<a href="#270" id="270">270</a>
-<a href="#271" id="271">271</a>
-<a href="#272" id="272">272</a>
-<a href="#273" id="273">273</a>
-<a href="#274" id="274">274</a>
-<a href="#275" id="275">275</a>
-<a href="#276" id="276">276</a>
-<a href="#277" id="277">277</a>
-<a href="#278" id="278">278</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 #![doc = <span class="macro">include_str!</span>(<span class="string">"../README.md"</span>)]
 
 </span><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 
+<span class="kw">pub use </span>cc_traits;
 <span class="kw">use </span>sealed::sealed;
-<span class="kw">pub use </span>{cc_traits, variadics};
 
 <span class="doccomment">/// Module for definiting algebraic structures and properties.
 </span><span class="kw">pub mod </span>algebra;
 <span class="kw">pub mod </span>collections;
 <span class="kw">mod </span>conflict;
 <span class="kw">mod </span>dom_pair;
-<span class="doccomment">/// GHT from the Wang/Willsey/Suciu Freejoin work
-</span><span class="kw">pub mod </span>ght;
-<span class="doccomment">/// Lattice methods for GHT
-</span><span class="kw">pub mod </span>ght_lattice;
-<span class="doccomment">/// COLT from the Wang/Willsey/Suciu Freejoin work
-</span><span class="kw">pub mod </span>ght_lazy;
-<span class="doccomment">/// Macros for GHT
-</span><span class="kw">pub mod </span>ght_macros;
-<span class="doccomment">/// Tests for GHT
-</span><span class="kw">pub mod </span>ght_test;
 <span class="kw">pub mod </span>map_union;
 <span class="kw">pub mod </span>map_union_with_tombstones;
 <span class="kw">mod </span>ord;

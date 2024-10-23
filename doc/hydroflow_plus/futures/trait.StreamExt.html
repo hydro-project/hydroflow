@@ -217,7 +217,7 @@ different sized integer, the <a href="trait.StreamExt.html#method.zip" title="me
 functionality.</p>
 <h5 id="overflow-behavior"><a class="doc-anchor" href="#overflow-behavior">§</a>Overflow Behavior</h5>
 <p>The method does no guarding against overflows, so enumerating more than
-<a href="https://doc.rust-lang.org/nightly/std/primitive.usize.html#associatedconstant.MAX" title="associated constant usize::MAX"><code>usize::MAX</code></a> elements either produces the wrong result or panics. If
+[<code>prim@usize::max_value()</code>] elements either produces the wrong result or panics. If
 debug assertions are enabled, a panic is guaranteed.</p>
 <h5 id="panics"><a class="doc-anchor" href="#panics">§</a>Panics</h5>
 <p>The returned stream might panic if the to-be-returned index would

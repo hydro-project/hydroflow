@@ -199,6 +199,7 @@
 <a href="#199" id="199">199</a>
 <a href="#200" id="200">200</a>
 <a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 
 <span class="kw">use </span>cc_traits::Iter;
@@ -301,10 +302,11 @@
         <span class="kw">if </span><span class="self">self</span>.vec.len() != other.vec.len() {
             <span class="kw">return </span><span class="bool-val">false</span>;
         }
-        <span class="self">self</span>.vec
+        <span class="kw">return </span><span class="self">self
+            </span>.vec
             .iter()
             .zip(other.vec.iter())
-            .all(|(val_self, val_other)| val_self == val_other)
+            .all(|(val_self, val_other)| val_self == val_other);
     }
 }
 

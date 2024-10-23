@@ -53,7 +53,7 @@ by the caller representing a byte slice for the duration of <code>'a</code>.</p>
 slice.write_byte(<span class="number">0</span>, <span class="string">b'b'</span>);
 
 <span class="macro">assert_eq!</span>(<span class="string">b"boo"</span>, <span class="kw-2">&amp;</span>data[..]);</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.copy_from_slice" class="method"><h4 class="code-header">pub fn <a href="#method.copy_from_slice" class="fn">copy_from_slice</a>(&amp;mut self, src: &amp;[<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>])</h4></section></summary><div class="docblock"><p>Copies bytes from <code>src</code> into <code>self</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.copy_from_slice" class="method"><h4 class="code-header">pub fn <a href="#method.copy_from_slice" class="fn">copy_from_slice</a>(&amp;mut self, src: &amp;[<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>])</h4></section></summary><div class="docblock"><p>Copies bytes  from <code>src</code> into <code>self</code>.</p>
 <p>The length of <code>src</code> must be the same as <code>self</code>.</p>
 <h5 id="panics-1"><a class="doc-anchor" href="#panics-1">§</a>Panics</h5>
 <p>The function panics if <code>src</code> has a different length than <code>self</code>.</p>

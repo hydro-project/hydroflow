@@ -388,7 +388,7 @@ early if an error occurs.</p>
 them into a local vector. At most <code>capacity</code> items will get buffered
 before they’re yielded from the returned stream. If the underlying stream
 returns <code>Poll::Pending</code>, and the collected chunk is not empty, it will
-be immediately returned.</p>
+be immidiatly returned.</p>
 <p>Note that the vectors returned from this iterator may not always have
 <code>capacity</code> elements. If the underlying stream ended and only a partial
 vector was created, it’ll be returned. Additionally if an error happens
