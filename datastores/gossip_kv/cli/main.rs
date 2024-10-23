@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use clap::{CommandFactory, Parser, Subcommand};
-use gossip_protocol::{ClientRequest, ClientResponse, Key};
+use gossip_kv::{ClientRequest, ClientResponse, Key};
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use hydroflow::{hydroflow_syntax, tokio, DemuxEnum};
 use tracing::error;

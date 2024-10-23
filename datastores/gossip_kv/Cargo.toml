@@ -9,6 +9,7 @@ publish = false
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 config = "0.14.0"
+governor = "0.7.0"
 hostname = "0.4.0"
 hydroflow = { path="../../hydroflow" }
 lattices = { path = '../../lattices'}
@@ -32,9 +33,13 @@ name = "gossip_server"
 path = "server/main.rs"
 
 [[bin]]
+name = "load_test_server"
+path = "load_test_server/server.rs"
+
+[[bin]]
 name = "gossip_cli"
 path = "cli/main.rs"
 
 [lib]
-name = "gossip_protocol"
-path = "protocol/lib.rs"
+name = "gossip_kv"
+path = "kv/lib.rs"

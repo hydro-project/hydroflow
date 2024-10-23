@@ -1,6 +1,6 @@
 use std::sync::OnceLock;
 
-use gossip_protocol::membership::MemberId;
+use gossip_kv::membership::MemberId;
 // use rand::distributions::Distribution;
 // use rand::{Rng};
 

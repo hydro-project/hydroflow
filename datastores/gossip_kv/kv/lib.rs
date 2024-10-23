@@ -1,6 +1,12 @@
 pub mod membership;
 pub mod model;
 
+pub mod server;
+
+pub mod lattices;
+
+pub mod util;
+
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::str::FromStr;

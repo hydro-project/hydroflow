@@ -1,6 +1,7 @@
-use gossip_protocol::model::{Clock, Namespaces};
-use gossip_protocol::{ClientRequest, GossipMessage, Key};
 use hydroflow::DemuxEnum;
+
+use crate::model::{Clock, Namespaces};
+use crate::{ClientRequest, GossipMessage, Key};
 
 /// Convenience enum to represent a client request with the address of the client. Makes it
 /// possible to use `demux_enum` in the surface syntax.

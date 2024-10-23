@@ -97,7 +97,7 @@ module "irsa-ebs-csi" {
 variable "ecr_repositories" {
   description = "List of ECR repository names"
   type = list(string)
-  default = ["gossip_kv_server", "gossip_kv_cli"]
+  default = ["gossip_kv_server", "gossip_kv_cli", "gossip_kv_load_test"]
 }
 
 module "ecr" {
@@ -158,7 +158,7 @@ resource "kubernetes_stateful_set" "gossip_kv_seed_nodes" {
 
   spec {
     service_name = "gossip-kv-seed-nodes"
-    replicas     = 3
+    replicas     = 1
 
     selector {
       match_labels = {
@@ -182,7 +182,7 @@ resource "kubernetes_stateful_set" "gossip_kv_seed_nodes" {
 
         container {
           name              = "gossip-kv-server"
-          image             = "${module.ecr.gossip_kv_server.repository_url}:latest"
+          image             = "${module.ecr.gossip_kv_load_test.repository_url}:latest"
           image_pull_policy = "Always"
 
           env {
