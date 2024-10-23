@@ -30,7 +30,7 @@ where
     state: &'a mut CrossJoinState<V1, V2>,
 }
 
-impl<'a, I1, V1: 'static, I2, V2: 'static> Iterator for CrossJoin<'a, I1, V1, I2, V2>
+impl<I1, V1: 'static, I2, V2: 'static> Iterator for CrossJoin<'_, I1, V1, I2, V2>
 where
     V1: Eq + Clone,
     V2: Eq + Clone,

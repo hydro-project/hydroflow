@@ -18,8 +18,8 @@ where
     rhs_state: &'a mut RhsState,
 }
 
-impl<'a, Key, I1, V1, I2, V2, LhsState, RhsState> Iterator
-    for SymmetricHashJoin<'a, Key, I1, V1, I2, V2, LhsState, RhsState>
+impl<Key, I1, V1, I2, V2, LhsState, RhsState> Iterator
+    for SymmetricHashJoin<'_, Key, I1, V1, I2, V2, LhsState, RhsState>
 where
     Key: Eq + std::hash::Hash + Clone,
     V1: Clone,
