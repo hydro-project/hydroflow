@@ -14,7 +14,7 @@ use hydro_deploy::hydroflow_crate::tracing_options::TracingOptions;
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{CustomService, Deployment, Host, HydroflowCrate};
 use hydroflow::futures::StreamExt;
-use hydroflow::util::deploy::ConnectedSource;
+use hydroflow::util::deploy::{ConnectedSink, ConnectedSource};
 use nameof::name_of;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -29,7 +29,6 @@ use super::trybuild::{compile_graph_trybuild, create_trybuild};
 use super::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
 use crate::futures::SinkExt;
 use crate::lang::graph::HydroflowGraph;
-use crate::util::deploy::ConnectedSink;
 
 pub struct HydroDeploy {}
 
@@ -575,7 +574,7 @@ impl Node for DeployExternal {
     fn update_meta(&mut self, _meta: &Self::Meta) {}
 }
 
-impl<'a> ExternalSpec<'a, HydroDeploy> for Arc<dyn Host> {
+impl ExternalSpec<'_, HydroDeploy> for Arc<dyn Host> {
     fn build(self, _id: usize, _name_hint: &str) -> DeployExternal {
         DeployExternal {
             next_port: Rc::new(RefCell::new(0)),
@@ -754,7 +753,7 @@ impl DeployProcessSpec {
     }
 }
 
-impl<'a> ProcessSpec<'a, HydroDeploy> for DeployProcessSpec {
+impl ProcessSpec<'_, HydroDeploy> for DeployProcessSpec {
     fn build(self, id: usize, _name_hint: &str) -> DeployNode {
         DeployNode {
             id,
@@ -765,7 +764,7 @@ impl<'a> ProcessSpec<'a, HydroDeploy> for DeployProcessSpec {
     }
 }
 
-impl<'a> ProcessSpec<'a, HydroDeploy> for TrybuildHost {
+impl ProcessSpec<'_, HydroDeploy> for TrybuildHost {
     fn build(mut self, id: usize, name_hint: &str) -> DeployNode {
         self.name_hint = Some(format!("{} (process {id})", name_hint));
         DeployNode {
@@ -786,7 +785,7 @@ impl DeployClusterSpec {
     }
 }
 
-impl<'a> ClusterSpec<'a, HydroDeploy> for DeployClusterSpec {
+impl ClusterSpec<'_, HydroDeploy> for DeployClusterSpec {
     fn build(self, id: usize, _name_hint: &str) -> DeployCluster {
         DeployCluster {
             id,
@@ -800,7 +799,7 @@ impl<'a> ClusterSpec<'a, HydroDeploy> for DeployClusterSpec {
     }
 }
 
-impl<'a> ClusterSpec<'a, HydroDeploy> for Vec<TrybuildHost> {
+impl ClusterSpec<'_, HydroDeploy> for Vec<TrybuildHost> {
     fn build(self, id: usize, name_hint: &str) -> DeployCluster {
         let name_hint = format!("{} (cluster {id})", name_hint);
         DeployCluster {

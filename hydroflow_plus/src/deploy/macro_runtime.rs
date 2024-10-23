@@ -2,12 +2,12 @@ use std::cell::RefCell;
 use std::pin::Pin;
 use std::rc::Rc;
 
+use hydroflow::util::deploy::DeployPorts;
 use stageleft::{Quoted, RuntimeData};
 
 use super::HydroflowPlusMeta;
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
 use crate::lang::graph::HydroflowGraph;
-use crate::util::deploy::DeployPorts;
 
 pub struct DeployRuntime {}
 
@@ -295,7 +295,7 @@ impl Node for DeployRuntimeCluster {
     }
 }
 
-impl<'a> ProcessSpec<'a, DeployRuntime> for () {
+impl ProcessSpec<'_, DeployRuntime> for () {
     fn build(self, _id: usize, _name_hint: &str) -> DeployRuntimeNode {
         DeployRuntimeNode {
             next_port: Rc::new(RefCell::new(0)),
@@ -303,7 +303,7 @@ impl<'a> ProcessSpec<'a, DeployRuntime> for () {
     }
 }
 
-impl<'cli> ClusterSpec<'cli, DeployRuntime> for () {
+impl ClusterSpec<'_, DeployRuntime> for () {
     fn build(self, _id: usize, _name_hint: &str) -> DeployRuntimeCluster {
         DeployRuntimeCluster {
             next_port: Rc::new(RefCell::new(0)),
@@ -311,7 +311,7 @@ impl<'cli> ClusterSpec<'cli, DeployRuntime> for () {
     }
 }
 
-impl<'cli> ExternalSpec<'cli, DeployRuntime> for () {
+impl ExternalSpec<'_, DeployRuntime> for () {
     fn build(self, _id: usize, _name_hint: &str) -> DeployRuntimeNode {
         panic!()
     }

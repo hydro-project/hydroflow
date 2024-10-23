@@ -9,9 +9,10 @@ use quote::quote;
 use runtime_support::FreeVariable;
 use stageleft::*;
 
+use super::staging_util::get_this_crate;
 use crate::ir::HfPlusLeaf;
 use crate::location::{Cluster, ExternalProcess, Process};
-use crate::RuntimeContext;
+use crate::{ClusterId, RuntimeContext};
 
 pub mod built;
 pub mod deploy;
@@ -31,13 +32,20 @@ pub struct FlowStateInner {
 
 pub type FlowState = Rc<RefCell<FlowStateInner>>;
 
-#[derive(Copy, Clone)]
-pub struct ClusterIds<'a> {
+pub struct ClusterIds<'a, C> {
     pub(crate) id: usize,
-    pub(crate) _phantom: PhantomData<&'a mut &'a Vec<u32>>,
+    pub(crate) _phantom: PhantomData<&'a mut &'a C>,
 }
 
-impl<'a> FreeVariable<&'a Vec<u32>> for ClusterIds<'a> {
+impl<C> Clone for ClusterIds<'_, C> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<C> Copy for ClusterIds<'_, C> {}
+
+impl<'a, C> FreeVariable<&'a Vec<ClusterId<C>>> for ClusterIds<'a, C> {
     fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>)
     where
         Self: Sized,
@@ -46,19 +54,33 @@ impl<'a> FreeVariable<&'a Vec<u32>> for ClusterIds<'a> {
             &format!("__hydroflow_plus_cluster_ids_{}", self.id),
             Span::call_site(),
         );
-        (None, Some(quote! { #ident }))
+        let root = get_this_crate();
+        let c_type = quote_type::<C>();
+        (
+            None,
+            Some(
+                quote! { unsafe { ::std::mem::transmute::<_, &::std::vec::Vec<#root::ClusterId<#c_type>>>(#ident) } },
+            ),
+        )
     }
 }
 
-impl<'a> Quoted<'a, &'a Vec<u32>> for ClusterIds<'a> {}
+impl<'a, C> Quoted<'a, &'a Vec<ClusterId<C>>> for ClusterIds<'a, C> {}
 
-#[derive(Copy, Clone)]
-pub(crate) struct ClusterSelfId<'a> {
+pub(crate) struct ClusterSelfId<'a, C> {
     pub(crate) id: usize,
-    pub(crate) _phantom: PhantomData<&'a mut &'a u32>,
+    pub(crate) _phantom: PhantomData<&'a mut &'a C>,
 }
 
-impl<'a> FreeVariable<u32> for ClusterSelfId<'a> {
+impl<C> Clone for ClusterSelfId<'_, C> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<C> Copy for ClusterSelfId<'_, C> {}
+
+impl<C> FreeVariable<ClusterId<C>> for ClusterSelfId<'_, C> {
     fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>)
     where
         Self: Sized,
@@ -67,11 +89,16 @@ impl<'a> FreeVariable<u32> for ClusterSelfId<'a> {
             &format!("__hydroflow_plus_cluster_self_id_{}", self.id),
             Span::call_site(),
         );
-        (None, Some(quote! { #ident }))
+        let root = get_this_crate();
+        let c_type: syn::Type = quote_type::<C>();
+        (
+            None,
+            Some(quote! { #root::ClusterId::<#c_type>::from_raw(#ident) }),
+        )
     }
 }
 
-impl<'a> Quoted<'a, u32> for ClusterSelfId<'a> {}
+impl<'a, C> Quoted<'a, ClusterId<C>> for ClusterSelfId<'a, C> {}
 
 pub struct FlowBuilder<'a> {
     flow_state: FlowState,
@@ -91,7 +118,7 @@ pub struct FlowBuilder<'a> {
     _phantom: PhantomData<&'a mut &'a ()>,
 }
 
-impl<'a> Drop for FlowBuilder<'a> {
+impl Drop for FlowBuilder<'_> {
     fn drop(&mut self) {
         if !self.finalized {
             panic!("Dropped FlowBuilder without finalizing, you may have forgotten to call `with_default_optimize`, `optimize_with`, or `finalize`.");
@@ -99,7 +126,7 @@ impl<'a> Drop for FlowBuilder<'a> {
     }
 }
 
-impl<'a> QuotedContext for FlowBuilder<'a> {
+impl QuotedContext for FlowBuilder<'_> {
     fn create() -> Self {
         FlowBuilder::new()
     }
