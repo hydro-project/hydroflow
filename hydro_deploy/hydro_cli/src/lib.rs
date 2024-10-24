@@ -163,6 +163,24 @@ impl Deployment {
     }
 
     #[expect(non_snake_case, reason = "pymethods")]
+    fn PodHost(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
+        let arc = self.underlying.blocking_write().add_host(|id| {
+            core::PodHost::new(
+                id
+            )
+        });
+
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(Host {
+                underlying: arc.clone(),
+            })
+            .add_subclass(KubernetesPodHost { underlying: arc }),
+        )?
+        .into_py(py))
+    }
+
+    #[expect(non_snake_case, reason = "pymethods")]
     fn Localhost(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         let arc = self.underlying.blocking_read().Localhost();
 
@@ -185,6 +203,7 @@ impl Deployment {
         image: String,
         region: String,
         network: GcpNetwork,
+        architecture: Option<String>,
         user: Option<String>,
         startup_script: Option<String>,
     ) -> PyResult<Py<PyAny>> {
@@ -193,6 +212,7 @@ impl Deployment {
                 id,
                 project,
                 machine_type,
+                architecture,
                 image,
                 region,
                 network.underlying,
@@ -219,11 +239,12 @@ impl Deployment {
         os_type: String, // linux or windows
         machine_size: String,
         region: String,
+        architecture: Option<String>,
         image: Option<HashMap<String, String>>,
         user: Option<String>,
     ) -> PyResult<Py<PyAny>> {
         let arc = self.underlying.blocking_write().add_host(|id| {
-            core::AzureHost::new(id, project, os_type, machine_size, image, region, user)
+            core::AzureHost::new(id, project, os_type, machine_size, architecture, image, region, user)
         });
 
         Ok(Py::new(
@@ -357,6 +378,28 @@ impl LocalhostHost {
         .into_py(py))
     }
 }
+
+#[pyclass(extends=Host, subclass)]
+struct KubernetesPodHost {
+    underlying: Arc<core::PodHost>,
+}
+
+#[pymethods]
+impl KubernetesPodHost {
+    fn client_only(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
+        let arc = Arc::new(self.underlying.client_only());
+
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(Host {
+                underlying: arc.clone(),
+            })
+            .add_subclass(KubernetesPodHost { underlying: arc }),
+        )?
+        .into_py(py))
+    }
+}
+
 
 #[pyclass]
 #[derive(Clone)]
@@ -839,6 +882,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
 
     module.add_class::<Host>()?;
     module.add_class::<LocalhostHost>()?;
+    module.add_class::<KubernetesPodHost>()?;
 
     module.add_class::<GcpNetwork>()?;
     module.add_class::<GcpComputeEngineHost>()?;
