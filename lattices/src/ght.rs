@@ -84,7 +84,6 @@ where
     Node: GeneralizedHashTrieNode,
 {
     pub(crate) children: HashMap<Head, Node>,
-    // pub(crate) _leaf: std::marker::PhantomData<Leaf>,
 }
 
 impl<Head, Node: GeneralizedHashTrieNode> Default for GhtInner<Head, Node>
@@ -94,10 +93,7 @@ where
 {
     fn default() -> Self {
         let children = Default::default();
-        Self {
-            children,
-            // _leaf: Default::default(),
-        }
+        Self { children }
     }
 }
 
@@ -205,7 +201,8 @@ where
 {
     pub(crate) elements: Storage,
     pub(crate) forced: bool,
-    pub(crate) _suffix_schema: PhantomData<ValType>, /* defines ValType for the parents, recursively */
+    /// defines ValType for the parents, recursively
+    pub(crate) _suffix_schema: PhantomData<ValType>,
 }
 impl<Schema, ValType, Storage> Default for GhtLeaf<Schema, ValType, Storage>
 where
@@ -267,7 +264,6 @@ where
 
     fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
         self.elements.iter().any(|r| Schema::eq_ref(r, row))
-        //.any(|r| Schema::eq_ref(r.as_ref_var(), row))
     }
 
     fn recursive_iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
@@ -280,10 +276,11 @@ where
     ) -> Option<&'_ GhtLeaf<<Self as GeneralizedHashTrieNode>::Schema, Self::ValType, Self::Storage>>
     {
         // TODO(mingwei): actually use the hash set as a hash set
-        if self.elements.iter().any(|x| {
-            // let (_prefix, suffix) = Schema::split_by_suffix_ref(x.as_ref_var());
-            <Schema as PartialEqVariadic>::eq_ref(row, x) //.as_ref_var())
-        }) {
+        if self
+            .elements
+            .iter()
+            .any(|x| <Schema as PartialEqVariadic>::eq_ref(row, x))
+        {
             Some(self)
         } else {
             None
@@ -301,18 +298,8 @@ where
 
 impl<Schema, Storage> GeneralizedHashTrieNode for GhtLeaf<Schema, (), Storage>
 where
-    Schema: 'static
-        + Eq
-        + VariadicExt
-        + Hash
-        + Clone
-        // + SplitBySuffix<var_type!(ValHead, ...ValRest)>
-        + PartialEqVariadic,
+    Schema: 'static + Eq + VariadicExt + Hash + Clone + PartialEqVariadic,
     Storage: VariadicCollection<Schema = Schema> + Default + IntoIterator<Item = Schema>,
-    // ValHead: Clone + Eq + Hash,
-    // var_type!(ValHead, ...ValRest): Clone + Eq + Hash + PartialEqVariadic,
-    // <Schema as SplitBySuffix<var_type!(ValHead, ...ValRest)>>::Prefix: Eq + Hash + Clone,
-    // for<'a> Schema::AsRefVar<'a>: PartialEq,
 {
     type Schema = Schema;
     type SuffixSchema = (); // var_type!(ValHead, ...ValRest);
@@ -344,7 +331,6 @@ where
 
     fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
         self.elements.iter().any(|r| Schema::eq_ref(r, row))
-        // .any(|r| Schema::eq_ref(r.as_ref_var(), row))
     }
 
     fn recursive_iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
@@ -358,7 +344,6 @@ where
     {
         // TODO(mingwei): actually use the hash set as a hash set
         if self.elements.iter().any(|x| {
-            // let (_prefix, suffix) = Schema::split_by_suffix_ref(x.as_ref_var());
             <Schema as PartialEqVariadic>::eq_ref(row, x) //.as_ref_var())
         }) {
             Some(self)
@@ -432,8 +417,6 @@ where
         self.children.get_mut(head)
     }
 
-    // /// The type of items returned by iter
-    // type IterKey = Self::Head;
     fn iter(&self) -> impl Iterator<Item = Self::Head> {
         self.children.keys().cloned()
     }
@@ -465,15 +448,12 @@ where
         None
     }
 
-    // /// The type of items returned by iter
-    // type IterKey = Self::Schema;
     fn iter(&self) -> impl Iterator<Item = Self::Head> {
         std::iter::empty()
     }
 
     fn iter_tuples(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
-        // impl Iterator<Item = Self::Schema> {
-        self.elements.iter() //.cloned()
+        self.elements.iter()
     }
 }
 
@@ -536,7 +516,6 @@ where
     KeyPrefixRef: 'static + RefVariadic,
     Schema: 'static + VariadicExt + Hash + Eq + SplitBySuffix<ValType>,
     ValType: VariadicExt,
-    // for<'a> SuffixSchema::AsRefVar<'a>: Split<KeyPrefixRef>,
     ValType: Split<KeyPrefixRef::UnRefVar>,
     KeyPrefixRef::UnRefVar: PartialEqVariadic,
     Storage: 'static + VariadicCollection<Schema = Schema>,
