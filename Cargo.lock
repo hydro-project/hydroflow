@@ -1598,7 +1598,6 @@ name = "lattices"
 version = "0.5.7"
 dependencies = [
  "cc-traits",
- "fnv",
  "lattices_macro",
  "ref-cast",
  "sealed",

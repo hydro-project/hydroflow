@@ -22,7 +22,6 @@ lattices_macro = { path = "../lattices_macro", version = "^0.5.6" }
 ref-cast = "1.0.23"
 variadics = { path = "../variadics", version = "^0.0.6" }
 variadics_macro = { path = "../variadics_macro", version = "^0.5.5" }
-fnv = "1.0.7"
 
 [dev-dependencies]
 trybuild = "1.0.0"

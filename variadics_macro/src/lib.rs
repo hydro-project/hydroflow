@@ -25,7 +25,6 @@ impl Parse for InputLen {
 pub fn tuple(ts: TokenStream) -> TokenStream {
     let InputLen { input, len } = parse_macro_input!(ts as InputLen);
     let len = len.base10_parse::<usize>().unwrap();
-    // let pattern = gen_pattern(len, 1);
     let pattern = (0..len)
         .rev()
         .map(|i| format_ident!("x{}", i))

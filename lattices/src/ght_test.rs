@@ -465,11 +465,10 @@ mod test {
         assert_eq!(tup, (&1, &2, &3));
     }
 
-    use std::hash::BuildHasherDefault;
+    use std::hash::{BuildHasherDefault, DefaultHasher};
 
     #[test]
     fn test_triangle_generic_join() {
-        use fnv::FnvHasher;
         const MATCHES: u32 = 1000;
         type MyGht = GhtType!(u32 => u32: VariadicCountedHashSet);
 
@@ -492,11 +491,11 @@ mod test {
         let r_x = r_iter
             .clone()
             .map(|(x, _y)| x)
-            .collect::<HashSet<_, BuildHasherDefault<FnvHasher>>>();
+            .collect::<HashSet<_, BuildHasherDefault<DefaultHasher>>>();
         let t_x = s_iter
             .clone()
             .map(|(_z, x)| x)
-            .collect::<HashSet<_, BuildHasherDefault<FnvHasher>>>();
+            .collect::<HashSet<_, BuildHasherDefault<DefaultHasher>>>();
         let x_inter = r_x.intersection(&t_x);
         let len = x_inter.clone().count();
         if len > 1 {
@@ -512,11 +511,11 @@ mod test {
             let r = rx_ght
                 .prefix_iter(var_expr!(a))
                 .map(|(_x, (y, ()))| *y)
-                .collect::<HashSet<_, BuildHasherDefault<FnvHasher>>>();
+                .collect::<HashSet<_, BuildHasherDefault<DefaultHasher>>>();
             let s_y = s_iter
                 .clone()
                 .map(|(y, _z)| y)
-                .collect::<HashSet<_, BuildHasherDefault<FnvHasher>>>();
+                .collect::<HashSet<_, BuildHasherDefault<DefaultHasher>>>();
             let y_inter = r.intersection(&s_y);
             let len = y_inter.clone().count();
             if len > 1 {
@@ -527,11 +526,11 @@ mod test {
                 let s = sb_ght
                     .prefix_iter(var_expr!(b))
                     .map(|(_b, (z, ()))| *z)
-                    .collect::<HashSet<_, BuildHasherDefault<FnvHasher>>>();
+                    .collect::<HashSet<_, BuildHasherDefault<DefaultHasher>>>();
                 let t = tx_ght
                     .prefix_iter(var_expr!(a))
                     .map(|(_x, (z, ()))| *z)
-                    .collect::<HashSet<_, BuildHasherDefault<FnvHasher>>>();
+                    .collect::<HashSet<_, BuildHasherDefault<DefaultHasher>>>();
                 let z_inter = s.intersection(&t);
                 let len = z_inter.clone().count();
                 if len > 1 {

@@ -221,23 +221,14 @@ where
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
     GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>:
         GeneralizedHashTrieNode<Head = Head> + GhtGet,
-    // Rest: ColtNode<Head = Head>,
-    // Head: Eq + Hash + Clone,
-    // Head2: Eq + Hash + Clone,
-    // Node: GeneralizedHashTrieNode,
-    GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>: GeneralizedHashTrieNode<
-        Head = Rest::Head,
-        // SuffixSchema = Rest::SuffixSchema,
-        Schema = Rest::Schema,
-        Storage = Rest::Storage,
-    >,
+    GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>:
+        GeneralizedHashTrieNode<Head = Rest::Head, Schema = Rest::Schema, Storage = Rest::Storage>,
     GhtLeaf<Schema, ValType, Storage>:
         GeneralizedHashTrieNode<Schema = Rest::Schema, Storage = Rest::Storage> + GhtGet,
 {
     type Schema = Rest::Schema;
     type Head = Rest::Head;
     type SuffixSchema = Rest::SuffixSchema;
-    // type Get = Rest::Get; // Option<&'a <GhtLeaf<Schema, ValType> as GhtGet>::Get>,
     type Get = var_type!(&'a mut GhtLeaf<Schema, ValType, Storage>, ...Rest::Get);
     type Storage = Rest::Storage;
 
@@ -299,9 +290,8 @@ where
 }
 impl<Head, Schema, ValType, Storage> ColtGetTail<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>> for var_type!(&mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>)
 where
-    GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>: GeneralizedHashTrieNode<Head = Head>
-        // + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
-        + GhtGet,
+    GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>:
+        GeneralizedHashTrieNode<Head = Head> + GhtGet,
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema, Storage = Storage>,
     Head: Clone + Eq + Hash,
     Schema: Clone + Eq + Hash + VariadicExt,
