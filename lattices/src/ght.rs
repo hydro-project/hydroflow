@@ -47,11 +47,11 @@ pub trait GeneralizedHashTrieNode: Default {
     /// E.g. if we have GhtInner<GhtInner<GhtLeaf...>> the height is 2
     /// This is a static property of the type of this node, so simply invokes the static method.
     fn height(&self) -> usize {
-        Self::static_height()
+        Self::HEIGHT
     }
 
-    /// Return the height of this node in the GhT. Leaf = 0.
-    fn static_height() -> usize;
+    /// The height of this node in the GhT. Leaf = 0.
+    const HEIGHT: usize;
 
     /// Inserts an item into the hash trie.
     fn insert(&mut self, row: Self::Schema) -> bool;
@@ -139,9 +139,7 @@ where
         changed
     }
 
-    fn static_height() -> usize {
-        Node::static_height() + 1
-    }
+    const HEIGHT: usize = Node::HEIGHT + 1;
 
     fn insert(&mut self, row: Self::Schema) -> bool {
         let (_prefix, var_args!(head, ..._rest)) =
@@ -260,9 +258,7 @@ where
         self.elements.len() > old_len
     }
 
-    fn static_height() -> usize {
-        0
-    }
+    const HEIGHT: usize = 0;
 
     fn insert(&mut self, row: Self::Schema) -> bool {
         self.elements.insert(row);
@@ -339,9 +335,7 @@ where
         self.elements.len() > old_len
     }
 
-    fn static_height() -> usize {
-        0
-    }
+    const HEIGHT: usize = 0;
 
     fn insert(&mut self, row: Self::Schema) -> bool {
         self.elements.insert(row);

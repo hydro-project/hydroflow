@@ -96,7 +96,7 @@ mod test {
         let mut htrie = MyGht::default();
         htrie.insert(var_expr!(42, 314, 43770));
         assert_eq!(htrie.recursive_iter().count(), 1);
-        assert_eq!(MyGht::static_height(), 2);
+        assert_eq!(MyGht::HEIGHT, 2);
         htrie.insert(var_expr!(42, 315, 43770));
         assert_eq!(htrie.recursive_iter().count(), 2);
         htrie.insert(var_expr!(42, 314, 30619));
