@@ -830,7 +830,6 @@
 <a href="#830" id="830">830</a>
 <a href="#831" id="831">831</a>
 <a href="#832" id="832">832</a>
-<a href="#833" id="833">833</a>
 </pre></div><pre class="rust"><code><span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use </span>std::collections::HashSet;
@@ -1298,11 +1297,10 @@
         <span class="macro">assert_eq!</span>(tup, (<span class="kw-2">&amp;</span><span class="number">1</span>, <span class="kw-2">&amp;</span><span class="number">2</span>, <span class="kw-2">&amp;</span><span class="number">3</span>));
     }
 
-    <span class="kw">use </span>std::hash::BuildHasherDefault;
+    <span class="kw">use </span>std::hash::{BuildHasherDefault, DefaultHasher};
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_triangle_generic_join() {
-        <span class="kw">use </span>fnv::FnvHasher;
         <span class="kw">const </span>MATCHES: u32 = <span class="number">1000</span>;
         <span class="kw">type </span>MyGht = <span class="macro">GhtType!</span>(u32 =&gt; u32: VariadicCountedHashSet);
 
@@ -1325,11 +1323,11 @@
         <span class="kw">let </span>r_x = r_iter
             .clone()
             .map(|(x, _y)| x)
-            .collect::&lt;HashSet&lt;<span class="kw">_</span>, BuildHasherDefault&lt;FnvHasher&gt;&gt;&gt;();
+            .collect::&lt;HashSet&lt;<span class="kw">_</span>, BuildHasherDefault&lt;DefaultHasher&gt;&gt;&gt;();
         <span class="kw">let </span>t_x = s_iter
             .clone()
             .map(|(_z, x)| x)
-            .collect::&lt;HashSet&lt;<span class="kw">_</span>, BuildHasherDefault&lt;FnvHasher&gt;&gt;&gt;();
+            .collect::&lt;HashSet&lt;<span class="kw">_</span>, BuildHasherDefault&lt;DefaultHasher&gt;&gt;&gt;();
         <span class="kw">let </span>x_inter = r_x.intersection(<span class="kw-2">&amp;</span>t_x);
         <span class="kw">let </span>len = x_inter.clone().count();
         <span class="kw">if </span>len &gt; <span class="number">1 </span>{
@@ -1345,11 +1343,11 @@
             <span class="kw">let </span>r = rx_ght
                 .prefix_iter(<span class="macro">var_expr!</span>(a))
                 .map(|(_x, (y, ()))| <span class="kw-2">*</span>y)
-                .collect::&lt;HashSet&lt;<span class="kw">_</span>, BuildHasherDefault&lt;FnvHasher&gt;&gt;&gt;();
+                .collect::&lt;HashSet&lt;<span class="kw">_</span>, BuildHasherDefault&lt;DefaultHasher&gt;&gt;&gt;();
             <span class="kw">let </span>s_y = s_iter
                 .clone()
                 .map(|(y, _z)| y)
-                .collect::&lt;HashSet&lt;<span class="kw">_</span>, BuildHasherDefault&lt;FnvHasher&gt;&gt;&gt;();
+                .collect::&lt;HashSet&lt;<span class="kw">_</span>, BuildHasherDefault&lt;DefaultHasher&gt;&gt;&gt;();
             <span class="kw">let </span>y_inter = r.intersection(<span class="kw-2">&amp;</span>s_y);
             <span class="kw">let </span>len = y_inter.clone().count();
             <span class="kw">if </span>len &gt; <span class="number">1 </span>{
@@ -1360,11 +1358,11 @@
                 <span class="kw">let </span>s = sb_ght
                     .prefix_iter(<span class="macro">var_expr!</span>(b))
                     .map(|(_b, (z, ()))| <span class="kw-2">*</span>z)
-                    .collect::&lt;HashSet&lt;<span class="kw">_</span>, BuildHasherDefault&lt;FnvHasher&gt;&gt;&gt;();
+                    .collect::&lt;HashSet&lt;<span class="kw">_</span>, BuildHasherDefault&lt;DefaultHasher&gt;&gt;&gt;();
                 <span class="kw">let </span>t = tx_ght
                     .prefix_iter(<span class="macro">var_expr!</span>(a))
                     .map(|(_x, (z, ()))| <span class="kw-2">*</span>z)
-                    .collect::&lt;HashSet&lt;<span class="kw">_</span>, BuildHasherDefault&lt;FnvHasher&gt;&gt;&gt;();
+                    .collect::&lt;HashSet&lt;<span class="kw">_</span>, BuildHasherDefault&lt;DefaultHasher&gt;&gt;&gt;();
                 <span class="kw">let </span>z_inter = s.intersection(<span class="kw-2">&amp;</span>t);
                 <span class="kw">let </span>len = z_inter.clone().count();
                 <span class="kw">if </span>len &gt; <span class="number">1 </span>{

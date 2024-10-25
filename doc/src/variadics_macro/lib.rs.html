@@ -45,7 +45,6 @@
 <a href="#45" id="45">45</a>
 <a href="#46" id="46">46</a>
 <a href="#47" id="47">47</a>
-<a href="#48" id="48">48</a>
 </pre></div><pre class="rust"><code><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">"../README.md"</span>)]
 </span><span class="kw">extern crate </span>proc_macro;
 
@@ -73,8 +72,7 @@
 </span><span class="kw">pub fn </span>tuple(ts: TokenStream) -&gt; TokenStream {
     <span class="kw">let </span>InputLen { input, len } = <span class="macro">parse_macro_input!</span>(ts <span class="kw">as </span>InputLen);
     <span class="kw">let </span>len = len.base10_parse::&lt;usize&gt;().unwrap();
-    <span class="comment">// let pattern = gen_pattern(len, 1);
-    </span><span class="kw">let </span>pattern = (<span class="number">0</span>..len)
+    <span class="kw">let </span>pattern = (<span class="number">0</span>..len)
         .rev()
         .map(|i| <span class="macro">format_ident!</span>(<span class="string">"x{}"</span>, i))
         .fold(<span class="macro">quote!</span> { () }, |rest, item| <span class="macro">quote!</span> { (#item, #rest) });
