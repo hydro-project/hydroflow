@@ -1,3 +1,4 @@
+//! Tests for the GHT code
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;

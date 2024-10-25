@@ -1,3 +1,4 @@
+//! Macros for GHT
 #[macro_export]
 /// Internal macro for constructing a Ght struct with the given schema and storage type
 ///

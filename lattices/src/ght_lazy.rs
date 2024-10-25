@@ -1,3 +1,5 @@
+//! COLT from Wang/Willsey/Suciu
+
 use std::hash::Hash;
 
 use variadics::variadic_collections::VariadicCollection;
@@ -5,7 +7,7 @@ use variadics::{var_expr, var_type, PartialEqVariadic, SplitBySuffix, VariadicEx
 
 use crate::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
 
-/// COLT from Wang/Willsey/Suciu
+/// Data structure design for our COLT is unique.
 ///
 /// In the paper, the COLT is an unbalanced trie that "grows upward" from leaves lazily
 /// on access via the `force` method.

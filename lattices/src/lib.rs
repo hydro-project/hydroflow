@@ -11,15 +11,10 @@ pub mod algebra;
 pub mod collections;
 mod conflict;
 mod dom_pair;
-/// GHT from the Wang/Willsey/Suciu Freejoin work
 pub mod ght;
-/// Lattice methods for GHT
 pub mod ght_lattice;
-/// COLT from the Wang/Willsey/Suciu Freejoin work
 pub mod ght_lazy;
-/// Macros for GHT
 pub mod ght_macros;
-/// Tests for GHT
 pub mod ght_test;
 pub mod map_union;
 pub mod map_union_with_tombstones;

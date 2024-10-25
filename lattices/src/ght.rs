@@ -1,3 +1,4 @@
+//! GHT from the Wang/Willsey/Suciu Freejoin work
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
