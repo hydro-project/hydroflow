@@ -88,11 +88,11 @@ macro_rules! ColtType {
     };
     // Base case: single type to single type
     ($a:ty => $c:ty) => {
-        ($crate::GhtType!($a => $c: VariadicColumnMultiset), ColtType!($a, $c => ()))
+        ($crate::GhtType!($a => $c: VariadicColumnMultiset), $crate::ColtType!($a, $c => ()))
     };
     // Recursive case: single type to multiple types
     ($a:ty => $c:ty, $( $d:ty ),*) => {
-        ($crate::GhtType!($a => $c, $( $d ),*: VariadicColumnMultiset), ColtType!($a, $c => $( $d ),*))
+        ($crate::GhtType!($a => $c, $( $d ),*: VariadicColumnMultiset), $crate::ColtType!($a, $c => $( $d ),*))
     };
     // Base case: multiple types to empty
     ($a:ty, $( $b:ty ),* => ()) => {
@@ -100,18 +100,18 @@ macro_rules! ColtType {
     };
     // Base case: multiple types to single type
     ($a:ty, $( $b:ty ),* => $c:ty) => {
-        ($crate::GhtType!($a, $( $b ),* => $c: VariadicColumnMultiset), ColtType!($a, $( $b ),*, $c => ()))
+        ($crate::GhtType!($a, $( $b ),* => $c: VariadicColumnMultiset), $crate::ColtType!($a, $( $b ),*, $c => ()))
     };
     // Recursive case: multiple types to multiple types
     ($a:ty, $( $b:ty ),* => $c:ty, $( $d:ty ),*) => {
-        ($crate::GhtType!($a, $( $b ),* => $c, $( $d ),*: VariadicColumnMultiset), ColtType!($a, $( $b ),*, $c => $( $d ),*))
+        ($crate::GhtType!($a, $( $b ),* => $c, $( $d ),*: VariadicColumnMultiset), $crate::ColtType!($a, $( $b ),*, $c => $( $d ),*))
     };
     // General case: single type
     ($a:ty) => {
-        ($crate::GhtType!(() => $a: VariadicColumnMultiset), ColtType!($a => ()))
+        ($crate::GhtType!(() => $a: VariadicColumnMultiset), $crate::ColtType!($a => ()))
     };
     // General case: multiple types
     ($a:ty, $( $b:ty ),*) => {
-        ($crate::GhtType!(() => $a, $( $b ),*: VariadicColumnMultiset), ColtType!($a => $( $b ),*))
+        ($crate::GhtType!(() => $a, $( $b ),*: VariadicColumnMultiset), $crate::ColtType!($a => $( $b ),*))
     };
 }

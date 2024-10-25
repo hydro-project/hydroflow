@@ -9,6 +9,11 @@ use variadics::{
     var_args, var_type, PartialEqVariadic, RefVariadic, Split, SplitBySuffix, VariadicExt,
 };
 
+pub mod colt;
+pub mod lattice;
+pub mod macros;
+pub mod test;
+
 /// The GeneralizedHashTrieNode trait captures the properties of nodes in a Ght.
 ///
 /// The Ght, defined by Wang/Willsey/Suciu, is a hash-based trie for storing tuples.

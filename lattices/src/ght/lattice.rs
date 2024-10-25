@@ -115,18 +115,11 @@ where
                     (None, None) => unreachable!(),
                 }
             }
-            if self_any_greater && other_any_greater {
-                // unique stuff on both sides: order is incomparable
-                None
-            } else if self_any_greater && !other_any_greater {
-                // unique stuff only in self
-                Some(Greater)
-            } else if !self_any_greater && other_any_greater {
-                // unique stuff only in other
-                Some(Less)
-            } else {
-                // nothing unique on either side
-                Some(Equal)
+            match (self_any_greater, other_any_greater) {
+                (true, false) => Some(Greater),
+                (false, true) => Some(Less),
+                (false, false) => Some(Equal),
+                (true, true) => unreachable!(),
             }
         }
     }
