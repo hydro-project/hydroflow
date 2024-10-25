@@ -258,13 +258,12 @@ where
     GhtLeaf<Schema, ValType, Storage>: GeneralizedHashTrieNode<Schema = Schema>,
     Schema: 'static + Eq + VariadicExt + Hash + Clone + SplitBySuffix<ValType> + PartialEqVariadic,
     <Schema as SplitBySuffix<ValType>>::Prefix: Eq + Hash + Clone,
-    GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>: GeneralizedHashTrieNode<Head = Head, Schema = Schema, Storage = Storage>
-        // can't use Merge with COLT bc columnstore is not a lattice!!
-        // + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
-        + GhtGet,
+    GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>:
+        GeneralizedHashTrieNode<Head = Head, Schema = Schema, Storage = Storage> + GhtGet,
 {
     fn merge(&mut self, inner_to_merge: GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>) {
         let (head, _rest) = self;
+        // can't use Merge with COLT bc columnstore is not a lattice!!
         head.merge_node(inner_to_merge);
     }
 }
