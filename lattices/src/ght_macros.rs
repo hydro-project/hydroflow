@@ -70,7 +70,6 @@ macro_rules! GhtType {
 ///
 /// type MyColt = ColtType!(u16, u32, u64);
 /// ```
-
 macro_rules! ColtType {
     // Base case: single type to empty
     ($a:ty => ()) => {

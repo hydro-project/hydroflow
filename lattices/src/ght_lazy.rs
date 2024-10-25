@@ -99,7 +99,6 @@ pub trait ColtGet {
     type Schema: VariadicExt + Eq + Hash + Clone;
     /// The type of Storage
     /// This type is the same in all Tries and nodes of the COLT
-
     type Storage: VariadicCollection;
     /// SuffixSchema variadic: the suffix of the schema *from this node of the trie
     /// downward*. The first entry in this variadic is of type Head.
@@ -298,9 +297,7 @@ where
         self.0.children.keys().cloned()
     }
 }
-impl<'a, Head, Schema, ValType, Storage>
-    ColtGetTail<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
-    for var_type!(&'a mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>)
+impl<Head, Schema, ValType, Storage> ColtGetTail<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>> for var_type!(&mut GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>)
 where
     GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>: GeneralizedHashTrieNode<Head = Head>
         // + crate::Merge<GhtInner<Head, GhtLeaf<Schema, ValType, Storage>>>
