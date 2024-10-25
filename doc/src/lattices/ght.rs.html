@@ -558,12 +558,6 @@
 <a href="#558" id="558">558</a>
 <a href="#559" id="559">559</a>
 <a href="#560" id="560">560</a>
-<a href="#561" id="561">561</a>
-<a href="#562" id="562">562</a>
-<a href="#563" id="563">563</a>
-<a href="#564" id="564">564</a>
-<a href="#565" id="565">565</a>
-<a href="#566" id="566">566</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! GHT from the Wang/Willsey/Suciu Freejoin work
 </span><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::Debug;
@@ -613,11 +607,11 @@
     /// E.g. if we have GhtInner&lt;GhtInner&lt;GhtLeaf...&gt;&gt; the height is 2
     /// This is a static property of the type of this node, so simply invokes the static method.
     </span><span class="kw">fn </span>height(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-        <span class="self">Self</span>::static_height()
+        <span class="self">Self</span>::HEIGHT
     }
 
-    <span class="doccomment">/// Return the height of this node in the GhT. Leaf = 0.
-    </span><span class="kw">fn </span>static_height() -&gt; usize;
+    <span class="doccomment">/// The height of this node in the GhT. Leaf = 0.
+    </span><span class="kw">const </span>HEIGHT: usize;
 
     <span class="doccomment">/// Inserts an item into the hash trie.
     </span><span class="kw">fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: <span class="self">Self</span>::Schema) -&gt; bool;
@@ -705,9 +699,7 @@
         changed
     }
 
-    <span class="kw">fn </span>static_height() -&gt; usize {
-        Node::static_height() + <span class="number">1
-    </span>}
+    <span class="kw">const </span>HEIGHT: usize = Node::HEIGHT + <span class="number">1</span>;
 
     <span class="kw">fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: <span class="self">Self</span>::Schema) -&gt; bool {
         <span class="kw">let </span>(_prefix, <span class="macro">var_args!</span>(head, ..._rest)) =
@@ -826,9 +818,7 @@
         <span class="self">self</span>.elements.len() &gt; old_len
     }
 
-    <span class="kw">fn </span>static_height() -&gt; usize {
-        <span class="number">0
-    </span>}
+    <span class="kw">const </span>HEIGHT: usize = <span class="number">0</span>;
 
     <span class="kw">fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: <span class="self">Self</span>::Schema) -&gt; bool {
         <span class="self">self</span>.elements.insert(row);
@@ -905,9 +895,7 @@
         <span class="self">self</span>.elements.len() &gt; old_len
     }
 
-    <span class="kw">fn </span>static_height() -&gt; usize {
-        <span class="number">0
-    </span>}
+    <span class="kw">const </span>HEIGHT: usize = <span class="number">0</span>;
 
     <span class="kw">fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: <span class="self">Self</span>::Schema) -&gt; bool {
         <span class="self">self</span>.elements.insert(row);

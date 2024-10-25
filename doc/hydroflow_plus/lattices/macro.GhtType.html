@@ -7,5 +7,15 @@
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>lattices::GhtType;
 <span class="kw">use </span>variadics::variadic_collections::VariadicHashSet;
 
-<span class="kw">type </span>MyGht = <span class="macro">GhtType!</span>(u16, u32 =&gt; u64: VariadicHashSet);</code></pre></div>
+<span class="comment">// This generates a Ght struct with (u16, u32) as key, (u64) as val, and VariadicHashSet as storage
+</span><span class="kw">type </span>MyHashGht = <span class="macro">GhtType!</span>(u16, u32 =&gt; u64: VariadicHashSet);
+<span class="kw">let </span>my_ght = MyHashGht::default();
+
+<span class="doccomment">/// // This generates a Ght struct with (u16, u32) as key, () as val, and VariadicCountedHashSet as storage
+</span><span class="kw">type </span>MyMultisetGht = <span class="macro">GhtType!</span>(u16, u32 =&gt; (): VariadicCountedHashSet);
+<span class="kw">let </span>my_ght = MyMultisetGht::default();
+
+<span class="comment">// This generates a Ght struct with (u16, u32) as key, () as val, and VariadicColumnSet as storage
+</span><span class="kw">type </span>MyColumnarMultisetGht = <span class="macro">GhtType!</span>(u16, u32 =&gt; (): VariadicColumnMultiset);
+<span class="kw">let </span>my_ght = MyColumnarMultisetGht::default();</code></pre></div>
 </div></details></section></div></main></body></html>

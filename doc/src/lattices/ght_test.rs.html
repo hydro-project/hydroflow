@@ -929,7 +929,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>htrie = MyGht::default();
         htrie.insert(<span class="macro">var_expr!</span>(<span class="number">42</span>, <span class="number">314</span>, <span class="number">43770</span>));
         <span class="macro">assert_eq!</span>(htrie.recursive_iter().count(), <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(MyGht::static_height(), <span class="number">2</span>);
+        <span class="macro">assert_eq!</span>(MyGht::HEIGHT, <span class="number">2</span>);
         htrie.insert(<span class="macro">var_expr!</span>(<span class="number">42</span>, <span class="number">315</span>, <span class="number">43770</span>));
         <span class="macro">assert_eq!</span>(htrie.recursive_iter().count(), <span class="number">2</span>);
         htrie.insert(<span class="macro">var_expr!</span>(<span class="number">42</span>, <span class="number">314</span>, <span class="number">30619</span>));
