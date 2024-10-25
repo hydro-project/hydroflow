@@ -1,6 +1,6 @@
 use hydroflow::hydroflow_syntax;
+use hydroflow::lattices::ght::lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
 use hydroflow::lattices::ght::GeneralizedHashTrieNode;
-use hydroflow::lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
 use hydroflow::lattices::GhtType;
 use hydroflow::util::collect_ready;
 use hydroflow::variadics::{var_expr, var_type};

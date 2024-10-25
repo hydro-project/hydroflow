@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow::util::collect_ready;
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
+use lattices::ght::lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
 use lattices::ght::GeneralizedHashTrieNode;
-use lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
 use lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap};
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
 use lattices::GhtType;
