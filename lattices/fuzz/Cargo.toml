@@ -10,8 +10,10 @@ edition = "2021"
 cargo-fuzz = true
 
 [dependencies]
-libfuzzer-sys = "0.4"
 once_cell = "1.8.0"
+libfuzzer-sys = { version = "0.4", features = ["arbitrary-derive"] }
+arbitrary = { version = "1", features = ["derive"] }
+
 
 [dependencies.lattices]
 path = ".."
@@ -51,3 +53,11 @@ path = "fuzz_targets/monotonicity_fuzz.rs"
 test = false
 doc = false
 bench = false
+
+
+[[bin]]
+name = "idempotence_fuzz"
+path = "fuzz_targets/idempotence_fuzz.rs"
+test = false
+doc = false
+bench = false 

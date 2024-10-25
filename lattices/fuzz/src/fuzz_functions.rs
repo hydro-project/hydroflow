@@ -1,8 +1,3 @@
-// fuzz_functions.rs
-
-// use once_cell::sync::Lazy;
-// use crate::algebra_functions::FuzzFunctions;
-
 #[macro_export]
 macro_rules! create_fuzz_functions {
     ($type:ty, $functions:ident) => {
@@ -17,3 +12,4 @@ macro_rules! create_fuzz_functions {
         });
     };
 }
+ 

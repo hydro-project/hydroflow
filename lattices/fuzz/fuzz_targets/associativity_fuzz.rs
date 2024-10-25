@@ -1,28 +1,33 @@
 #![no_main]
-
-extern crate libfuzzer_sys;
 use lattices::algebra::associativity_single;
-use libfuzzer_sys::fuzz_target;
-use lattices_fuzz::utils; 
+use libfuzzer_sys::{arbitrary::Unstructured, fuzz_target};
+use lattices_fuzz::utils;
+use std::fs::OpenOptions;
+use std::io::Write;
 
 #[macro_use]
 extern crate lattices_fuzz;
 
 create_fuzz_functions!(utils::InputType, FUNCTIONS);
 
+
 fuzz_target!(|data: &[u8]| {
-    let required_bytes = std::mem::size_of::<utils::InputType>();
+    let mut us = Unstructured::new(data);
+    if let Ok(input) = us.arbitrary::<utils::TestingInput>() {
+        let result = associativity_single(input.i1.clone(), input.i2.clone(), input.i3.clone(), FUNCTIONS.f);
+        // println!("Associativity test result: {}", result);
+        let log_file = if result {
+            format!("fuzz_results/associativity_PASS_{}.log", std::any::type_name::<utils::InputType>())
 
-    if data.len() < required_bytes * 3 {
-        println!("Not enough data for associativity test.");
-        return;
+        } else {
+            format!("fuzz_results/associativity_FAIL_{}.log", std::any::type_name::<utils::InputType>())
+
+        };
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(log_file)
+            .expect("Unable to open file");
+        writeln!(file, "Input: {:?}", input).expect("Unable to write to file");
     }
-
-    let a = utils::InputType::from_le_bytes(data[0..required_bytes].try_into().expect("slice with incorrect length"));
-    let b = utils::InputType::from_le_bytes(data[required_bytes..required_bytes * 2].try_into().expect("slice with incorrect length"));
-    let c = utils::InputType::from_le_bytes(data[required_bytes * 2..required_bytes * 3].try_into().expect("slice with incorrect length"));
-
-
-    let result = associativity_single(a, b, c, FUNCTIONS.f);
-    println!("Associativity test result: {}", result);
 });

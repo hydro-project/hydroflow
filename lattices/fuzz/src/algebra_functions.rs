@@ -1,10 +1,3 @@
-// src/algebra_functions.rs
-// pub struct FuzzFunctions {
-//     pub f: fn(u8, u8) -> u8,
-//     pub g: Option<fn(u8) -> u8>,    
-//     pub q: Option<fn(u8, u8) -> u8>,   
-//     pub input_type: ,
-// }
 
 pub struct FuzzFunctions<T> {
     pub f: fn(T, T) -> T,
