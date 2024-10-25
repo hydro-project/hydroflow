@@ -303,14 +303,18 @@
 <a href="#303" id="303">303</a>
 <a href="#304" id="304">304</a>
 <a href="#305" id="305">305</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::hash::Hash;
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! COLT from Wang/Willsey/Suciu
+
+</span><span class="kw">use </span>std::hash::Hash;
 
 <span class="kw">use </span>variadics::variadic_collections::VariadicCollection;
 <span class="kw">use </span>variadics::{var_expr, var_type, PartialEqVariadic, SplitBySuffix, VariadicExt};
 
 <span class="kw">use </span><span class="kw">crate</span>::ght::{GeneralizedHashTrieNode, GhtGet, GhtInner, GhtLeaf};
 
-<span class="doccomment">/// COLT from Wang/Willsey/Suciu
+<span class="doccomment">/// Data structure design for our COLT is unique.
 ///
 /// In the paper, the COLT is an unbalanced trie that "grows upward" from leaves lazily
 /// on access via the `force` method.
