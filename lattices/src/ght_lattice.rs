@@ -88,42 +88,40 @@ where
     Node::Schema: SplitBySuffix<var_type!(Head, ...Node::SuffixSchema)>,
 {
     fn partial_cmp(&self, other: &GhtInner<Head, Node>) -> Option<Ordering> {
+        let mut self_any_greater = false;
+        let mut other_any_greater = false;
         if self.children.is_empty() && other.children.is_empty() {
             Some(Equal)
         } else {
-            // across all keys, determine if we have stuff in self that's not in other
-            // and vice versa
-            let (selfonly, mut otheronly) =
-                self.children
-                    .iter()
-                    .fold((false, false), |mut accum, (k, v)| {
-                        if !other.children.contains_key(k) {
-                            accum.0 = true; // selfonly is true
-                            accum
-                        } else {
-                            match v.partial_cmp(other.children.get(k).unwrap()) {
-                                Some(Greater) | None => {
-                                    accum.0 = true; // selfonly is true
-                                    accum
-                                }
-                                Some(Less) => {
-                                    accum.1 = true; // otheronly is true
-                                    accum
-                                }
-                                Some(Equal) => accum, // no changes
+            for k in self.children.keys().chain(other.children.keys()) {
+                match (self.children.get(k), other.children.get(k)) {
+                    (Some(self_value), Some(other_value)) => {
+                        match self_value.partial_cmp(other_value)? {
+                            Greater => {
+                                self_any_greater = true;
                             }
+                            Less => {
+                                other_any_greater = true;
+                            }
+                            Equal => {}
                         }
-                    });
-            // now check if other has keys that are missing in self
-            otheronly |= !other.children.keys().all(|k| self.children.contains_key(k));
-
-            if selfonly && otheronly {
+                    }
+                    (Some(_), None) => {
+                        self_any_greater = true;
+                    }
+                    (None, Some(_)) => {
+                        other_any_greater = true;
+                    }
+                    (None, None) => unreachable!(),
+                }
+            }
+            if self_any_greater && other_any_greater {
                 // unique stuff on both sides: order is incomparable
                 None
-            } else if selfonly && !otheronly {
+            } else if self_any_greater && !other_any_greater {
                 // unique stuff only in self
                 Some(Greater)
-            } else if !selfonly && otheronly {
+            } else if !self_any_greater && other_any_greater {
                 // unique stuff only in other
                 Some(Less)
             } else {
