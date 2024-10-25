@@ -43,7 +43,17 @@ macro_rules! GhtTypeWithSchema {
 /// use lattices::GhtType;
 /// use variadics::variadic_collections::VariadicHashSet;
 ///
-/// type MyGht = GhtType!(u16, u32 => u64: VariadicHashSet);
+/// // This generates a Ght struct with (u16, u32) as key, (u64) as val, and VariadicHashSet as storage
+/// type MyHashGht = GhtType!(u16, u32 => u64: VariadicHashSet);
+/// let my_ght = MyHashGht::default();
+///
+/// /// // This generates a Ght struct with (u16, u32) as key, () as val, and VariadicCountedHashSet as storage
+/// type MyMultisetGht = GhtType!(u16, u32 => (): VariadicCountedHashSet);
+/// let my_ght = MyMultisetGht::default();
+///
+/// // This generates a Ght struct with (u16, u32) as key, () as val, and VariadicColumnSet as storage
+/// type MyColumnarMultisetGht = GhtType!(u16, u32 => (): VariadicColumnMultiset);
+/// let my_ght = MyColumnarMultisetGht::default();
 /// ```
 macro_rules! GhtType {
     // Empty key
