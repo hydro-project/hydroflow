@@ -537,27 +537,6 @@
 <a href="#537" id="537">537</a>
 <a href="#538" id="538">538</a>
 <a href="#539" id="539">539</a>
-<a href="#540" id="540">540</a>
-<a href="#541" id="541">541</a>
-<a href="#542" id="542">542</a>
-<a href="#543" id="543">543</a>
-<a href="#544" id="544">544</a>
-<a href="#545" id="545">545</a>
-<a href="#546" id="546">546</a>
-<a href="#547" id="547">547</a>
-<a href="#548" id="548">548</a>
-<a href="#549" id="549">549</a>
-<a href="#550" id="550">550</a>
-<a href="#551" id="551">551</a>
-<a href="#552" id="552">552</a>
-<a href="#553" id="553">553</a>
-<a href="#554" id="554">554</a>
-<a href="#555" id="555">555</a>
-<a href="#556" id="556">556</a>
-<a href="#557" id="557">557</a>
-<a href="#558" id="558">558</a>
-<a href="#559" id="559">559</a>
-<a href="#560" id="560">560</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! GHT from the Wang/Willsey/Suciu Freejoin work
 </span><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::Debug;
@@ -644,8 +623,7 @@
     Node: GeneralizedHashTrieNode,
 {
     <span class="kw">pub</span>(<span class="kw">crate</span>) children: HashMap&lt;Head, Node&gt;,
-    <span class="comment">// pub(crate) _leaf: std::marker::PhantomData&lt;Leaf&gt;,
-</span>}
+}
 
 <span class="kw">impl</span>&lt;Head, Node: GeneralizedHashTrieNode&gt; Default <span class="kw">for </span>GhtInner&lt;Head, Node&gt;
 <span class="kw">where
@@ -654,10 +632,7 @@
 {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>children = Default::default();
-        <span class="self">Self </span>{
-            children,
-            <span class="comment">// _leaf: Default::default(),
-        </span>}
+        <span class="self">Self </span>{ children }
     }
 }
 
@@ -765,8 +740,9 @@
 {
     <span class="kw">pub</span>(<span class="kw">crate</span>) elements: Storage,
     <span class="kw">pub</span>(<span class="kw">crate</span>) forced: bool,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) _suffix_schema: PhantomData&lt;ValType&gt;, <span class="comment">/* defines ValType for the parents, recursively */
-</span>}
+    <span class="doccomment">/// defines ValType for the parents, recursively
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) _suffix_schema: PhantomData&lt;ValType&gt;,
+}
 <span class="kw">impl</span>&lt;Schema, ValType, Storage&gt; Default <span class="kw">for </span>GhtLeaf&lt;Schema, ValType, Storage&gt;
 <span class="kw">where
     </span>Schema: Eq + Hash,
@@ -827,8 +803,7 @@
 
     <span class="kw">fn </span>contains&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>, row: &lt;<span class="self">Self</span>::Schema <span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'a</span>&gt;) -&gt; bool {
         <span class="self">self</span>.elements.iter().any(|r| Schema::eq_ref(r, row))
-        <span class="comment">//.any(|r| Schema::eq_ref(r.as_ref_var(), row))
-    </span>}
+    }
 
     <span class="kw">fn </span>recursive_iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = &lt;<span class="self">Self</span>::Schema <span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'_</span>&gt;&gt; {
         <span class="self">self</span>.elements.iter() <span class="comment">// .map(Schema::as_ref_var)
@@ -840,10 +815,11 @@
     ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'_ </span>GhtLeaf&lt;&lt;<span class="self">Self </span><span class="kw">as </span>GeneralizedHashTrieNode&gt;::Schema, <span class="self">Self</span>::ValType, <span class="self">Self</span>::Storage&gt;&gt;
     {
         <span class="comment">// TODO(mingwei): actually use the hash set as a hash set
-        </span><span class="kw">if </span><span class="self">self</span>.elements.iter().any(|x| {
-            <span class="comment">// let (_prefix, suffix) = Schema::split_by_suffix_ref(x.as_ref_var());
-            </span>&lt;Schema <span class="kw">as </span>PartialEqVariadic&gt;::eq_ref(row, x) <span class="comment">//.as_ref_var())
-        </span>}) {
+        </span><span class="kw">if </span><span class="self">self
+            </span>.elements
+            .iter()
+            .any(|x| &lt;Schema <span class="kw">as </span>PartialEqVariadic&gt;::eq_ref(row, x))
+        {
             <span class="prelude-val">Some</span>(<span class="self">self</span>)
         } <span class="kw">else </span>{
             <span class="prelude-val">None
@@ -861,19 +837,9 @@
 
 <span class="kw">impl</span>&lt;Schema, Storage&gt; GeneralizedHashTrieNode <span class="kw">for </span>GhtLeaf&lt;Schema, (), Storage&gt;
 <span class="kw">where
-    </span>Schema: <span class="lifetime">'static
-        </span>+ Eq
-        + VariadicExt
-        + Hash
-        + Clone
-        <span class="comment">// + SplitBySuffix&lt;var_type!(ValHead, ...ValRest)&gt;
-        </span>+ PartialEqVariadic,
+    </span>Schema: <span class="lifetime">'static </span>+ Eq + VariadicExt + Hash + Clone + PartialEqVariadic,
     Storage: VariadicCollection&lt;Schema = Schema&gt; + Default + IntoIterator&lt;Item = Schema&gt;,
-    <span class="comment">// ValHead: Clone + Eq + Hash,
-    // var_type!(ValHead, ...ValRest): Clone + Eq + Hash + PartialEqVariadic,
-    // &lt;Schema as SplitBySuffix&lt;var_type!(ValHead, ...ValRest)&gt;&gt;::Prefix: Eq + Hash + Clone,
-    // for&lt;'a&gt; Schema::AsRefVar&lt;'a&gt;: PartialEq,
-</span>{
+{
     <span class="kw">type </span>Schema = Schema;
     <span class="kw">type </span>SuffixSchema = (); <span class="comment">// var_type!(ValHead, ...ValRest);
     </span><span class="kw">type </span>ValType = (); <span class="comment">// var_type!(ValHead, ...ValRest);
@@ -904,8 +870,7 @@
 
     <span class="kw">fn </span>contains&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>, row: &lt;<span class="self">Self</span>::Schema <span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'a</span>&gt;) -&gt; bool {
         <span class="self">self</span>.elements.iter().any(|r| Schema::eq_ref(r, row))
-        <span class="comment">// .any(|r| Schema::eq_ref(r.as_ref_var(), row))
-    </span>}
+    }
 
     <span class="kw">fn </span>recursive_iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = &lt;<span class="self">Self</span>::Schema <span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'_</span>&gt;&gt; {
         <span class="self">self</span>.elements.iter() <span class="comment">//.map(Schema::as_ref_var)
@@ -918,8 +883,7 @@
     {
         <span class="comment">// TODO(mingwei): actually use the hash set as a hash set
         </span><span class="kw">if </span><span class="self">self</span>.elements.iter().any(|x| {
-            <span class="comment">// let (_prefix, suffix) = Schema::split_by_suffix_ref(x.as_ref_var());
-            </span>&lt;Schema <span class="kw">as </span>PartialEqVariadic&gt;::eq_ref(row, x) <span class="comment">//.as_ref_var())
+            &lt;Schema <span class="kw">as </span>PartialEqVariadic&gt;::eq_ref(row, x) <span class="comment">//.as_ref_var())
         </span>}) {
             <span class="prelude-val">Some</span>(<span class="self">self</span>)
         } <span class="kw">else </span>{
@@ -992,9 +956,7 @@
         <span class="self">self</span>.children.get_mut(head)
     }
 
-    <span class="comment">// /// The type of items returned by iter
-    // type IterKey = Self::Head;
-    </span><span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="self">Self</span>::Head&gt; {
+    <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="self">Self</span>::Head&gt; {
         <span class="self">self</span>.children.keys().cloned()
     }
 
@@ -1025,16 +987,13 @@
         <span class="prelude-val">None
     </span>}
 
-    <span class="comment">// /// The type of items returned by iter
-    // type IterKey = Self::Schema;
-    </span><span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="self">Self</span>::Head&gt; {
+    <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="self">Self</span>::Head&gt; {
         std::iter::empty()
     }
 
     <span class="kw">fn </span>iter_tuples(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = &lt;<span class="self">Self</span>::Schema <span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'_</span>&gt;&gt; {
-        <span class="comment">// impl Iterator&lt;Item = Self::Schema&gt; {
-        </span><span class="self">self</span>.elements.iter() <span class="comment">//.cloned()
-    </span>}
+        <span class="self">self</span>.elements.iter()
+    }
 }
 
 <span class="doccomment">/// A trait to iterate through the items in a Ght based on a prefix of the schema.
@@ -1096,8 +1055,7 @@
     </span>KeyPrefixRef: <span class="lifetime">'static </span>+ RefVariadic,
     Schema: <span class="lifetime">'static </span>+ VariadicExt + Hash + Eq + SplitBySuffix&lt;ValType&gt;,
     ValType: VariadicExt,
-    <span class="comment">// for&lt;'a&gt; SuffixSchema::AsRefVar&lt;'a&gt;: Split&lt;KeyPrefixRef&gt;,
-    </span>ValType: Split&lt;KeyPrefixRef::UnRefVar&gt;,
+    ValType: Split&lt;KeyPrefixRef::UnRefVar&gt;,
     KeyPrefixRef::UnRefVar: PartialEqVariadic,
     Storage: <span class="lifetime">'static </span>+ VariadicCollection&lt;Schema = Schema&gt;,
 {
