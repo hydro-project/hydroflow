@@ -88,14 +88,45 @@ pub async fn bind_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>
 
     spawn_local(async move {
         let send_ingress = send_ingres;
+        // Map of `addr -> peers`, to send messages to.
         let mut peers_send = HashMap::new();
-        let mut peers_recv = StreamMap::new();
+        // `StreamMap` of `addr -> peers`, to receive messages from.
+        let mut peers_recv = StreamMap::<SocketAddr, FramedRead<OwnedReadHalf, Codec>>::new();
 
         loop {
             // Calling methods in a loop, futures must be cancel-safe.
             select! {
-                // Prioritize accepting clients first, then sending outgoing messages, then receiving more messages.
+                // `biased` means the cases will be prioritized in the order they are listed.
+                // First we accept any new connections
+                // This is not strictly neccessary, but lets us do our internal work (send outgoing
+                // messages) before accepting more work (receiving more messages, accepting new
+                // clients).
                 biased;
+                // Send outgoing messages.
+                msg_send = recv_egress.next() => {
+                    let Some((payload, peer_addr)) = msg_send else {
+                        // `None` if the send side has been dropped (no more send messages will ever come).
+                        continue;
+                    };
+                    let Some(stream) = peers_send.get_mut(&peer_addr) else {
+                        tracing::warn!("Dropping message to non-connected peer: {}", peer_addr);
+                        continue;
+                    };
+                    if let Err(_err) = SinkExt::send(stream, payload).await {
+                        tracing::error!("Failed to send message to peer: {}", peer_addr);
+                    };
+                }
+                // Receive incoming messages.
+                msg_recv = peers_recv.next(), if !peers_recv.is_empty() => {
+                    // If `peers_recv` is empty then `next()` will immediately return `None` which
+                    // would cause the loop to spin.
+                    let Some((peer_addr, payload_result)) = msg_recv else {
+                        continue; // => `peers_recv.is_empty()`.
+                    };
+                    if let Err(err) = send_ingress.send(payload_result.map(|payload| (payload, peer_addr))).await {
+                        tracing::error!("Error passing along received message: {:?}", err);
+                    }
+                }
                 // Accept new clients.
                 new_peer = listener.accept() => {
                     let Ok((stream, _addr)) = new_peer else {
@@ -113,29 +144,6 @@ pub async fn bind_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>
                     // similarity with the UDP versions of this function.
                     peers_send.insert(peer_addr, peer_send);
                     peers_recv.insert(peer_addr, peer_recv);
-                }
-                // Send outgoing messages.
-                msg_send = recv_egress.next() => {
-                    let Some((payload, peer_addr)) = msg_send else {
-                        // `None` if the send side has been dropped (no more send messages will ever come).
-                        continue;
-                    };
-                    let Some(stream) = peers_send.get_mut(&peer_addr) else {
-                        tracing::warn!("Dropping message to non-connected peer: {}", peer_addr);
-                        continue;
-                    };
-                    if let Err(_err) = SinkExt::send(stream, payload).await {
-                        tracing::error!("Failed to send message to peer: {}", peer_addr);
-                    };
-                }
-                // Receive incoming messages.
-                msg_recv = peers_recv.next(), if !peers_recv.is_empty() => {
-                    let Some((peer_addr, payload_result)) = msg_recv else {
-                        unreachable!(); // => `peers_recv.is_empty()`.
-                    };
-                    if let Err(err) = send_ingress.send(payload_result.map(|payload| (payload, peer_addr))).await {
-                        tracing::error!("Error passing along received message: {:?}", err);
-                    }
                 }
             }
         }
@@ -157,13 +165,17 @@ pub fn connect_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>(
 
     spawn_local(async move {
         let send_ingres = send_ingres;
+        // Map of `addr -> peers`, to send messages to.
         let mut peers_send = HashMap::new();
+        // `StreamMap` of `addr -> peers`, to receive messages from.
         let mut peers_recv = StreamMap::new();
 
         loop {
             // Calling methods in a loop, futures must be cancel-safe.
             select! {
-                // Prioritize sending outgoing messages before receiving more.
+                // `biased` means the cases will be prioritized in the order they are listed.
+                // This is not strictly neccessary, but lets us do our internal work (send outgoing
+                // messages) before accepting more work (receiving more messages).
                 biased;
                 // Send outgoing messages.
                 msg_send = recv_egress.next() => {
@@ -191,8 +203,10 @@ pub fn connect_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>(
                 }
                 // Receive incoming messages.
                 msg_recv = peers_recv.next(), if !peers_recv.is_empty() => {
+                    // If `peers_recv` is empty then `next()` will immediately return `None` which
+                    // would cause the loop to spin.
                     let Some((peer_addr, payload_result)) = msg_recv else {
-                        unreachable!(); // => `peers_recv.is_empty()`.
+                        continue; // => `peers_recv.is_empty()`.
                     };
                     if let Err(err) = send_ingres.send(payload_result.map(|payload| (payload, peer_addr))).await {
                         tracing::error!("Error passing along received message: {:?}", err);
