@@ -187,7 +187,7 @@ resource "kubernetes_stateful_set" "gossip_kv_seed_nodes" {
 
           env {
             name  = "RUST_LOG"
-            value = "trace"
+            value = "error"
           }
 
           env {
