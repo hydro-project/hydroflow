@@ -6,8 +6,9 @@ use std::io::Error;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use clap::Parser;
-use gossip_protocol::membership::{MemberDataBuilder, Protocol};
-use gossip_protocol::{ClientRequest, GossipMessage};
+use gossip_kv::membership::{MemberDataBuilder, Protocol};
+use gossip_kv::server::{server, SeedNode};
+use gossip_kv::{ClientRequest, GossipMessage};
 use hydroflow::futures::{SinkExt, StreamExt};
 use hydroflow::tokio_stream::wrappers::IntervalStream;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
@@ -18,13 +19,10 @@ use warp::Filter;
 
 use crate::config::{setup_settings_watch, SeedNodeSettings};
 use crate::membership::member_name;
-use crate::server::{server, SeedNode};
 
 mod config;
-mod lattices;
+
 mod membership;
-mod server;
-mod util;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Parser)]
 struct Opts {

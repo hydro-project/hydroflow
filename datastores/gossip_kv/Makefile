@@ -8,26 +8,15 @@ MINIKUBE_MEMORY:=32768
 BASE_IMAGE_VERSION:=latest
 SERVER_IMAGE_VERSION:=latest
 CLI_IMAGE_VERSION:=latest
+LOAD_TEST_IMAGE_VERSION:=latest
 
 # Docker Image Tags
 BASE_IMAGE_TAG:=hydroflow-gossip-kv-base-image:$(BASE_IMAGE_VERSION)
 SERVER_IMAGE_TAG:=hydroflow-gossip-kv-server:$(SERVER_IMAGE_VERSION)
 CLI_IMAGE_TAG:=hydroflow-gossip-kv-cli:$(CLI_IMAGE_VERSION)
+LOAD_TEST_IMAGE_TAG:=hydroflow-gossip-kv-load-test:$(LOAD_TEST_IMAGE_VERSION)
 
-AWS_TERRAFORM_PATH=../../datastores/gossip_kv/server/deployment/aws/terraform
-
-# Define color variables
-COLOR_RESET = \033[0m
-COLOR_GREEN = \033[1;32m
-COLOR_BLUE = \033[1;34m
-COLOR_RED = \033[1;31m
-
-# Define custom echo functions for different colors
-greentext = @echo "$(COLOR_GREEN)$(1)$(COLOR_RESET)"
-bluetext = @echo "$(COLOR_BLUE)$(1)$(COLOR_RESET)"
-redtext = @echo "$(COLOR_RED)$(1)$(COLOR_RESET)"
-
-# Default target when you run 'make'
+AWS_TERRAFORM_PATH=../../datastores/gossip_kv/deployment/aws/terraform
 
 # Target to start Minikube with specific options
 start_minikube:
@@ -35,7 +24,7 @@ start_minikube:
 	@echo "Please run 'eval \$$(minikube docker-env)' to use the Minikube Docker daemon"
 
 # Target to build the Docker images
-build_docker_images: build_base_image build_server_image build_cli_image
+build_docker_images: build_base_image build_server_image build_cli_image build_load_test_image
 
 build_base_image:
 	docker build -t "$(BASE_IMAGE_TAG)" -f ../../datastores/gossip_kv/server/baseimage.Dockerfile ../..
@@ -45,6 +34,9 @@ build_server_image:
 
 build_cli_image:
 	docker build -t "$(CLI_IMAGE_TAG)" -f ../../datastores/gossip_kv/cli/Dockerfile ../..
+
+build_load_test_image:
+	docker build -t "$(LOAD_TEST_IMAGE_TAG)" -f ../../datastores/gossip_kv/load_test_server/Dockerfile ../..
 
 # Target to clean up the Minikube cluster
 clean_local:
@@ -70,13 +62,17 @@ aws_setup_kubectl:
 aws_upload_docker_images: build_docker_images
 	$(eval SERVER_REPO_URL := $(shell terraform -chdir=$(AWS_TERRAFORM_PATH) output -json repository_urls | jq -r '.["gossip_kv_server"]'))
 	$(eval CLI_REPO_URL := $(shell terraform -chdir=$(AWS_TERRAFORM_PATH) output -json repository_urls | jq -r '.["gossip_kv_cli"]'))
+	$(eval LOAD_TEST_REPO_URL := $(shell terraform -chdir=$(AWS_TERRAFORM_PATH) output -json repository_urls | jq -r '.["gossip_kv_load_test"]'))
 	$(eval REGION := $(shell terraform -chdir=$(AWS_TERRAFORM_PATH) output -raw region))
 	docker tag $(SERVER_IMAGE_TAG) $(SERVER_REPO_URL):$(SERVER_IMAGE_VERSION)
 	docker tag $(CLI_IMAGE_TAG) $(CLI_REPO_URL):$(CLI_IMAGE_VERSION)
+	docker tag $(LOAD_TEST_IMAGE_TAG) $(LOAD_TEST_REPO_URL):$(LOAD_TEST_IMAGE_VERSION)
 	aws ecr get-login-password --region $(REGION) | docker login --username AWS --password-stdin $(SERVER_REPO_URL)
 	docker push $(SERVER_REPO_URL):$(SERVER_IMAGE_VERSION)
-	aws ecr get-login-password --region $(REGION) | docker login --username AWS --password-stdin $(SERVER_REPO_URL)
+	aws ecr get-login-password --region $(REGION) | docker login --username AWS --password-stdin $(CLI_REPO_URL)
 	docker push $(CLI_REPO_URL):$(CLI_IMAGE_VERSION)
+	aws ecr get-login-password --region $(REGION) | docker login --username AWS --password-stdin $(LOAD_TEST_REPO_URL)
+	docker push $(LOAD_TEST_REPO_URL):$(LOAD_TEST_IMAGE_VERSION)
 
 aws_tunnel_grafana:
 	$(eval GRAFANA_PORT := $(shell terraform -chdir=$(AWS_TERRAFORM_PATH) output -raw grafana_port))

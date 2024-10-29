@@ -1,14 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::time::Duration;
 
-use gossip_protocol::membership::{MemberData, MemberId};
-use gossip_protocol::model::{
-    delete_row, upsert_row, Clock, NamespaceMap, Namespaces, RowKey, RowValue, TableMap, TableName,
-};
-use gossip_protocol::GossipMessage::{Ack, Nack};
-use gossip_protocol::{ClientRequest, ClientResponse, GossipMessage, Key, Namespace};
 use hydroflow::futures::{Sink, Stream};
 use hydroflow::hydroflow_syntax;
 use hydroflow::itertools::Itertools;
@@ -27,7 +20,13 @@ use serde::{Deserialize, Serialize};
 use tracing::{info, trace};
 
 use crate::lattices::BoundedSetLattice;
+use crate::membership::{MemberData, MemberId};
+use crate::model::{
+    delete_row, upsert_row, Clock, NamespaceMap, Namespaces, RowKey, RowValue, TableMap, TableName,
+};
 use crate::util::{ClientRequestWithAddress, GossipRequestWithAddress};
+use crate::GossipMessage::{Ack, Nack};
+use crate::{ClientRequest, ClientResponse, GossipMessage, Key, Namespace};
 
 /// A trait that represents an abstract network address. In production, this will typically be
 /// SocketAddr.
@@ -52,8 +51,8 @@ pub struct InfectingWrite {
 pub type MessageId = String;
 
 lazy_static! {
-    pub static ref EXAMPLE_COUNTER: IntCounter =
-        register_int_counter!("example_counter", "Counts the number of examples.").unwrap();
+    pub static ref SETS_COUNTER: IntCounter =
+        register_int_counter!("sets", "Counts the number of SET requests processed.").unwrap();
 }
 
 /// Creates a L0 key-value store server using Hydroflow.
@@ -67,12 +66,13 @@ lazy_static! {
 pub fn server<
     ClientInput,
     ClientOutput,
+    ClientOutputError,
     GossipInput,
     GossipOutput,
+    GossipOutputError,
     GossipTrigger,
     SeedNodeStream,
     Addr,
-    E,
 >(
     client_inputs: ClientInput,
     client_outputs: ClientOutput,
@@ -85,13 +85,14 @@ pub fn server<
 ) -> Hydroflow<'static>
 where
     ClientInput: Stream<Item = (ClientRequest, Addr)> + Unpin + 'static,
-    ClientOutput: Sink<(ClientResponse, Addr), Error = E> + Unpin + 'static,
+    ClientOutput: Sink<(ClientResponse, Addr), Error = ClientOutputError> + Unpin + 'static,
     GossipInput: Stream<Item = (GossipMessage, Addr)> + Unpin + 'static,
-    GossipOutput: Sink<(GossipMessage, Addr), Error = E> + Unpin + 'static,
+    GossipOutput: Sink<(GossipMessage, Addr), Error = GossipOutputError> + Unpin + 'static,
     GossipTrigger: Stream<Item = ()> + Unpin + 'static,
     SeedNodeStream: Stream<Item = Vec<SeedNode<Addr>>> + Unpin + 'static,
     Addr: Address + DeserializeOwned + 'static,
-    E: Debug + 'static,
+    ClientOutputError: Debug + 'static,
+    GossipOutputError: Debug + 'static,
 {
     let my_member_id = member_info.id.clone();
     // TODO: This is ugly, but the only way this works at the moment.
@@ -99,13 +100,12 @@ where
     let member_id_3 = my_member_id.clone();
     let member_id_4 = my_member_id.clone();
     let member_id_5 = my_member_id.clone();
+    let member_id_6 = my_member_id.clone();
 
     hydroflow_syntax! {
 
         on_start = initialize() -> tee();
-        on_start -> for_each(|_| info!("{:?}: Transducer started.", context.current_tick()));
-
-        source_interval(Duration::from_secs(10)) -> for_each(|_| EXAMPLE_COUNTER.inc());
+        on_start -> for_each(|_| info!("{:?}: Transducer {} started.", context.current_tick(), member_id_6));
 
         seed_nodes = source_stream(seed_node_stream)
             -> fold::<'static>(|| Box::new(seed_nodes), |last_seed_nodes, new_seed_nodes: Vec<SeedNode<Addr>>| {
@@ -142,6 +142,9 @@ where
         client_in[Set]
             -> inspect(|request| trace!("{:?}: Received Set request: {:?}.", context.current_tick(), request))
             -> map(|(key, value, _addr) : (Key, String, Addr)| upsert_row(Clock::new(context.current_tick().0), key.namespace, key.table, key.row_key, value))
+            -> inspect(|_| {
+                SETS_COUNTER.inc(); // Bump SET metrics
+            })
             -> writes;
 
         client_in[Delete]
@@ -286,7 +289,9 @@ where
         gossip_messages = gossip_trigger
         -> flat_map( |_|
             {
-                #infecting_writes.as_reveal_ref().clone()
+                let infecting_writes = #infecting_writes.as_reveal_ref().clone();
+                trace!("{:?}: Currently gossipping {} infecting writes.", context.current_tick(), infecting_writes.iter().filter(|(_, write)| !write.members.is_top()).count());
+                infecting_writes
             }
         )
         -> filter(|(_id, infecting_write)| !infecting_write.members.is_top())
@@ -346,11 +351,11 @@ where
 mod tests {
     use std::collections::HashSet;
 
-    use gossip_protocol::membership::{MemberDataBuilder, Protocol};
     use hydroflow::tokio_stream::empty;
     use hydroflow::util::simulation::{Address, Fleet, Hostname};
 
     use super::*;
+    use crate::membership::{MemberDataBuilder, Protocol};
 
     #[hydroflow::test]
     async fn test_member_init() {
