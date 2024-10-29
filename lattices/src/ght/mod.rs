@@ -272,7 +272,7 @@ where
     }
 
     fn recursive_iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
-        self.elements.iter() // .map(Schema::as_ref_var)
+        self.elements.iter()
     }
 
     fn find_containing_leaf(
@@ -307,9 +307,9 @@ where
     Storage: VariadicCollection<Schema = Schema> + Default + IntoIterator<Item = Schema>,
 {
     type Schema = Schema;
-    type SuffixSchema = (); // var_type!(ValHead, ...ValRest);
-    type ValType = (); // var_type!(ValHead, ...ValRest);
-    type KeyType = Schema; //<Schema as SplitBySuffix<var_type!(ValHead, ...ValRest)>>::Prefix;
+    type SuffixSchema = ();
+    type ValType = ();
+    type KeyType = Schema;
     type Head = ();
     type Storage = Storage;
 
@@ -339,7 +339,7 @@ where
     }
 
     fn recursive_iter(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
-        self.elements.iter() //.map(Schema::as_ref_var)
+        self.elements.iter()
     }
 
     fn find_containing_leaf(
@@ -348,9 +348,11 @@ where
     ) -> Option<&'_ GhtLeaf<<Self as GeneralizedHashTrieNode>::Schema, Self::ValType, Self::Storage>>
     {
         // TODO(mingwei): actually use the hash set as a hash set
-        if self.elements.iter().any(|x| {
-            <Schema as PartialEqVariadic>::eq_ref(row, x) //.as_ref_var())
-        }) {
+        if self
+            .elements
+            .iter()
+            .any(|x| <Schema as PartialEqVariadic>::eq_ref(row, x))
+        {
             Some(self)
         } else {
             None
@@ -399,7 +401,7 @@ pub trait GhtGet: GeneralizedHashTrieNode {
     fn iter(&self) -> impl Iterator<Item = Self::Head>;
 
     /// Iterator for the tuples (from leaf nodes) or nothing (from inner nodes).
-    fn iter_tuples(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>>; // impl Iterator<Item = Self::Schema>;
+    fn iter_tuples(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>>;
 }
 
 impl<Head, Node> GhtGet for GhtInner<Head, Node>
@@ -427,7 +429,6 @@ where
     }
 
     fn iter_tuples(&self) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>> {
-        // impl Iterator<Item = Self::Schema> {
         std::iter::empty()
     }
 }
