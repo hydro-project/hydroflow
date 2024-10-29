@@ -1,16 +1,18 @@
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::rc::Rc;
 
 use hydroflow::futures::{Sink, Stream};
 use hydroflow::hydroflow_syntax;
 use hydroflow::itertools::Itertools;
-use hydroflow::lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap};
+use hydroflow::lattices::map_union::{KeyedBimorphism, MapUnionHashMap};
 use hydroflow::lattices::set_union::SetUnionHashSet;
-use hydroflow::lattices::{Lattice, PairBimorphism};
+use hydroflow::lattices::PairBimorphism;
 use hydroflow::scheduled::graph::Hydroflow;
 use lattices::set_union::SetUnion;
-use lattices::{IsTop, Max, Pair};
+use lattices::{Max, Pair};
 use lazy_static::lazy_static;
 use prometheus::{register_int_counter, IntCounter};
 use rand::seq::IteratorRandom;
@@ -19,7 +21,6 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use tracing::{info, trace};
 
-use crate::lattices::BoundedSetLattice;
 use crate::membership::{MemberData, MemberId};
 use crate::model::{
     delete_row, upsert_row, Clock, NamespaceMap, Namespaces, RowKey, RowValue, TableMap, TableName,
@@ -42,10 +43,10 @@ where
     pub address: A,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Lattice)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InfectingWrite {
     write: Namespaces<Clock>,
-    members: BoundedSetLattice<MemberId, 2>,
+    members: HashSet<MemberId>,
 }
 
 pub type MessageId = String;
@@ -101,6 +102,12 @@ where
     let member_id_4 = my_member_id.clone();
     let member_id_5 = my_member_id.clone();
     let member_id_6 = my_member_id.clone();
+
+    let infecting_writes: Rc<RefCell<HashMap<MessageId, InfectingWrite>>> =
+        Rc::new(RefCell::new(HashMap::new()));
+    let infecting_writes_inner1 = infecting_writes.clone();
+    let infecting_writes_inner2 = infecting_writes.clone();
+    let infecting_writes_inner3 = infecting_writes.clone();
 
     hydroflow_syntax! {
 
@@ -166,10 +173,20 @@ where
 
         gossip_in[Nack]
             -> inspect(|request| trace!("{:?}: Received gossip nack: {:?}.", context.current_tick(), request))
-            -> map( |(message_id, member_id, _addr)| {
-                MapUnionSingletonMap::new_from((message_id, InfectingWrite { write: Default::default(), members: BoundedSetLattice::new_from([member_id]) }))
-            })
-            -> infecting_writes;
+            -> for_each( |(message_id, member_id, _addr)| {
+                let mut infecting_writes = infecting_writes_inner1.borrow_mut();
+                let infecting_write = infecting_writes.get_mut(&message_id);
+                if let Some(infecting_write) = infecting_write {
+                    infecting_write.members.insert(member_id);
+
+                    if infecting_write.members.len() >= 2 {
+                        infecting_writes.remove(&message_id);
+                        trace!("Received Nacks from enough peers. Removing message: {:?}", message_id);
+                    }
+                } else {
+                    trace!("Received a Nack for a message that doesn't exist: {:?}", message_id);
+                }
+            });
 
         gossip_out = union() -> dest_sink(gossip_outputs);
 
@@ -201,7 +218,6 @@ where
                         let existing_ts = existing_row.map(|row| row.as_reveal_ref().0.as_reveal_ref());
 
                         if let Some(existing_ts) = existing_ts {
-                            trace!("Comparing timestamps: {:?} vs {:?}", new_ts, existing_ts);
                             new_ts > existing_ts
                         } else {
                             true
@@ -273,28 +289,31 @@ where
 
         new_writes -> for_each(|x| trace!("NEW WRITE: {:?}", x));
 
-        // Step 1: Put the new writes in a map, with the write as the key and a SetBoundedLattice as the value.
-        infecting_writes = union() -> state::<'static, MapUnionHashMap<MessageId, InfectingWrite>>();
-
-        new_writes -> map(|write| {
+        new_writes -> for_each(|write| {
             // Ideally, the write itself is the key, but writes are a hashmap and hashmaps don't
             // have a hash implementation. So we just generate a GUID identifier for the write
             // for now.
             let id = uuid::Uuid::new_v4().to_string();
-            MapUnionSingletonMap::new_from((id, InfectingWrite { write, members: BoundedSetLattice::new() }))
-        }) -> infecting_writes;
+
+            let infecting_write = InfectingWrite {
+                write,
+                members: HashSet::new(),
+            };
+
+            infecting_writes_inner2.borrow_mut().insert(id.clone(), infecting_write);
+        });
 
         gossip_trigger = source_stream(gossip_trigger);
 
         gossip_messages = gossip_trigger
         -> flat_map( |_|
-            {
-                let infecting_writes = #infecting_writes.as_reveal_ref().clone();
-                trace!("{:?}: Currently gossipping {} infecting writes.", context.current_tick(), infecting_writes.iter().filter(|(_, write)| !write.members.is_top()).count());
-                infecting_writes
-            }
+                {
+                    let infecting_writes = infecting_writes_inner3.borrow();
+                    trace!("Currently infected by {:?}", infecting_writes.len());
+                    infecting_writes.clone().into_iter()
+                        .map(|(id, infecting_write)| (id, infecting_write))
+                }
         )
-        -> filter(|(_id, infecting_write)| !infecting_write.members.is_top())
         -> map(|(id, infecting_write)| {
             trace!("{:?}: Choosing a peer to gossip to. {:?}:{:?}", context.current_tick(), id, infecting_write);
             let peers = #namespaces.as_reveal_ref().get(&Namespace::System).unwrap().as_reveal_ref().get("members").unwrap().as_reveal_ref().clone();

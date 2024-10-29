@@ -28,11 +28,11 @@ const UNKNOWN_ADDRESS: LoadTestAddress = 9999999999;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Parser)]
 struct Opts {
     /// Number of threads to run. Each thread will run an instance of the gossip-kv server transducer.
-    #[clap(short, long, default_value = "5")]
+    #[clap(short, long, default_value = "2")]
     thread_count: usize,
 
     /// Frequency (in seconds) at which to send gossip messages.
-    #[clap(short, long, default_value = "10", value_parser = clap_duration_from_secs)]
+    #[clap(short, long, default_value = "1", value_parser = clap_duration_from_secs)]
     gossip_frequency: Duration,
 
     /// Maximum number of SET requests to send per second.
