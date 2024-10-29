@@ -4,7 +4,7 @@ use super::{LocalDeploy, Node, ProcessSpec};
 
 pub struct SingleProcessGraph {}
 
-impl<'a> LocalDeploy<'a> for SingleProcessGraph {
+impl LocalDeploy<'_> for SingleProcessGraph {
     type Process = SingleNode;
     type Cluster = SingleNode;
     type ExternalProcess = SingleNode;
@@ -24,7 +24,7 @@ impl<'a> LocalDeploy<'a> for SingleProcessGraph {
     }
 }
 
-impl<'a> ProcessSpec<'a, SingleProcessGraph> for () {
+impl ProcessSpec<'_, SingleProcessGraph> for () {
     fn build(self, _id: usize, _name_hint: &str) -> SingleNode {
         SingleNode {}
     }
@@ -56,7 +56,7 @@ impl Node for SingleNode {
 
 pub struct MultiGraph {}
 
-impl<'a> LocalDeploy<'a> for MultiGraph {
+impl LocalDeploy<'_> for MultiGraph {
     type Process = MultiNode;
     type Cluster = MultiNode;
     type ExternalProcess = MultiNode;
@@ -76,7 +76,7 @@ impl<'a> LocalDeploy<'a> for MultiGraph {
     }
 }
 
-impl<'a> ProcessSpec<'a, MultiGraph> for () {
+impl ProcessSpec<'_, MultiGraph> for () {
     fn build(self, _id: usize, _name_hint: &str) -> MultiNode {
         MultiNode {}
     }

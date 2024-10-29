@@ -84,7 +84,8 @@ impl<T> Len for VecSet<T> {
     }
 }
 impl<T> CollectionRef for VecSet<T> {
-    type ItemRef<'a> = &'a Self::Item
+    type ItemRef<'a>
+        = &'a Self::Item
     where
         Self: 'a;
 
@@ -103,7 +104,8 @@ where
     }
 }
 impl<T> CollectionMut for VecSet<T> {
-    type ItemMut<'a> = &'a mut Self::Item
+    type ItemMut<'a>
+        = &'a mut Self::Item
     where
         Self: 'a;
 
@@ -119,7 +121,8 @@ where
     }
 }
 impl<T> Iter for VecSet<T> {
-    type Iter<'a> = std::slice::Iter<'a, T>
+    type Iter<'a>
+        = std::slice::Iter<'a, T>
     where
         Self: 'a;
 
@@ -128,7 +131,8 @@ impl<T> Iter for VecSet<T> {
     }
 }
 impl<T> IterMut for VecSet<T> {
-    type IterMut<'a> = std::slice::IterMut<'a, T>
+    type IterMut<'a>
+        = std::slice::IterMut<'a, T>
     where
         Self: 'a;
 
@@ -176,7 +180,8 @@ impl<K, V> Len for VecMap<K, V> {
     }
 }
 impl<K, V> CollectionRef for VecMap<K, V> {
-    type ItemRef<'a> = &'a Self::Item
+    type ItemRef<'a>
+        = &'a Self::Item
     where
         Self: 'a;
 
@@ -198,7 +203,8 @@ where
     }
 }
 impl<K, V> CollectionMut for VecMap<K, V> {
-    type ItemMut<'a> = &'a mut Self::Item
+    type ItemMut<'a>
+        = &'a mut Self::Item
     where
         Self: 'a;
 
@@ -220,7 +226,8 @@ impl<K, V> Keyed for VecMap<K, V> {
     type Key = K;
 }
 impl<K, V> KeyedRef for VecMap<K, V> {
-    type KeyRef<'a> = &'a Self::Key
+    type KeyRef<'a>
+        = &'a Self::Key
     where
         Self: 'a;
 
@@ -254,18 +261,20 @@ impl<K, V> SimpleKeyedRef for VecMap<K, V> {
     simple_keyed_ref!();
 }
 impl<K, V> MapIter for VecMap<K, V> {
-    type Iter<'a> = std::iter::Zip<std::slice::Iter<'a, K>, std::slice::Iter<'a, V>>
-	where
-		Self: 'a;
+    type Iter<'a>
+        = std::iter::Zip<std::slice::Iter<'a, K>, std::slice::Iter<'a, V>>
+    where
+        Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.keys.iter().zip(self.vals.iter())
     }
 }
 impl<K, V> MapIterMut for VecMap<K, V> {
-    type IterMut<'a> = std::iter::Zip<std::slice::Iter<'a, K>, std::slice::IterMut<'a, V>>
-	where
-		Self: 'a;
+    type IterMut<'a>
+        = std::iter::Zip<std::slice::Iter<'a, K>, std::slice::IterMut<'a, V>>
+    where
+        Self: 'a;
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         self.keys.iter().zip(self.vals.iter_mut())
@@ -307,7 +316,10 @@ impl<T> Collection for EmptySet<T> {
 }
 
 impl<T> CollectionRef for EmptySet<T> {
-    type ItemRef<'a> = &'a Self::Item where Self::Item: 'a;
+    type ItemRef<'a>
+        = &'a Self::Item
+    where
+        Self::Item: 'a;
 
     covariant_item_ref!();
 }
@@ -328,7 +340,10 @@ impl<T> Len for EmptySet<T> {
 }
 
 impl<T> Iter for EmptySet<T> {
-    type Iter<'a> = std::iter::Empty<&'a T> where T: 'a;
+    type Iter<'a>
+        = std::iter::Empty<&'a T>
+    where
+        T: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         std::iter::empty()
@@ -371,7 +386,8 @@ impl<T> Len for SingletonSet<T> {
     }
 }
 impl<T> CollectionRef for SingletonSet<T> {
-    type ItemRef<'a> = &'a Self::Item
+    type ItemRef<'a>
+        = &'a Self::Item
     where
         Self: 'a;
 
@@ -390,7 +406,8 @@ where
     }
 }
 impl<T> CollectionMut for SingletonSet<T> {
-    type ItemMut<'a> = &'a mut T
+    type ItemMut<'a>
+        = &'a mut T
     where
         Self: 'a;
 
@@ -406,16 +423,18 @@ where
     }
 }
 impl<T> Iter for SingletonSet<T> {
-    type Iter<'a> = std::iter::Once<&'a T>
-	where
-		Self: 'a;
+    type Iter<'a>
+        = std::iter::Once<&'a T>
+    where
+        Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         std::iter::once(&self.0)
     }
 }
 impl<T> IterMut for SingletonSet<T> {
-    type IterMut<'a> = std::iter::Once<&'a mut T>
+    type IterMut<'a>
+        = std::iter::Once<&'a mut T>
     where
         Self: 'a;
 
@@ -457,7 +476,8 @@ impl<K, V> Len for EmptyMap<K, V> {
     }
 }
 impl<K, V> CollectionRef for EmptyMap<K, V> {
-    type ItemRef<'a> = &'a Self::Item
+    type ItemRef<'a>
+        = &'a Self::Item
     where
         Self: 'a;
 
@@ -476,7 +496,8 @@ where
     }
 }
 impl<K, V> CollectionMut for EmptyMap<K, V> {
-    type ItemMut<'a> = &'a mut Self::Item
+    type ItemMut<'a>
+        = &'a mut Self::Item
     where
         Self: 'a;
 
@@ -495,9 +516,10 @@ impl<K, V> Keyed for EmptyMap<K, V> {
     type Key = K;
 }
 impl<K, V> KeyedRef for EmptyMap<K, V> {
-    type KeyRef<'a> = &'a Self::Key
-	where
-		Self: 'a;
+    type KeyRef<'a>
+        = &'a Self::Key
+    where
+        Self: 'a;
 
     covariant_key_ref!();
 }
@@ -520,9 +542,10 @@ where
     }
 }
 impl<K, V> Iter for EmptyMap<K, V> {
-    type Iter<'a> = std::iter::Empty<&'a V>
-	where
-		Self: 'a;
+    type Iter<'a>
+        = std::iter::Empty<&'a V>
+    where
+        Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         std::iter::empty()
@@ -532,18 +555,20 @@ impl<K, V> SimpleKeyedRef for EmptyMap<K, V> {
     simple_keyed_ref!();
 }
 impl<K, V> MapIter for EmptyMap<K, V> {
-    type Iter<'a> = std::iter::Empty<(&'a K, &'a V)>
-	where
-		Self: 'a;
+    type Iter<'a>
+        = std::iter::Empty<(&'a K, &'a V)>
+    where
+        Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         std::iter::empty()
     }
 }
 impl<K, V> MapIterMut for EmptyMap<K, V> {
-    type IterMut<'a> = std::iter::Empty<(&'a K, &'a mut V)>
-	where
-		Self: 'a;
+    type IterMut<'a>
+        = std::iter::Empty<(&'a K, &'a mut V)>
+    where
+        Self: 'a;
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         std::iter::empty()
@@ -576,7 +601,8 @@ impl<K, V> Len for SingletonMap<K, V> {
     }
 }
 impl<K, V> CollectionRef for SingletonMap<K, V> {
-    type ItemRef<'a> = &'a Self::Item
+    type ItemRef<'a>
+        = &'a Self::Item
     where
         Self: 'a;
 
@@ -595,7 +621,8 @@ where
     }
 }
 impl<K, V> CollectionMut for SingletonMap<K, V> {
-    type ItemMut<'a> = &'a mut Self::Item
+    type ItemMut<'a>
+        = &'a mut Self::Item
     where
         Self: 'a;
 
@@ -614,9 +641,10 @@ impl<K, V> Keyed for SingletonMap<K, V> {
     type Key = K;
 }
 impl<K, V> KeyedRef for SingletonMap<K, V> {
-    type KeyRef<'a> = &'a Self::Key
-	where
-		Self: 'a;
+    type KeyRef<'a>
+        = &'a Self::Key
+    where
+        Self: 'a;
 
     covariant_key_ref!();
 }
@@ -639,9 +667,10 @@ where
     }
 }
 impl<K, V> Iter for SingletonMap<K, V> {
-    type Iter<'a> = std::iter::Once<&'a V>
-	where
-		Self: 'a;
+    type Iter<'a>
+        = std::iter::Once<&'a V>
+    where
+        Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         std::iter::once(&self.1)
@@ -651,18 +680,20 @@ impl<K, V> SimpleKeyedRef for SingletonMap<K, V> {
     simple_keyed_ref!();
 }
 impl<K, V> MapIter for SingletonMap<K, V> {
-    type Iter<'a> = std::iter::Once<(&'a K, &'a V)>
-	where
-		Self: 'a;
+    type Iter<'a>
+        = std::iter::Once<(&'a K, &'a V)>
+    where
+        Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         std::iter::once((&self.0, &self.1))
     }
 }
 impl<K, V> MapIterMut for SingletonMap<K, V> {
-    type IterMut<'a> = std::iter::Once<(&'a K, &'a mut V)>
-	where
-		Self: 'a;
+    type IterMut<'a>
+        = std::iter::Once<(&'a K, &'a mut V)>
+    where
+        Self: 'a;
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         std::iter::once((&self.0, &mut self.1))
@@ -716,7 +747,8 @@ impl<T> Len for OptionSet<T> {
     }
 }
 impl<T> CollectionRef for OptionSet<T> {
-    type ItemRef<'a> = &'a Self::Item
+    type ItemRef<'a>
+        = &'a Self::Item
     where
         Self: 'a;
 
@@ -735,7 +767,8 @@ where
     }
 }
 impl<T> CollectionMut for OptionSet<T> {
-    type ItemMut<'a> = &'a mut T
+    type ItemMut<'a>
+        = &'a mut T
     where
         Self: 'a;
 
@@ -751,16 +784,18 @@ where
     }
 }
 impl<T> Iter for OptionSet<T> {
-    type Iter<'a> = std::option::Iter<'a, T>
-	where
-		Self: 'a;
+    type Iter<'a>
+        = std::option::Iter<'a, T>
+    where
+        Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.0.iter()
     }
 }
 impl<T> IterMut for OptionSet<T> {
-    type IterMut<'a> = std::option::IterMut<'a, T>
+    type IterMut<'a>
+        = std::option::IterMut<'a, T>
     where
         Self: 'a;
 
@@ -803,7 +838,8 @@ impl<K, V> Len for OptionMap<K, V> {
     }
 }
 impl<K, V> CollectionRef for OptionMap<K, V> {
-    type ItemRef<'a> = &'a Self::Item
+    type ItemRef<'a>
+        = &'a Self::Item
     where
         Self: 'a;
 
@@ -825,7 +861,8 @@ where
     }
 }
 impl<K, V> CollectionMut for OptionMap<K, V> {
-    type ItemMut<'a> = &'a mut Self::Item
+    type ItemMut<'a>
+        = &'a mut Self::Item
     where
         Self: 'a;
 
@@ -847,9 +884,10 @@ impl<K, V> Keyed for OptionMap<K, V> {
     type Key = K;
 }
 impl<K, V> KeyedRef for OptionMap<K, V> {
-    type KeyRef<'a> = &'a Self::Key
-	where
-		Self: 'a;
+    type KeyRef<'a>
+        = &'a Self::Key
+    where
+        Self: 'a;
 
     covariant_key_ref!();
 }
@@ -878,9 +916,10 @@ where
     }
 }
 impl<K, V> Iter for OptionMap<K, V> {
-    type Iter<'a> = std::option::IntoIter<&'a V>
-	where
-		Self: 'a;
+    type Iter<'a>
+        = std::option::IntoIter<&'a V>
+    where
+        Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.0.as_ref().map(|(_k, v)| v).into_iter()
@@ -890,18 +929,20 @@ impl<K, V> SimpleKeyedRef for OptionMap<K, V> {
     simple_keyed_ref!();
 }
 impl<K, V> MapIter for OptionMap<K, V> {
-    type Iter<'a> = std::option::IntoIter<(&'a K, &'a V)>
-	where
-		Self: 'a;
+    type Iter<'a>
+        = std::option::IntoIter<(&'a K, &'a V)>
+    where
+        Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.0.as_ref().map(|(k, v)| (k, v)).into_iter()
     }
 }
 impl<K, V> MapIterMut for OptionMap<K, V> {
-    type IterMut<'a> = std::option::IntoIter<(&'a K, &'a mut V)>
-	where
-		Self: 'a;
+    type IterMut<'a>
+        = std::option::IntoIter<(&'a K, &'a mut V)>
+    where
+        Self: 'a;
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         self.0.as_mut().map(|(k, v)| (&*k, v)).into_iter()
@@ -945,7 +986,8 @@ impl<T, const N: usize> Len for ArraySet<T, N> {
     }
 }
 impl<T, const N: usize> CollectionRef for ArraySet<T, N> {
-    type ItemRef<'a> = &'a T
+    type ItemRef<'a>
+        = &'a T
     where
         Self: 'a;
 
@@ -967,7 +1009,8 @@ where
     }
 }
 impl<T, const N: usize> CollectionMut for ArraySet<T, N> {
-    type ItemMut<'a> = &'a mut T
+    type ItemMut<'a>
+        = &'a mut T
     where
         Self: 'a;
 
@@ -986,9 +1029,10 @@ where
     }
 }
 impl<T, const N: usize> Iter for ArraySet<T, N> {
-    type Iter<'a> = std::slice::Iter<'a, T>
-	where
-		Self: 'a;
+    type Iter<'a>
+        = std::slice::Iter<'a, T>
+    where
+        Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.0.iter()
@@ -1035,7 +1079,8 @@ impl<K, V, const N: usize> Len for ArrayMap<K, V, N> {
     }
 }
 impl<K, V, const N: usize> CollectionRef for ArrayMap<K, V, N> {
-    type ItemRef<'a> = &'a Self::Item
+    type ItemRef<'a>
+        = &'a Self::Item
     where
         Self: 'a;
 
@@ -1057,7 +1102,8 @@ where
     }
 }
 impl<K, V, const N: usize> CollectionMut for ArrayMap<K, V, N> {
-    type ItemMut<'a> = &'a mut Self::Item
+    type ItemMut<'a>
+        = &'a mut Self::Item
     where
         Self: 'a;
 
@@ -1079,9 +1125,10 @@ impl<K, V, const N: usize> Keyed for ArrayMap<K, V, N> {
     type Key = K;
 }
 impl<K, V, const N: usize> KeyedRef for ArrayMap<K, V, N> {
-    type KeyRef<'a> = &'a Self::Key
-	where
-		Self: 'a;
+    type KeyRef<'a>
+        = &'a Self::Key
+    where
+        Self: 'a;
 
     covariant_key_ref!();
 }
@@ -1110,9 +1157,10 @@ where
     }
 }
 impl<K, V, const N: usize> Iter for ArrayMap<K, V, N> {
-    type Iter<'a> = std::slice::Iter<'a, V>
-	where
-		Self: 'a;
+    type Iter<'a>
+        = std::slice::Iter<'a, V>
+    where
+        Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.vals.iter()
@@ -1122,18 +1170,20 @@ impl<K, V, const N: usize> SimpleKeyedRef for ArrayMap<K, V, N> {
     simple_keyed_ref!();
 }
 impl<K, V, const N: usize> MapIter for ArrayMap<K, V, N> {
-    type Iter<'a> = std::iter::Zip<std::slice::Iter<'a, K>, std::slice::Iter<'a, V>>
-	where
-		Self: 'a;
+    type Iter<'a>
+        = std::iter::Zip<std::slice::Iter<'a, K>, std::slice::Iter<'a, V>>
+    where
+        Self: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.keys.iter().zip(self.vals.iter())
     }
 }
 impl<K, V, const N: usize> MapIterMut for ArrayMap<K, V, N> {
-    type IterMut<'a> = std::iter::Zip<std::slice::Iter<'a, K>, std::slice::IterMut<'a, V>>
-	where
-		Self: 'a;
+    type IterMut<'a>
+        = std::iter::Zip<std::slice::Iter<'a, K>, std::slice::IterMut<'a, V>>
+    where
+        Self: 'a;
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         self.keys.iter().zip(self.vals.iter_mut())

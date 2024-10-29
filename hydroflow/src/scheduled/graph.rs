@@ -47,7 +47,7 @@ pub struct Hydroflow<'a> {
     /// See [`Self::diagnostics()`].
     diagnostics: Option<Vec<Diagnostic<SerdeSpan>>>,
 }
-impl<'a> Default for Hydroflow<'a> {
+impl Default for Hydroflow<'_> {
     fn default() -> Self {
         let stratum_queues = vec![Default::default()]; // Always initialize stratum #0.
         let (event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
@@ -69,7 +69,7 @@ impl<'a> Default for Hydroflow<'a> {
 }
 
 /// Methods for [`TeeingHandoff`] teeing and dropping.
-impl<'a> Hydroflow<'a> {
+impl Hydroflow<'_> {
     /// Tees a [`TeeingHandoff`].
     pub fn teeing_handoff_tee<T>(
         &mut self,
@@ -794,7 +794,7 @@ impl<'a> Hydroflow<'a> {
     }
 }
 
-impl<'a> Hydroflow<'a> {
+impl Hydroflow<'_> {
     /// Alias for [`Context::request_task`].
     pub fn request_task<Fut>(&mut self, future: Fut)
     where
@@ -814,7 +814,7 @@ impl<'a> Hydroflow<'a> {
     }
 }
 
-impl<'a> Drop for Hydroflow<'a> {
+impl Drop for Hydroflow<'_> {
     fn drop(&mut self) {
         self.abort_tasks();
     }

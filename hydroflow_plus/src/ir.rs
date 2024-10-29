@@ -1,6 +1,7 @@
 use core::panic;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
+use std::fmt::Debug;
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -36,7 +37,7 @@ impl ToTokens for DebugExpr {
     }
 }
 
-impl std::fmt::Debug for DebugExpr {
+impl Debug for DebugExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0.to_token_stream())
     }
@@ -47,7 +48,7 @@ pub enum DebugInstantiate {
     Finalized(syn::Expr, syn::Expr, Option<Box<dyn FnOnce()>>),
 }
 
-impl std::fmt::Debug for DebugInstantiate {
+impl Debug for DebugInstantiate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "<network instantiate>")
     }
@@ -56,7 +57,7 @@ impl std::fmt::Debug for DebugInstantiate {
 #[derive(Clone)]
 pub struct DebugPipelineFn(pub Rc<dyn Fn() -> Pipeline + 'static>);
 
-impl std::fmt::Debug for DebugPipelineFn {
+impl Debug for DebugPipelineFn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "<function>")
     }
@@ -208,6 +209,59 @@ impl HfPlusLeaf {
     }
 }
 
+type PrintedTees = RefCell<Option<(usize, HashMap<*const RefCell<HfPlusNode>, usize>)>>;
+thread_local! {
+    static PRINTED_TEES: PrintedTees = const { RefCell::new(None) };
+}
+
+pub fn dbg_dedup_tee<T>(f: impl FnOnce() -> T) -> T {
+    PRINTED_TEES.with(|printed_tees| {
+        let mut printed_tees_mut = printed_tees.borrow_mut();
+        *printed_tees_mut = Some((0, HashMap::new()));
+        drop(printed_tees_mut);
+
+        let ret = f();
+
+        let mut printed_tees_mut = printed_tees.borrow_mut();
+        *printed_tees_mut = None;
+
+        ret
+    })
+}
+
+pub struct TeeNode(pub Rc<RefCell<HfPlusNode>>);
+
+impl Debug for TeeNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        PRINTED_TEES.with(|printed_tees| {
+            let mut printed_tees_mut_borrow = printed_tees.borrow_mut();
+            let printed_tees_mut = printed_tees_mut_borrow.as_mut();
+
+            if let Some(printed_tees_mut) = printed_tees_mut {
+                if let Some(existing) = printed_tees_mut
+                    .1
+                    .get(&(self.0.as_ref() as *const RefCell<HfPlusNode>))
+                {
+                    write!(f, "<tee {}>", existing)
+                } else {
+                    let next_id = printed_tees_mut.0;
+                    printed_tees_mut.0 += 1;
+                    printed_tees_mut
+                        .1
+                        .insert(self.0.as_ref() as *const RefCell<HfPlusNode>, next_id);
+                    drop(printed_tees_mut_borrow);
+                    write!(f, "<tee {}>: ", next_id)?;
+                    Debug::fmt(&self.0.borrow(), f)
+                }
+            } else {
+                drop(printed_tees_mut_borrow);
+                write!(f, "<tee>: ")?;
+                Debug::fmt(&self.0.borrow(), f)
+            }
+        })
+    }
+}
+
 /// An intermediate node in a Hydroflow+ graph, which consumes data
 /// from upstream nodes and emits data to downstream nodes.
 #[derive(Debug)]
@@ -225,7 +279,7 @@ pub enum HfPlusNode {
     },
 
     Tee {
-        inner: Rc<RefCell<HfPlusNode>>,
+        inner: TeeNode,
     },
 
     Persist(Box<HfPlusNode>),
@@ -383,19 +437,19 @@ impl<'a> HfPlusNode {
 
             HfPlusNode::Tee { inner } => {
                 if let Some(transformed) =
-                    seen_tees.get(&(inner.as_ref() as *const RefCell<HfPlusNode>))
+                    seen_tees.get(&(inner.0.as_ref() as *const RefCell<HfPlusNode>))
                 {
-                    *inner = transformed.clone();
+                    *inner = TeeNode(transformed.clone());
                 } else {
                     let transformed_cell = Rc::new(RefCell::new(HfPlusNode::Placeholder));
                     seen_tees.insert(
-                        inner.as_ref() as *const RefCell<HfPlusNode>,
+                        inner.0.as_ref() as *const RefCell<HfPlusNode>,
                         transformed_cell.clone(),
                     );
-                    let mut orig = inner.replace(HfPlusNode::Placeholder);
+                    let mut orig = inner.0.replace(HfPlusNode::Placeholder);
                     transform(&mut orig, seen_tees);
                     *transformed_cell.borrow_mut() = orig;
-                    *inner = transformed_cell;
+                    *inner = TeeNode(transformed_cell);
                 }
             }
 
@@ -598,11 +652,13 @@ impl<'a> HfPlusNode {
             }
 
             HfPlusNode::Tee { inner } => {
-                if let Some(ret) = built_tees.get(&(inner.as_ref() as *const RefCell<HfPlusNode>)) {
+                if let Some(ret) = built_tees.get(&(inner.0.as_ref() as *const RefCell<HfPlusNode>))
+                {
                     ret.clone()
                 } else {
                     let (inner_ident, inner_location_id) =
                         inner
+                            .0
                             .borrow()
                             .emit(graph_builders, built_tees, next_stmt_id);
 
@@ -618,7 +674,7 @@ impl<'a> HfPlusNode {
                     });
 
                     built_tees.insert(
-                        inner.as_ref() as *const RefCell<HfPlusNode>,
+                        inner.0.as_ref() as *const RefCell<HfPlusNode>,
                         (tee_ident.clone(), inner_location_id),
                     );
 

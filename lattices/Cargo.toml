@@ -19,6 +19,9 @@ cc-traits = "2.0.0"
 sealed = "0.5.0"
 serde = { version = "1.0.197", features = ["derive"], optional = true }
 lattices_macro = { path = "../lattices_macro", version = "^0.5.6" }
+ref-cast = "1.0.23"
+variadics = { path = "../variadics", version = "^0.0.6" }
+variadics_macro = { path = "../variadics_macro", version = "^0.5.5" }
 
 [dev-dependencies]
 trybuild = "1.0.0"
