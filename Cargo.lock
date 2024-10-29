@@ -1599,9 +1599,12 @@ version = "0.5.7"
 dependencies = [
  "cc-traits",
  "lattices_macro",
+ "ref-cast",
  "sealed",
  "serde",
  "trybuild",
+ "variadics",
+ "variadics_macro",
 ]
 
 [[package]]
@@ -3450,6 +3453,19 @@ dependencies = [
  "hashbrown 0.14.5",
  "sealed",
  "trybuild",
+]
+
+[[package]]
+name = "variadics_macro"
+version = "0.5.5"
+dependencies = [
+ "insta",
+ "prettyplease",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.75",
+ "variadics",
 ]
 
 [[package]]

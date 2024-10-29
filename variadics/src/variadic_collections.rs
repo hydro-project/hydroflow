@@ -6,7 +6,7 @@ use hashbrown::hash_table::{Entry, HashTable};
 use crate::{PartialEqVariadic, VariadicExt, VecVariadic};
 
 /// Trait for a set of Variadic Tuples
-pub trait VariadicCollection {
+pub trait VariadicCollection: Extend<Self::Schema> {
     /// The Schema (aka Variadic type) associated with tuples in this set
     type Schema: PartialEqVariadic;
 
@@ -58,7 +58,7 @@ impl<T> Default for VariadicHashSet<T> {
 
 impl<T> fmt::Debug for VariadicHashSet<T>
 where
-    T: fmt::Debug + VariadicExt + PartialEqVariadic,
+    T: fmt::Debug + VariadicExt + PartialEqVariadic + Eq + Hash,
     for<'a> T::AsRefVar<'a>: Hash + fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -82,7 +82,7 @@ where
 }
 impl<T, S> VariadicCollection for VariadicHashSet<T, S>
 where
-    T: VariadicExt + PartialEqVariadic,
+    T: VariadicExt + PartialEqVariadic + Eq + Hash,
     for<'a> T::AsRefVar<'a>: Hash,
     S: BuildHasher,
 {
@@ -127,7 +127,7 @@ where
 }
 impl<T, S> VariadicSet for VariadicHashSet<T, S>
 where
-    T: VariadicExt + PartialEqVariadic,
+    T: VariadicExt + PartialEqVariadic + Eq + Hash,
     for<'a> T::AsRefVar<'a>: Hash,
     S: BuildHasher,
 {
@@ -283,7 +283,7 @@ where
 
 impl<K, S> VariadicCollection for VariadicCountedHashSet<K, S>
 where
-    K: VariadicExt + PartialEqVariadic + Hash + Clone,
+    K: VariadicExt + PartialEqVariadic + Eq + Hash + Clone,
     for<'a> K::AsRefVar<'a>: Hash,
     S: BuildHasher,
 {
@@ -333,7 +333,7 @@ where
 
 impl<K, S> VariadicMultiset for VariadicCountedHashSet<K, S>
 where
-    K: VariadicExt + PartialEqVariadic + Hash + Clone,
+    K: VariadicExt + PartialEqVariadic + Eq + Hash + Clone,
     for<'a> K::AsRefVar<'a>: Hash,
     S: BuildHasher,
 {
@@ -356,6 +356,7 @@ where
 }
 
 /// Iterator helper for [`VariadicCountedHashSet::into_iter`].
+#[derive(Clone)]
 pub struct DuplicateCounted<Iter, Item> {
     iter: Iter,
     state: Option<(Item, usize)>,
@@ -474,9 +475,10 @@ where
 
 /// Column storage for Variadic tuples of type Schema
 /// An alternative to VariadicHashMultiset
+#[derive(Clone)]
 pub struct VariadicColumnMultiset<Schema>
 where
-    Schema: VariadicExt,
+    Schema: VariadicExt + Eq + Hash,
 {
     columns: Schema::IntoVec,
     last_offset: usize,
@@ -484,7 +486,7 @@ where
 
 impl<T> VariadicColumnMultiset<T>
 where
-    T: VariadicExt,
+    T: VariadicExt + Eq + Hash,
 {
     /// initialize an empty columnar multiset
     pub fn new() -> Self {
@@ -497,7 +499,7 @@ where
 
 impl<T> Default for VariadicColumnMultiset<T>
 where
-    T: VariadicExt,
+    T: VariadicExt + Eq + Hash,
 {
     fn default() -> Self {
         Self::new()
@@ -506,7 +508,8 @@ where
 
 impl<Schema> VariadicCollection for VariadicColumnMultiset<Schema>
 where
-    Schema: PartialEqVariadic,
+    Schema: PartialEqVariadic + Eq + Hash,
+    for<'a> <Schema as VariadicExt>::AsRefVar<'a>: Hash,
 {
     type Schema = Schema;
 
@@ -543,11 +546,16 @@ where
     }
 }
 
-impl<Schema> VariadicMultiset for VariadicColumnMultiset<Schema> where Schema: PartialEqVariadic {}
+impl<Schema> VariadicMultiset for VariadicColumnMultiset<Schema>
+where
+    Schema: PartialEqVariadic + Eq + Hash,
+    for<'a> <Schema as VariadicExt>::AsRefVar<'a>: Hash,
+{
+}
 
 impl<T> fmt::Debug for VariadicColumnMultiset<T>
 where
-    T: fmt::Debug + VariadicExt + PartialEqVariadic,
+    T: fmt::Debug + VariadicExt + PartialEqVariadic + Eq + Hash,
     for<'a> T::AsRefVar<'a>: Hash + fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -557,7 +565,7 @@ where
 
 impl<Schema> IntoIterator for VariadicColumnMultiset<Schema>
 where
-    Schema: PartialEqVariadic,
+    Schema: PartialEqVariadic + Eq + Hash,
 {
     type Item = Schema;
     type IntoIter = <Schema::IntoVec as VecVariadic>::IntoZip;

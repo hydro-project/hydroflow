@@ -3,14 +3,15 @@
 
 use std::cmp::Ordering::{self, *};
 
-pub use cc_traits;
 use sealed::sealed;
+pub use {cc_traits, variadics};
 
 /// Module for definiting algebraic structures and properties.
 pub mod algebra;
 pub mod collections;
 mod conflict;
 mod dom_pair;
+pub mod ght;
 pub mod map_union;
 pub mod map_union_with_tombstones;
 mod ord;
