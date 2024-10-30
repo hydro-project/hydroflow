@@ -732,6 +732,32 @@
 <a href="#732" id="732">732</a>
 <a href="#733" id="733">733</a>
 <a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::ops::Deref;
@@ -740,7 +766,7 @@
 <span class="kw">use </span>stageleft::{q, IntoQuotedMut, Quoted};
 
 <span class="kw">use </span><span class="kw">crate</span>::builder::FlowState;
-<span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleCollectionWithInitial, CycleComplete};
+<span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleCollectionWithInitial, CycleComplete, DeferTick};
 <span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource, TeeNode};
 <span class="kw">use </span><span class="kw">crate</span>::location::{Location, LocationId};
 <span class="kw">use </span><span class="kw">crate</span>::stream::{Bounded, NoTick, Tick, Unbounded};
@@ -862,6 +888,12 @@
     }
 }
 
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; DeferTick <span class="kw">for </span>Singleton&lt;T, Bounded, Tick, N&gt; {
+    <span class="kw">fn </span>defer_tick(<span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        Singleton::defer_tick(<span class="self">self</span>)
+    }
+}
+
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, Tick&gt; <span class="kw">for </span>Singleton&lt;T, Bounded, Tick, N&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
         <span class="self">self</span>.flow_state.borrow_mut().leaves.as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
@@ -869,6 +901,21 @@
             location_kind: <span class="self">self</span>.location_kind,
             input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
         });
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleCollection&lt;<span class="lifetime">'a</span>, Tick&gt; <span class="kw">for </span>Singleton&lt;T, Bounded, Tick, N&gt; {
+    <span class="kw">type </span>Location = N;
+
+    <span class="kw">fn </span>create_source(ident: syn::Ident, flow_state: FlowState, l: LocationId) -&gt; <span class="self">Self </span>{
+        Singleton::new(
+            l,
+            flow_state,
+            HfPlusNode::CycleSource {
+                ident,
+                location_kind: l,
+            },
+        )
     }
 }
 
@@ -1137,13 +1184,18 @@
     }
 }
 
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; DeferTick <span class="kw">for </span>Optional&lt;T, Bounded, Tick, N&gt; {
+    <span class="kw">fn </span>defer_tick(<span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        Optional::defer_tick(<span class="self">self</span>)
+    }
+}
+
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, Tick&gt; <span class="kw">for </span>Optional&lt;T, Bounded, Tick, N&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
-        <span class="kw">let </span>me = <span class="self">self</span>.defer_tick();
-        me.flow_state.borrow_mut().leaves.as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
+        <span class="self">self</span>.flow_state.borrow_mut().leaves.as_mut().expect(<span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>).push(HfPlusLeaf::CycleSink {
             ident,
-            location_kind: me.location_kind,
-            input: Box::new(me.ir_node.into_inner()),
+            location_kind: <span class="self">self</span>.location_kind,
+            input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
         });
     }
 }

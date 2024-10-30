@@ -535,7 +535,7 @@
     <span class="kw">let </span>clients = flow.cluster::&lt;Client&gt;();
     <span class="kw">let </span>replicas = flow.cluster::&lt;Replica&gt;();
 
-    <span class="kw">let </span>(c_to_proposers_complete_cycle, c_to_proposers) = clients.cycle();
+    <span class="kw">let </span>(c_to_proposers_complete_cycle, c_to_proposers) = clients.forward_ref();
 
     <span class="kw">let </span>(proposers, acceptors, p_to_clients_new_leader_elected, r_new_processed_payloads) =
         paxos_with_replica(
@@ -587,7 +587,7 @@
     Stream&lt;(ClusterId&lt;Client&gt;, ReplicaPayload), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
 ) {
     <span class="kw">let </span>(r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
-        replicas.cycle::&lt;Stream&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
+        replicas.forward_ref::&lt;Stream&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
 
     <span class="kw">let </span>(proposers, acceptors, p_to_clients_new_leader_elected, p_to_replicas) = paxos_core(
         flow,

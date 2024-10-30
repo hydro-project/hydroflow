@@ -297,6 +297,10 @@
 <a href="#297" id="297">297</a>
 <a href="#298" id="298">298</a>
 <a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeSet;
 <span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::{env, fs};
@@ -423,6 +427,10 @@
         i.vis = <span class="macro">parse_quote!</span>(<span class="kw">pub</span>);
         syn::visit_mut::visit_item_enum_mut(<span class="self">self</span>, i);
     }
+
+    <span class="kw">fn </span>visit_variant_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _i: <span class="kw-2">&amp;mut </span>syn::Variant) {
+        <span class="comment">// variant fields do not have visibility modifiers
+    </span>}
 
     <span class="kw">fn </span>visit_item_struct_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::ItemStruct) {
         i.vis = <span class="macro">parse_quote!</span>(<span class="kw">pub</span>);

@@ -83,7 +83,7 @@
     <span class="kw">let </span>roots = process.source_stream(roots);
     <span class="kw">let </span>edges = process.source_stream(edges);
 
-    <span class="kw">let </span>(set_reached_cycle, reached_cycle) = process.cycle();
+    <span class="kw">let </span>(set_reached_cycle, reached_cycle) = process.forward_ref();
 
     <span class="kw">let </span>reached = roots.union(reached_cycle);
     <span class="kw">let </span>reachable = reached
