@@ -236,6 +236,92 @@
 <a href="#236" id="236">236</a>
 <a href="#237" id="237">237</a>
 <a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! General graph algorithm utility functions
 
 </span><span class="kw">use </span>std::collections::btree_map::Entry;
@@ -261,16 +347,21 @@
     <span class="kw">let </span>topo_sort_order = {
         <span class="comment">// Condensed each SCC into a single node for toposort.
         </span><span class="kw">let </span><span class="kw-2">mut </span>condensed_preds: BTreeMap&lt;Id, Vec&lt;Id&gt;&gt; = Default::default();
-        <span class="kw">for </span>u <span class="kw">in </span>(nodes_fn)() {
-            condensed_preds
-                .entry(scc[<span class="kw-2">&amp;</span>u])
-                .or_default()
-                .extend((preds_fn)(u).into_iter().map(|v| scc[<span class="kw-2">&amp;</span>v]));
+        <span class="kw">for </span>v <span class="kw">in </span>(nodes_fn)() {
+            <span class="kw">let </span>v = scc[<span class="kw-2">&amp;</span>v];
+            condensed_preds.entry(v).or_default().extend(
+                (preds_fn)(v)
+                    .into_iter()
+                    .map(|u| scc[<span class="kw-2">&amp;</span>u])
+                    .filter(|<span class="kw-2">&amp;</span>u| v != u),
+            );
         }
 
         topo_sort((nodes_fn)(), |v| {
             condensed_preds.get(<span class="kw-2">&amp;</span>v).into_iter().flatten().cloned()
         })
+        .map_err(drop)
+        .expect(<span class="string">"No cycles after SCC condensing."</span>)
     };
     topo_sort_order
 }
@@ -278,13 +369,16 @@
 <span class="doccomment">/// Topologically sorts a set of nodes. Returns a list where the order of `Id`s will agree with
 /// the order of any path through the graph.
 ///
-/// This naturally requires a directed acyclic graph (DAG).
+/// This succeeds if the input is a directed acyclic graph (DAG).
+///
+/// If the input has a cycle, an `Err` will be returned containing the cycle. Each node in the
+/// cycle will be listed exactly once.
 ///
 /// &lt;https://en.wikipedia.org/wiki/Topological_sorting&gt;
 </span><span class="kw">pub fn </span>topo_sort&lt;Id, NodeIds, PredsFn, PredsIter&gt;(
     node_ids: NodeIds,
     <span class="kw-2">mut </span>preds_fn: PredsFn,
-) -&gt; Vec&lt;Id&gt;
+) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Id&gt;, Vec&lt;Id&gt;&gt;
 <span class="kw">where
     </span>Id: Copy + Eq + Ord,
     NodeIds: IntoIterator&lt;Item = Id&gt;,
@@ -296,28 +390,49 @@
     <span class="kw">fn </span>pred_dfs_postorder&lt;Id, PredsFn, PredsIter&gt;(
         node_id: Id,
         preds_fn: <span class="kw-2">&amp;mut </span>PredsFn,
-        marked: <span class="kw-2">&amp;mut </span>BTreeSet&lt;Id&gt;,
-        order: <span class="kw-2">&amp;mut </span>Vec&lt;Id&gt;,
-    ) <span class="kw">where
+        marked: <span class="kw-2">&amp;mut </span>BTreeMap&lt;Id, bool&gt;, <span class="comment">// `false` =&gt; temporary, `true` =&gt; permanent.
+        </span>order: <span class="kw-2">&amp;mut </span>Vec&lt;Id&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ()&gt;
+    <span class="kw">where
         </span>Id: Copy + Eq + Ord,
         PredsFn: FnMut(Id) -&gt; PredsIter,
         PredsIter: IntoIterator&lt;Item = Id&gt;,
     {
-        <span class="kw">if </span>marked.insert(node_id) {
-            <span class="kw">for </span>next_pred <span class="kw">in </span>(preds_fn)(node_id) {
-                pred_dfs_postorder(next_pred, preds_fn, marked, order);
+        <span class="kw">match </span>marked.get(<span class="kw-2">&amp;</span>node_id) {
+            <span class="prelude-val">Some</span>(_permanent @ <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Ok</span>(()),
+            <span class="prelude-val">Some</span>(_temporary @ <span class="bool-val">false</span>) =&gt; {
+                <span class="comment">// Cycle found!
+                </span>order.clear();
+                order.push(node_id);
+                <span class="prelude-val">Err</span>(())
             }
-            order.push(node_id);
-        } <span class="kw">else </span>{
-            <span class="comment">// TODO(mingwei): cycle found!
-        </span>}
+            <span class="prelude-val">None </span>=&gt; {
+                marked.insert(node_id, <span class="bool-val">false</span>);
+                <span class="kw">for </span>next_pred <span class="kw">in </span>(preds_fn)(node_id) {
+                    pred_dfs_postorder(next_pred, preds_fn, marked, order).map_err(|()| {
+                        <span class="kw">if </span>order.len() == <span class="number">1 </span>|| order.first().unwrap() != order.last().unwrap() {
+                            order.push(node_id);
+                        }
+                    })<span class="question-mark">?</span>;
+                }
+                order.push(node_id);
+                marked.insert(node_id, <span class="bool-val">true</span>);
+                <span class="prelude-val">Ok</span>(())
+            }
+        }
     }
 
     <span class="kw">for </span>node_id <span class="kw">in </span>node_ids {
-        pred_dfs_postorder(node_id, <span class="kw-2">&amp;mut </span>preds_fn, <span class="kw-2">&amp;mut </span>marked, <span class="kw-2">&amp;mut </span>order);
+        <span class="kw">if </span>pred_dfs_postorder(node_id, <span class="kw-2">&amp;mut </span>preds_fn, <span class="kw-2">&amp;mut </span>marked, <span class="kw-2">&amp;mut </span>order).is_err() {
+            <span class="comment">// Cycle found.
+            </span><span class="kw">let </span>end = order.last().unwrap();
+            <span class="kw">let </span>beg = order.iter().position(|n| n == end).unwrap();
+            order.drain(<span class="number">0</span>..=beg);
+            <span class="kw">return </span><span class="prelude-val">Err</span>(order);
+        }
     }
 
-    order
+    <span class="prelude-val">Ok</span>(order)
 }
 
 <span class="doccomment">/// Finds the strongly connected components in the graph. A strongly connected component is a
@@ -394,6 +509,8 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span>itertools::Itertools;
+
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
     <span class="attr">#[test]
@@ -417,11 +534,66 @@
                 .filter(<span class="kw">move </span>|&amp;&amp;(<span class="kw">_</span>, dst)| v == dst)
                 .map(|<span class="kw-2">&amp;</span>(src, <span class="kw">_</span>)| src)
         });
+        <span class="macro">assert!</span>(
+            sort.is_ok(),
+            <span class="string">"Did not expect cycle: {:?}"</span>,
+            sort.unwrap_err()
+        );
+
+        <span class="kw">let </span>sort = sort.unwrap();
         <span class="macro">println!</span>(<span class="string">"{:?}"</span>, sort);
 
         <span class="kw">let </span>position: BTreeMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt; = sort.iter().enumerate().map(|(i, <span class="kw-2">&amp;</span>x)| (x, i)).collect();
         <span class="kw">for </span>(src, dst) <span class="kw">in </span>edges.iter() {
             <span class="macro">assert!</span>(position[src] &lt; position[dst]);
+        }
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">pub fn </span>test_toposort_cycle() {
+        <span class="comment">// https://commons.wikimedia.org/wiki/File:Directed_graph,_cyclic.svg
+        //          ┌────►C──────┐
+        //          │            │
+        //          │            ▼
+        // A───────►B            E ─────►F
+        //          ▲            │
+        //          │            │
+        //          └─────D◄─────┘
+        </span><span class="kw">let </span>edges = [
+            (<span class="string">'A'</span>, <span class="string">'B'</span>),
+            (<span class="string">'B'</span>, <span class="string">'C'</span>),
+            (<span class="string">'C'</span>, <span class="string">'E'</span>),
+            (<span class="string">'D'</span>, <span class="string">'B'</span>),
+            (<span class="string">'E'</span>, <span class="string">'F'</span>),
+            (<span class="string">'E'</span>, <span class="string">'D'</span>),
+        ];
+        <span class="kw">let </span>ids = edges
+            .iter()
+            .flat_map(|<span class="kw-2">&amp;</span>(a, b)| [a, b])
+            .collect::&lt;BTreeSet&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="kw">let </span>cycle_rotations = BTreeSet::from_iter([
+            [<span class="string">'B'</span>, <span class="string">'C'</span>, <span class="string">'E'</span>, <span class="string">'D'</span>],
+            [<span class="string">'C'</span>, <span class="string">'E'</span>, <span class="string">'D'</span>, <span class="string">'B'</span>],
+            [<span class="string">'E'</span>, <span class="string">'D'</span>, <span class="string">'B'</span>, <span class="string">'C'</span>],
+            [<span class="string">'D'</span>, <span class="string">'B'</span>, <span class="string">'C'</span>, <span class="string">'E'</span>],
+        ]);
+
+        <span class="kw">let </span>permutations = ids.iter().copied().permutations(ids.len());
+        <span class="kw">for </span>permutation <span class="kw">in </span>permutations {
+            <span class="kw">let </span>result = topo_sort(permutation.iter().copied(), |v| {
+                edges
+                    .iter()
+                    .filter(<span class="kw">move </span>|&amp;&amp;(<span class="kw">_</span>, dst)| v == dst)
+                    .map(|<span class="kw-2">&amp;</span>(src, <span class="kw">_</span>)| src)
+            });
+            <span class="macro">assert!</span>(result.is_err());
+            <span class="kw">let </span>cycle = result.unwrap_err();
+            <span class="macro">assert!</span>(
+                cycle_rotations.contains(<span class="kw-2">&amp;*</span>cycle),
+                <span class="string">"cycle: {:?}, vertex order: {:?}"</span>,
+                cycle,
+                permutation
+            );
         }
     }
 

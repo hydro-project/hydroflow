@@ -523,6 +523,7 @@
 <a href="#523" id="523">523</a>
 <a href="#524" id="524">524</a>
 <a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Subgraph partioning algorithm
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -690,7 +691,8 @@
                     !<span class="macro">matches!</span>(pred, GraphNode::Handoff { .. })
                 })
         },
-    );
+    )
+    .expect(<span class="string">"Subgraphs are in-out trees."</span>);
 
     <span class="kw">let </span><span class="kw-2">mut </span>grouped_nodes: SecondaryMap&lt;GraphNodeId, Vec&lt;GraphNodeId&gt;&gt; = Default::default();
     <span class="kw">for </span>node_id <span class="kw">in </span>topo_sort {
