@@ -11,8 +11,12 @@ use quote::ToTokens;
 use syn::spanned::Spanned;
 use syn::{Error, Ident, ItemUse};
 
+use super::ops::defer_tick::DEFER_TICK;
+use super::ops::source_iter::SOURCE_ITER;
+use super::ops::source_stream::SOURCE_STREAM;
 use super::{GraphEdgeId, GraphLoopId, GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
 use crate::diagnostic::{Diagnostic, Level};
+use crate::graph::graph_algorithms;
 use crate::graph::ops::{PortListSpec, RangeTrait};
 use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
 use crate::pretty_span::PrettySpan;
@@ -595,6 +599,7 @@ impl FlatGraphBuilder {
         self.make_operator_instances();
         self.check_operator_errors();
         self.warn_unused_port_indexing();
+        self.check_loop_errors();
     }
 
     /// Make `OperatorInstance`s for each operator node.
@@ -918,6 +923,69 @@ impl FlatGraphBuilder {
                 // When errored, just use original and ignore OTHER port to minimize
                 // noisy/extra diagnostics.
                 Some((og_port, og_node))
+            }
+        }
+    }
+
+    /// Check for loop context-related errors.
+    fn check_loop_errors(&mut self) {
+        // All inputs must be declared in the root block.
+        for (node_id, node) in self.flat_graph.nodes() {
+            let Some(op_inst) = self.flat_graph.node_op_inst(node_id) else {
+                continue;
+            };
+            let Some(_loop_id) = self.flat_graph.node_loop(node_id) else {
+                continue;
+            };
+            // TODO(mingwei): don't hardcode source names, add prop to `op_constraints`.
+            if SOURCE_STREAM.name == op_inst.op_constraints.name
+                || SOURCE_ITER.name == op_inst.op_constraints.name
+            {
+                self.diagnostics.push(Diagnostic::spanned(
+                    node.span(),
+                    Level::Error,
+                    format!(
+                        "Source operator `{}(...)` must be at the root level, not within any `loop {{ ... }}` contexts.",
+                        op_inst.op_constraints.name
+                    )
+                ));
+            }
+        }
+
+        // Must be a DAG (excluding `next_tick()` operators).
+        // TODO(mingwei): Nested loop blocks should count as a single node.
+        for (loop_id, loop_nodes) in self.flat_graph.loops() {
+            // Filter out `defer_tick()` operators.
+            let filter_defer_tick = |&node_id: &GraphNodeId| {
+                self.flat_graph
+                    .node_op_inst(node_id)
+                    .map(|op_inst| DEFER_TICK.name != op_inst.op_constraints.name)
+                    .unwrap_or(true)
+            };
+
+            let topo_sort_result = graph_algorithms::topo_sort(
+                loop_nodes.iter().copied().filter(filter_defer_tick),
+                |dst| {
+                    self.flat_graph
+                        .node_predecessor_nodes(dst)
+                        .filter(|&src| Some(loop_id) == self.flat_graph.node_loop(src))
+                        .filter(filter_defer_tick)
+                },
+            );
+            if let Err(cycle) = topo_sort_result {
+                let len = cycle.len();
+                for (i, node_id) in cycle.into_iter().enumerate() {
+                    let span = self.flat_graph.node(node_id).span();
+                    self.diagnostics.push(Diagnostic::spanned(
+                        span,
+                        Level::Error,
+                        format!(
+                            "Operator forms an illegal cycle within a `loop {{ ... }}` block ({}/{}).",
+                            i + 1,
+                            len
+                        ),
+                    ));
+                }
             }
         }
     }
