@@ -10,7 +10,7 @@ use crate::location::{Cluster, ExternalProcess, Process};
 use crate::HfCompiled;
 
 pub struct BuiltFlow<'a> {
-    pub(super) ir: Vec<HfPlusLeaf<'a>>,
+    pub(super) ir: Vec<HfPlusLeaf>,
     pub(super) processes: Vec<usize>,
     pub(super) clusters: Vec<usize>,
     pub(super) used: bool,
@@ -18,7 +18,7 @@ pub struct BuiltFlow<'a> {
     pub(super) _phantom: PhantomData<&'a mut &'a ()>,
 }
 
-impl<'a> Drop for BuiltFlow<'a> {
+impl Drop for BuiltFlow<'_> {
     fn drop(&mut self) {
         if !self.used {
             panic!("Dropped BuiltFlow without instantiating, you may have forgotten to call `compile` or `deploy`.");
@@ -26,15 +26,12 @@ impl<'a> Drop for BuiltFlow<'a> {
     }
 }
 
-impl<'a> BuiltFlow<'a> {
-    pub fn ir(&self) -> &Vec<HfPlusLeaf<'a>> {
+impl BuiltFlow<'_> {
+    pub fn ir(&self) -> &Vec<HfPlusLeaf> {
         &self.ir
     }
 
-    pub fn optimize_with(
-        mut self,
-        f: impl FnOnce(Vec<HfPlusLeaf<'a>>) -> Vec<HfPlusLeaf<'a>>,
-    ) -> BuiltFlow<'a> {
+    pub fn optimize_with(mut self, f: impl FnOnce(Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf>) -> Self {
         self.used = true;
         BuiltFlow {
             ir: f(std::mem::take(&mut self.ir)),

@@ -3,11 +3,13 @@ use std::io::Error;
 use std::pin::Pin;
 
 use hydroflow::bytes::Bytes;
-use hydroflow::futures::Sink;
+use hydroflow::futures::{Sink, Stream};
 use hydroflow_lang::graph::HydroflowGraph;
+use serde::de::DeserializeOwned;
 use serde::Serialize;
 use stageleft::Quoted;
 
+#[cfg(feature = "deploy_runtime")]
 pub mod macro_runtime;
 
 #[cfg(feature = "deploy")]
@@ -17,8 +19,10 @@ pub use macro_runtime::*;
 #[cfg(feature = "deploy")]
 pub use trybuild::init_test;
 
-#[allow(clippy::allow_attributes, unused, reason = "stageleft")]
-pub(crate) mod deploy_runtime;
+#[cfg(feature = "deploy_runtime")]
+pub mod deploy_runtime;
+#[cfg(feature = "deploy_runtime")]
+pub use deploy_runtime::HydroflowPlusMeta;
 
 #[cfg(feature = "deploy")]
 pub mod deploy_graph;
@@ -92,7 +96,7 @@ pub trait Deploy<'a> {
         p1_port: &Self::Port,
         p2: &Self::Process,
         p2_port: &Self::Port,
-    );
+    ) -> Box<dyn FnOnce()>;
 
     fn o2m_sink_source(
         compile_env: &Self::CompileEnv,
@@ -106,7 +110,7 @@ pub trait Deploy<'a> {
         p1_port: &Self::Port,
         c2: &Self::Cluster,
         c2_port: &Self::Port,
-    );
+    ) -> Box<dyn FnOnce()>;
 
     fn m2o_sink_source(
         compile_env: &Self::CompileEnv,
@@ -120,7 +124,7 @@ pub trait Deploy<'a> {
         c1_port: &Self::Port,
         p2: &Self::Process,
         p2_port: &Self::Port,
-    );
+    ) -> Box<dyn FnOnce()>;
 
     fn m2m_sink_source(
         compile_env: &Self::CompileEnv,
@@ -134,7 +138,7 @@ pub trait Deploy<'a> {
         c1_port: &Self::Port,
         c2: &Self::Cluster,
         c2_port: &Self::Port,
-    );
+    ) -> Box<dyn FnOnce()>;
 
     fn e2o_source(
         compile_env: &Self::CompileEnv,
@@ -143,13 +147,26 @@ pub trait Deploy<'a> {
         p2: &Self::Process,
         p2_port: &Self::Port,
     ) -> syn::Expr;
-
     fn e2o_connect(
         p1: &Self::ExternalProcess,
         p1_port: &Self::Port,
         p2: &Self::Process,
         p2_port: &Self::Port,
-    );
+    ) -> Box<dyn FnOnce()>;
+
+    fn o2e_sink(
+        compile_env: &Self::CompileEnv,
+        p1: &Self::Process,
+        p1_port: &Self::Port,
+        p2: &Self::ExternalProcess,
+        p2_port: &Self::Port,
+    ) -> syn::Expr;
+    fn o2e_connect(
+        p1: &Self::Process,
+        p1_port: &Self::Port,
+        p2: &Self::ExternalProcess,
+        p2_port: &Self::Port,
+    ) -> Box<dyn FnOnce()>;
 
     fn cluster_ids(
         env: &Self::CompileEnv,
@@ -220,12 +237,24 @@ pub trait Node {
 pub trait RegisterPort<'a, D: Deploy<'a> + ?Sized>: Clone {
     fn register(&self, key: usize, port: D::Port);
     fn raw_port(&self, key: usize) -> D::ExternalRawPort;
+
     fn as_bytes_sink(
         &self,
         key: usize,
     ) -> impl Future<Output = Pin<Box<dyn Sink<Bytes, Error = Error>>>> + 'a;
+
     fn as_bincode_sink<T: Serialize + 'static>(
         &self,
         key: usize,
     ) -> impl Future<Output = Pin<Box<dyn Sink<T, Error = Error>>>> + 'a;
+
+    fn as_bytes_source(
+        &self,
+        key: usize,
+    ) -> impl Future<Output = Pin<Box<dyn Stream<Item = Bytes>>>> + 'a;
+
+    fn as_bincode_source<T: DeserializeOwned + 'static>(
+        &self,
+        key: usize,
+    ) -> impl Future<Output = Pin<Box<dyn Stream<Item = T>>>> + 'a;
 }

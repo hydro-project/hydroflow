@@ -98,13 +98,13 @@ where
 {
     fn eq(&self, other: &VecUnion<LatOther>) -> bool {
         if self.vec.len() != other.vec.len() {
-            return false;
+            false
+        } else {
+            self.vec
+                .iter()
+                .zip(other.vec.iter())
+                .all(|(val_self, val_other)| val_self == val_other)
         }
-        return self
-            .vec
-            .iter()
-            .zip(other.vec.iter())
-            .all(|(val_self, val_other)| val_self == val_other);
     }
 }
 

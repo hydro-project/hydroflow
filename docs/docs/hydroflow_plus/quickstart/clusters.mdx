@@ -44,7 +44,7 @@ pub fn broadcast(
 When sending data between individual processes, we used the `send_bincode` operator. When sending data from a process to a cluster, we can use the `broadcast_bincode` operator instead.
 
 ```rust
-let data = flow.source_iter(&leader, q!(0..10));
+let data = leader.source_iter(q!(0..10));
 data
     .broadcast_bincode(&workers)
     .for_each(q!(|n| println!("{}", n)));

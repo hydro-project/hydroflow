@@ -4,19 +4,22 @@ use stageleft::*;
 pub struct Leader {}
 pub struct Worker {}
 
-pub fn map_reduce(flow: &FlowBuilder) -> (Process<Leader>, Cluster<Worker>) {
+pub fn map_reduce<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, Leader>, Cluster<'a, Worker>) {
     let process = flow.process();
     let cluster = flow.cluster();
 
-    let words = flow
-        .source_iter(&process, q!(vec!["abc", "abc", "xyz", "abc"]))
+    let words = process
+        .source_iter(q!(vec!["abc", "abc", "xyz", "abc"]))
         .map(q!(|s| s.to_string()));
 
-    let all_ids_vec = flow.cluster_members(&cluster);
+    let all_ids_vec = cluster.members();
     let words_partitioned = words
         .tick_batch()
         .enumerate()
-        .map(q!(|(i, w)| ((i % all_ids_vec.len()) as u32, w)))
+        .map(q!(|(i, w)| (
+            ClusterId::from_raw((i % all_ids_vec.len()) as u32),
+            w
+        )))
         .all_ticks();
 
     words_partitioned

@@ -2,12 +2,12 @@ use std::cell::RefCell;
 use std::pin::Pin;
 use std::rc::Rc;
 
+use hydroflow::util::deploy::DeployPorts;
 use stageleft::{Quoted, RuntimeData};
 
 use super::HydroflowPlusMeta;
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
 use crate::lang::graph::HydroflowGraph;
-use crate::util::deploy::DeployPorts;
 
 pub struct DeployRuntime {}
 
@@ -65,8 +65,8 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p1_port: &Self::Port,
         _p2: &Self::Process,
         _p2_port: &Self::Port,
-    ) {
-        panic!()
+    ) -> Box<dyn FnOnce()> {
+        Box::new(|| panic!())
     }
 
     fn o2m_sink_source(
@@ -84,8 +84,8 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p1_port: &Self::Port,
         _c2: &Self::Cluster,
         _c2_port: &Self::Port,
-    ) {
-        panic!()
+    ) -> Box<dyn FnOnce()> {
+        Box::new(|| panic!())
     }
 
     fn m2o_sink_source(
@@ -103,8 +103,8 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _c1_port: &Self::Port,
         _p2: &Self::Process,
         _p2_port: &Self::Port,
-    ) {
-        panic!()
+    ) -> Box<dyn FnOnce()> {
+        Box::new(|| panic!())
     }
 
     fn m2m_sink_source(
@@ -122,8 +122,8 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _c1_port: &Self::Port,
         _c2: &Self::Cluster,
         _c2_port: &Self::Port,
-    ) {
-        panic!()
+    ) -> Box<dyn FnOnce()> {
+        Box::new(|| panic!())
     }
 
     fn e2o_source(
@@ -141,7 +141,26 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p1_port: &Self::Port,
         _p2: &Self::Process,
         _p2_port: &Self::Port,
-    ) {
+    ) -> Box<dyn FnOnce()> {
+        panic!()
+    }
+
+    fn o2e_sink(
+        _compile_env: &Self::CompileEnv,
+        _p1: &Self::Process,
+        _p1_port: &Self::Port,
+        _p2: &Self::ExternalProcess,
+        _p2_port: &Self::Port,
+    ) -> syn::Expr {
+        panic!()
+    }
+
+    fn o2e_connect(
+        _p1: &Self::Process,
+        _p1_port: &Self::Port,
+        _p2: &Self::ExternalProcess,
+        _p2_port: &Self::Port,
+    ) -> Box<dyn FnOnce()> {
         panic!()
     }
 
@@ -194,6 +213,31 @@ impl<'a> RegisterPort<'a, DeployRuntime> for DeployRuntimeNode {
     ) -> impl std::future::Future<
         Output = Pin<Box<dyn crate::futures::Sink<T, Error = std::io::Error>>>,
     > + 'a {
+        async { panic!() }
+    }
+
+    #[expect(
+        clippy::manual_async_fn,
+        reason = "buggy Clippy lint for lifetime bounds"
+    )]
+    fn as_bytes_source(
+        &self,
+        _key: usize,
+    ) -> impl std::future::Future<
+        Output = Pin<Box<dyn hydroflow::futures::Stream<Item = hydroflow::bytes::Bytes>>>,
+    > + 'a {
+        async { panic!() }
+    }
+
+    #[expect(
+        clippy::manual_async_fn,
+        reason = "buggy Clippy lint for lifetime bounds"
+    )]
+    fn as_bincode_source<T: serde::de::DeserializeOwned + 'static>(
+        &self,
+        _key: usize,
+    ) -> impl std::future::Future<Output = Pin<Box<dyn hydroflow::futures::Stream<Item = T>>>> + 'a
+    {
         async { panic!() }
     }
 }
@@ -251,7 +295,7 @@ impl Node for DeployRuntimeCluster {
     }
 }
 
-impl<'a> ProcessSpec<'a, DeployRuntime> for () {
+impl ProcessSpec<'_, DeployRuntime> for () {
     fn build(self, _id: usize, _name_hint: &str) -> DeployRuntimeNode {
         DeployRuntimeNode {
             next_port: Rc::new(RefCell::new(0)),
@@ -259,7 +303,7 @@ impl<'a> ProcessSpec<'a, DeployRuntime> for () {
     }
 }
 
-impl<'cli> ClusterSpec<'cli, DeployRuntime> for () {
+impl ClusterSpec<'_, DeployRuntime> for () {
     fn build(self, _id: usize, _name_hint: &str) -> DeployRuntimeCluster {
         DeployRuntimeCluster {
             next_port: Rc::new(RefCell::new(0)),
@@ -267,7 +311,7 @@ impl<'cli> ClusterSpec<'cli, DeployRuntime> for () {
     }
 }
 
-impl<'cli> ExternalSpec<'cli, DeployRuntime> for () {
+impl ExternalSpec<'_, DeployRuntime> for () {
     fn build(self, _id: usize, _name_hint: &str) -> DeployRuntimeNode {
         panic!()
     }

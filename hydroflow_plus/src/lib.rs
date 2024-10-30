@@ -25,7 +25,7 @@ pub mod singleton;
 pub use singleton::{Optional, Singleton};
 
 pub mod location;
-pub use location::{Cluster, Process};
+pub use location::{Cluster, ClusterId, Location, Process};
 
 pub mod deploy;
 pub use deploy::{ClusterSpec, Deploy, ProcessSpec};
@@ -42,6 +42,8 @@ pub mod persist_pullup;
 pub mod profiler;
 
 pub mod properties;
+
+mod staging_util;
 
 #[derive(Clone)]
 pub struct RuntimeContext<'a> {
@@ -62,7 +64,7 @@ pub struct HfCompiled<'a, ID> {
     _phantom: PhantomData<&'a mut &'a ID>,
 }
 
-impl<'a, ID> HfCompiled<'a, ID> {
+impl<ID> HfCompiled<'_, ID> {
     pub fn hydroflow_ir(&self) -> &BTreeMap<usize, HydroflowGraph> {
         &self.hydroflow_ir
     }

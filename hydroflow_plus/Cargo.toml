@@ -14,10 +14,11 @@ workspace = true
 path = "src/lib.rs"
 
 [features]
-default = ["deploy"]
+default = ["deploy_runtime"]
 diagnostics = [ "hydroflow_lang/diagnostics" ]
 stageleft_devel = []
-deploy = [ "hydroflow/deploy_integration", "dep:hydro_deploy", "dep:trybuild-internals-api", "dep:toml", "dep:prettyplease" ]
+deploy_runtime = [ "hydroflow/deploy_integration" ]
+deploy = [ "deploy_runtime", "dep:hydro_deploy", "dep:trybuild-internals-api", "dep:toml", "dep:prettyplease" ]
 
 [dependencies]
 quote = "1.0.35"

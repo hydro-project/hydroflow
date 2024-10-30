@@ -16,12 +16,12 @@ fn quoted_any_fn<'a, F: Fn(&usize) + 'a, Q: IntoQuotedMut<'a, F>>(q: Q) -> Q {
 
 /// Add a profiling node before each node to count the cardinality of its input
 fn add_profiling_node<'a>(
-    node: &mut HfPlusNode<'a>,
+    node: &mut HfPlusNode,
     _context: RuntimeContext<'a>,
     counters: RuntimeData<&'a RefCell<Vec<u64>>>,
     counter_queue: RuntimeData<&'a RefCell<UnboundedSender<(usize, u64)>>>,
     id: &mut u32,
-    seen_tees: &mut SeenTees<'a>,
+    seen_tees: &mut SeenTees,
 ) {
     let my_id = *id;
     *id += 1;
@@ -53,11 +53,11 @@ fn add_profiling_node<'a>(
 
 /// Count the cardinality of each input and periodically output to a file
 pub fn profiling<'a>(
-    ir: Vec<HfPlusLeaf<'a>>,
+    ir: Vec<HfPlusLeaf>,
     context: RuntimeContext<'a>,
     counters: RuntimeData<&'a RefCell<Vec<u64>>>,
     counter_queue: RuntimeData<&'a RefCell<UnboundedSender<(usize, u64)>>>,
-) -> Vec<HfPlusLeaf<'a>> {
+) -> Vec<HfPlusLeaf> {
     let mut id = 0;
     let mut seen_tees = Default::default();
     ir.into_iter()
@@ -77,13 +77,15 @@ mod tests {
     use stageleft::*;
 
     use crate::deploy::MultiGraph;
+    use crate::location::Location;
 
     #[test]
     fn profiler_wrapping_all_operators() {
         let flow = crate::builder::FlowBuilder::new();
         let process = flow.process::<()>();
 
-        flow.source_iter(&process, q!(0..10))
+        process
+            .source_iter(q!(0..10))
             .map(q!(|v| v + 1))
             .for_each(q!(|n| println!("{}", n)));
 

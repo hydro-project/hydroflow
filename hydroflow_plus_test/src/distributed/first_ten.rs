@@ -1,5 +1,5 @@
 use hydroflow_plus::*;
-use location::{ExternalBincodePort, ExternalProcess};
+use location::{ExternalBincodeSink, ExternalProcess};
 use serde::{Deserialize, Serialize};
 use stageleft::*;
 
@@ -11,23 +11,23 @@ struct SendOverNetwork {
 pub struct P1 {}
 pub struct P2 {}
 
-pub fn first_ten_distributed(
-    flow: &FlowBuilder,
+pub fn first_ten_distributed<'a>(
+    flow: &FlowBuilder<'a>,
 ) -> (
-    ExternalProcess<()>,
-    ExternalBincodePort<String>,
-    Process<P1>,
-    Process<P2>,
+    ExternalProcess<'a, ()>,
+    ExternalBincodeSink<String>,
+    Process<'a, P1>,
+    Process<'a, P2>,
 ) {
     let external_process = flow.external_process::<()>();
     let process = flow.process::<P1>();
     let second_process = flow.process::<P2>();
 
     let (numbers_external_port, numbers_external) =
-        flow.source_external_bincode(&external_process, &process);
+        external_process.source_external_bincode(&process);
     numbers_external.for_each(q!(|n| println!("hi: {:?}", n)));
 
-    let numbers = flow.source_iter(&process, q!(0..10));
+    let numbers = process.source_iter(q!(0..10));
     numbers
         .map(q!(|n| SendOverNetwork { n }))
         .send_bincode(&second_process)
