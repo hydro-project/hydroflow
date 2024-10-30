@@ -1,0 +1,29 @@
+warning: `loop` blocks are not yet supported.
+ --> tests/compile-fail/surface_loop_cycle.rs:3:9
+  |
+3 |         loop {
+  |         ^^^^
+
+error: Operator forms an illegal cycle within a `loop { ... }` block (1/4).
+ --> tests/compile-fail/surface_loop_cycle.rs:4:31
+  |
+4 |             a = identity() -> identity() -> identity() -> identity();
+  |                               ^^^^^^^^^^
+
+error: Operator forms an illegal cycle within a `loop { ... }` block (2/4).
+ --> tests/compile-fail/surface_loop_cycle.rs:4:45
+  |
+4 |             a = identity() -> identity() -> identity() -> identity();
+  |                                             ^^^^^^^^^^
+
+error: Operator forms an illegal cycle within a `loop { ... }` block (3/4).
+ --> tests/compile-fail/surface_loop_cycle.rs:4:59
+  |
+4 |             a = identity() -> identity() -> identity() -> identity();
+  |                                                           ^^^^^^^^^^
+
+error: Operator forms an illegal cycle within a `loop { ... }` block (4/4).
+ --> tests/compile-fail/surface_loop_cycle.rs:4:17
+  |
+4 |             a = identity() -> identity() -> identity() -> identity();
+  |                 ^^^^^^^^^^

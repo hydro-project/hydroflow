@@ -13,7 +13,7 @@ pub fn test_stratum_loop() {
     let mut df = hydroflow_syntax! {
         source_iter([TickInstant::new(0)]) -> union_tee;
         union_tee = union() -> tee();
-        union_tee -> map(|n| n + TickDuration::SINGLE_TICK) -> filter(|&n| n < TickInstant::new(10)) -> next_stratum() -> union_tee;
+        union_tee -> map(|n| n + TickDuration::SINGLE_TICK) -> filter(|&n| n < TickInstant::new(10)) -> next_stratum() -> defer_tick() -> union_tee;
         union_tee -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_graphvis_snapshots!(df);
@@ -35,7 +35,7 @@ pub fn test_stratum_loop() {
         &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut out_recv)
     );
     assert_eq!(
-        (TickInstant::new(11), 0),
+        (TickInstant::new(10), 0),
         (df.current_tick(), df.current_stratum())
     );
 }
