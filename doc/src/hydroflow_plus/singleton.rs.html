@@ -728,6 +728,10 @@
 <a href="#728" id="728">728</a>
 <a href="#729" id="729">729</a>
 <a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::ops::Deref;
@@ -1308,6 +1312,10 @@
     ) -&gt; Optional&lt;T, Bounded, Tick, N&gt; {
         <span class="self">self</span>.cross_singleton(signal.map(<span class="macro">q!</span>(|_u| ())))
             .map(<span class="macro">q!</span>(|(d, _signal)| d))
+    }
+
+    <span class="kw">pub fn </span>then&lt;U&gt;(<span class="self">self</span>, value: Singleton&lt;U, Bounded, Tick, N&gt;) -&gt; Optional&lt;U, Bounded, Tick, N&gt; {
+        value.continue_if(<span class="self">self</span>)
     }
 
     <span class="kw">pub fn </span>continue_unless&lt;U&gt;(
