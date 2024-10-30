@@ -228,6 +228,13 @@ mod test {
     #[test]
     pub fn test_toposort_cycle() {
         // https://commons.wikimedia.org/wiki/File:Directed_graph,_cyclic.svg
+        //          ┌────►C──────┐
+        //          │            │
+        //          │            ▼
+        // A───────►B            E ─────►F
+        //          ▲            │
+        //          │            │
+        //          └─────D◄─────┘
         let edges = [
             ('A', 'B'),
             ('B', 'C'),
