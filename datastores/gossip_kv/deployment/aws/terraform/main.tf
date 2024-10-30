@@ -73,7 +73,7 @@ module "eks_cluster" {
 
       min_size     = 1
       max_size     = 3
-      desired_size = 2
+      desired_size = 1
     }
   }
 }

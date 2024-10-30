@@ -7,7 +7,7 @@ variable "region" {
 variable "instance_type" {
   description = "Instance type for the EC2 instances"
   type        = string
-  default     = "m4.8xlarge"
+  default     = "m4.10xlarge"
 }
 
 variable "grafana_port" {
