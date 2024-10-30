@@ -90,11 +90,12 @@ pub fn paxos_core<'a, P: PaxosPayload, R>(
     let proposers = flow.cluster::<Proposer>();
     let acceptors = flow.cluster::<Acceptor>();
 
-    let c_to_proposers = c_to_proposers(&proposers);
-
-    // Proposers.
     proposers
         .source_iter(q!(["Proposers say hello"]))
+        .for_each(q!(|s| println!("{}", s)));
+
+    acceptors
+        .source_iter(q!(["Acceptors say hello"]))
         .for_each(q!(|s| println!("{}", s)));
 
     let (a_to_proposers_p2b_complete_cycle, a_to_proposers_p2b_forward_reference) =
@@ -113,6 +114,8 @@ pub fn paxos_core<'a, P: PaxosPayload, R>(
             a_to_proposers_p2b_forward_reference,
             a_log_forward_reference,
         );
+
+    let c_to_proposers = c_to_proposers(&proposers);
 
     let (p_to_clients_new_leader_elected, p_to_replicas, a_log, a_to_proposers_p2b) =
         sequence_payload(
@@ -549,9 +552,6 @@ fn sequence_payload<'a, P: PaxosPayload, R>(
         .all_ticks();
 
     // Acceptors.
-    acceptors
-        .source_iter(q!(["Acceptors say hello"]))
-        .for_each(q!(|s| println!("{}", s)));
     let r_to_acceptors_checkpoint = r_to_acceptors_checkpoint(acceptors);
 
     // p_to_acceptors_p2a.clone().for_each(q!(|p2a: P2a| println!("Acceptor received P2a: {:?}", p2a)));
