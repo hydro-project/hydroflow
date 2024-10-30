@@ -23,13 +23,13 @@ where
     let topo_sort_order = {
         // Condensed each SCC into a single node for toposort.
         let mut condensed_preds: BTreeMap<Id, Vec<Id>> = Default::default();
-        for u in (nodes_fn)() {
-            let u = scc[&u];
-            condensed_preds.entry(u).or_default().extend(
-                (preds_fn)(u)
+        for v in (nodes_fn)() {
+            let v = scc[&v];
+            condensed_preds.entry(v).or_default().extend(
+                (preds_fn)(v)
                     .into_iter()
-                    .map(|v| scc[&v])
-                    .filter(|&v| u != v),
+                    .map(|u| scc[&u])
+                    .filter(|&u| v != u),
             );
         }
 
