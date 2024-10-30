@@ -165,7 +165,8 @@ fn make_subgraph_collect(
                     !matches!(pred, GraphNode::Handoff { .. })
                 })
         },
-    );
+    )
+    .expect("Subgraphs are in-out trees.");
 
     let mut grouped_nodes: SecondaryMap<GraphNodeId, Vec<GraphNodeId>> = Default::default();
     for node_id in topo_sort {
