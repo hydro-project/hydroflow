@@ -7,11 +7,7 @@ use hydroflow_plus::*;
 use serde::{Deserialize, Serialize};
 use stageleft::*;
 
-use super::paxos::{paxos_core, Acceptor, Ballot, PaxosPayload, Proposer};
-
-pub trait LeaderElected: Ord + Clone {
-    fn leader_id(&self) -> ClusterId<Proposer>;
-}
+use super::paxos::{paxos_core, Acceptor, PaxosPayload, Proposer};
 
 pub struct Replica {}
 
@@ -79,7 +75,9 @@ pub fn paxos_bench<'a>(
 
     c_to_proposers_complete_cycle.complete(bench_client(
         &clients,
-        p_to_clients_new_leader_elected.broadcast_bincode_interleaved(&clients),
+        p_to_clients_new_leader_elected
+            .broadcast_bincode(&clients)
+            .map(q!(|(leader_id, _)| leader_id)),
         r_new_processed_payloads.send_bincode(&clients),
         num_clients_per_node,
         median_latency_window_size,
@@ -111,7 +109,7 @@ fn paxos_with_replica<'a>(
 ) -> (
     Cluster<'a, Proposer>,
     Cluster<'a, Acceptor>,
-    Stream<Ballot, Unbounded, NoTick, Cluster<'a, Proposer>>,
+    Stream<(), Unbounded, NoTick, Cluster<'a, Proposer>>,
     Stream<(ClusterId<Client>, ReplicaPayload), Unbounded, NoTick, Cluster<'a, Replica>>,
 ) {
     let (r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
@@ -251,9 +249,14 @@ pub fn replica<'a>(
 }
 
 // Clients. All relations for clients will be prefixed with c. All ClientPayloads will contain the virtual client number as key and the client's machine ID (to string) as value. Expects p_to_clients_leader_elected containing Ballots whenever the leader is elected, and r_to_clients_payload_applied containing ReplicaPayloads whenever a payload is committed. Outputs (leader address, ClientPayload) when a new leader is elected or when the previous payload is committed.
-fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
+fn bench_client<'a>(
     clients: &Cluster<'a, Client>,
-    p_to_clients_leader_elected: Stream<B, Unbounded, NoTick, Cluster<'a, Client>>,
+    p_to_clients_leader_elected: Stream<
+        ClusterId<Proposer>,
+        Unbounded,
+        NoTick,
+        Cluster<'a, Client>,
+    >,
     r_to_clients_payload_applied: Stream<
         (ClusterId<Replica>, ReplicaPayload),
         Unbounded,
@@ -280,7 +283,7 @@ fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
             .clone()
             .flat_map(q!(move |leader_ballot| (0..num_clients_per_node).map(
                 move |i| (
-                    leader_ballot.leader_id(),
+                    leader_ballot,
                     ClientPayload {
                         key: i as u32,
                         value: c_id.raw_id.to_string()
@@ -320,7 +323,7 @@ fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
         .clone()
         .cross_singleton(c_max_leader_ballot.clone().latest_tick())
         .map(q!(move |(key, leader_ballot)| (
-            leader_ballot.leader_id(),
+            leader_ballot,
             ClientPayload {
                 key,
                 value: c_id.raw_id.to_string()
