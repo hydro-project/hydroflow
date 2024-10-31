@@ -8,8 +8,6 @@ use serde::{Deserialize, Serialize};
 use stageleft::*;
 use tokio::time::Instant;
 
-use super::paxos_bench::LeaderElected;
-
 pub struct Proposer {}
 pub struct Acceptor {}
 
@@ -23,12 +21,6 @@ pub struct Ballot {
     // Note: Important that num comes before id, since Ord is defined lexicographically
     pub num: u32,
     pub proposer_id: ClusterId<Proposer>,
-}
-
-impl LeaderElected for Ballot {
-    fn leader_id(&self) -> ClusterId<Proposer> {
-        self.proposer_id
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -85,7 +77,7 @@ pub fn paxos_core<'a, P: PaxosPayload, R>(
 ) -> (
     Cluster<'a, Proposer>,
     Cluster<'a, Acceptor>,
-    Stream<Ballot, Unbounded, NoTick, Cluster<'a, Proposer>>,
+    Stream<(), Unbounded, NoTick, Cluster<'a, Proposer>>,
     Stream<(i32, P), Unbounded, NoTick, Cluster<'a, Proposer>>,
 ) {
     let proposers = flow.cluster::<Proposer>();
@@ -115,29 +107,37 @@ pub fn paxos_core<'a, P: PaxosPayload, R>(
         a_log_forward_reference.map(q!(|(_ckpnt, log)| log.clone())),
     );
 
+    let just_became_leader = p_is_leader
+        .clone()
+        .continue_unless(p_is_leader.clone().defer_tick());
+
+    // Tell clients that leader election has completed and they can begin sending messages
+    let p_to_clients_new_leader_elected = just_became_leader
+        .clone()
+        .map(q!(move |_| ())) // Only tell the clients once when leader election concludes
+        .all_ticks();
+
     let (p_log_to_try_commit, p_max_slot, p_log_holes) =
         recommit_after_leader_election(&proposers, p_relevant_p1bs, p_ballot_num.clone(), f);
 
     let p_log_to_recommit = p_log_to_try_commit
         .union(p_log_holes)
-        .continue_unless(p_is_leader.clone().defer_tick())
-        .continue_if(p_is_leader.clone()); // Only resend p1b stuff once the moment we become leader.
+        .continue_if(just_became_leader); // Only resend p1b stuff once the moment we become leader.
 
     let c_to_proposers = c_to_proposers(&proposers);
 
-    let (p_to_clients_new_leader_elected, p_to_replicas, a_log, a_to_proposers_p2b) =
-        sequence_payload(
-            &proposers,
-            &acceptors,
-            c_to_proposers,
-            r_to_acceptors_checkpoint,
-            p_ballot_num,
-            p_is_leader,
-            p_max_slot,
-            p_log_to_recommit,
-            f,
-            a_max_ballot,
-        );
+    let (p_to_replicas, a_log, a_to_proposers_p2b) = sequence_payload(
+        &proposers,
+        &acceptors,
+        c_to_proposers,
+        r_to_acceptors_checkpoint,
+        p_ballot_num,
+        p_is_leader,
+        p_max_slot,
+        p_log_to_recommit,
+        f,
+        a_max_ballot,
+    );
 
     a_log_complete_cycle.complete(a_log);
     a_to_proposers_p2b_complete_cycle.complete(a_to_proposers_p2b);
@@ -550,13 +550,11 @@ fn sequence_payload<'a, P: PaxosPayload, R>(
 
     a_max_ballot: Singleton<Ballot, Bounded, Tick, Cluster<'a, Acceptor>>,
 ) -> (
-    Stream<Ballot, Unbounded, NoTick, Cluster<'a, Proposer>>,
     Stream<(i32, P), Unbounded, NoTick, Cluster<'a, Proposer>>,
     Singleton<(i32, HashMap<i32, LogValue<P>>), Bounded, Tick, Cluster<'a, Acceptor>>,
     Stream<P2b<P>, Unbounded, NoTick, Cluster<'a, Proposer>>,
 ) {
-    let p_id = proposers.self_id();
-    let (p_next_slot, p_to_acceptors_p2a) = p_p2a(
+    let p_to_acceptors_p2a = p_p2a(
         proposers,
         p_max_slot,
         c_to_proposers,
@@ -565,13 +563,6 @@ fn sequence_payload<'a, P: PaxosPayload, R>(
         p_is_leader.clone(),
         acceptors,
     );
-
-    // Tell clients that leader election has completed and they can begin sending messages
-    let p_to_clients_new_leader_elected = p_is_leader.clone()
-        .continue_unless(p_next_slot)
-        .cross_singleton(p_ballot_num)
-        .map(q!(move |(_is_leader, ballot_num)| Ballot { num: ballot_num, proposer_id: p_id})) // Only tell the clients once when leader election concludes
-        .all_ticks();
 
     // Acceptors.
     let r_to_acceptors_checkpoint = r_to_acceptors_checkpoint(acceptors);
@@ -589,12 +580,7 @@ fn sequence_payload<'a, P: PaxosPayload, R>(
     // End tell clients that leader election has completed
     let p_to_replicas = p_p2b(proposers, a_to_proposers_p2b.clone(), f);
 
-    (
-        p_to_clients_new_leader_elected,
-        p_to_replicas,
-        a_log,
-        a_to_proposers_p2b,
-    )
+    (p_to_replicas, a_log, a_to_proposers_p2b)
 }
 
 #[derive(Clone)]
@@ -604,7 +590,6 @@ enum CheckpointOrP2a<P> {
 }
 
 // Proposer logic to send p2as, outputting the next slot and the p2as to send to acceptors.
-#[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 fn p_p2a<'a, P: PaxosPayload>(
     proposers: &Cluster<'a, Proposer>,
     p_max_slot: Optional<i32, Bounded, Tick, Cluster<'a, Proposer>>,
@@ -613,10 +598,7 @@ fn p_p2a<'a, P: PaxosPayload>(
     p_log_to_recommit: Stream<P2a<P>, Bounded, Tick, Cluster<'a, Proposer>>,
     p_is_leader: Optional<bool, Bounded, Tick, Cluster<'a, Proposer>>,
     acceptors: &Cluster<'a, Acceptor>,
-) -> (
-    Optional<i32, Bounded, Tick, Cluster<'a, Proposer>>,
-    Stream<P2a<P>, Unbounded, NoTick, Cluster<'a, Acceptor>>,
-) {
+) -> Stream<P2a<P>, Unbounded, NoTick, Cluster<'a, Acceptor>> {
     let p_id = proposers.self_id();
     let (p_next_slot_complete_cycle, p_next_slot) =
         proposers.tick_cycle::<Optional<i32, _, _, _>>();
@@ -657,7 +639,7 @@ fn p_p2a<'a, P: PaxosPayload>(
         .continue_if(p_is_leader.clone());
 
     p_next_slot_complete_cycle.complete_next_tick(p_new_next_slot);
-    (p_next_slot, p_to_acceptors_p2a)
+    p_to_acceptors_p2a
 }
 
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
