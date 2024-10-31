@@ -58,8 +58,8 @@ struct P2a<P> {
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 struct P2b<P> {
-    victory: bool,
     ballot: Ballot,
+    max_ballot: Ballot,
     slot: i32,
     value: P,
 }
@@ -111,7 +111,7 @@ pub fn paxos_core<'a, P: PaxosPayload, R>(
         i_am_leader_send_timeout,
         i_am_leader_check_timeout,
         i_am_leader_check_timeout_delay_multiplier,
-        a_to_proposers_p2b_forward_reference.map(q!(|p2b| p2b.ballot)),
+        a_to_proposers_p2b_forward_reference.map(q!(|p2b| p2b.max_ballot)),
         a_log_forward_reference.map(q!(|(_ckpnt, log)| log.clone())),
     );
 
@@ -755,8 +755,8 @@ fn acceptor_p2<'a, P: PaxosPayload, R>(
         .map(q!(|(p2a, max_ballot)| (
             p2a.ballot.proposer_id,
             P2b {
-                victory: p2a.ballot == max_ballot,
                 ballot: p2a.ballot,
+                max_ballot,
                 slot: p2a.slot,
                 value: p2a.value
             }
@@ -776,7 +776,7 @@ fn p_p2b<'a, P: PaxosPayload>(
     let p_p2b = a_to_proposers_p2b.tick_batch().union(p_persisted_p2bs);
     let p_count_matching_p2bs = p_p2b
         .clone()
-        .filter_map(q!(|p2b| if p2b.victory {
+        .filter_map(q!(|p2b| if p2b.ballot == p2b.max_ballot {
             // Only consider p2bs where max ballot = ballot, which means that no one preempted us
             Some(((p2b.slot, p2b.ballot), p2b.value))
         } else {
@@ -785,7 +785,6 @@ fn p_p2b<'a, P: PaxosPayload>(
         .fold_keyed(
             q!(|| (0, Default::default())),
             q!(|accum, value| {
-                // TODO(shadaj): why is sender unused? should we de-dup?
                 accum.0 += 1;
                 accum.1 = value;
             }),
