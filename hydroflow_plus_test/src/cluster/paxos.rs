@@ -600,7 +600,6 @@ enum CheckpointOrP2a<P> {
 }
 
 // Proposer logic to send p2as, outputting the next slot and the p2as to send to acceptors.
-#[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 fn p_p2a<'a, P: PaxosPayload>(
     proposers: &Cluster<'a, Proposer>,
     p_max_slot: Optional<i32, Bounded, Tick, Cluster<'a, Proposer>>,
