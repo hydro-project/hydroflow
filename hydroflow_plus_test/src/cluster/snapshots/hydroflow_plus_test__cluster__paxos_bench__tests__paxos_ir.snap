@@ -14,6 +14,17 @@ expression: built.ir()
             ),
         },
     },
+    ForEach {
+        f: stageleft :: runtime_support :: fn1_type_hint :: < & str , () > ({ use crate :: __staged :: cluster :: paxos :: * ; | s | println ! ("{}" , s) }),
+        input: Source {
+            source: Iter(
+                { use crate :: __staged :: cluster :: paxos :: * ; ["Acceptors say hello"] },
+            ),
+            location_kind: Cluster(
+                3,
+            ),
+        },
+    },
     CycleSink {
         ident: Ident {
             sym: cycle_4,
@@ -654,17 +665,6 @@ expression: built.ir()
                 },
             ),
         ),
-    },
-    ForEach {
-        f: stageleft :: runtime_support :: fn1_type_hint :: < & str , () > ({ use crate :: __staged :: cluster :: paxos :: * ; | s | println ! ("{}" , s) }),
-        input: Source {
-            source: Iter(
-                { use crate :: __staged :: cluster :: paxos :: * ; ["Acceptors say hello"] },
-            ),
-            location_kind: Cluster(
-                3,
-            ),
-        },
     },
     CycleSink {
         ident: Ident {
