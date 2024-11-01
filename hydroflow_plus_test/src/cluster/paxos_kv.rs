@@ -1,35 +1,45 @@
 use std::collections::HashMap;
+use std::fmt::Debug;
+use std::hash::Hash;
 
 use hydroflow_plus::*;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use stageleft::*;
 
-use super::paxos::{paxos_core, Acceptor, PaxosPayload, Proposer};
+use super::paxos::{paxos_core, Acceptor, Proposer};
 
 pub struct Replica {}
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
-pub struct KvPayload {
-    pub key: u32,
-    pub value: String,
+pub trait KvKey: Serialize + DeserializeOwned + Hash + Eq + Clone + Debug {}
+impl<K: Serialize + DeserializeOwned + Hash + Eq + Clone + Debug> KvKey for K {}
+
+pub trait KvValue: Serialize + DeserializeOwned + Eq + Clone + Debug {}
+impl<V: Serialize + DeserializeOwned + Eq + Clone + Debug> KvValue for V {}
+
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
+pub struct KvPayload<K, V> {
+    pub key: K,
+    pub value: V,
 }
 
-impl Default for KvPayload {
-    fn default() -> Self {
-        Self {
-            key: 0,
-            value: "".to_string(),
-        }
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
+pub struct SequencedKv<K, V> {
+    // Note: Important that seq is the first member of the struct for sorting
+    pub seq: i32,
+    pub kv: KvPayload<K, V>,
+}
+
+impl<K: KvKey, V: KvValue> Ord for SequencedKv<K, V> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.seq.cmp(&other.seq)
     }
 }
 
-impl PaxosPayload for KvPayload {}
-
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
-pub struct SequencedKv {
-    // Note: Important that seq is the first member of the struct for sorting
-    pub seq: i32,
-    pub kv: KvPayload,
+impl<K: KvKey, V: KvValue> PartialOrd for SequencedKv<K, V> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 #[expect(
@@ -37,11 +47,11 @@ pub struct SequencedKv {
     clippy::too_many_arguments,
     reason = "internal paxos code // TODO"
 )]
-pub fn paxos_kv<'a>(
+pub fn paxos_kv<'a, K: KvKey, V: KvValue>(
     proposers: &Cluster<'a, Proposer>,
     acceptors: &Cluster<'a, Acceptor>,
     replicas: &Cluster<'a, Replica>,
-    c_to_proposers: Stream<KvPayload, Unbounded, NoTick, Cluster<'a, Proposer>>,
+    c_to_proposers: Stream<KvPayload<K, V>, Unbounded, NoTick, Cluster<'a, Proposer>>,
     f: usize,
     i_am_leader_send_timeout: u64,
     i_am_leader_check_timeout: u64,
@@ -49,7 +59,7 @@ pub fn paxos_kv<'a>(
     checkpoint_frequency: usize,
 ) -> (
     Stream<(), Unbounded, NoTick, Cluster<'a, Proposer>>,
-    Stream<SequencedKv, Unbounded, NoTick, Cluster<'a, Replica>>,
+    Stream<SequencedKv<K, V>, Unbounded, NoTick, Cluster<'a, Replica>>,
 ) {
     let (r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
         replicas.forward_ref::<Stream<_, _, _, _>>();
@@ -80,13 +90,13 @@ pub fn paxos_kv<'a>(
 
 // Replicas. All relations for replicas will be prefixed with r. Expects ReplicaPayload on p_to_replicas, outputs a stream of (client address, ReplicaPayload) after processing.
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
-pub fn replica<'a>(
+pub fn replica<'a, K: KvKey, V: KvValue>(
     replicas: &Cluster<'a, Replica>,
-    p_to_replicas: Stream<SequencedKv, Unbounded, NoTick, Cluster<'a, Replica>>,
+    p_to_replicas: Stream<SequencedKv<K, V>, Unbounded, NoTick, Cluster<'a, Replica>>,
     checkpoint_frequency: usize,
 ) -> (
     Stream<i32, Unbounded, NoTick, Cluster<'a, Replica>>,
-    Stream<SequencedKv, Unbounded, NoTick, Cluster<'a, Replica>>,
+    Stream<SequencedKv<K, V>, Unbounded, NoTick, Cluster<'a, Replica>>,
 ) {
     let (r_buffered_payloads_complete_cycle, r_buffered_payloads) = replicas.tick_cycle();
     // p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
@@ -139,7 +149,7 @@ pub fn replica<'a>(
     let r_kv_store = r_processable_payloads
         .clone()
         .persist() // Optimization: all_ticks() + fold() = fold<static>, where the state of the previous fold is saved and persisted values are deleted.
-        .fold(q!(|| (HashMap::<u32, String>::new(), -1)), q!(|state, payload| {
+        .fold(q!(|| (HashMap::new(), -1)), q!(|state, payload| {
             let kv_store = &mut state.0;
             let last_seq = &mut state.1;
             kv_store.insert(payload.kv.key, payload.kv.value);
