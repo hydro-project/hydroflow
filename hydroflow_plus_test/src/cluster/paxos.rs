@@ -56,33 +56,29 @@ struct P2b<P> {
     value: P,
 }
 
-#[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
+#[expect(
+    clippy::too_many_arguments,
+    clippy::type_complexity,
+    reason = "internal paxos code // TODO"
+)]
 pub fn paxos_core<'a, P: PaxosPayload, R>(
-    flow: &FlowBuilder<'a>,
-    r_to_acceptors_checkpoint: impl FnOnce(
-        &Cluster<'a, Acceptor>,
-    ) -> Stream<
+    proposers: &Cluster<'a, Proposer>,
+    acceptors: &Cluster<'a, Acceptor>,
+    r_to_acceptors_checkpoint: Stream<
         (ClusterId<R>, i32),
         Unbounded,
         NoTick,
         Cluster<'a, Acceptor>,
     >,
-    c_to_proposers: impl FnOnce(
-        &Cluster<'a, Proposer>,
-    ) -> Stream<P, Unbounded, NoTick, Cluster<'a, Proposer>>,
+    c_to_proposers: Stream<P, Unbounded, NoTick, Cluster<'a, Proposer>>,
     f: usize,
     i_am_leader_send_timeout: u64,
     i_am_leader_check_timeout: u64,
     i_am_leader_check_timeout_delay_multiplier: usize,
 ) -> (
-    Cluster<'a, Proposer>,
-    Cluster<'a, Acceptor>,
     Stream<(), Unbounded, NoTick, Cluster<'a, Proposer>>,
     Stream<(i32, P), Unbounded, NoTick, Cluster<'a, Proposer>>,
 ) {
-    let proposers = flow.cluster::<Proposer>();
-    let acceptors = flow.cluster::<Acceptor>();
-
     proposers
         .source_iter(q!(["Proposers say hello"]))
         .for_each(q!(|s| println!("{}", s)));
@@ -97,8 +93,8 @@ pub fn paxos_core<'a, P: PaxosPayload, R>(
         acceptors.tick_forward_ref::<Singleton<(i32, HashMap<i32, LogValue<P>>), _, _, _>>();
 
     let (p_ballot_num, p_is_leader, p_relevant_p1bs, a_max_ballot) = leader_election(
-        &proposers,
-        &acceptors,
+        proposers,
+        acceptors,
         f,
         i_am_leader_send_timeout,
         i_am_leader_check_timeout,
@@ -118,17 +114,15 @@ pub fn paxos_core<'a, P: PaxosPayload, R>(
         .all_ticks();
 
     let (p_log_to_try_commit, p_max_slot, p_log_holes) =
-        recommit_after_leader_election(&proposers, p_relevant_p1bs, p_ballot_num.clone(), f);
+        recommit_after_leader_election(proposers, p_relevant_p1bs, p_ballot_num.clone(), f);
 
     let p_log_to_recommit = p_log_to_try_commit
         .union(p_log_holes)
         .continue_if(just_became_leader); // Only resend p1b stuff once the moment we become leader.
 
-    let c_to_proposers = c_to_proposers(&proposers);
-
     let (p_to_replicas, a_log, a_to_proposers_p2b) = sequence_payload(
-        &proposers,
-        &acceptors,
+        proposers,
+        acceptors,
         c_to_proposers,
         r_to_acceptors_checkpoint,
         p_ballot_num,
@@ -142,12 +136,7 @@ pub fn paxos_core<'a, P: PaxosPayload, R>(
     a_log_complete_cycle.complete(a_log);
     a_to_proposers_p2b_complete_cycle.complete(a_to_proposers_p2b);
 
-    (
-        proposers,
-        acceptors,
-        p_to_clients_new_leader_elected,
-        p_to_replicas,
-    )
+    (p_to_clients_new_leader_elected, p_to_replicas)
 }
 
 #[expect(
@@ -350,7 +339,8 @@ fn p_leader_heartbeat<'a>(
                 )),
                 q!(Duration::from_secs(i_am_leader_check_timeout)),
             )
-            .latest_tick(),
+            .tick_batch()
+            .first(),
     );
     (p_to_proposers_i_am_leader, p_trigger_election)
 }
@@ -532,9 +522,7 @@ fn sequence_payload<'a, P: PaxosPayload, R>(
     proposers: &Cluster<'a, Proposer>,
     acceptors: &Cluster<'a, Acceptor>,
     c_to_proposers: Stream<P, Unbounded, NoTick, Cluster<'a, Proposer>>,
-    r_to_acceptors_checkpoint: impl FnOnce(
-        &Cluster<'a, Acceptor>,
-    ) -> Stream<
+    r_to_acceptors_checkpoint: Stream<
         (ClusterId<R>, i32),
         Unbounded,
         NoTick,
@@ -565,8 +553,6 @@ fn sequence_payload<'a, P: PaxosPayload, R>(
     );
 
     // Acceptors.
-    let r_to_acceptors_checkpoint = r_to_acceptors_checkpoint(acceptors);
-
     // p_to_acceptors_p2a.clone().for_each(q!(|p2a: P2a| println!("Acceptor received P2a: {:?}", p2a)));
     let (a_log, a_to_proposers_p2b) = acceptor_p2(
         a_max_ballot.clone(),
