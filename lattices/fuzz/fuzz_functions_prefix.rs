@@ -5,10 +5,3 @@ macro_rules! create_fuzz_functions {
             lattices_fuzz::algebra_functions::FuzzFunctions<$type>,
         > = once_cell::sync::Lazy::new(|| {
             lattices_fuzz::algebra_functions::FuzzFunctions::new(
-                | m , n | m.wrapping_mul(n),
-                Some(|a: $type, b: $type| a.wrapping_mul(b)),
-                Some(|a: $type| a)
-            )
-        });
-    };
-}

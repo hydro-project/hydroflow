@@ -1,5 +1,3 @@
-target
-corpus
-artifacts
-coverage
-fuzz_results
+artifacts/
+corpus/
+fuzz_results/
