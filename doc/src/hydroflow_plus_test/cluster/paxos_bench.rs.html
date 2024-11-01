@@ -470,6 +470,9 @@
 <a href="#470" id="470">470</a>
 <a href="#471" id="471">471</a>
 <a href="#472" id="472">472</a>
+<a href="#473" id="473">473</a>
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::rc::Rc;
@@ -479,11 +482,7 @@
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-<span class="kw">use </span><span class="kw">super</span>::paxos::{paxos_core, Acceptor, Ballot, PaxosPayload, Proposer};
-
-<span class="kw">pub trait </span>LeaderElected: Ord + Clone {
-    <span class="kw">fn </span>leader_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ClusterId&lt;Proposer&gt;;
-}
+<span class="kw">use </span><span class="kw">super</span>::paxos::{paxos_core, Acceptor, PaxosPayload, Proposer};
 
 <span class="kw">pub struct </span>Replica {}
 
@@ -551,7 +550,9 @@
 
     c_to_proposers_complete_cycle.complete(bench_client(
         <span class="kw-2">&amp;</span>clients,
-        p_to_clients_new_leader_elected.broadcast_bincode_interleaved(<span class="kw-2">&amp;</span>clients),
+        p_to_clients_new_leader_elected
+            .broadcast_bincode(<span class="kw-2">&amp;</span>clients)
+            .map(<span class="macro">q!</span>(|(leader_id, <span class="kw">_</span>)| leader_id)),
         r_new_processed_payloads.send_bincode(<span class="kw-2">&amp;</span>clients),
         num_clients_per_node,
         median_latency_window_size,
@@ -583,7 +584,7 @@
 ) -&gt; (
     Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;,
     Cluster&lt;<span class="lifetime">'a</span>, Acceptor&gt;,
-    Stream&lt;Ballot, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
+    Stream&lt;(), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
     Stream&lt;(ClusterId&lt;Client&gt;, ReplicaPayload), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
 ) {
     <span class="kw">let </span>(r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
@@ -723,9 +724,14 @@
 }
 
 <span class="comment">// Clients. All relations for clients will be prefixed with c. All ClientPayloads will contain the virtual client number as key and the client's machine ID (to string) as value. Expects p_to_clients_leader_elected containing Ballots whenever the leader is elected, and r_to_clients_payload_applied containing ReplicaPayloads whenever a payload is committed. Outputs (leader address, ClientPayload) when a new leader is elected or when the previous payload is committed.
-</span><span class="kw">fn </span>bench_client&lt;<span class="lifetime">'a</span>, B: LeaderElected + std::fmt::Debug&gt;(
+</span><span class="kw">fn </span>bench_client&lt;<span class="lifetime">'a</span>&gt;(
     clients: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Client&gt;,
-    p_to_clients_leader_elected: Stream&lt;B, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Client&gt;&gt;,
+    p_to_clients_leader_elected: Stream&lt;
+        ClusterId&lt;Proposer&gt;,
+        Unbounded,
+        NoTick,
+        Cluster&lt;<span class="lifetime">'a</span>, Client&gt;,
+    &gt;,
     r_to_clients_payload_applied: Stream&lt;
         (ClusterId&lt;Replica&gt;, ReplicaPayload),
         Unbounded,
@@ -752,7 +758,7 @@
             .clone()
             .flat_map(<span class="macro">q!</span>(<span class="kw">move </span>|leader_ballot| (<span class="number">0</span>..num_clients_per_node).map(
                 <span class="kw">move </span>|i| (
-                    leader_ballot.leader_id(),
+                    leader_ballot,
                     ClientPayload {
                         key: i <span class="kw">as </span>u32,
                         value: c_id.raw_id.to_string()
@@ -792,7 +798,7 @@
         .clone()
         .cross_singleton(c_max_leader_ballot.clone().latest_tick())
         .map(<span class="macro">q!</span>(<span class="kw">move </span>|(key, leader_ballot)| (
-            leader_ballot.leader_id(),
+            leader_ballot,
             ClientPayload {
                 key,
                 value: c_id.raw_id.to_string()

@@ -642,6 +642,16 @@
 <a href="#642" id="642">642</a>
 <a href="#643" id="643">643</a>
 <a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
+<a href="#654" id="654">654</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt::{Debug, Display};
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -757,6 +767,16 @@
                 },
             )))),
         )
+    }
+
+    <span class="kw">fn </span>singleton_each_tick&lt;T: Clone&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        e: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, T&gt;,
+    ) -&gt; Singleton&lt;T, Bounded, Tick, <span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
+    {
+        <span class="self">self</span>.singleton(e).latest_tick()
     }
 
     <span class="kw">fn </span>singleton_first_tick&lt;T: Clone&gt;(
