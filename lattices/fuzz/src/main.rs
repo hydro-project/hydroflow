@@ -92,7 +92,7 @@ fn main() -> anyhow::Result<()> {
 
 	// only part to change is here! :) specify your datatype signature and udf.
 	let datatype_signature = "u128"; 
-	let udf = "| x , y | x . wrapping_add (y)"; 
+	let udf = "| mut x , y | { x *= y ; x %= 1000000 ; x"; 
 
 	print!("{}", format!("HERE ARE THE TEST RESULTS for your udf {}! \n", udf));
 	

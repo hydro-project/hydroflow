@@ -5,3 +5,4 @@ macro_rules! create_fuzz_functions {
             lattices_fuzz::algebra_functions::FuzzFunctions<$type>,
         > = once_cell::sync::Lazy::new(|| {
             lattices_fuzz::algebra_functions::FuzzFunctions::new(
+                
