@@ -11,10 +11,8 @@ use tokio::time::Instant;
 pub struct Proposer {}
 pub struct Acceptor {}
 
-pub trait PaxosPayload:
-    Serialize + DeserializeOwned + PartialEq + Eq + Default + Clone + Debug
-{
-}
+pub trait PaxosPayload: Serialize + DeserializeOwned + PartialEq + Eq + Clone + Debug {}
+impl<T: Serialize + DeserializeOwned + PartialEq + Eq + Clone + Debug> PaxosPayload for T {}
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone, Debug, Hash)]
 pub struct Ballot {
@@ -31,7 +29,7 @@ struct P1a {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct LogValue<P> {
     ballot: Ballot,
-    value: P,
+    value: Option<P>, // might be a hole
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -45,7 +43,7 @@ struct P1b<L> {
 struct P2a<P> {
     ballot: Ballot,
     slot: i32,
-    value: P,
+    value: Option<P>, // might be a re-committed hole
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
@@ -53,7 +51,7 @@ struct P2b<P> {
     ballot: Ballot,
     max_ballot: Ballot,
     slot: i32,
-    value: P,
+    value: Option<P>, // might be a hole
 }
 
 #[expect(
@@ -456,28 +454,33 @@ fn recommit_after_leader_election<'a, P: PaxosPayload>(
 
     let p_p1b_highest_entries_and_count = p_relevant_p1bs
         .flat_map(q!(|p1b| p1b.accepted.into_iter())) // Convert HashMap log back to stream
-        .fold_keyed(q!(|| (0, LogValue { ballot: Ballot { num: 0, proposer_id: ClusterId::from_raw(0) }, value: Default::default() })), q!(|curr_entry, new_entry| {
-            let same_values = new_entry.value == curr_entry.1.value;
-            let higher_ballot = new_entry.ballot > curr_entry.1.ballot;
-            // Increment count if the values are the same
-            if same_values {
-                curr_entry.0 += 1;
-            }
-            // Replace the ballot with the largest one
-            if higher_ballot {
-                curr_entry.1.ballot = new_entry.ballot;
-                // Replace the value with the one from the largest ballot, if necessary
-                if !same_values {
-                    curr_entry.0 = 1;
-                    curr_entry.1.value = new_entry.value;
+        .fold_keyed::<(usize, Option<LogValue<P>>), _, _>(q!(|| (0, None)), q!(|curr_entry, new_entry| {
+            if let Some(curr_entry_payload) = &mut curr_entry.1 {
+                let same_values = new_entry.value == curr_entry_payload.value;
+                let higher_ballot = new_entry.ballot > curr_entry_payload.ballot;
+                // Increment count if the values are the same
+                if same_values {
+                    curr_entry.0 += 1;
                 }
+                // Replace the ballot with the largest one
+                if higher_ballot {
+                    curr_entry_payload.ballot = new_entry.ballot;
+                    // Replace the value with the one from the largest ballot, if necessary
+                    if !same_values {
+                        curr_entry.0 = 1;
+                        curr_entry_payload.value = new_entry.value;
+                    }
+                }
+            } else {
+                *curr_entry = (1, Some(new_entry));
             }
         }));
     let p_log_to_try_commit = p_p1b_highest_entries_and_count
         .clone()
         .cross_singleton(p_ballot_num.clone())
-        .filter_map(q!(
-            move |((slot, (count, entry)), ballot_num)| if count <= f as u32 {
+        .filter_map(q!(move |((slot, (count, entry)), ballot_num)| {
+            let entry = entry.unwrap();
+            if count <= f {
                 Some(P2a {
                     ballot: Ballot {
                         num: ballot_num,
@@ -489,7 +492,7 @@ fn recommit_after_leader_election<'a, P: PaxosPayload>(
             } else {
                 None
             }
-        ));
+        }));
     let p_max_slot = p_p1b_highest_entries_and_count
         .clone()
         .map(q!(|(slot, _)| slot))
@@ -508,7 +511,7 @@ fn recommit_after_leader_election<'a, P: PaxosPayload>(
                 proposer_id: p_id
             },
             slot,
-            value: Default::default()
+            value: None
         }));
     (p_log_to_try_commit, p_max_slot, p_log_holes)
 }
@@ -563,7 +566,6 @@ fn sequence_payload<'a, P: PaxosPayload, R>(
         f,
     );
 
-    // End tell clients that leader election has completed
     let p_to_replicas = p_p2b(proposers, a_to_proposers_p2b.clone(), f);
 
     (p_to_replicas, a_log, a_to_proposers_p2b)
@@ -602,7 +604,11 @@ fn p_p2a<'a, P: PaxosPayload>(
         // .inspect(q!(|next| println!("{} p_indexed_payloads next slot: {}", context.current_tick(), next))))
         .cross_singleton(p_ballot_num.clone())
         // .inspect(q!(|ballot_num| println!("{} p_indexed_payloads ballot_num: {}", context.current_tick(), ballot_num))))
-        .map(q!(move |(((index, payload), next_slot), ballot_num)| P2a { ballot: Ballot { num: ballot_num, proposer_id: p_id }, slot: next_slot + index as i32, value: payload }));
+        .map(q!(move |(((index, payload), next_slot), ballot_num)| P2a {
+            ballot: Ballot { num: ballot_num, proposer_id: p_id },
+            slot: next_slot + index as i32,
+            value: Some(payload)
+        }));
     // .inspect(q!(|p2a: &P2a| println!("{} p_indexed_payloads P2a: {:?}", context.current_tick(), p2a)));
     let p_to_acceptors_p2a = p_log_to_recommit
         .union(p_indexed_payloads.clone())
@@ -751,12 +757,13 @@ fn p_p2b<'a, P: PaxosPayload>(
             None
         }))
         .fold_keyed(
-            q!(|| (0, Default::default())),
+            q!(|| (0, None)),
             q!(|accum, value| {
                 accum.0 += 1;
-                accum.1 = value;
+                accum.1 = Some(value);
             }),
-        );
+        )
+        .map(q!(|(k, (count, v))| (k, (count, v.unwrap()))));
     let p_p2b_quorum_reached =
         p_count_matching_p2bs
             .clone()
@@ -768,6 +775,7 @@ fn p_p2b<'a, P: PaxosPayload>(
     let p_to_replicas = p_p2b_quorum_reached
         .clone()
         .anti_join(p_broadcasted_p2b_slots) // Only tell the replicas about committed values once
+        .flat_map(q!(|(slot, maybe_value)| maybe_value.map(|value| (slot, value)))) // filter out holes
         .all_ticks();
 
     let p_p2b_all_commit_slots =

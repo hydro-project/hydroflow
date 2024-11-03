@@ -58,10 +58,7 @@ pub fn paxos_bench<'a>(
                     .map(q!(|(leader_id, _)| leader_id)),
             );
             processed_payloads
-                .map(q!(|payload| (
-                    ClusterId::from_raw(payload.kv.value.parse::<u32>().unwrap()),
-                    payload
-                )))
+                .map(q!(|payload| (payload.kv.value, payload)))
                 .send_bincode(&clients)
         },
         num_clients_per_node,
@@ -82,9 +79,14 @@ fn bench_client<'a>(
         Cluster<'a, Client>,
     >,
     transaction_cycle: impl FnOnce(
-        Stream<(ClusterId<Proposer>, KvPayload), Unbounded, NoTick, Cluster<'a, Client>>,
+        Stream<
+            (ClusterId<Proposer>, KvPayload<u32, ClusterId<Client>>),
+            Unbounded,
+            NoTick,
+            Cluster<'a, Client>,
+        >,
     ) -> Stream<
-        (ClusterId<Replica>, SequencedKv),
+        (ClusterId<Replica>, SequencedKv<u32, ClusterId<Client>>),
         Unbounded,
         NoTick,
         Cluster<'a, Client>,
@@ -112,7 +114,7 @@ fn bench_client<'a>(
                     leader_ballot,
                     KvPayload {
                         key: i as u32,
-                        value: c_id.raw_id.to_string()
+                        value: c_id
                     }
                 )
             )));
@@ -154,10 +156,7 @@ fn bench_client<'a>(
         .cross_singleton(current_leader.clone().latest_tick())
         .map(q!(move |(key, cur_leader)| (
             cur_leader,
-            KvPayload {
-                key,
-                value: c_id.raw_id.to_string()
-            }
+            KvPayload { key, value: c_id }
         )));
     c_to_proposers_complete_cycle.complete(
         c_new_payloads_when_leader_elected
