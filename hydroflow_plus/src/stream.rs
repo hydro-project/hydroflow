@@ -14,7 +14,7 @@ use syn::parse_quote;
 
 use super::staging_util::get_this_crate;
 use crate::builder::{self, FlowState};
-use crate::cycle::{CycleCollection, CycleComplete, DeferTick};
+use crate::cycle::{CycleCollection, CycleComplete, DeferTick, TickCycle};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, HfPlusSource, TeeNode};
 use crate::location::{
     CanSend, ExternalBincodeStream, ExternalBytesPort, ExternalProcess, Location, LocationId,
@@ -29,10 +29,24 @@ pub enum Unbounded {}
 /// to be complete in finite time.
 pub enum Bounded {}
 
-/// Marks the stream as existing outside of a clock domain.
-pub enum NoTick {}
+pub trait NoTick {}
+impl<'a, T> NoTick for Process<'a, T> {}
+impl<'a, T> NoTick for Cluster<'a, T> {}
+
 /// Marks the stream as being inside the single global clock domain.
-pub enum Tick {}
+pub struct Tick<L> {
+    l: L,
+}
+
+impl<'a, L: Location<'a>> Location<'a> for Tick<L> {
+    fn id(&self) -> LocationId {
+        self.l.id()
+    }
+
+    fn flow_state(&self) -> &FlowState {
+        self.l.flow_state()
+    }
+}
 
 /// An infinite stream of elements of type `T`.
 ///
@@ -42,25 +56,23 @@ pub enum Tick {}
 /// - `T`: the type of elements in the stream
 /// - `W`: the boundedness of the stream, which is either [`Bounded`]
 ///    or [`Unbounded`]
-/// - `C`: the tick domain of the stream, which is either [`Tick`] or
-///   [`NoTick`]
 /// - `N`: the type of the node that the stream is materialized on
-pub struct Stream<T, W, C, N> {
+pub struct Stream<T, W, N> {
     location_kind: LocationId,
 
     flow_state: FlowState,
     pub(crate) ir_node: RefCell<HfPlusNode>,
 
-    _phantom: PhantomData<(T, N, W, C)>,
+    _phantom: PhantomData<(T, N, W)>,
 }
 
-impl<'a, T, N: Location<'a>> DeferTick for Stream<T, Bounded, Tick, N> {
+impl<'a, T, N: Location<'a>> DeferTick for Stream<T, Bounded, Tick<N>> {
     fn defer_tick(self) -> Self {
         Stream::defer_tick(self)
     }
 }
 
-impl<'a, T, N: Location<'a>> CycleComplete<'a, Tick> for Stream<T, Bounded, Tick, N> {
+impl<'a, T, N: Location<'a>> CycleComplete<'a, TickCycle> for Stream<T, Bounded, Tick<N>> {
     fn complete(self, ident: syn::Ident) {
         self.flow_state.borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
             ident,
@@ -70,7 +82,7 @@ impl<'a, T, N: Location<'a>> CycleComplete<'a, Tick> for Stream<T, Bounded, Tick
     }
 }
 
-impl<'a, T, N: Location<'a>> CycleCollection<'a, Tick> for Stream<T, Bounded, Tick, N> {
+impl<'a, T, N: Location<'a>> CycleCollection<'a, TickCycle> for Stream<T, Bounded, Tick<N>> {
     type Location = N;
 
     fn create_source(ident: syn::Ident, flow_state: FlowState, l: LocationId) -> Self {
@@ -85,7 +97,7 @@ impl<'a, T, N: Location<'a>> CycleCollection<'a, Tick> for Stream<T, Bounded, Ti
     }
 }
 
-impl<'a, T, W, N: Location<'a>> CycleComplete<'a, NoTick> for Stream<T, W, NoTick, N> {
+impl<'a, T, W, N: Location<'a> + NoTick> CycleComplete<'a, ()> for Stream<T, W, N> {
     fn complete(self, ident: syn::Ident) {
         self.flow_state.borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
             ident,
@@ -95,7 +107,7 @@ impl<'a, T, W, N: Location<'a>> CycleComplete<'a, NoTick> for Stream<T, W, NoTic
     }
 }
 
-impl<'a, T, W, N: Location<'a>> CycleCollection<'a, NoTick> for Stream<T, W, NoTick, N> {
+impl<'a, T, W, N: Location<'a> + NoTick> CycleCollection<'a, ()> for Stream<T, W, N> {
     type Location = N;
 
     fn create_source(ident: syn::Ident, flow_state: FlowState, l: LocationId) -> Self {
@@ -110,7 +122,7 @@ impl<'a, T, W, N: Location<'a>> CycleCollection<'a, NoTick> for Stream<T, W, NoT
     }
 }
 
-impl<'a, T, W, C, N: Location<'a>> Stream<T, W, C, N> {
+impl<'a, T, W, N: Location<'a>> Stream<T, W, N> {
     pub(crate) fn new(
         location_kind: LocationId,
         flow_state: FlowState,
@@ -125,7 +137,7 @@ impl<'a, T, W, C, N: Location<'a>> Stream<T, W, C, N> {
     }
 }
 
-impl<'a, T: Clone, W, C, N: Location<'a>> Clone for Stream<T, W, C, N> {
+impl<'a, T: Clone, W, N: Location<'a>> Clone for Stream<T, W, N> {
     fn clone(&self) -> Self {
         if !matches!(self.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
             let orig_ir_node = self.ir_node.replace(HfPlusNode::Placeholder);
@@ -150,8 +162,8 @@ impl<'a, T: Clone, W, C, N: Location<'a>> Clone for Stream<T, W, C, N> {
     }
 }
 
-impl<'a, T, W, C, N: Location<'a>> Stream<T, W, C, N> {
-    pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Stream<U, W, C, N> {
+impl<'a, T, W, N: Location<'a>> Stream<T, W, N> {
+    pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Stream<U, W, N> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -165,7 +177,7 @@ impl<'a, T, W, C, N: Location<'a>> Stream<T, W, C, N> {
     pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
-    ) -> Stream<U, W, C, N> {
+    ) -> Stream<U, W, N> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -176,17 +188,14 @@ impl<'a, T, W, C, N: Location<'a>> Stream<T, W, C, N> {
         )
     }
 
-    pub fn flatten<U>(self) -> Stream<U, W, C, N>
+    pub fn flatten<U>(self) -> Stream<U, W, N>
     where
         T: IntoIterator<Item = U>,
     {
         self.flat_map(q!(|d| d))
     }
 
-    pub fn filter<F: Fn(&T) -> bool + 'a>(
-        self,
-        f: impl IntoQuotedMut<'a, F>,
-    ) -> Stream<T, W, C, N> {
+    pub fn filter<F: Fn(&T) -> bool + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Stream<T, W, N> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -200,7 +209,7 @@ impl<'a, T, W, C, N: Location<'a>> Stream<T, W, C, N> {
     pub fn filter_map<U, F: Fn(T) -> Option<U> + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
-    ) -> Stream<U, W, C, N> {
+    ) -> Stream<U, W, N> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -213,12 +222,12 @@ impl<'a, T, W, C, N: Location<'a>> Stream<T, W, C, N> {
 
     pub fn cross_singleton<O>(
         self,
-        other: impl Into<Optional<O, Bounded, C, N>>,
-    ) -> Stream<(T, O), W, C, N>
+        other: impl Into<Optional<O, Bounded, N>>,
+    ) -> Stream<(T, O), W, N>
     where
         O: Clone,
     {
-        let other: Optional<O, Bounded, C, N> = other.into();
+        let other: Optional<O, Bounded, N> = other.into();
         if self.location_kind != other.location_kind {
             panic!("cross_singleton must be called on streams on the same node");
         }
@@ -234,7 +243,7 @@ impl<'a, T, W, C, N: Location<'a>> Stream<T, W, C, N> {
     }
 
     // TODO(shadaj): should allow for differing windows, using strongest one
-    pub fn cross_product<O>(self, other: Stream<O, W, C, N>) -> Stream<(T, O), W, C, N>
+    pub fn cross_product<O>(self, other: Stream<O, W, N>) -> Stream<(T, O), W, N>
     where
         T: Clone,
         O: Clone,
@@ -253,7 +262,7 @@ impl<'a, T, W, C, N: Location<'a>> Stream<T, W, C, N> {
         )
     }
 
-    pub fn union(self, other: Stream<T, W, C, N>) -> Stream<T, W, C, N> {
+    pub fn union(self, other: Stream<T, W, N>) -> Stream<T, W, N> {
         if self.location_kind != other.location_kind {
             panic!("union must be called on streams on the same node");
         }
@@ -268,7 +277,7 @@ impl<'a, T, W, C, N: Location<'a>> Stream<T, W, C, N> {
         )
     }
 
-    pub fn unique(self) -> Stream<T, W, C, N>
+    pub fn unique(self) -> Stream<T, W, N>
     where
         T: Eq + Hash,
     {
@@ -287,8 +296,8 @@ impl<'a, T, W, C, N: Location<'a>> Stream<T, W, C, N> {
     }
 }
 
-impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick, N> {
-    pub fn all_ticks(self) -> Stream<T, Unbounded, NoTick, N> {
+impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick<N>> {
+    pub fn all_ticks(self) -> Stream<T, Unbounded, N> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -296,7 +305,7 @@ impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick, N> {
         )
     }
 
-    pub fn persist(self) -> Stream<T, Bounded, Tick, N>
+    pub fn persist(self) -> Stream<T, Bounded, Tick<N>>
     where
         T: Clone,
     {
@@ -307,7 +316,7 @@ impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick, N> {
         )
     }
 
-    pub fn defer_tick(self) -> Stream<T, Bounded, Tick, N> {
+    pub fn defer_tick(self) -> Stream<T, Bounded, Tick<N>> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -318,7 +327,7 @@ impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick, N> {
     pub fn inspect<F: Fn(&T) + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
-    ) -> Stream<T, Bounded, Tick, N> {
+    ) -> Stream<T, Bounded, Tick<N>> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -329,7 +338,7 @@ impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick, N> {
         )
     }
 
-    pub fn first(self) -> Optional<T, Bounded, Tick, N> {
+    pub fn first(self) -> Optional<T, Bounded, Tick<N>> {
         Optional::new(
             self.location_kind,
             self.flow_state,
@@ -340,8 +349,8 @@ impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick, N> {
     /// Allow this stream through if the other stream has elements, otherwise the output is empty.
     pub fn continue_if<U>(
         self,
-        signal: Optional<U, Bounded, Tick, N>,
-    ) -> Stream<T, Bounded, Tick, N> {
+        signal: Optional<U, Bounded, Tick<N>>,
+    ) -> Stream<T, Bounded, Tick<N>> {
         self.cross_singleton(signal.map(q!(|_u| ())))
             .map(q!(|(d, _signal)| d))
     }
@@ -349,12 +358,12 @@ impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick, N> {
     /// Allow this stream through if the other stream is empty, otherwise the output is empty.
     pub fn continue_unless<U>(
         self,
-        other: Optional<U, Bounded, Tick, N>,
-    ) -> Stream<T, Bounded, Tick, N> {
+        other: Optional<U, Bounded, Tick<N>>,
+    ) -> Stream<T, Bounded, Tick<N>> {
         self.continue_if(other.into_stream().count().filter(q!(|c| *c == 0)))
     }
 
-    pub fn enumerate(self) -> Stream<(usize, T), Bounded, Tick, N> {
+    pub fn enumerate(self) -> Stream<(usize, T), Bounded, Tick<N>> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -366,7 +375,7 @@ impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick, N> {
         self,
         init: impl IntoQuotedMut<'a, I>,
         comb: impl IntoQuotedMut<'a, F>,
-    ) -> Singleton<A, Bounded, Tick, N> {
+    ) -> Singleton<A, Bounded, Tick<N>> {
         Singleton::new(
             self.location_kind,
             self.flow_state,
@@ -381,7 +390,7 @@ impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick, N> {
     pub fn reduce<F: Fn(&mut T, T) + 'a>(
         self,
         comb: impl IntoQuotedMut<'a, F>,
-    ) -> Optional<T, Bounded, Tick, N> {
+    ) -> Optional<T, Bounded, Tick<N>> {
         Optional::new(
             self.location_kind,
             self.flow_state,
@@ -392,7 +401,7 @@ impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick, N> {
         )
     }
 
-    pub fn max(self) -> Optional<T, Bounded, Tick, N>
+    pub fn max(self) -> Optional<T, Bounded, Tick<N>>
     where
         T: Ord,
     {
@@ -403,7 +412,7 @@ impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick, N> {
         }))
     }
 
-    pub fn min(self) -> Optional<T, Bounded, Tick, N>
+    pub fn min(self) -> Optional<T, Bounded, Tick<N>>
     where
         T: Ord,
     {
@@ -414,7 +423,7 @@ impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick, N> {
         }))
     }
 
-    pub fn sort(self) -> Stream<T, Bounded, Tick, N>
+    pub fn sort(self) -> Stream<T, Bounded, Tick<N>>
     where
         T: Ord,
     {
@@ -425,11 +434,11 @@ impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick, N> {
         )
     }
 
-    pub fn count(self) -> Singleton<usize, Bounded, Tick, N> {
+    pub fn count(self) -> Singleton<usize, Bounded, Tick<N>> {
         self.fold(q!(|| 0usize), q!(|count, _| *count += 1))
     }
 
-    pub fn delta(self) -> Stream<T, Bounded, Tick, N> {
+    pub fn delta(self) -> Stream<T, Bounded, Tick<N>> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -438,8 +447,8 @@ impl<'a, T, N: Location<'a>> Stream<T, Bounded, Tick, N> {
     }
 }
 
-impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
-    pub fn tick_batch(self) -> Stream<T, Bounded, Tick, N> {
+impl<'a, T, W, N: Location<'a> + NoTick> Stream<T, W, N> {
+    pub fn tick_batch(self) -> Stream<T, Bounded, Tick<N>> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -447,14 +456,14 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
         )
     }
 
-    pub fn tick_prefix(self) -> Stream<T, Bounded, Tick, N>
+    pub fn tick_prefix(self) -> Stream<T, Bounded, Tick<N>>
     where
         T: Clone,
     {
         self.tick_batch().persist()
     }
 
-    pub fn inspect<F: Fn(&T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Stream<T, W, NoTick, N> {
+    pub fn inspect<F: Fn(&T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Stream<T, W, N> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -466,7 +475,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
     }
 }
 
-impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
+impl<'a, T, W, N: Location<'a> + NoTick> Stream<T, W, N> {
     pub fn for_each<F: Fn(T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) {
         self.flow_state.borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::ForEach {
             input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
@@ -475,14 +484,14 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
     }
 }
 
-impl<'a, T, N: Location<'a>> Stream<T, Unbounded, NoTick, N> {
+impl<'a, T, N: Location<'a> + NoTick> Stream<T, Unbounded, N> {
     pub fn sample_every(
         self,
         duration: impl Quoted<'a, std::time::Duration> + Copy + 'a,
-    ) -> Stream<T, Unbounded, NoTick, N> {
+    ) -> Stream<T, Unbounded, N> {
         let interval = duration.splice_typed();
 
-        let samples = Stream::<tokio::time::Instant, Bounded, Tick, N>::new(
+        let samples = Stream::<tokio::time::Instant, Bounded, Tick<N>>::new(
             self.location_kind,
             self.flow_state.clone(),
             HfPlusNode::Source {
@@ -498,7 +507,7 @@ impl<'a, T, N: Location<'a>> Stream<T, Unbounded, NoTick, N> {
         self,
         init: impl IntoQuotedMut<'a, I>,
         comb: impl IntoQuotedMut<'a, F>,
-    ) -> Singleton<A, Unbounded, NoTick, N> {
+    ) -> Singleton<A, Unbounded, N> {
         // unbounded singletons are represented as a stream
         // which produces all values from all ticks every tick,
         // so delta will always give the lastest aggregation
@@ -516,7 +525,7 @@ impl<'a, T, N: Location<'a>> Stream<T, Unbounded, NoTick, N> {
     pub fn reduce<F: Fn(&mut T, T) + 'a>(
         self,
         comb: impl IntoQuotedMut<'a, F>,
-    ) -> Optional<T, Unbounded, NoTick, N> {
+    ) -> Optional<T, Unbounded, N> {
         Optional::new(
             self.location_kind,
             self.flow_state,
@@ -527,7 +536,7 @@ impl<'a, T, N: Location<'a>> Stream<T, Unbounded, NoTick, N> {
         )
     }
 
-    pub fn max(self) -> Optional<T, Unbounded, NoTick, N>
+    pub fn max(self) -> Optional<T, Unbounded, N>
     where
         T: Ord,
     {
@@ -538,7 +547,7 @@ impl<'a, T, N: Location<'a>> Stream<T, Unbounded, NoTick, N> {
         }))
     }
 
-    pub fn min(self) -> Optional<T, Unbounded, NoTick, N>
+    pub fn min(self) -> Optional<T, Unbounded, N>
     where
         T: Ord,
     {
@@ -550,8 +559,8 @@ impl<'a, T, N: Location<'a>> Stream<T, Unbounded, NoTick, N> {
     }
 }
 
-impl<'a, T, C, N: Location<'a>> Stream<T, Bounded, C, N> {
-    pub fn filter_not_in(self, other: Stream<T, Bounded, C, N>) -> Stream<T, Bounded, C, N>
+impl<'a, T, N: Location<'a>> Stream<T, Bounded, N> {
+    pub fn filter_not_in(self, other: Stream<T, Bounded, N>) -> Stream<T, Bounded, N>
     where
         T: Eq + Hash,
     {
@@ -570,15 +579,15 @@ impl<'a, T, C, N: Location<'a>> Stream<T, Bounded, C, N> {
     }
 }
 
-impl<'a, T: Clone, W, C, N: Location<'a>> Stream<&T, W, C, N> {
-    pub fn cloned(self) -> Stream<T, W, C, N> {
+impl<'a, T: Clone, W, N: Location<'a>> Stream<&T, W, N> {
+    pub fn cloned(self) -> Stream<T, W, N> {
         self.map(q!(|d| d.clone()))
     }
 }
 
-impl<'a, K, V1, W, C, N: Location<'a>> Stream<(K, V1), W, C, N> {
+impl<'a, K, V1, W, N: Location<'a>> Stream<(K, V1), W, N> {
     // TODO(shadaj): figure out window semantics
-    pub fn join<W2, V2>(self, n: Stream<(K, V2), W2, C, N>) -> Stream<(K, (V1, V2)), W, C, N>
+    pub fn join<W2, V2>(self, n: Stream<(K, V2), W2, N>) -> Stream<(K, (V1, V2)), W, N>
     where
         K: Eq + Hash,
     {
@@ -596,7 +605,7 @@ impl<'a, K, V1, W, C, N: Location<'a>> Stream<(K, V1), W, C, N> {
         )
     }
 
-    pub fn anti_join<W2>(self, n: Stream<K, W2, C, N>) -> Stream<(K, V1), W, C, N>
+    pub fn anti_join<W2>(self, n: Stream<K, W2, N>) -> Stream<(K, V1), W, N>
     where
         K: Eq + Hash,
     {
@@ -615,12 +624,12 @@ impl<'a, K, V1, W, C, N: Location<'a>> Stream<(K, V1), W, C, N> {
     }
 }
 
-impl<'a, K: Eq + Hash, V, N: Location<'a>> Stream<(K, V), Bounded, Tick, N> {
+impl<'a, K: Eq + Hash, V, N: Location<'a>> Stream<(K, V), Bounded, Tick<N>> {
     pub fn fold_keyed<A, I: Fn() -> A + 'a, F: Fn(&mut A, V) + 'a>(
         self,
         init: impl IntoQuotedMut<'a, I>,
         comb: impl IntoQuotedMut<'a, F>,
-    ) -> Stream<(K, A), Bounded, Tick, N> {
+    ) -> Stream<(K, A), Bounded, Tick<N>> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -635,7 +644,7 @@ impl<'a, K: Eq + Hash, V, N: Location<'a>> Stream<(K, V), Bounded, Tick, N> {
     pub fn reduce_keyed<F: Fn(&mut V, V) + 'a>(
         self,
         comb: impl IntoQuotedMut<'a, F>,
-    ) -> Stream<(K, V), Bounded, Tick, N> {
+    ) -> Stream<(K, V), Bounded, Tick<N>> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -688,11 +697,11 @@ pub(super) fn deserialize_bincode<T: DeserializeOwned>(tagged: Option<syn::Type>
     }
 }
 
-impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
+impl<'a, T, W, N: Location<'a> + NoTick> Stream<T, W, N> {
     pub fn decouple_process<P2>(
         self,
         other: &Process<'a, P2>,
-    ) -> Stream<T, Unbounded, NoTick, Process<'a, P2>>
+    ) -> Stream<T, Unbounded, Process<'a, P2>>
     where
         N: CanSend<'a, Process<'a, P2>, In<T> = T, Out<T> = T>,
         T: Clone + Serialize + DeserializeOwned,
@@ -703,7 +712,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
     pub fn decouple_cluster<C2, Tag>(
         self,
         other: &Cluster<'a, C2>,
-    ) -> Stream<T, Unbounded, NoTick, Cluster<'a, C2>>
+    ) -> Stream<T, Unbounded, Cluster<'a, C2>>
     where
         N: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T), Out<T> = (Tag, T)>,
         T: Clone + Serialize + DeserializeOwned,
@@ -723,7 +732,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
     pub fn send_bincode<N2: Location<'a>, CoreType>(
         self,
         other: &N2,
-    ) -> Stream<N::Out<CoreType>, Unbounded, NoTick, N2>
+    ) -> Stream<N::Out<CoreType>, Unbounded, N2>
     where
         N: CanSend<'a, N2, In<CoreType> = T>,
         CoreType: Serialize + DeserializeOwned,
@@ -789,10 +798,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
         }
     }
 
-    pub fn send_bytes<N2: Location<'a>>(
-        self,
-        other: &N2,
-    ) -> Stream<N::Out<Bytes>, Unbounded, NoTick, N2>
+    pub fn send_bytes<N2: Location<'a>>(self, other: &N2) -> Stream<N::Out<Bytes>, Unbounded, N2>
     where
         N: CanSend<'a, N2, In<Bytes> = T>,
     {
@@ -854,7 +860,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
     pub fn send_bincode_interleaved<N2: Location<'a>, Tag, CoreType>(
         self,
         other: &N2,
-    ) -> Stream<CoreType, Unbounded, NoTick, N2>
+    ) -> Stream<CoreType, Unbounded, N2>
     where
         N: CanSend<'a, N2, In<CoreType> = T, Out<CoreType> = (Tag, CoreType)>,
         CoreType: Serialize + DeserializeOwned,
@@ -865,7 +871,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
     pub fn send_bytes_interleaved<N2: Location<'a>, Tag>(
         self,
         other: &N2,
-    ) -> Stream<Bytes, Unbounded, NoTick, N2>
+    ) -> Stream<Bytes, Unbounded, N2>
     where
         N: CanSend<'a, N2, In<Bytes> = T, Out<Bytes> = (Tag, Bytes)>,
     {
@@ -875,7 +881,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
     pub fn broadcast_bincode<C2>(
         self,
         other: &Cluster<'a, C2>,
-    ) -> Stream<N::Out<T>, Unbounded, NoTick, Cluster<'a, C2>>
+    ) -> Stream<N::Out<T>, Unbounded, Cluster<'a, C2>>
     where
         N: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T)>,
         T: Clone + Serialize + DeserializeOwned,
@@ -892,7 +898,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
     pub fn broadcast_bincode_interleaved<C2, Tag>(
         self,
         other: &Cluster<'a, C2>,
-    ) -> Stream<T, Unbounded, NoTick, Cluster<'a, C2>>
+    ) -> Stream<T, Unbounded, Cluster<'a, C2>>
     where
         N: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T), Out<T> = (Tag, T)> + 'a,
         T: Clone + Serialize + DeserializeOwned,
@@ -903,7 +909,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
     pub fn broadcast_bytes<C2>(
         self,
         other: &Cluster<'a, C2>,
-    ) -> Stream<N::Out<Bytes>, Unbounded, NoTick, Cluster<'a, C2>>
+    ) -> Stream<N::Out<Bytes>, Unbounded, Cluster<'a, C2>>
     where
         N: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (ClusterId<C2>, T)> + 'a,
         T: Clone,
@@ -920,7 +926,7 @@ impl<'a, T, W, N: Location<'a>> Stream<T, W, NoTick, N> {
     pub fn broadcast_bytes_interleaved<C2, Tag>(
         self,
         other: &Cluster<'a, C2>,
-    ) -> Stream<Bytes, Unbounded, NoTick, Cluster<'a, C2>>
+    ) -> Stream<Bytes, Unbounded, Cluster<'a, C2>>
     where
         N: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (ClusterId<C2>, T), Out<Bytes> = (Tag, Bytes)>
             + 'a,
