@@ -795,20 +795,6 @@
 <a href="#795" id="795">795</a>
 <a href="#796" id="796">796</a>
 <a href="#797" id="797">797</a>
-<a href="#798" id="798">798</a>
-<a href="#799" id="799">799</a>
-<a href="#800" id="800">800</a>
-<a href="#801" id="801">801</a>
-<a href="#802" id="802">802</a>
-<a href="#803" id="803">803</a>
-<a href="#804" id="804">804</a>
-<a href="#805" id="805">805</a>
-<a href="#806" id="806">806</a>
-<a href="#807" id="807">807</a>
-<a href="#808" id="808">808</a>
-<a href="#809" id="809">809</a>
-<a href="#810" id="810">810</a>
-<a href="#811" id="811">811</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::time::Duration;
@@ -867,33 +853,29 @@
     value: P,
 }
 
-<span class="attr">#[expect(clippy::type_complexity, reason = <span class="string">"internal paxos code // TODO"</span>)]
+<span class="attr">#[expect(
+    clippy::too_many_arguments,
+    clippy::type_complexity,
+    reason = <span class="string">"internal paxos code // TODO"
+</span>)]
 </span><span class="kw">pub fn </span>paxos_core&lt;<span class="lifetime">'a</span>, P: PaxosPayload, R&gt;(
-    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
-    r_to_acceptors_checkpoint: <span class="kw">impl </span>FnOnce(
-        <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Acceptor&gt;,
-    ) -&gt; Stream&lt;
+    proposers: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;,
+    acceptors: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Acceptor&gt;,
+    r_to_acceptors_checkpoint: Stream&lt;
         (ClusterId&lt;R&gt;, i32),
         Unbounded,
         NoTick,
         Cluster&lt;<span class="lifetime">'a</span>, Acceptor&gt;,
     &gt;,
-    c_to_proposers: <span class="kw">impl </span>FnOnce(
-        <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;,
-    ) -&gt; Stream&lt;P, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
+    c_to_proposers: Stream&lt;P, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
     f: usize,
     i_am_leader_send_timeout: u64,
     i_am_leader_check_timeout: u64,
     i_am_leader_check_timeout_delay_multiplier: usize,
 ) -&gt; (
-    Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;,
-    Cluster&lt;<span class="lifetime">'a</span>, Acceptor&gt;,
     Stream&lt;(), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
     Stream&lt;(i32, P), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
 ) {
-    <span class="kw">let </span>proposers = flow.cluster::&lt;Proposer&gt;();
-    <span class="kw">let </span>acceptors = flow.cluster::&lt;Acceptor&gt;();
-
     proposers
         .source_iter(<span class="macro">q!</span>([<span class="string">"Proposers say hello"</span>]))
         .for_each(<span class="macro">q!</span>(|s| <span class="macro">println!</span>(<span class="string">"{}"</span>, s)));
@@ -908,8 +890,8 @@
         acceptors.tick_forward_ref::&lt;Singleton&lt;(i32, HashMap&lt;i32, LogValue&lt;P&gt;&gt;), <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
 
     <span class="kw">let </span>(p_ballot_num, p_is_leader, p_relevant_p1bs, a_max_ballot) = leader_election(
-        <span class="kw-2">&amp;</span>proposers,
-        <span class="kw-2">&amp;</span>acceptors,
+        proposers,
+        acceptors,
         f,
         i_am_leader_send_timeout,
         i_am_leader_check_timeout,
@@ -929,17 +911,15 @@
         </span>.all_ticks();
 
     <span class="kw">let </span>(p_log_to_try_commit, p_max_slot, p_log_holes) =
-        recommit_after_leader_election(<span class="kw-2">&amp;</span>proposers, p_relevant_p1bs, p_ballot_num.clone(), f);
+        recommit_after_leader_election(proposers, p_relevant_p1bs, p_ballot_num.clone(), f);
 
     <span class="kw">let </span>p_log_to_recommit = p_log_to_try_commit
         .union(p_log_holes)
         .continue_if(just_became_leader); <span class="comment">// Only resend p1b stuff once the moment we become leader.
 
-    </span><span class="kw">let </span>c_to_proposers = c_to_proposers(<span class="kw-2">&amp;</span>proposers);
-
-    <span class="kw">let </span>(p_to_replicas, a_log, a_to_proposers_p2b) = sequence_payload(
-        <span class="kw-2">&amp;</span>proposers,
-        <span class="kw-2">&amp;</span>acceptors,
+    </span><span class="kw">let </span>(p_to_replicas, a_log, a_to_proposers_p2b) = sequence_payload(
+        proposers,
+        acceptors,
         c_to_proposers,
         r_to_acceptors_checkpoint,
         p_ballot_num,
@@ -953,12 +933,7 @@
     a_log_complete_cycle.complete(a_log);
     a_to_proposers_p2b_complete_cycle.complete(a_to_proposers_p2b);
 
-    (
-        proposers,
-        acceptors,
-        p_to_clients_new_leader_elected,
-        p_to_replicas,
-    )
+    (p_to_clients_new_leader_elected, p_to_replicas)
 }
 
 <span class="attr">#[expect(
@@ -1161,7 +1136,8 @@
                 )),
                 <span class="macro">q!</span>(Duration::from_secs(i_am_leader_check_timeout)),
             )
-            .latest_tick(),
+            .tick_batch()
+            .first(),
     );
     (p_to_proposers_i_am_leader, p_trigger_election)
 }
@@ -1343,9 +1319,7 @@
     proposers: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;,
     acceptors: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Acceptor&gt;,
     c_to_proposers: Stream&lt;P, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
-    r_to_acceptors_checkpoint: <span class="kw">impl </span>FnOnce(
-        <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Acceptor&gt;,
-    ) -&gt; Stream&lt;
+    r_to_acceptors_checkpoint: Stream&lt;
         (ClusterId&lt;R&gt;, i32),
         Unbounded,
         NoTick,
@@ -1376,9 +1350,7 @@
     );
 
     <span class="comment">// Acceptors.
-    </span><span class="kw">let </span>r_to_acceptors_checkpoint = r_to_acceptors_checkpoint(acceptors);
-
-    <span class="comment">// p_to_acceptors_p2a.clone().for_each(q!(|p2a: P2a| println!("Acceptor received P2a: {:?}", p2a)));
+    // p_to_acceptors_p2a.clone().for_each(q!(|p2a: P2a| println!("Acceptor received P2a: {:?}", p2a)));
     </span><span class="kw">let </span>(a_log, a_to_proposers_p2b) = acceptor_p2(
         a_max_ballot.clone(),
         p_to_acceptors_p2a,

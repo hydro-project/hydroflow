@@ -977,6 +977,13 @@
 <a href="#977" id="977">977</a>
 <a href="#978" id="978">978</a>
 <a href="#979" id="979">979</a>
+<a href="#980" id="980">980</a>
+<a href="#981" id="981">981</a>
+<a href="#982" id="982">982</a>
+<a href="#983" id="983">983</a>
+<a href="#984" id="984">984</a>
+<a href="#985" id="985">985</a>
+<a href="#986" id="986">986</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -1153,6 +1160,13 @@
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
+    }
+
+    <span class="kw">pub fn </span>flatten&lt;U&gt;(<span class="self">self</span>) -&gt; Stream&lt;U, W, C, N&gt;
+    <span class="kw">where
+        </span>T: IntoIterator&lt;Item = U&gt;,
+    {
+        <span class="self">self</span>.flat_map(<span class="macro">q!</span>(|d| d))
     }
 
     <span class="kw">pub fn </span>filter&lt;F: Fn(<span class="kw-2">&amp;</span>T) -&gt; bool + <span class="lifetime">'a</span>&gt;(
