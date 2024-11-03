@@ -559,7 +559,7 @@ impl<'a> HfPlusNode {
                 (persist_ident, location)
             }
 
-            HfPlusNode::Unpersist(_) => {
+            HfPlusNode::Unpersist(inner) => {
                 panic!("Unpersist is a marker node and should have been optimized away. This is likely a compiler bug.")
             }
 
