@@ -2,7 +2,8 @@ use std::marker::PhantomData;
 
 use crate::builder::FlowState;
 use crate::location::{Location, LocationId};
-use crate::Tick;
+
+pub struct TickCycle {}
 
 pub trait DeferTick {
     fn defer_tick(self) -> Self;
@@ -45,12 +46,12 @@ impl<'a, T, S: CycleComplete<'a, T>> HfForwardRef<'a, T, S> {
     }
 }
 
-pub struct HfCycle<'a, S: CycleComplete<'a, Tick> + DeferTick> {
+pub struct HfCycle<'a, S: CycleComplete<'a, TickCycle> + DeferTick> {
     pub(crate) ident: syn::Ident,
     pub(crate) _phantom: PhantomData<(&'a mut &'a (), S)>,
 }
 
-impl<'a, S: CycleComplete<'a, Tick> + DeferTick> HfCycle<'a, S> {
+impl<'a, S: CycleComplete<'a, TickCycle> + DeferTick> HfCycle<'a, S> {
     pub fn complete_next_tick(self, stream: S) {
         let ident = self.ident;
         S::complete(stream.defer_tick(), ident)
