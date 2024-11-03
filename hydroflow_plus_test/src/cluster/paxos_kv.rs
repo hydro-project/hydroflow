@@ -51,18 +51,18 @@ pub fn paxos_kv<'a, K: KvKey, V: KvValue>(
     proposers: &Cluster<'a, Proposer>,
     acceptors: &Cluster<'a, Acceptor>,
     replicas: &Cluster<'a, Replica>,
-    c_to_proposers: Stream<KvPayload<K, V>, Unbounded, NoTick, Cluster<'a, Proposer>>,
+    c_to_proposers: Stream<KvPayload<K, V>, Unbounded, Cluster<'a, Proposer>>,
     f: usize,
     i_am_leader_send_timeout: u64,
     i_am_leader_check_timeout: u64,
     i_am_leader_check_timeout_delay_multiplier: usize,
     checkpoint_frequency: usize,
 ) -> (
-    Stream<(), Unbounded, NoTick, Cluster<'a, Proposer>>,
-    Stream<KvPayload<K, V>, Unbounded, NoTick, Cluster<'a, Replica>>,
+    Stream<(), Unbounded, Cluster<'a, Proposer>>,
+    Stream<KvPayload<K, V>, Unbounded, Cluster<'a, Replica>>,
 ) {
     let (r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
-        replicas.forward_ref::<Stream<_, _, _, _>>();
+        replicas.forward_ref::<Stream<_, _, _>>();
 
     let (p_to_clients_new_leader_elected, p_to_replicas) = paxos_core(
         proposers,
@@ -92,11 +92,11 @@ pub fn paxos_kv<'a, K: KvKey, V: KvValue>(
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 pub fn replica<'a, K: KvKey, V: KvValue>(
     replicas: &Cluster<'a, Replica>,
-    p_to_replicas: Stream<SequencedKv<K, V>, Unbounded, NoTick, Cluster<'a, Replica>>,
+    p_to_replicas: Stream<SequencedKv<K, V>, Unbounded, Cluster<'a, Replica>>,
     checkpoint_frequency: usize,
 ) -> (
-    Stream<i32, Unbounded, NoTick, Cluster<'a, Replica>>,
-    Stream<KvPayload<K, V>, Unbounded, NoTick, Cluster<'a, Replica>>,
+    Stream<i32, Unbounded, Cluster<'a, Replica>>,
+    Stream<KvPayload<K, V>, Unbounded, Cluster<'a, Replica>>,
 ) {
     let (r_buffered_payloads_complete_cycle, r_buffered_payloads) = replicas.tick_cycle();
     // p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
@@ -107,7 +107,7 @@ pub fn replica<'a, K: KvKey, V: KvValue>(
         .sort();
     // Create a cycle since we'll use this seq before we define it
     let (r_highest_seq_complete_cycle, r_highest_seq) =
-        replicas.tick_cycle::<Optional<i32, _, _, _>>();
+        replicas.tick_cycle::<Optional<i32, _, _>>();
     let empty_slot = replicas.singleton_first_tick(q!(-1));
     // Either the max sequence number executed so far or -1. Need to union otherwise r_highest_seq is empty and joins with it will fail
     let r_highest_seq_with_default = r_highest_seq.union(empty_slot);
@@ -163,7 +163,7 @@ pub fn replica<'a, K: KvKey, V: KvValue>(
 
     // Send checkpoints to the acceptors when we've processed enough payloads
     let (r_checkpointed_seqs_complete_cycle, r_checkpointed_seqs) =
-        replicas.tick_cycle::<Optional<i32, _, _, _>>();
+        replicas.tick_cycle::<Optional<i32, _, _>>();
     let r_max_checkpointed_seq = r_checkpointed_seqs
         .persist()
         .max()

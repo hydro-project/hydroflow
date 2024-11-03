@@ -34,7 +34,7 @@ pub fn paxos_bench<'a>(
     let replicas = flow.cluster::<Replica>();
 
     let (new_leader_elected_complete, new_leader_elected) =
-        clients.forward_ref::<Stream<_, _, _, _>>();
+        clients.forward_ref::<Stream<_, _, _>>();
 
     bench_client(
         &clients,
@@ -72,23 +72,16 @@ pub fn paxos_bench<'a>(
 // Clients. All relations for clients will be prefixed with c. All ClientPayloads will contain the virtual client number as key and the client's machine ID (to string) as value. Expects p_to_clients_leader_elected containing Ballots whenever the leader is elected, and r_to_clients_payload_applied containing ReplicaPayloads whenever a payload is committed. Outputs (leader address, ClientPayload) when a new leader is elected or when the previous payload is committed.
 fn bench_client<'a>(
     clients: &Cluster<'a, Client>,
-    p_to_clients_leader_elected: Stream<
-        ClusterId<Proposer>,
-        Unbounded,
-        NoTick,
-        Cluster<'a, Client>,
-    >,
+    p_to_clients_leader_elected: Stream<ClusterId<Proposer>, Unbounded, Cluster<'a, Client>>,
     transaction_cycle: impl FnOnce(
         Stream<
             (ClusterId<Proposer>, KvPayload<u32, ClusterId<Client>>),
             Unbounded,
-            NoTick,
             Cluster<'a, Client>,
         >,
     ) -> Stream<
         (ClusterId<Replica>, KvPayload<u32, ClusterId<Client>>),
         Unbounded,
-        NoTick,
         Cluster<'a, Client>,
     >,
     num_clients_per_node: usize,
@@ -166,7 +159,7 @@ fn bench_client<'a>(
 
     // Track statistics
     let (c_timers_complete_cycle, c_timers) =
-        clients.tick_cycle::<Stream<(usize, SystemTime), _, _, _>>();
+        clients.tick_cycle::<Stream<(usize, SystemTime), _, _>>();
     let c_new_timers_when_leader_elected = c_new_leader_ballot
         .map(q!(|_| SystemTime::now()))
         .flat_map(q!(
