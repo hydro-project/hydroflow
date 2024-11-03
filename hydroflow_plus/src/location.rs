@@ -148,36 +148,26 @@ pub trait Location<'a> {
     fn source_interval(
         &self,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
-    ) -> Optional<(), Unbounded, NoTick, Self>
+    ) -> Stream<tokio::time::Instant, Unbounded, NoTick, Self>
     where
         Self: Sized,
     {
-        let interval = interval.splice_untyped();
-
-        Optional::new(
-            self.id(),
-            self.flow_state().clone(),
-            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
-                source: HfPlusSource::Interval(interval.into()),
-                location_kind: self.id(),
-            })),
-        )
+        self.source_stream(q!(tokio_stream::wrappers::IntervalStream::new(
+            tokio::time::interval(interval)
+        )))
     }
 
     fn source_interval_delayed(
         &self,
         delay: impl Quoted<'a, Duration> + Copy + 'a,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
-    ) -> Optional<tokio::time::Instant, Unbounded, NoTick, Self>
+    ) -> Stream<tokio::time::Instant, Unbounded, NoTick, Self>
     where
         Self: Sized,
     {
         self.source_stream(q!(tokio_stream::wrappers::IntervalStream::new(
             tokio::time::interval_at(tokio::time::Instant::now() + delay, interval)
         )))
-        .tick_batch()
-        .first()
-        .latest()
     }
 
     fn forward_ref<S: CycleCollection<'a, NoTick, Location = Self>>(
