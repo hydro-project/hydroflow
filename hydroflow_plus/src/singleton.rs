@@ -6,7 +6,9 @@ use std::rc::Rc;
 use stageleft::{q, IntoQuotedMut, Quoted};
 
 use crate::builder::FlowState;
-use crate::cycle::{CycleCollection, CycleCollectionWithInitial, CycleComplete, DeferTick};
+use crate::cycle::{
+    CycleCollection, CycleCollectionWithInitial, CycleComplete, DeferTick, TickCycle,
+};
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource, TeeNode};
 use crate::location::{Location, LocationId};
 use crate::stream::{Bounded, NoTick, Tick, Unbounded};
@@ -20,16 +22,16 @@ pub trait CrossResult<'a, Other> {
     fn make(location_kind: LocationId, flow_state: FlowState, ir_node: HfPlusNode) -> Self::Out;
 }
 
-impl<'a, T, U: Clone, W, C, N: Location<'a>> CrossResult<'a, Singleton<U, W, C, N>>
-    for Singleton<T, W, C, N>
+impl<'a, T, U: Clone, W, N: Location<'a>> CrossResult<'a, Singleton<U, W, N>>
+    for Singleton<T, W, N>
 {
-    type Out = Singleton<(T, U), W, C, N>;
+    type Out = Singleton<(T, U), W, N>;
 
-    fn other_location(other: &Singleton<U, W, C, N>) -> LocationId {
+    fn other_location(other: &Singleton<U, W, N>) -> LocationId {
         other.location_kind
     }
 
-    fn other_ir_node(other: Singleton<U, W, C, N>) -> HfPlusNode {
+    fn other_ir_node(other: Singleton<U, W, N>) -> HfPlusNode {
         other.ir_node.into_inner()
     }
 
@@ -38,16 +40,16 @@ impl<'a, T, U: Clone, W, C, N: Location<'a>> CrossResult<'a, Singleton<U, W, C, 
     }
 }
 
-impl<'a, T, U: Clone, W, C, N: Location<'a>> CrossResult<'a, Optional<U, W, C, N>>
-    for Singleton<T, W, C, N>
+impl<'a, T, U: Clone, W, N: Location<'a>> CrossResult<'a, Optional<U, W, N>>
+    for Singleton<T, W, N>
 {
-    type Out = Optional<(T, U), W, C, N>;
+    type Out = Optional<(T, U), W, N>;
 
-    fn other_location(other: &Optional<U, W, C, N>) -> LocationId {
+    fn other_location(other: &Optional<U, W, N>) -> LocationId {
         other.location_kind
     }
 
-    fn other_ir_node(other: Optional<U, W, C, N>) -> HfPlusNode {
+    fn other_ir_node(other: Optional<U, W, N>) -> HfPlusNode {
         other.ir_node.into_inner()
     }
 
@@ -56,16 +58,14 @@ impl<'a, T, U: Clone, W, C, N: Location<'a>> CrossResult<'a, Optional<U, W, C, N
     }
 }
 
-impl<'a, T, U: Clone, W, C, N: Location<'a>> CrossResult<'a, Optional<U, W, C, N>>
-    for Optional<T, W, C, N>
-{
-    type Out = Optional<(T, U), W, C, N>;
+impl<'a, T, U: Clone, W, N: Location<'a>> CrossResult<'a, Optional<U, W, N>> for Optional<T, W, N> {
+    type Out = Optional<(T, U), W, N>;
 
-    fn other_location(other: &Optional<U, W, C, N>) -> LocationId {
+    fn other_location(other: &Optional<U, W, N>) -> LocationId {
         other.location_kind
     }
 
-    fn other_ir_node(other: Optional<U, W, C, N>) -> HfPlusNode {
+    fn other_ir_node(other: Optional<U, W, N>) -> HfPlusNode {
         other.ir_node.into_inner()
     }
 
@@ -74,16 +74,16 @@ impl<'a, T, U: Clone, W, C, N: Location<'a>> CrossResult<'a, Optional<U, W, C, N
     }
 }
 
-impl<'a, T, U: Clone, W, C, N: Location<'a>> CrossResult<'a, Singleton<U, W, C, N>>
-    for Optional<T, W, C, N>
+impl<'a, T, U: Clone, W, N: Location<'a>> CrossResult<'a, Singleton<U, W, N>>
+    for Optional<T, W, N>
 {
-    type Out = Optional<(T, U), W, C, N>;
+    type Out = Optional<(T, U), W, N>;
 
-    fn other_location(other: &Singleton<U, W, C, N>) -> LocationId {
+    fn other_location(other: &Singleton<U, W, N>) -> LocationId {
         other.location_kind
     }
 
-    fn other_ir_node(other: Singleton<U, W, C, N>) -> HfPlusNode {
+    fn other_ir_node(other: Singleton<U, W, N>) -> HfPlusNode {
         other.ir_node.into_inner()
     }
 
@@ -92,16 +92,16 @@ impl<'a, T, U: Clone, W, C, N: Location<'a>> CrossResult<'a, Singleton<U, W, C, 
     }
 }
 
-pub struct Singleton<T, W, C, N> {
+pub struct Singleton<T, W, N> {
     pub(crate) location_kind: LocationId,
 
     flow_state: FlowState,
     pub(crate) ir_node: RefCell<HfPlusNode>,
 
-    _phantom: PhantomData<(T, N, W, C)>,
+    _phantom: PhantomData<(T, N, W)>,
 }
 
-impl<'a, T, W, C, N: Location<'a>> Singleton<T, W, C, N> {
+impl<'a, T, W, N: Location<'a>> Singleton<T, W, N> {
     pub(crate) fn new(
         location_kind: LocationId,
         flow_state: FlowState,
@@ -116,10 +116,8 @@ impl<'a, T, W, C, N: Location<'a>> Singleton<T, W, C, N> {
     }
 }
 
-impl<'a, T, C, N: Location<'a>> From<Singleton<T, Bounded, C, N>>
-    for Singleton<T, Unbounded, C, N>
-{
-    fn from(singleton: Singleton<T, Bounded, C, N>) -> Self {
+impl<'a, T, N: Location<'a>> From<Singleton<T, Bounded, N>> for Singleton<T, Unbounded, N> {
+    fn from(singleton: Singleton<T, Bounded, N>) -> Self {
         Singleton::new(
             singleton.location_kind,
             singleton.flow_state,
@@ -128,13 +126,13 @@ impl<'a, T, C, N: Location<'a>> From<Singleton<T, Bounded, C, N>>
     }
 }
 
-impl<'a, T, N: Location<'a>> DeferTick for Singleton<T, Bounded, Tick, N> {
+impl<'a, T, N: Location<'a>> DeferTick for Singleton<T, Bounded, Tick<N>> {
     fn defer_tick(self) -> Self {
         Singleton::defer_tick(self)
     }
 }
 
-impl<'a, T, N: Location<'a>> CycleComplete<'a, Tick> for Singleton<T, Bounded, Tick, N> {
+impl<'a, T, N: Location<'a>> CycleComplete<'a, TickCycle> for Singleton<T, Bounded, Tick<N>> {
     fn complete(self, ident: syn::Ident) {
         self.flow_state.borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
             ident,
@@ -144,7 +142,7 @@ impl<'a, T, N: Location<'a>> CycleComplete<'a, Tick> for Singleton<T, Bounded, T
     }
 }
 
-impl<'a, T, N: Location<'a>> CycleCollection<'a, Tick> for Singleton<T, Bounded, Tick, N> {
+impl<'a, T, N: Location<'a>> CycleCollection<'a, TickCycle> for Singleton<T, Bounded, Tick<N>> {
     type Location = N;
 
     fn create_source(ident: syn::Ident, flow_state: FlowState, l: LocationId) -> Self {
@@ -159,8 +157,8 @@ impl<'a, T, N: Location<'a>> CycleCollection<'a, Tick> for Singleton<T, Bounded,
     }
 }
 
-impl<'a, T, N: Location<'a>> CycleCollectionWithInitial<'a, Tick>
-    for Singleton<T, Bounded, Tick, N>
+impl<'a, T, N: Location<'a>> CycleCollectionWithInitial<'a, TickCycle>
+    for Singleton<T, Bounded, Tick<N>>
 {
     type Location = N;
 
@@ -184,7 +182,7 @@ impl<'a, T, N: Location<'a>> CycleCollectionWithInitial<'a, Tick>
     }
 }
 
-impl<'a, T: Clone, W, C, N: Location<'a>> Clone for Singleton<T, W, C, N> {
+impl<'a, T: Clone, W, N: Location<'a>> Clone for Singleton<T, W, N> {
     fn clone(&self) -> Self {
         if !matches!(self.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
             let orig_ir_node = self.ir_node.replace(HfPlusNode::Placeholder);
@@ -209,8 +207,8 @@ impl<'a, T: Clone, W, C, N: Location<'a>> Clone for Singleton<T, W, C, N> {
     }
 }
 
-impl<'a, T, W, C, N: Location<'a>> Singleton<T, W, C, N> {
-    pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Singleton<U, W, C, N> {
+impl<'a, T, W, N: Location<'a>> Singleton<T, W, N> {
+    pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Singleton<U, W, N> {
         Singleton::new(
             self.location_kind,
             self.flow_state,
@@ -224,7 +222,7 @@ impl<'a, T, W, C, N: Location<'a>> Singleton<T, W, C, N> {
     pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
-    ) -> Stream<U, W, C, N> {
+    ) -> Stream<U, W, N> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -235,10 +233,7 @@ impl<'a, T, W, C, N: Location<'a>> Singleton<T, W, C, N> {
         )
     }
 
-    pub fn filter<F: Fn(&T) -> bool + 'a>(
-        self,
-        f: impl IntoQuotedMut<'a, F>,
-    ) -> Optional<T, W, C, N> {
+    pub fn filter<F: Fn(&T) -> bool + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Optional<T, W, N> {
         Optional::new(
             self.location_kind,
             self.flow_state,
@@ -252,7 +247,7 @@ impl<'a, T, W, C, N: Location<'a>> Singleton<T, W, C, N> {
     pub fn filter_map<U, F: Fn(T) -> Option<U> + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
-    ) -> Optional<U, W, C, N> {
+    ) -> Optional<U, W, N> {
         Optional::new(
             self.location_kind,
             self.flow_state,
@@ -264,7 +259,7 @@ impl<'a, T, W, C, N: Location<'a>> Singleton<T, W, C, N> {
     }
 }
 
-impl<'a, T, N: Location<'a>> Singleton<T, Bounded, Tick, N> {
+impl<'a, T, N: Location<'a>> Singleton<T, Bounded, Tick<N>> {
     pub fn cross_singleton<Other>(self, other: Other) -> <Self as CrossResult<'a, Other>>::Out
     where
         Self: CrossResult<'a, Other>,
@@ -285,22 +280,22 @@ impl<'a, T, N: Location<'a>> Singleton<T, Bounded, Tick, N> {
 
     pub fn continue_if<U>(
         self,
-        signal: Optional<U, Bounded, Tick, N>,
-    ) -> Optional<T, Bounded, Tick, N> {
+        signal: Optional<U, Bounded, Tick<N>>,
+    ) -> Optional<T, Bounded, Tick<N>> {
         self.cross_singleton(signal.map(q!(|_u| ())))
             .map(q!(|(d, _signal)| d))
     }
 
     pub fn continue_unless<U>(
         self,
-        other: Optional<U, Bounded, Tick, N>,
-    ) -> Optional<T, Bounded, Tick, N> {
+        other: Optional<U, Bounded, Tick<N>>,
+    ) -> Optional<T, Bounded, Tick<N>> {
         self.continue_if(other.into_stream().count().filter(q!(|c| *c == 0)))
     }
 }
 
-impl<'a, T, N: Location<'a>> Singleton<T, Bounded, Tick, N> {
-    pub fn all_ticks(self) -> Stream<T, Unbounded, NoTick, N> {
+impl<'a, T, N: Location<'a>> Singleton<T, Bounded, Tick<N>> {
+    pub fn all_ticks(self) -> Stream<T, Unbounded, N> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -308,7 +303,7 @@ impl<'a, T, N: Location<'a>> Singleton<T, Bounded, Tick, N> {
         )
     }
 
-    pub fn latest(self) -> Singleton<T, Unbounded, NoTick, N> {
+    pub fn latest(self) -> Singleton<T, Unbounded, N> {
         Singleton::new(
             self.location_kind,
             self.flow_state,
@@ -316,7 +311,7 @@ impl<'a, T, N: Location<'a>> Singleton<T, Bounded, Tick, N> {
         )
     }
 
-    pub fn defer_tick(self) -> Singleton<T, Bounded, Tick, N> {
+    pub fn defer_tick(self) -> Singleton<T, Bounded, Tick<N>> {
         Singleton::new(
             self.location_kind,
             self.flow_state,
@@ -324,7 +319,7 @@ impl<'a, T, N: Location<'a>> Singleton<T, Bounded, Tick, N> {
         )
     }
 
-    pub fn persist(self) -> Stream<T, Bounded, Tick, N> {
+    pub fn persist(self) -> Stream<T, Bounded, Tick<N>> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -332,7 +327,7 @@ impl<'a, T, N: Location<'a>> Singleton<T, Bounded, Tick, N> {
         )
     }
 
-    pub fn delta(self) -> Optional<T, Bounded, Tick, N> {
+    pub fn delta(self) -> Optional<T, Bounded, Tick<N>> {
         Optional::new(
             self.location_kind,
             self.flow_state,
@@ -341,8 +336,8 @@ impl<'a, T, N: Location<'a>> Singleton<T, Bounded, Tick, N> {
     }
 }
 
-impl<'a, T, B, N: Location<'a>> Singleton<T, B, NoTick, N> {
-    pub fn latest_tick(self) -> Singleton<T, Bounded, Tick, N> {
+impl<'a, T, B, N: Location<'a> + NoTick> Singleton<T, B, N> {
+    pub fn latest_tick(self) -> Singleton<T, Bounded, Tick<N>> {
         Singleton::new(
             self.location_kind,
             self.flow_state,
@@ -353,10 +348,10 @@ impl<'a, T, B, N: Location<'a>> Singleton<T, B, NoTick, N> {
     pub fn sample_every(
         self,
         duration: impl Quoted<'a, std::time::Duration> + Copy + 'a,
-    ) -> Stream<T, Unbounded, NoTick, N> {
+    ) -> Stream<T, Unbounded, N> {
         let interval = duration.splice_typed();
 
-        let samples = Stream::<(), Bounded, Tick, N>::new(
+        let samples = Stream::<(), Bounded, Tick<N>>::new(
             self.location_kind,
             self.flow_state.clone(),
             HfPlusNode::Source {
@@ -372,7 +367,7 @@ impl<'a, T, B, N: Location<'a>> Singleton<T, B, NoTick, N> {
     }
 }
 
-impl<'a, T, N: Location<'a>> Singleton<T, Unbounded, NoTick, N> {
+impl<'a, T, N: Location<'a> + NoTick> Singleton<T, Unbounded, N> {
     pub fn cross_singleton<Other>(self, other: Other) -> <Self as CrossResult<'a, Other>>::Out
     where
         Self: CrossResult<'a, Other>,
@@ -392,16 +387,16 @@ impl<'a, T, N: Location<'a>> Singleton<T, Unbounded, NoTick, N> {
     }
 }
 
-pub struct Optional<T, W, C, N> {
+pub struct Optional<T, W, N> {
     pub(crate) location_kind: LocationId,
 
     flow_state: FlowState,
     pub(crate) ir_node: RefCell<HfPlusNode>,
 
-    _phantom: PhantomData<(T, N, W, C)>,
+    _phantom: PhantomData<(T, N, W)>,
 }
 
-impl<'a, T, W, C, N: Location<'a>> Optional<T, W, C, N> {
+impl<'a, T, W, N: Location<'a>> Optional<T, W, N> {
     pub(crate) fn new(
         location_kind: LocationId,
         flow_state: FlowState,
@@ -415,7 +410,7 @@ impl<'a, T, W, C, N: Location<'a>> Optional<T, W, C, N> {
         }
     }
 
-    pub fn some(singleton: Singleton<T, W, C, N>) -> Self {
+    pub fn some(singleton: Singleton<T, W, N>) -> Self {
         Optional::new(
             singleton.location_kind,
             singleton.flow_state,
@@ -424,13 +419,13 @@ impl<'a, T, W, C, N: Location<'a>> Optional<T, W, C, N> {
     }
 }
 
-impl<'a, T, N: Location<'a>> DeferTick for Optional<T, Bounded, Tick, N> {
+impl<'a, T, N: Location<'a>> DeferTick for Optional<T, Bounded, Tick<N>> {
     fn defer_tick(self) -> Self {
         Optional::defer_tick(self)
     }
 }
 
-impl<'a, T, N: Location<'a>> CycleComplete<'a, Tick> for Optional<T, Bounded, Tick, N> {
+impl<'a, T, N: Location<'a>> CycleComplete<'a, TickCycle> for Optional<T, Bounded, Tick<N>> {
     fn complete(self, ident: syn::Ident) {
         self.flow_state.borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
             ident,
@@ -440,7 +435,7 @@ impl<'a, T, N: Location<'a>> CycleComplete<'a, Tick> for Optional<T, Bounded, Ti
     }
 }
 
-impl<'a, T, N: Location<'a>> CycleCollection<'a, Tick> for Optional<T, Bounded, Tick, N> {
+impl<'a, T, N: Location<'a>> CycleCollection<'a, TickCycle> for Optional<T, Bounded, Tick<N>> {
     type Location = N;
 
     fn create_source(ident: syn::Ident, flow_state: FlowState, l: LocationId) -> Self {
@@ -455,7 +450,7 @@ impl<'a, T, N: Location<'a>> CycleCollection<'a, Tick> for Optional<T, Bounded, 
     }
 }
 
-impl<'a, T, W, N: Location<'a>> CycleComplete<'a, NoTick> for Optional<T, W, NoTick, N> {
+impl<'a, T, W, N: Location<'a> + NoTick> CycleComplete<'a, ()> for Optional<T, W, N> {
     fn complete(self, ident: syn::Ident) {
         self.flow_state.borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
             ident,
@@ -465,7 +460,7 @@ impl<'a, T, W, N: Location<'a>> CycleComplete<'a, NoTick> for Optional<T, W, NoT
     }
 }
 
-impl<'a, T, W, N: Location<'a>> CycleCollection<'a, NoTick> for Optional<T, W, NoTick, N> {
+impl<'a, T, W, N: Location<'a> + NoTick> CycleCollection<'a, ()> for Optional<T, W, N> {
     type Location = N;
 
     fn create_source(ident: syn::Ident, flow_state: FlowState, l: LocationId) -> Self {
@@ -480,13 +475,13 @@ impl<'a, T, W, N: Location<'a>> CycleCollection<'a, NoTick> for Optional<T, W, N
     }
 }
 
-impl<'a, T, W, C, N: Location<'a>> From<Singleton<T, W, C, N>> for Optional<T, W, C, N> {
-    fn from(singleton: Singleton<T, W, C, N>) -> Self {
+impl<'a, T, W, N: Location<'a>> From<Singleton<T, W, N>> for Optional<T, W, N> {
+    fn from(singleton: Singleton<T, W, N>) -> Self {
         Optional::some(singleton)
     }
 }
 
-impl<'a, T: Clone, W, C, N: Location<'a>> Clone for Optional<T, W, C, N> {
+impl<'a, T: Clone, W, N: Location<'a>> Clone for Optional<T, W, N> {
     fn clone(&self) -> Self {
         if !matches!(self.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
             let orig_ir_node = self.ir_node.replace(HfPlusNode::Placeholder);
@@ -511,8 +506,8 @@ impl<'a, T: Clone, W, C, N: Location<'a>> Clone for Optional<T, W, C, N> {
     }
 }
 
-impl<'a, T, W, C, N: Location<'a>> Optional<T, W, C, N> {
-    pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Optional<U, W, C, N> {
+impl<'a, T, W, N: Location<'a>> Optional<T, W, N> {
+    pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Optional<U, W, N> {
         Optional::new(
             self.location_kind,
             self.flow_state,
@@ -526,7 +521,7 @@ impl<'a, T, W, C, N: Location<'a>> Optional<T, W, C, N> {
     pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
-    ) -> Stream<U, W, C, N> {
+    ) -> Stream<U, W, N> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -537,10 +532,7 @@ impl<'a, T, W, C, N: Location<'a>> Optional<T, W, C, N> {
         )
     }
 
-    pub fn filter<F: Fn(&T) -> bool + 'a>(
-        self,
-        f: impl IntoQuotedMut<'a, F>,
-    ) -> Optional<T, W, C, N> {
+    pub fn filter<F: Fn(&T) -> bool + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Optional<T, W, N> {
         Optional::new(
             self.location_kind,
             self.flow_state,
@@ -554,7 +546,7 @@ impl<'a, T, W, C, N: Location<'a>> Optional<T, W, C, N> {
     pub fn filter_map<U, F: Fn(T) -> Option<U> + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
-    ) -> Optional<U, W, C, N> {
+    ) -> Optional<U, W, N> {
         Optional::new(
             self.location_kind,
             self.flow_state,
@@ -566,9 +558,9 @@ impl<'a, T, W, C, N: Location<'a>> Optional<T, W, C, N> {
     }
 }
 
-impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick, N> {
+impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick<N>> {
     // TODO(shadaj): this is technically incorrect; we should only return the first element of the stream
-    pub fn into_stream(self) -> Stream<T, Bounded, Tick, N> {
+    pub fn into_stream(self) -> Stream<T, Bounded, Tick<N>> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -578,12 +570,12 @@ impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick, N> {
 
     pub fn cross_singleton<O>(
         self,
-        other: impl Into<Optional<O, Bounded, Tick, N>>,
-    ) -> Optional<(T, O), Bounded, Tick, N>
+        other: impl Into<Optional<O, Bounded, Tick<N>>>,
+    ) -> Optional<(T, O), Bounded, Tick<N>>
     where
         O: Clone,
     {
-        let other: Optional<O, Bounded, Tick, N> = other.into();
+        let other: Optional<O, Bounded, Tick<N>> = other.into();
         if self.location_kind != other.location_kind {
             panic!("cross_singleton must be called on streams on the same node");
         }
@@ -600,24 +592,24 @@ impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick, N> {
 
     pub fn continue_if<U>(
         self,
-        signal: Optional<U, Bounded, Tick, N>,
-    ) -> Optional<T, Bounded, Tick, N> {
+        signal: Optional<U, Bounded, Tick<N>>,
+    ) -> Optional<T, Bounded, Tick<N>> {
         self.cross_singleton(signal.map(q!(|_u| ())))
             .map(q!(|(d, _signal)| d))
     }
 
-    pub fn then<U>(self, value: Singleton<U, Bounded, Tick, N>) -> Optional<U, Bounded, Tick, N> {
+    pub fn then<U>(self, value: Singleton<U, Bounded, Tick<N>>) -> Optional<U, Bounded, Tick<N>> {
         value.continue_if(self)
     }
 
     pub fn continue_unless<U>(
         self,
-        other: Optional<U, Bounded, Tick, N>,
-    ) -> Optional<T, Bounded, Tick, N> {
+        other: Optional<U, Bounded, Tick<N>>,
+    ) -> Optional<T, Bounded, Tick<N>> {
         self.continue_if(other.into_stream().count().filter(q!(|c| *c == 0)))
     }
 
-    pub fn union(self, other: Optional<T, Bounded, Tick, N>) -> Optional<T, Bounded, Tick, N> {
+    pub fn union(self, other: Optional<T, Bounded, Tick<N>>) -> Optional<T, Bounded, Tick<N>> {
         if self.location_kind != other.location_kind {
             panic!("union must be called on streams on the same node");
         }
@@ -634,8 +626,8 @@ impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick, N> {
 
     pub fn unwrap_or(
         self,
-        other: Singleton<T, Bounded, Tick, N>,
-    ) -> Singleton<T, Bounded, Tick, N> {
+        other: Singleton<T, Bounded, Tick<N>>,
+    ) -> Singleton<T, Bounded, Tick<N>> {
         if self.location_kind != other.location_kind {
             panic!("or_else must be called on streams on the same node");
         }
@@ -651,8 +643,8 @@ impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick, N> {
     }
 }
 
-impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick, N> {
-    pub fn all_ticks(self) -> Stream<T, Unbounded, NoTick, N> {
+impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick<N>> {
+    pub fn all_ticks(self) -> Stream<T, Unbounded, N> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -660,7 +652,7 @@ impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick, N> {
         )
     }
 
-    pub fn latest(self) -> Optional<T, Unbounded, NoTick, N> {
+    pub fn latest(self) -> Optional<T, Unbounded, N> {
         Optional::new(
             self.location_kind,
             self.flow_state,
@@ -668,7 +660,7 @@ impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick, N> {
         )
     }
 
-    pub fn defer_tick(self) -> Optional<T, Bounded, Tick, N> {
+    pub fn defer_tick(self) -> Optional<T, Bounded, Tick<N>> {
         Optional::new(
             self.location_kind,
             self.flow_state,
@@ -676,7 +668,7 @@ impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick, N> {
         )
     }
 
-    pub fn persist(self) -> Stream<T, Bounded, Tick, N> {
+    pub fn persist(self) -> Stream<T, Bounded, Tick<N>> {
         Stream::new(
             self.location_kind,
             self.flow_state,
@@ -684,7 +676,7 @@ impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick, N> {
         )
     }
 
-    pub fn delta(self) -> Optional<T, Bounded, Tick, N> {
+    pub fn delta(self) -> Optional<T, Bounded, Tick<N>> {
         Optional::new(
             self.location_kind,
             self.flow_state,
@@ -693,8 +685,8 @@ impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick, N> {
     }
 }
 
-impl<'a, T, B, N: Location<'a>> Optional<T, B, NoTick, N> {
-    pub fn latest_tick(self) -> Optional<T, Bounded, Tick, N> {
+impl<'a, T, B, N: Location<'a> + NoTick> Optional<T, B, N> {
+    pub fn latest_tick(self) -> Optional<T, Bounded, Tick<N>> {
         Optional::new(
             self.location_kind,
             self.flow_state,
@@ -702,17 +694,17 @@ impl<'a, T, B, N: Location<'a>> Optional<T, B, NoTick, N> {
         )
     }
 
-    pub fn tick_samples(self) -> Stream<T, Unbounded, NoTick, N> {
+    pub fn tick_samples(self) -> Stream<T, Unbounded, N> {
         self.latest_tick().all_ticks()
     }
 
     pub fn sample_every(
         self,
         duration: impl Quoted<'a, std::time::Duration> + Copy + 'a,
-    ) -> Stream<T, Unbounded, NoTick, N> {
+    ) -> Stream<T, Unbounded, N> {
         let interval = duration.splice_typed();
 
-        let samples = Stream::<(), Bounded, Tick, N>::new(
+        let samples = Stream::<(), Bounded, Tick<N>>::new(
             self.location_kind,
             self.flow_state.clone(),
             HfPlusNode::Source {
@@ -729,8 +721,8 @@ impl<'a, T, B, N: Location<'a>> Optional<T, B, NoTick, N> {
 
     pub fn unwrap_or(
         self,
-        other: impl Into<Singleton<T, Unbounded, NoTick, N>>,
-    ) -> Singleton<T, Unbounded, NoTick, N> {
+        other: impl Into<Singleton<T, Unbounded, N>>,
+    ) -> Singleton<T, Unbounded, N> {
         let other = other.into();
         if self.location_kind != other.location_kind {
             panic!("or_else must be called on streams on the same node");
@@ -740,15 +732,15 @@ impl<'a, T, B, N: Location<'a>> Optional<T, B, NoTick, N> {
     }
 }
 
-impl<'a, T, N: Location<'a>> Optional<T, Unbounded, NoTick, N> {
+impl<'a, T, N: Location<'a> + NoTick> Optional<T, Unbounded, N> {
     pub fn cross_singleton<O>(
         self,
-        other: impl Into<Optional<O, Unbounded, NoTick, N>>,
-    ) -> Optional<(T, O), Unbounded, NoTick, N>
+        other: impl Into<Optional<O, Unbounded, N>>,
+    ) -> Optional<(T, O), Unbounded, N>
     where
         O: Clone,
     {
-        let other: Optional<O, Unbounded, NoTick, N> = other.into();
+        let other: Optional<O, Unbounded, N> = other.into();
         if self.location_kind != other.location_kind {
             panic!("cross_singleton must be called on streams on the same node");
         }
