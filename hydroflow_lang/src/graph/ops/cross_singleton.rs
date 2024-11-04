@@ -59,8 +59,8 @@ pub const CROSS_SINGLETON: OperatorConstraints = OperatorConstraints {
                _diagnostics| {
         assert!(is_pull);
 
-        let input = &inputs[0];
-        let singleton = &inputs[1];
+        let stream_input = &inputs[0];
+        let singleton_input = &inputs[1];
         let singleton_handle_ident = wc.make_ident("singleton_handle");
 
         let write_prologue = quote_spanned! {op_span=>
@@ -73,12 +73,35 @@ pub const CROSS_SINGLETON: OperatorConstraints = OperatorConstraints {
 
         let write_iterator = quote_spanned! {op_span=>
             let #ident = {
-                let mut singleton_state_mut = #context.state_ref(#singleton_handle_ident).borrow_mut();
-                let first = { #singleton }.next();
-                *singleton_state_mut = singleton_state_mut.take().or(first);
-                singleton_state_mut.as_ref().cloned().map(|singleton_value| {
-                    #input.map(move |item| (item, ::std::clone::Clone::clone(&singleton_value)))
-                }).into_iter().flatten()
+                #[inline(always)]
+                fn cross_singleton_guard<Singleton, Item>(
+                    mut singleton_state_mut: std::cell::RefMut<'_, Option<Singleton>>,
+                    mut singleton_input: impl Iterator<Item = Singleton>,
+                    stream_input: impl Iterator<Item = Item>,
+                ) -> impl Iterator<Item = (Item, Singleton)>
+                where
+                    Singleton: ::std::clone::Clone,
+                {
+                    let singleton_value_opt = match &*singleton_state_mut {
+                        ::std::option::Option::Some(singleton_value) => Some(singleton_value.clone()),
+                        ::std::option::Option::None => {
+                            let singleton_value_opt = singleton_input.next();
+                            *singleton_state_mut = singleton_value_opt.clone();
+                            singleton_value_opt
+                        }
+                    };
+                    singleton_value_opt
+                        .map(|singleton_value| {
+                            stream_input.map(move |item| (item, ::std::clone::Clone::clone(&singleton_value)))
+                        })
+                        .into_iter()
+                        .flatten()
+                }
+                cross_singleton_guard(
+                    #context.state_ref(#singleton_handle_ident).borrow_mut(),
+                    #singleton_input,
+                    #stream_input,
+                )
             };
         };
 
