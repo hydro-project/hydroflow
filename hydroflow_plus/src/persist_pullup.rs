@@ -43,6 +43,14 @@ fn persist_pullup_node(
             input: behind_persist,
         })),
 
+        HfPlusNode::FilterMap {
+            f,
+            input: box HfPlusNode::Persist(behind_persist),
+        } => HfPlusNode::Persist(Box::new(HfPlusNode::FilterMap {
+            f,
+            input: behind_persist,
+        })),
+
         HfPlusNode::FlatMap {
             f,
             input: box HfPlusNode::Persist(behind_persist),
