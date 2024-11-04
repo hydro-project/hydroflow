@@ -260,6 +260,15 @@ impl<'a, T, W, N: Location<'a>> Singleton<T, W, N> {
 }
 
 impl<'a, T, N: Location<'a>> Singleton<T, Bounded, Tick<N>> {
+    // TODO(shadaj): this is technically incorrect; we should only return the first element of the stream
+    pub fn into_stream(self) -> Stream<T, Bounded, Tick<N>> {
+        Stream::new(
+            self.location_kind,
+            self.flow_state,
+            self.ir_node.into_inner(),
+        )
+    }
+
     pub fn cross_singleton<Other>(self, other: Other) -> <Self as CrossResult<'a, Other>>::Out
     where
         Self: CrossResult<'a, Other>,
@@ -641,6 +650,16 @@ impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick<N>> {
             ),
         )
     }
+
+    pub fn into_singleton(self) -> Singleton<Option<T>, Bounded, Tick<N>>
+    where
+        T: Clone,
+        N: NoTick,
+    {
+        let self_location = N::make_from(self.location_kind, self.flow_state.clone());
+        self.map(q!(|v| Some(v)))
+            .unwrap_or(self_location.singleton_each_tick(q!(None)))
+    }
 }
 
 impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick<N>> {
@@ -729,6 +748,15 @@ impl<'a, T, B, N: Location<'a> + NoTick> Optional<T, B, N> {
         }
 
         self.latest_tick().unwrap_or(other.latest_tick()).latest()
+    }
+
+    pub fn into_singleton(self) -> Singleton<Option<T>, Unbounded, N>
+    where
+        T: Clone,
+    {
+        let self_location = N::make_from(self.location_kind, self.flow_state.clone());
+        self.map(q!(|v| Some(v)))
+            .unwrap_or(self_location.singleton(q!(None)))
     }
 }
 

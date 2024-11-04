@@ -24,10 +24,22 @@ pub enum LocationId {
     ExternalProcess(usize),
 }
 
+impl LocationId {
+    pub fn raw_id(&self) -> usize {
+        match self {
+            LocationId::Process(id) => *id,
+            LocationId::Cluster(id) => *id,
+            LocationId::ExternalProcess(id) => *id,
+        }
+    }
+}
+
 pub trait Location<'a> {
     fn id(&self) -> LocationId;
 
     fn flow_state(&self) -> &FlowState;
+
+    fn make_from(id: LocationId, flow_state: FlowState) -> Self;
 
     fn spin(&self) -> Stream<(), Unbounded, Self>
     where
@@ -346,6 +358,17 @@ impl<'a, P> Location<'a> for ExternalProcess<'a, P> {
     fn flow_state(&self) -> &FlowState {
         &self.flow_state
     }
+
+    fn make_from(id: LocationId, flow_state: FlowState) -> Self {
+        match id {
+            LocationId::ExternalProcess(id) => ExternalProcess {
+                id,
+                flow_state,
+                _phantom: PhantomData,
+            },
+            _ => panic!(),
+        }
+    }
 }
 
 impl<'a, P> ExternalProcess<'a, P> {
@@ -446,6 +469,17 @@ impl<'a, P> Location<'a> for Process<'a, P> {
 
     fn flow_state(&self) -> &FlowState {
         &self.flow_state
+    }
+
+    fn make_from(id: LocationId, flow_state: FlowState) -> Self {
+        match id {
+            LocationId::Process(id) => Process {
+                id,
+                flow_state,
+                _phantom: PhantomData,
+            },
+            _ => panic!(),
+        }
     }
 }
 
@@ -580,6 +614,17 @@ impl<'a, C> Location<'a> for Cluster<'a, C> {
 
     fn flow_state(&self) -> &FlowState {
         &self.flow_state
+    }
+
+    fn make_from(id: LocationId, flow_state: FlowState) -> Self {
+        match id {
+            LocationId::Cluster(id) => Cluster {
+                id,
+                flow_state,
+                _phantom: PhantomData,
+            },
+            _ => panic!(),
+        }
     }
 }
 
