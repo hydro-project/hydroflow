@@ -53,7 +53,7 @@ pub const LATTICE_BIMORPHISM: OperatorConstraints = OperatorConstraints {
                     lhs_state_handle: #root::scheduled::state::StateHandle<::std::cell::RefCell<LhsState>>,
                     rhs_state_handle: #root::scheduled::state::StateHandle<::std::cell::RefCell<RhsState>>,
                     context: &'a #root::scheduled::context::Context,
-                ) -> impl 'a + ::std::iter::Iterator<Item = Output>
+                ) -> Option<Output>
                 where
                     Func: 'a
                         + #root::lattices::LatticeBimorphism<LhsState, RhsIter::Item, Output = Output>
@@ -62,28 +62,31 @@ pub const LATTICE_BIMORPHISM: OperatorConstraints = OperatorConstraints {
                     RhsIter: 'a + ::std::iter::Iterator,
                     LhsState: 'static + ::std::clone::Clone,
                     RhsState: 'static + ::std::clone::Clone,
+                    Output: #root::lattices::Merge<Output>,
                 {
                     let lhs_state = context.state_ref(lhs_state_handle);
                     let rhs_state = context.state_ref(rhs_state_handle);
 
-                    ::std::iter::from_fn(move || {
-                        // Use `from_fn` instead of `chain` to dodge multiple ownership of `func`.
-                        if let Some(lhs_item) = lhs_iter.next() {
-                            Some(func.call(lhs_item, (*rhs_state.borrow()).clone()))
-                        } else {
-                            let rhs_item = rhs_iter.next()?;
-                            Some(func.call((*lhs_state.borrow()).clone(), rhs_item))
-                        }
-                    })
+                    let a = lhs_iter.next().map(|lhs_item| func.call(lhs_item, (*rhs_state.borrow()).clone()));
+                    let b = rhs_iter.next().map(|rhs_item| func.call((*lhs_state.borrow()).clone(), rhs_item));
+                    match (a, b) {
+                        (Some(mut a), Some(b)) => {
+                            // If both sides, merge the combined value, which will de-duplicate to prevent timing issues.
+                            #root::lattices::Merge::merge(&mut a, b);
+                            Some(a)
+                        },
+                        (a, b) => a.or(b),
+                    }
                 }
-                check_inputs(
+                let opt = check_inputs(
                     #func,
                     #lhs_items,
                     #rhs_items,
                     #lhs_state_handle,
                     #rhs_state_handle,
                     &#context,
-                )
+                );
+                opt.into_iter()
             };
         };
 
