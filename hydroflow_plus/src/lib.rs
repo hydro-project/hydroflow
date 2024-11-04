@@ -50,6 +50,14 @@ pub struct RuntimeContext<'a> {
     _phantom: PhantomData<&'a mut &'a ()>,
 }
 
+impl RuntimeContext<'_> {
+    pub fn new() -> Self {
+        Self {
+            _phantom: PhantomData,
+        }
+    }
+}
+
 impl Copy for RuntimeContext<'_> {}
 
 impl<'a> FreeVariable<&'a Context> for RuntimeContext<'a> {
@@ -67,6 +75,10 @@ pub struct HfCompiled<'a, ID> {
 impl<ID> HfCompiled<'_, ID> {
     pub fn hydroflow_ir(&self) -> &BTreeMap<usize, HydroflowGraph> {
         &self.hydroflow_ir
+    }
+
+    pub fn take_ir(self) -> BTreeMap<usize, HydroflowGraph> {
+        self.hydroflow_ir
     }
 }
 

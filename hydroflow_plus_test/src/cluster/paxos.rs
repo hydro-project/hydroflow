@@ -42,7 +42,7 @@ struct P1b<L> {
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 struct P2a<P> {
     ballot: Ballot,
-    slot: i32,
+    slot: usize,
     value: Option<P>, // might be a re-committed hole
 }
 
@@ -50,7 +50,7 @@ struct P2a<P> {
 struct P2b<P> {
     ballot: Ballot,
     max_ballot: Ballot,
-    slot: i32,
+    slot: usize,
     value: Option<P>, // might be a hole
 }
 
@@ -62,7 +62,7 @@ struct P2b<P> {
 pub fn paxos_core<'a, P: PaxosPayload, R>(
     proposers: &Cluster<'a, Proposer>,
     acceptors: &Cluster<'a, Acceptor>,
-    r_to_acceptors_checkpoint: Stream<(ClusterId<R>, i32), Unbounded, Cluster<'a, Acceptor>>,
+    r_to_acceptors_checkpoint: Stream<(ClusterId<R>, usize), Unbounded, Cluster<'a, Acceptor>>,
     c_to_proposers: Stream<P, Unbounded, Cluster<'a, Proposer>>,
     f: usize,
     i_am_leader_send_timeout: u64,
@@ -70,7 +70,7 @@ pub fn paxos_core<'a, P: PaxosPayload, R>(
     i_am_leader_check_timeout_delay_multiplier: usize,
 ) -> (
     Stream<(), Unbounded, Cluster<'a, Proposer>>,
-    Stream<(i32, Option<P>), Unbounded, Cluster<'a, Proposer>>,
+    Stream<(usize, Option<P>), Unbounded, Cluster<'a, Proposer>>,
 ) {
     proposers
         .source_iter(q!(["Proposers say hello"]))
@@ -83,7 +83,7 @@ pub fn paxos_core<'a, P: PaxosPayload, R>(
     let (a_to_proposers_p2b_complete_cycle, a_to_proposers_p2b_forward_reference) =
         proposers.forward_ref::<Stream<P2b<P>, _, _>>();
     let (a_log_complete_cycle, a_log_forward_reference) =
-        acceptors.tick_forward_ref::<Singleton<(i32, HashMap<i32, LogValue<P>>), _, _>>();
+        acceptors.tick_forward_ref::<Singleton<(Option<usize>, HashMap<usize, LogValue<P>>), _, _>>();
 
     let (p_ballot_num, p_is_leader, p_relevant_p1bs, a_max_ballot) = leader_election(
         proposers,
@@ -437,12 +437,12 @@ fn p_p1b<'a, P: Clone + Serialize + DeserializeOwned>(
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 fn recommit_after_leader_election<'a, P: PaxosPayload>(
     proposers: &Cluster<'a, Proposer>,
-    p_relevant_p1bs: Stream<P1b<HashMap<i32, LogValue<P>>>, Bounded, Tick<Cluster<'a, Proposer>>>,
+    p_relevant_p1bs: Stream<P1b<HashMap<usize, LogValue<P>>>, Bounded, Tick<Cluster<'a, Proposer>>>,
     p_ballot_num: Singleton<u32, Bounded, Tick<Cluster<'a, Proposer>>>,
     f: usize,
 ) -> (
     Stream<P2a<P>, Bounded, Tick<Cluster<'a, Proposer>>>,
-    Optional<i32, Bounded, Tick<Cluster<'a, Proposer>>>,
+    Optional<usize, Bounded, Tick<Cluster<'a, Proposer>>>,
     Stream<P2a<P>, Bounded, Tick<Cluster<'a, Proposer>>>,
 ) {
     let p_id = proposers.self_id();
@@ -520,19 +520,19 @@ fn sequence_payload<'a, P: PaxosPayload, R>(
     proposers: &Cluster<'a, Proposer>,
     acceptors: &Cluster<'a, Acceptor>,
     c_to_proposers: Stream<P, Unbounded, Cluster<'a, Proposer>>,
-    r_to_acceptors_checkpoint: Stream<(ClusterId<R>, i32), Unbounded, Cluster<'a, Acceptor>>,
+    r_to_acceptors_checkpoint: Stream<(ClusterId<R>, usize), Unbounded, Cluster<'a, Acceptor>>,
 
     p_ballot_num: Singleton<u32, Bounded, Tick<Cluster<'a, Proposer>>>,
     p_is_leader: Optional<bool, Bounded, Tick<Cluster<'a, Proposer>>>,
-    p_max_slot: Optional<i32, Bounded, Tick<Cluster<'a, Proposer>>>,
+    p_max_slot: Optional<usize, Bounded, Tick<Cluster<'a, Proposer>>>,
 
     p_log_to_recommit: Stream<P2a<P>, Bounded, Tick<Cluster<'a, Proposer>>>,
     f: usize,
 
     a_max_ballot: Singleton<Ballot, Bounded, Tick<Cluster<'a, Acceptor>>>,
 ) -> (
-    Stream<(i32, Option<P>), Unbounded, Cluster<'a, Proposer>>,
-    Singleton<(i32, HashMap<i32, LogValue<P>>), Bounded, Tick<Cluster<'a, Acceptor>>>,
+    Stream<(usize, Option<P>), Unbounded, Cluster<'a, Proposer>>,
+    Singleton<(Option<usize>, HashMap<usize, LogValue<P>>), Bounded, Tick<Cluster<'a, Acceptor>>>,
     Stream<P2b<P>, Unbounded, Cluster<'a, Proposer>>,
 ) {
     let p_to_acceptors_p2a = p_p2a(
@@ -552,7 +552,6 @@ fn sequence_payload<'a, P: PaxosPayload, R>(
         p_to_acceptors_p2a,
         r_to_acceptors_checkpoint,
         proposers,
-        acceptors,
         f,
     );
 
@@ -563,14 +562,14 @@ fn sequence_payload<'a, P: PaxosPayload, R>(
 
 #[derive(Clone)]
 enum CheckpointOrP2a<P> {
-    Checkpoint(i32),
+    Checkpoint(usize),
     P2a(P2a<P>),
 }
 
 // Proposer logic to send p2as, outputting the next slot and the p2as to send to acceptors.
 fn p_p2a<'a, P: PaxosPayload>(
     proposers: &Cluster<'a, Proposer>,
-    p_max_slot: Optional<i32, Bounded, Tick<Cluster<'a, Proposer>>>,
+    p_max_slot: Optional<usize, Bounded, Tick<Cluster<'a, Proposer>>>,
     c_to_proposers: Stream<P, Unbounded, Cluster<'a, Proposer>>,
     p_ballot_num: Singleton<u32, Bounded, Tick<Cluster<'a, Proposer>>>,
     p_log_to_recommit: Stream<P2a<P>, Bounded, Tick<Cluster<'a, Proposer>>>,
@@ -578,7 +577,7 @@ fn p_p2a<'a, P: PaxosPayload>(
     acceptors: &Cluster<'a, Acceptor>,
 ) -> Stream<P2a<P>, Unbounded, Cluster<'a, Acceptor>> {
     let p_id = proposers.self_id();
-    let (p_next_slot_complete_cycle, p_next_slot) = proposers.tick_cycle::<Optional<i32, _, _>>();
+    let (p_next_slot_complete_cycle, p_next_slot) = proposers.tick_cycle::<Optional<usize, _, _>>();
     let p_next_slot_after_reconciling_p1bs = p_max_slot
         .map(q!(|max_slot| max_slot + 1))
         .unwrap_or(proposers.singleton_each_tick(q!(0)))
@@ -595,7 +594,7 @@ fn p_p2a<'a, P: PaxosPayload>(
         // .inspect(q!(|ballot_num| println!("{} p_indexed_payloads ballot_num: {}", context.current_tick(), ballot_num))))
         .map(q!(move |(((index, payload), next_slot), ballot_num)| P2a {
             ballot: Ballot { num: ballot_num, proposer_id: p_id },
-            slot: next_slot + index as i32,
+            slot: next_slot + index,
             value: Some(payload)
         }));
     // .inspect(q!(|p2a: &P2a| println!("{} p_indexed_payloads P2a: {:?}", context.current_tick(), p2a)));
@@ -609,9 +608,7 @@ fn p_p2a<'a, P: PaxosPayload>(
     let p_next_slot_after_sending_payloads = p_num_payloads
         .clone()
         .cross_singleton(p_next_slot.clone())
-        .map(q!(
-            |(num_payloads, next_slot)| next_slot + num_payloads as i32
-        ));
+        .map(q!(|(num_payloads, next_slot)| next_slot + num_payloads));
 
     let p_new_next_slot = p_next_slot_after_reconciling_p1bs
         // .inspect(q!(|slot| println!("{} p_new_next_slot_after_reconciling_p1bs: {:?}", context.current_tick(), slot)))
@@ -627,12 +624,11 @@ fn p_p2a<'a, P: PaxosPayload>(
 fn acceptor_p2<'a, P: PaxosPayload, R>(
     a_max_ballot: Singleton<Ballot, Bounded, Tick<Cluster<'a, Acceptor>>>,
     p_to_acceptors_p2a: Stream<P2a<P>, Unbounded, Cluster<'a, Acceptor>>,
-    r_to_acceptors_checkpoint: Stream<(ClusterId<R>, i32), Unbounded, Cluster<'a, Acceptor>>,
+    r_to_acceptors_checkpoint: Stream<(ClusterId<R>, usize), Unbounded, Cluster<'a, Acceptor>>,
     proposers: &Cluster<'a, Proposer>,
-    acceptors: &Cluster<'a, Acceptor>,
     f: usize,
 ) -> (
-    Singleton<(i32, HashMap<i32, LogValue<P>>), Bounded, Tick<Cluster<'a, Acceptor>>>,
+    Singleton<(Option<usize>, HashMap<usize, LogValue<P>>), Bounded, Tick<Cluster<'a, Acceptor>>>,
     Stream<P2b<P>, Unbounded, Cluster<'a, Proposer>>,
 ) {
     let p_to_acceptors_p2a_batch = p_to_acceptors_p2a.tick_batch();
@@ -658,7 +654,6 @@ fn acceptor_p2<'a, P: PaxosPayload, R>(
         .continue_if(a_checkpoints_quorum_reached)
         .map(q!(|(_sender, seq)| seq))
         .min()
-        .unwrap_or(acceptors.singleton_each_tick(q!(-1)))
         .delta()
         .map(q!(|min_seq| CheckpointOrP2a::Checkpoint(min_seq)));
     // .inspect(q!(|(min_seq, p2a): &(i32, P2a)| println!("Acceptor new checkpoint: {:?}", min_seq)));
@@ -677,19 +672,19 @@ fn acceptor_p2<'a, P: PaxosPayload, R>(
         .union(a_new_checkpoint.into_stream())
         .persist()
         .fold(
-            q!(|| (-1, HashMap::new())),
+            q!(|| (None, HashMap::new())),
             q!(|(prev_checkpoint, log), checkpoint_or_p2a| {
                 match checkpoint_or_p2a {
                     CheckpointOrP2a::Checkpoint(new_checkpoint) => {
                         // This is a checkpoint message. Delete all entries up to the checkpoint
-                        for slot in *prev_checkpoint..new_checkpoint {
+                        for slot in (prev_checkpoint.unwrap_or(0))..new_checkpoint {
                             log.remove(&slot);
                         }
-                        *prev_checkpoint = new_checkpoint;
+                        *prev_checkpoint = Some(new_checkpoint);
                     }
                     CheckpointOrP2a::P2a(p2a) => {
                         // This is a regular p2a message. Insert it into the log if it is not checkpointed and has a higher ballot than what was there before
-                        if p2a.slot > *prev_checkpoint
+                        if prev_checkpoint.map(|prev| p2a.slot > prev).unwrap_or(true)
                             && log
                                 .get(&p2a.slot)
                                 .map(|prev_p2a: &LogValue<_>| p2a.ballot > prev_p2a.ballot)
@@ -728,7 +723,7 @@ fn p_p2b<'a, P: PaxosPayload>(
     proposers: &Cluster<'a, Proposer>,
     a_to_proposers_p2b: Stream<P2b<P>, Unbounded, Cluster<'a, Proposer>>,
     f: usize,
-) -> Stream<(i32, Option<P>), Unbounded, Cluster<'a, Proposer>> {
+) -> Stream<(usize, Option<P>), Unbounded, Cluster<'a, Proposer>> {
     let (p_broadcasted_p2b_slots_complete_cycle, p_broadcasted_p2b_slots) = proposers.tick_cycle();
     let (p_persisted_p2bs_complete_cycle, p_persisted_p2bs) = proposers.tick_cycle();
     let p_p2b = a_to_proposers_p2b.tick_batch().union(p_persisted_p2bs);

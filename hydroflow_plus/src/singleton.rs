@@ -260,6 +260,15 @@ impl<'a, T, W, N: Location<'a>> Singleton<T, W, N> {
 }
 
 impl<'a, T, N: Location<'a>> Singleton<T, Bounded, Tick<N>> {
+    // TODO(shadaj): this is technically incorrect; we should only return the first element of the stream
+    pub fn into_stream(self) -> Stream<T, Bounded, Tick<N>> {
+        Stream::new(
+            self.location_kind,
+            self.flow_state,
+            self.ir_node.into_inner(),
+        )
+    }
+
     pub fn cross_singleton<Other>(self, other: Other) -> <Self as CrossResult<'a, Other>>::Out
     where
         Self: CrossResult<'a, Other>,

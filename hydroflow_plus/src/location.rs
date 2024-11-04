@@ -24,6 +24,16 @@ pub enum LocationId {
     ExternalProcess(usize),
 }
 
+impl LocationId {
+    pub fn raw_id(&self) -> usize {
+        match self {
+            LocationId::Process(id) => *id,
+            LocationId::Cluster(id) => *id,
+            LocationId::ExternalProcess(id) => *id,
+        }
+    }
+}
+
 pub trait Location<'a> {
     fn id(&self) -> LocationId;
 
