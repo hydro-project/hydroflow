@@ -284,7 +284,6 @@
 <a href="#284" id="284">284</a>
 <a href="#285" id="285">285</a>
 <a href="#286" id="286">286</a>
-<a href="#287" id="287">287</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::rc::Rc;
 <span class="kw">use </span>std::time::{Duration, SystemTime};
@@ -293,7 +292,7 @@
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
 <span class="kw">use </span><span class="kw">super</span>::paxos::{Acceptor, Proposer};
-<span class="kw">use </span><span class="kw">super</span>::paxos_kv::{paxos_kv, KvPayload, Replica, SequencedKv};
+<span class="kw">use </span><span class="kw">super</span>::paxos_kv::{paxos_kv, KvPayload, Replica};
 
 <span class="kw">pub struct </span>Client {}
 
@@ -345,10 +344,7 @@
                     .map(<span class="macro">q!</span>(|(leader_id, <span class="kw">_</span>)| leader_id)),
             );
             processed_payloads
-                .map(<span class="macro">q!</span>(|payload| (
-                    ClusterId::from_raw(payload.kv.value.parse::&lt;u32&gt;().unwrap()),
-                    payload
-                )))
+                .map(<span class="macro">q!</span>(|payload| (payload.value, payload)))
                 .send_bincode(<span class="kw-2">&amp;</span>clients)
         },
         num_clients_per_node,
@@ -369,9 +365,14 @@
         Cluster&lt;<span class="lifetime">'a</span>, Client&gt;,
     &gt;,
     transaction_cycle: <span class="kw">impl </span>FnOnce(
-        Stream&lt;(ClusterId&lt;Proposer&gt;, KvPayload), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Client&gt;&gt;,
+        Stream&lt;
+            (ClusterId&lt;Proposer&gt;, KvPayload&lt;u32, ClusterId&lt;Client&gt;&gt;),
+            Unbounded,
+            NoTick,
+            Cluster&lt;<span class="lifetime">'a</span>, Client&gt;,
+        &gt;,
     ) -&gt; Stream&lt;
-        (ClusterId&lt;Replica&gt;, SequencedKv),
+        (ClusterId&lt;Replica&gt;, KvPayload&lt;u32, ClusterId&lt;Client&gt;&gt;),
         Unbounded,
         NoTick,
         Cluster&lt;<span class="lifetime">'a</span>, Client&gt;,
@@ -399,7 +400,7 @@
                     leader_ballot,
                     KvPayload {
                         key: i <span class="kw">as </span>u32,
-                        value: c_id.raw_id.to_string()
+                        value: c_id
                     }
                 )
             )));
@@ -413,7 +414,7 @@
     <span class="kw">let </span>c_received_payloads = transaction_results
         .tick_batch()
         .map(<span class="macro">q!</span>(|(sender, replica_payload)| (
-            replica_payload.kv.key,
+            replica_payload.key,
             sender
         )))
         .union(c_pending_quorum_payloads);
@@ -441,10 +442,7 @@
         .cross_singleton(current_leader.clone().latest_tick())
         .map(<span class="macro">q!</span>(<span class="kw">move </span>|(key, cur_leader)| (
             cur_leader,
-            KvPayload {
-                key,
-                value: c_id.raw_id.to_string()
-            }
+            KvPayload { key, value: c_id }
         )));
     c_to_proposers_complete_cycle.complete(
         c_new_payloads_when_leader_elected

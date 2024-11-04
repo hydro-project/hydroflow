@@ -795,6 +795,13 @@
 <a href="#795" id="795">795</a>
 <a href="#796" id="796">796</a>
 <a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::time::Duration;
@@ -808,10 +815,8 @@
 <span class="kw">pub struct </span>Proposer {}
 <span class="kw">pub struct </span>Acceptor {}
 
-<span class="kw">pub trait </span>PaxosPayload:
-    Serialize + DeserializeOwned + PartialEq + Eq + Default + Clone + Debug
-{
-}
+<span class="kw">pub trait </span>PaxosPayload: Serialize + DeserializeOwned + PartialEq + Eq + Clone + Debug {}
+<span class="kw">impl</span>&lt;T: Serialize + DeserializeOwned + PartialEq + Eq + Clone + Debug&gt; PaxosPayload <span class="kw">for </span>T {}
 
 <span class="attr">#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone, Debug, Hash)]
 </span><span class="kw">pub struct </span>Ballot {
@@ -828,8 +833,8 @@
 <span class="attr">#[derive(Serialize, Deserialize, Clone, Debug)]
 </span><span class="kw">struct </span>LogValue&lt;P&gt; {
     ballot: Ballot,
-    value: P,
-}
+    value: <span class="prelude-ty">Option</span>&lt;P&gt;, <span class="comment">// might be a hole
+</span>}
 
 <span class="attr">#[derive(Serialize, Deserialize, Clone, Debug)]
 </span><span class="kw">struct </span>P1b&lt;L&gt; {
@@ -842,16 +847,16 @@
 </span><span class="kw">struct </span>P2a&lt;P&gt; {
     ballot: Ballot,
     slot: i32,
-    value: P,
-}
+    value: <span class="prelude-ty">Option</span>&lt;P&gt;, <span class="comment">// might be a re-committed hole
+</span>}
 
 <span class="attr">#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 </span><span class="kw">struct </span>P2b&lt;P&gt; {
     ballot: Ballot,
     max_ballot: Ballot,
     slot: i32,
-    value: P,
-}
+    value: <span class="prelude-ty">Option</span>&lt;P&gt;, <span class="comment">// might be a hole
+</span>}
 
 <span class="attr">#[expect(
     clippy::too_many_arguments,
@@ -874,7 +879,7 @@
     i_am_leader_check_timeout_delay_multiplier: usize,
 ) -&gt; (
     Stream&lt;(), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
-    Stream&lt;(i32, P), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
+    Stream&lt;(i32, <span class="prelude-ty">Option</span>&lt;P&gt;), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
 ) {
     proposers
         .source_iter(<span class="macro">q!</span>([<span class="string">"Proposers say hello"</span>]))
@@ -1253,28 +1258,33 @@
 
     <span class="kw">let </span>p_p1b_highest_entries_and_count = p_relevant_p1bs
         .flat_map(<span class="macro">q!</span>(|p1b| p1b.accepted.into_iter())) <span class="comment">// Convert HashMap log back to stream
-        </span>.fold_keyed(<span class="macro">q!</span>(|| (<span class="number">0</span>, LogValue { ballot: Ballot { num: <span class="number">0</span>, proposer_id: ClusterId::from_raw(<span class="number">0</span>) }, value: Default::default() })), <span class="macro">q!</span>(|curr_entry, new_entry| {
-            <span class="kw">let </span>same_values = new_entry.value == curr_entry.<span class="number">1</span>.value;
-            <span class="kw">let </span>higher_ballot = new_entry.ballot &gt; curr_entry.<span class="number">1</span>.ballot;
-            <span class="comment">// Increment count if the values are the same
-            </span><span class="kw">if </span>same_values {
-                curr_entry.<span class="number">0 </span>+= <span class="number">1</span>;
-            }
-            <span class="comment">// Replace the ballot with the largest one
-            </span><span class="kw">if </span>higher_ballot {
-                curr_entry.<span class="number">1</span>.ballot = new_entry.ballot;
-                <span class="comment">// Replace the value with the one from the largest ballot, if necessary
-                </span><span class="kw">if </span>!same_values {
-                    curr_entry.<span class="number">0 </span>= <span class="number">1</span>;
-                    curr_entry.<span class="number">1</span>.value = new_entry.value;
+        </span>.fold_keyed::&lt;(usize, <span class="prelude-ty">Option</span>&lt;LogValue&lt;P&gt;&gt;), <span class="kw">_</span>, <span class="kw">_</span>&gt;(<span class="macro">q!</span>(|| (<span class="number">0</span>, <span class="prelude-val">None</span>)), <span class="macro">q!</span>(|curr_entry, new_entry| {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(curr_entry_payload) = <span class="kw-2">&amp;mut </span>curr_entry.<span class="number">1 </span>{
+                <span class="kw">let </span>same_values = new_entry.value == curr_entry_payload.value;
+                <span class="kw">let </span>higher_ballot = new_entry.ballot &gt; curr_entry_payload.ballot;
+                <span class="comment">// Increment count if the values are the same
+                </span><span class="kw">if </span>same_values {
+                    curr_entry.<span class="number">0 </span>+= <span class="number">1</span>;
                 }
+                <span class="comment">// Replace the ballot with the largest one
+                </span><span class="kw">if </span>higher_ballot {
+                    curr_entry_payload.ballot = new_entry.ballot;
+                    <span class="comment">// Replace the value with the one from the largest ballot, if necessary
+                    </span><span class="kw">if </span>!same_values {
+                        curr_entry.<span class="number">0 </span>= <span class="number">1</span>;
+                        curr_entry_payload.value = new_entry.value;
+                    }
+                }
+            } <span class="kw">else </span>{
+                <span class="kw-2">*</span>curr_entry = (<span class="number">1</span>, <span class="prelude-val">Some</span>(new_entry));
             }
         }));
     <span class="kw">let </span>p_log_to_try_commit = p_p1b_highest_entries_and_count
         .clone()
         .cross_singleton(p_ballot_num.clone())
-        .filter_map(<span class="macro">q!</span>(
-            <span class="kw">move </span>|((slot, (count, entry)), ballot_num)| <span class="kw">if </span>count &lt;= f <span class="kw">as </span>u32 {
+        .filter_map(<span class="macro">q!</span>(<span class="kw">move </span>|((slot, (count, entry)), ballot_num)| {
+            <span class="kw">let </span>entry = entry.unwrap();
+            <span class="kw">if </span>count &lt;= f {
                 <span class="prelude-val">Some</span>(P2a {
                     ballot: Ballot {
                         num: ballot_num,
@@ -1286,7 +1296,7 @@
             } <span class="kw">else </span>{
                 <span class="prelude-val">None
             </span>}
-        ));
+        }));
     <span class="kw">let </span>p_max_slot = p_p1b_highest_entries_and_count
         .clone()
         .map(<span class="macro">q!</span>(|(slot, <span class="kw">_</span>)| slot))
@@ -1305,8 +1315,8 @@
                 proposer_id: p_id
             },
             slot,
-            value: Default::default()
-        }));
+            value: <span class="prelude-val">None
+        </span>}));
     (p_log_to_try_commit, p_max_slot, p_log_holes)
 }
 
@@ -1335,7 +1345,7 @@
 
     a_max_ballot: Singleton&lt;Ballot, Bounded, Tick, Cluster&lt;<span class="lifetime">'a</span>, Acceptor&gt;&gt;,
 ) -&gt; (
-    Stream&lt;(i32, P), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
+    Stream&lt;(i32, <span class="prelude-ty">Option</span>&lt;P&gt;), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
     Singleton&lt;(i32, HashMap&lt;i32, LogValue&lt;P&gt;&gt;), Bounded, Tick, Cluster&lt;<span class="lifetime">'a</span>, Acceptor&gt;&gt;,
     Stream&lt;P2b&lt;P&gt;, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
 ) {
@@ -1360,8 +1370,7 @@
         f,
     );
 
-    <span class="comment">// End tell clients that leader election has completed
-    </span><span class="kw">let </span>p_to_replicas = p_p2b(proposers, a_to_proposers_p2b.clone(), f);
+    <span class="kw">let </span>p_to_replicas = p_p2b(proposers, a_to_proposers_p2b.clone(), f);
 
     (p_to_replicas, a_log, a_to_proposers_p2b)
 }
@@ -1399,7 +1408,11 @@
         <span class="comment">// .inspect(q!(|next| println!("{} p_indexed_payloads next slot: {}", context.current_tick(), next))))
         </span>.cross_singleton(p_ballot_num.clone())
         <span class="comment">// .inspect(q!(|ballot_num| println!("{} p_indexed_payloads ballot_num: {}", context.current_tick(), ballot_num))))
-        </span>.map(<span class="macro">q!</span>(<span class="kw">move </span>|(((index, payload), next_slot), ballot_num)| P2a { ballot: Ballot { num: ballot_num, proposer_id: p_id }, slot: next_slot + index <span class="kw">as </span>i32, value: payload }));
+        </span>.map(<span class="macro">q!</span>(<span class="kw">move </span>|(((index, payload), next_slot), ballot_num)| P2a {
+            ballot: Ballot { num: ballot_num, proposer_id: p_id },
+            slot: next_slot + index <span class="kw">as </span>i32,
+            value: <span class="prelude-val">Some</span>(payload)
+        }));
     <span class="comment">// .inspect(q!(|p2a: &amp;P2a| println!("{} p_indexed_payloads P2a: {:?}", context.current_tick(), p2a)));
     </span><span class="kw">let </span>p_to_acceptors_p2a = p_log_to_recommit
         .union(p_indexed_payloads.clone())
@@ -1535,7 +1548,7 @@
     proposers: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;,
     a_to_proposers_p2b: Stream&lt;P2b&lt;P&gt;, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
     f: usize,
-) -&gt; Stream&lt;(i32, P), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt; {
+) -&gt; Stream&lt;(i32, <span class="prelude-ty">Option</span>&lt;P&gt;), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt; {
     <span class="kw">let </span>(p_broadcasted_p2b_slots_complete_cycle, p_broadcasted_p2b_slots) = proposers.tick_cycle();
     <span class="kw">let </span>(p_persisted_p2bs_complete_cycle, p_persisted_p2bs) = proposers.tick_cycle();
     <span class="kw">let </span>p_p2b = a_to_proposers_p2b.tick_batch().union(p_persisted_p2bs);
@@ -1548,12 +1561,13 @@
             <span class="prelude-val">None
         </span>}))
         .fold_keyed(
-            <span class="macro">q!</span>(|| (<span class="number">0</span>, Default::default())),
+            <span class="macro">q!</span>(|| (<span class="number">0</span>, <span class="prelude-val">None</span>)),
             <span class="macro">q!</span>(|accum, value| {
                 accum.<span class="number">0 </span>+= <span class="number">1</span>;
-                accum.<span class="number">1 </span>= value;
+                accum.<span class="number">1 </span>= <span class="prelude-val">Some</span>(value);
             }),
-        );
+        )
+        .map(<span class="macro">q!</span>(|(k, (count, v))| (k, (count, v.unwrap()))));
     <span class="kw">let </span>p_p2b_quorum_reached =
         p_count_matching_p2bs
             .clone()

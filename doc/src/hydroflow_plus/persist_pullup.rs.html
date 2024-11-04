@@ -188,6 +188,14 @@
 <a href="#188" id="188">188</a>
 <a href="#189" id="189">189</a>
 <a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashSet;
 
@@ -229,6 +237,14 @@
             f,
             input: <span class="kw">box </span>HfPlusNode::Persist(behind_persist),
         } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::Map {
+            f,
+            input: behind_persist,
+        })),
+
+        HfPlusNode::FilterMap {
+            f,
+            input: <span class="kw">box </span>HfPlusNode::Persist(behind_persist),
+        } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::FilterMap {
             f,
             input: behind_persist,
         })),

@@ -175,38 +175,60 @@
 <a href="#175" id="175">175</a>
 <a href="#176" id="176">176</a>
 <a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>std::fmt::Debug;
+<span class="kw">use </span>std::hash::Hash;
 
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
+<span class="kw">use </span>serde::de::DeserializeOwned;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-<span class="kw">use </span><span class="kw">super</span>::paxos::{paxos_core, Acceptor, PaxosPayload, Proposer};
+<span class="kw">use </span><span class="kw">super</span>::paxos::{paxos_core, Acceptor, Proposer};
 
 <span class="kw">pub struct </span>Replica {}
 
-<span class="attr">#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
-</span><span class="kw">pub struct </span>KvPayload {
-    <span class="kw">pub </span>key: u32,
-    <span class="kw">pub </span>value: String,
+<span class="kw">pub trait </span>KvKey: Serialize + DeserializeOwned + Hash + Eq + Clone + Debug {}
+<span class="kw">impl</span>&lt;K: Serialize + DeserializeOwned + Hash + Eq + Clone + Debug&gt; KvKey <span class="kw">for </span>K {}
+
+<span class="kw">pub trait </span>KvValue: Serialize + DeserializeOwned + Eq + Clone + Debug {}
+<span class="kw">impl</span>&lt;V: Serialize + DeserializeOwned + Eq + Clone + Debug&gt; KvValue <span class="kw">for </span>V {}
+
+<span class="attr">#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
+</span><span class="kw">pub struct </span>KvPayload&lt;K, V&gt; {
+    <span class="kw">pub </span>key: K,
+    <span class="kw">pub </span>value: V,
 }
 
-<span class="kw">impl </span>Default <span class="kw">for </span>KvPayload {
-    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{
-            key: <span class="number">0</span>,
-            value: <span class="string">""</span>.to_string(),
-        }
+<span class="attr">#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
+</span><span class="kw">pub struct </span>SequencedKv&lt;K, V&gt; {
+    <span class="comment">// Note: Important that seq is the first member of the struct for sorting
+    </span><span class="kw">pub </span>seq: i32,
+    <span class="kw">pub </span>kv: <span class="prelude-ty">Option</span>&lt;KvPayload&lt;K, V&gt;&gt;,
+}
+
+<span class="kw">impl</span>&lt;K: KvKey, V: KvValue&gt; Ord <span class="kw">for </span>SequencedKv&lt;K, V&gt; {
+    <span class="kw">fn </span>cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; std::cmp::Ordering {
+        <span class="self">self</span>.seq.cmp(<span class="kw-2">&amp;</span>other.seq)
     }
 }
 
-<span class="kw">impl </span>PaxosPayload <span class="kw">for </span>KvPayload {}
-
-<span class="attr">#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
-</span><span class="kw">pub struct </span>SequencedKv {
-    <span class="comment">// Note: Important that seq is the first member of the struct for sorting
-    </span><span class="kw">pub </span>seq: i32,
-    <span class="kw">pub </span>kv: KvPayload,
+<span class="kw">impl</span>&lt;K: KvKey, V: KvValue&gt; PartialOrd <span class="kw">for </span>SequencedKv&lt;K, V&gt; {
+    <span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;std::cmp::Ordering&gt; {
+        <span class="prelude-val">Some</span>(<span class="self">self</span>.cmp(other))
+    }
 }
 
 <span class="attr">#[expect(
@@ -214,11 +236,11 @@
     clippy::too_many_arguments,
     reason = <span class="string">"internal paxos code // TODO"
 </span>)]
-</span><span class="kw">pub fn </span>paxos_kv&lt;<span class="lifetime">'a</span>&gt;(
+</span><span class="kw">pub fn </span>paxos_kv&lt;<span class="lifetime">'a</span>, K: KvKey, V: KvValue&gt;(
     proposers: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;,
     acceptors: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Acceptor&gt;,
     replicas: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;,
-    c_to_proposers: Stream&lt;KvPayload, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
+    c_to_proposers: Stream&lt;KvPayload&lt;K, V&gt;, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
     f: usize,
     i_am_leader_send_timeout: u64,
     i_am_leader_check_timeout: u64,
@@ -226,7 +248,7 @@
     checkpoint_frequency: usize,
 ) -&gt; (
     Stream&lt;(), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
-    Stream&lt;SequencedKv, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
+    Stream&lt;KvPayload&lt;K, V&gt;, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
 ) {
     <span class="kw">let </span>(r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
         replicas.forward_ref::&lt;Stream&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
@@ -257,13 +279,13 @@
 
 <span class="comment">// Replicas. All relations for replicas will be prefixed with r. Expects ReplicaPayload on p_to_replicas, outputs a stream of (client address, ReplicaPayload) after processing.
 </span><span class="attr">#[expect(clippy::type_complexity, reason = <span class="string">"internal paxos code // TODO"</span>)]
-</span><span class="kw">pub fn </span>replica&lt;<span class="lifetime">'a</span>&gt;(
+</span><span class="kw">pub fn </span>replica&lt;<span class="lifetime">'a</span>, K: KvKey, V: KvValue&gt;(
     replicas: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;,
-    p_to_replicas: Stream&lt;SequencedKv, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
+    p_to_replicas: Stream&lt;SequencedKv&lt;K, V&gt;, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
     checkpoint_frequency: usize,
 ) -&gt; (
     Stream&lt;i32, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
-    Stream&lt;SequencedKv, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
+    Stream&lt;KvPayload&lt;K, V&gt;, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
 ) {
     <span class="kw">let </span>(r_buffered_payloads_complete_cycle, r_buffered_payloads) = replicas.tick_cycle();
     <span class="comment">// p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
@@ -316,10 +338,10 @@
     <span class="kw">let </span>r_kv_store = r_processable_payloads
         .clone()
         .persist() <span class="comment">// Optimization: all_ticks() + fold() = fold&lt;static&gt;, where the state of the previous fold is saved and persisted values are deleted.
-        </span>.fold(<span class="macro">q!</span>(|| (HashMap::&lt;u32, String&gt;::new(), -<span class="number">1</span>)), <span class="macro">q!</span>(|state, payload| {
-            <span class="kw">let </span>kv_store = <span class="kw-2">&amp;mut </span>state.<span class="number">0</span>;
-            <span class="kw">let </span>last_seq = <span class="kw-2">&amp;mut </span>state.<span class="number">1</span>;
-            kv_store.insert(payload.kv.key, payload.kv.value);
+        </span>.fold(<span class="macro">q!</span>(|| (HashMap::new(), -<span class="number">1</span>)), <span class="macro">q!</span>(|(kv_store, last_seq), payload| {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(kv) = payload.kv {
+                kv_store.insert(kv.key, kv.value);
+            }
             <span class="macro">debug_assert!</span>(payload.seq == <span class="kw-2">*</span>last_seq + <span class="number">1</span>, <span class="string">"Hole in log between seq {} and {}"</span>, <span class="kw-2">*</span>last_seq, payload.seq);
             <span class="kw-2">*</span>last_seq = payload.seq;
             <span class="comment">// println!("Replica kv store: {:?}", kv_store);
@@ -349,7 +371,9 @@
     r_checkpointed_seqs_complete_cycle.complete_next_tick(r_checkpoint_seq_new.clone());
 
     <span class="comment">// Tell clients that the payload has been committed. All ReplicaPayloads contain the client's machine ID (to string) as value.
-    </span><span class="kw">let </span>r_to_clients = p_to_replicas;
-    (r_checkpoint_seq_new.all_ticks(), r_to_clients)
+    </span>(
+        r_checkpoint_seq_new.all_ticks(),
+        p_to_replicas.filter_map(<span class="macro">q!</span>(|t| t.kv)),
+    )
 }
 </code></pre></div></section></main></body></html>
