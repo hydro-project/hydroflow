@@ -55,7 +55,7 @@ pub trait Location<'a>: Clone {
 
     fn flow_state(&self) -> &FlowState;
 
-    fn make_from(id: LocationId, flow_state: FlowState) -> Self;
+    fn is_top_level() -> bool;
 
     fn nest(&self) -> Tick<Self>
     where
