@@ -162,18 +162,19 @@ pub fn replica<'a, K: KvKey, V: KvValue>(
     let (r_checkpointed_seqs_complete_cycle, r_checkpointed_seqs) =
         replicas.tick_cycle::<Optional<usize, _, _>>();
     let r_max_checkpointed_seq = r_checkpointed_seqs.persist().max().into_singleton();
-    let r_checkpoint_seq_new = r_max_checkpointed_seq
-        .cross_singleton(r_new_highest_seq)
-        .filter_map(q!(
-            move |(max_checkpointed_seq, new_highest_seq)| if max_checkpointed_seq
-                .map(|m| new_highest_seq - m >= checkpoint_frequency)
-                .unwrap_or(true)
-            {
-                Some(new_highest_seq)
-            } else {
-                None
-            }
-        ));
+    let r_checkpoint_seq_new =
+        r_max_checkpointed_seq
+            .zip(r_new_highest_seq)
+            .filter_map(q!(
+                move |(max_checkpointed_seq, new_highest_seq)| if max_checkpointed_seq
+                    .map(|m| new_highest_seq - m >= checkpoint_frequency)
+                    .unwrap_or(true)
+                {
+                    Some(new_highest_seq)
+                } else {
+                    None
+                }
+            ));
     r_checkpointed_seqs_complete_cycle.complete_next_tick(r_checkpoint_seq_new.clone());
 
     // Tell clients that the payload has been committed. All ReplicaPayloads contain the client's machine ID (to string) as value.

@@ -242,7 +242,7 @@ fn bench_client<'a>(
         );
 
     c_latencies
-        .cross_singleton(c_throughput)
+        .zip(c_throughput)
         .latest_tick()
         .continue_if(c_stats_output_timer)
         .all_ticks()
