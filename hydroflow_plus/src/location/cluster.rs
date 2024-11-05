@@ -54,15 +54,8 @@ impl<'a, C> Location<'a> for Cluster<'a, C> {
         &self.flow_state
     }
 
-    fn make_from(id: LocationId, flow_state: FlowState) -> Self {
-        match id {
-            LocationId::Cluster(id) => Cluster {
-                id,
-                flow_state,
-                _phantom: PhantomData,
-            },
-            _ => panic!(),
-        }
+    fn is_top_level() -> bool {
+        true
     }
 }
 

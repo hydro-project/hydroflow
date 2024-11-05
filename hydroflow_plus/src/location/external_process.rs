@@ -53,15 +53,8 @@ impl<'a, P> Location<'a> for ExternalProcess<'a, P> {
         &self.flow_state
     }
 
-    fn make_from(id: LocationId, flow_state: FlowState) -> Self {
-        match id {
-            LocationId::ExternalProcess(id) => ExternalProcess {
-                id,
-                flow_state,
-                _phantom: PhantomData,
-            },
-            _ => panic!(),
-        }
+    fn is_top_level() -> bool {
+        true
     }
 }
 
