@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::builder::FlowState;
-use crate::location::{Location, LocationId};
+use crate::location::Location;
 
 pub struct TickCycle {}
 
@@ -16,18 +15,13 @@ pub trait CycleComplete<'a, T> {
 pub trait CycleCollection<'a, T>: CycleComplete<'a, T> {
     type Location: Location<'a>;
 
-    fn create_source(ident: syn::Ident, flow_state: FlowState, l: LocationId) -> Self;
+    fn create_source(ident: syn::Ident, location: Self::Location) -> Self;
 }
 
 pub trait CycleCollectionWithInitial<'a, T>: CycleComplete<'a, T> {
     type Location: Location<'a>;
 
-    fn create_source(
-        ident: syn::Ident,
-        flow_state: FlowState,
-        initial: Self,
-        l: LocationId,
-    ) -> Self;
+    fn create_source(ident: syn::Ident, initial: Self, location: Self::Location) -> Self;
 }
 
 /// Represents a forward reference in the graph that will be fulfilled
