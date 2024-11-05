@@ -48,36 +48,9 @@ The `sys` data section contains system data / state that is required by the key-
 
 ### `usr` Data
 
-## Protocol
+# Deployment
+## Local (Minikube) Deployment
+See [Minikube Deployment](./deployment/local/README.md) for more information.
 
-## Checkpoints
-
-# Running Locally Using Minikube
-## Install Docker Desktop
-```shell
-brew install --cask docker
-```
-### Run docker (macOS)
-```
-open -a Docker
-```
-
-## Install Minikube
-Read more [here](https://minikube.sigs.k8s.io/docs/start/)
-```shell
-brew install minikube
-```
-
-## Start Minikube
-```shell
-minikube start
-```
-
-## Install `kubectl`
-```shell
-brew install kubectl
-```
-## Configure Minikube to use your Docker Environment
-```shell
-eval $(minikube -p minikube docker-env)
-```
+## AWS Deployment
+See [AWS Deployment](./deployment/aws/README.md) for more information.
