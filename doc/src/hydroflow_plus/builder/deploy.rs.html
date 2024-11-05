@@ -308,10 +308,10 @@
 <span class="kw">use </span><span class="kw">super</span>::built::build_inner;
 <span class="kw">use </span><span class="kw">crate</span>::deploy::{ExternalSpec, LocalDeploy, Node, RegisterPort};
 <span class="kw">use </span><span class="kw">crate</span>::ir::HfPlusLeaf;
-<span class="kw">use </span><span class="kw">crate</span>::location::{
-    ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort, ExternalProcess, Location,
-    LocationId,
+<span class="kw">use </span><span class="kw">crate</span>::location::external_process::{
+    ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort,
 };
+<span class="kw">use </span><span class="kw">crate</span>::location::{ExternalProcess, Location, LocationId};
 <span class="kw">use crate</span>::{Cluster, ClusterSpec, Deploy, HfCompiled, Process, ProcessSpec};
 
 <span class="kw">pub struct </span>DeployFlow&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; {

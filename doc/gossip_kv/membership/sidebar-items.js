@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["MemberData","MemberDataBuilder","Protocol"],"type":["MemberId"]};

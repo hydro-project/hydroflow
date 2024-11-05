@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["Tick"],"trait":["NoTick"]};

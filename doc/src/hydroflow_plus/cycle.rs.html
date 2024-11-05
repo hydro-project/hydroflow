@@ -51,16 +51,9 @@
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
-<a href="#54" id="54">54</a>
-<a href="#55" id="55">55</a>
-<a href="#56" id="56">56</a>
-<a href="#57" id="57">57</a>
-<a href="#58" id="58">58</a>
-<a href="#59" id="59">59</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">use </span><span class="kw">crate</span>::builder::FlowState;
-<span class="kw">use </span><span class="kw">crate</span>::location::{Location, LocationId};
+<span class="kw">use </span><span class="kw">crate</span>::location::Location;
 
 <span class="kw">pub struct </span>TickCycle {}
 
@@ -75,18 +68,13 @@
 <span class="kw">pub trait </span>CycleCollection&lt;<span class="lifetime">'a</span>, T&gt;: CycleComplete&lt;<span class="lifetime">'a</span>, T&gt; {
     <span class="kw">type </span>Location: Location&lt;<span class="lifetime">'a</span>&gt;;
 
-    <span class="kw">fn </span>create_source(ident: syn::Ident, flow_state: FlowState, l: LocationId) -&gt; <span class="self">Self</span>;
+    <span class="kw">fn </span>create_source(ident: syn::Ident, location: <span class="self">Self</span>::Location) -&gt; <span class="self">Self</span>;
 }
 
 <span class="kw">pub trait </span>CycleCollectionWithInitial&lt;<span class="lifetime">'a</span>, T&gt;: CycleComplete&lt;<span class="lifetime">'a</span>, T&gt; {
     <span class="kw">type </span>Location: Location&lt;<span class="lifetime">'a</span>&gt;;
 
-    <span class="kw">fn </span>create_source(
-        ident: syn::Ident,
-        flow_state: FlowState,
-        initial: <span class="self">Self</span>,
-        l: LocationId,
-    ) -&gt; <span class="self">Self</span>;
+    <span class="kw">fn </span>create_source(ident: syn::Ident, initial: <span class="self">Self</span>, location: <span class="self">Self</span>::Location) -&gt; <span class="self">Self</span>;
 }
 
 <span class="doccomment">/// Represents a forward reference in the graph that will be fulfilled
