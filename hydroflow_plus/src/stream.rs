@@ -12,8 +12,6 @@ use serde::Serialize;
 use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
 
-// TODO(shadaj): have to uses super due to stageleft limitations
-use super::staging_util::get_this_crate;
 use crate::builder::FlowState;
 use crate::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRef, TickCycle};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, TeeNode};
@@ -22,6 +20,7 @@ use crate::location::external_process::{ExternalBincodeStream, ExternalBytesPort
 use crate::location::{
     check_matching_location, CanSend, ExternalProcess, Location, LocationId, NoTick, Tick,
 };
+use crate::staging_util::get_this_crate;
 use crate::{Cluster, ClusterId, Optional, Process, Singleton};
 
 /// Marks the stream as being unbounded, which means that it is not
