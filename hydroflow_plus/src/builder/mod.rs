@@ -3,16 +3,11 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
-use internal::TokenStream;
-use proc_macro2::Span;
-use quote::quote;
-use runtime_support::FreeVariable;
 use stageleft::*;
 
-use super::staging_util::get_this_crate;
 use crate::ir::HfPlusLeaf;
 use crate::location::{Cluster, ExternalProcess, Process};
-use crate::{ClusterId, RuntimeContext};
+use crate::RuntimeContext;
 
 pub mod built;
 pub mod deploy;
@@ -31,74 +26,6 @@ pub struct FlowStateInner {
 }
 
 pub type FlowState = Rc<RefCell<FlowStateInner>>;
-
-pub struct ClusterIds<'a, C> {
-    pub(crate) id: usize,
-    pub(crate) _phantom: PhantomData<&'a mut &'a C>,
-}
-
-impl<C> Clone for ClusterIds<'_, C> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<C> Copy for ClusterIds<'_, C> {}
-
-impl<'a, C> FreeVariable<&'a Vec<ClusterId<C>>> for ClusterIds<'a, C> {
-    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>)
-    where
-        Self: Sized,
-    {
-        let ident = syn::Ident::new(
-            &format!("__hydroflow_plus_cluster_ids_{}", self.id),
-            Span::call_site(),
-        );
-        let root = get_this_crate();
-        let c_type = quote_type::<C>();
-        (
-            None,
-            Some(
-                quote! { unsafe { ::std::mem::transmute::<_, &::std::vec::Vec<#root::ClusterId<#c_type>>>(#ident) } },
-            ),
-        )
-    }
-}
-
-impl<'a, C> Quoted<'a, &'a Vec<ClusterId<C>>> for ClusterIds<'a, C> {}
-
-pub(crate) struct ClusterSelfId<'a, C> {
-    pub(crate) id: usize,
-    pub(crate) _phantom: PhantomData<&'a mut &'a C>,
-}
-
-impl<C> Clone for ClusterSelfId<'_, C> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<C> Copy for ClusterSelfId<'_, C> {}
-
-impl<C> FreeVariable<ClusterId<C>> for ClusterSelfId<'_, C> {
-    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>)
-    where
-        Self: Sized,
-    {
-        let ident = syn::Ident::new(
-            &format!("__hydroflow_plus_cluster_self_id_{}", self.id),
-            Span::call_site(),
-        );
-        let root = get_this_crate();
-        let c_type: syn::Type = quote_type::<C>();
-        (
-            None,
-            Some(quote! { #root::ClusterId::<#c_type>::from_raw(#ident) }),
-        )
-    }
-}
-
-impl<'a, C> Quoted<'a, ClusterId<C>> for ClusterSelfId<'a, C> {}
 
 pub struct FlowBuilder<'a> {
     flow_state: FlowState,
