@@ -26,9 +26,7 @@ impl<'a, L: Location<'a>> Location<'a> for Tick<L> {
         self.l.flow_state()
     }
 
-    fn make_from(id: LocationId, flow_state: FlowState) -> Self {
-        Tick {
-            l: L::make_from(id, flow_state),
-        }
+    fn is_top_level() -> bool {
+        false
     }
 }
