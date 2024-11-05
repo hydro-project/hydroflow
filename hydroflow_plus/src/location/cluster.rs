@@ -8,10 +8,9 @@ use serde::{Deserialize, Serialize};
 use stageleft::runtime_support::FreeVariable;
 use stageleft::{quote_type, Quoted};
 
-// TODO(shadaj): have to use super due to stageleft limitations
-use super::super::staging_util::get_this_crate;
 use super::{Location, LocationId};
 use crate::builder::FlowState;
+use crate::staging_util::get_this_crate;
 
 pub struct Cluster<'a, C> {
     pub(crate) id: usize,
