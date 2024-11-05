@@ -238,7 +238,7 @@ fn p_ballot_calc<'a>(
 
     let p_new_ballot_num = p_received_max_ballot
         .clone()
-        .cross_singleton(p_ballot_num.clone())
+        .zip(p_ballot_num.clone())
         .map(q!(move |(received_max_ballot, ballot_num)| {
             if received_max_ballot
                 > (Ballot {
@@ -255,7 +255,7 @@ fn p_ballot_calc<'a>(
 
     let p_has_largest_ballot = p_received_max_ballot
         .clone()
-        .cross_singleton(p_ballot_num.clone())
+        .zip(p_ballot_num.clone())
         .filter(q!(
             move |(received_max_ballot, ballot_num)| *received_max_ballot
                 <= Ballot {
@@ -608,7 +608,7 @@ fn p_p2a<'a, P: PaxosPayload>(
     let p_num_payloads = p_indexed_payloads.count();
     let p_next_slot_after_sending_payloads = p_num_payloads
         .clone()
-        .cross_singleton(p_next_slot.clone())
+        .zip(p_next_slot.clone())
         .map(q!(|(num_payloads, next_slot)| next_slot + num_payloads));
 
     let p_new_next_slot = p_next_slot_after_reconciling_p1bs
