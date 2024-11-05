@@ -76,12 +76,48 @@
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use super</span>::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::graph::PortIndexValue;
 
@@ -126,6 +162,8 @@
         _else =&gt; <span class="prelude-val">None</span>,
     },
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+                   context,
+                   hydroflow,
                    ident,
                    op_span,
                    inputs,
@@ -135,20 +173,54 @@
                _diagnostics| {
         <span class="macro">assert!</span>(is_pull);
 
-        <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
-        <span class="kw">let </span>singleton = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
-        <span class="kw">let </span>s_taken_ident = wc.make_ident(<span class="string">"singleton_taken"</span>);
-        <span class="kw">let </span>singleton_value_ident = wc.make_ident(<span class="string">"singleton_value"</span>);
+        <span class="kw">let </span>stream_input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
+        <span class="kw">let </span>singleton_input = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
+        <span class="kw">let </span>singleton_handle_ident = wc.make_ident(<span class="string">"singleton_handle"</span>);
+
+        <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned!</span> {op_span=&gt;
+            <span class="kw">let </span>#singleton_handle_ident = #hydroflow.add_state(
+                ::std::cell::RefCell::new(::std::option::Option::None)
+            );
+            <span class="comment">// Reset the value if it is a new tick.
+            </span>#hydroflow.set_state_tick_hook(#singleton_handle_ident, |rcell| { rcell.take(); });
+        };
 
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned!</span> {op_span=&gt;
-            <span class="kw">let </span><span class="kw-2">mut </span>#s_taken_ident = #singleton;
-            <span class="kw">let </span>#ident = #s_taken_ident.next().map(|#singleton_value_ident| {
-                #input.map(<span class="kw">move </span>|x| (x, ::std::clone::Clone::clone(<span class="kw-2">&amp;</span>#singleton_value_ident)))
-            }).into_iter().flatten();
+            <span class="kw">let </span>#ident = {
+                <span class="attr">#[inline(always)]
+                </span><span class="kw">fn </span>cross_singleton_guard&lt;Singleton, Item&gt;(
+                    <span class="kw-2">mut </span>singleton_state_mut: std::cell::RefMut&lt;<span class="lifetime">'_</span>, <span class="prelude-ty">Option</span>&lt;Singleton&gt;&gt;,
+                    <span class="kw-2">mut </span>singleton_input: <span class="kw">impl </span>Iterator&lt;Item = Singleton&gt;,
+                    stream_input: <span class="kw">impl </span>Iterator&lt;Item = Item&gt;,
+                ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (Item, Singleton)&gt;
+                <span class="kw">where
+                    </span>Singleton: ::std::clone::Clone,
+                {
+                    <span class="kw">let </span>singleton_value_opt = <span class="kw">match </span><span class="kw-2">&amp;*</span>singleton_state_mut {
+                        ::std::option::Option::Some(singleton_value) =&gt; <span class="prelude-val">Some</span>(singleton_value.clone()),
+                        ::std::option::Option::None =&gt; {
+                            <span class="kw">let </span>singleton_value_opt = singleton_input.next();
+                            <span class="kw-2">*</span>singleton_state_mut = singleton_value_opt.clone();
+                            singleton_value_opt
+                        }
+                    };
+                    singleton_value_opt
+                        .map(|singleton_value| {
+                            stream_input.map(<span class="kw">move </span>|item| (item, ::std::clone::Clone::clone(<span class="kw-2">&amp;</span>singleton_value)))
+                        })
+                        .into_iter()
+                        .flatten()
+                }
+                cross_singleton_guard(
+                    #context.state_ref(#singleton_handle_ident).borrow_mut(),
+                    #singleton_input,
+                    #stream_input,
+                )
+            };
         };
 
         <span class="prelude-val">Ok</span>(OperatorWriteOutput {
-            write_prologue: Default::default(),
+            write_prologue,
             write_iterator,
             ..Default::default()
         })

@@ -240,18 +240,18 @@
     proposers: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;,
     acceptors: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Acceptor&gt;,
     replicas: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;,
-    c_to_proposers: Stream&lt;KvPayload&lt;K, V&gt;, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
+    c_to_proposers: Stream&lt;KvPayload&lt;K, V&gt;, Unbounded, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
     f: usize,
     i_am_leader_send_timeout: u64,
     i_am_leader_check_timeout: u64,
     i_am_leader_check_timeout_delay_multiplier: usize,
     checkpoint_frequency: usize,
 ) -&gt; (
-    Stream&lt;(), Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
-    Stream&lt;KvPayload&lt;K, V&gt;, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
+    Stream&lt;(), Unbounded, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
+    Stream&lt;KvPayload&lt;K, V&gt;, Unbounded, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
 ) {
     <span class="kw">let </span>(r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
-        replicas.forward_ref::&lt;Stream&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
+        replicas.forward_ref::&lt;Stream&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
 
     <span class="kw">let </span>(p_to_clients_new_leader_elected, p_to_replicas) = paxos_core(
         proposers,
@@ -281,11 +281,11 @@
 </span><span class="attr">#[expect(clippy::type_complexity, reason = <span class="string">"internal paxos code // TODO"</span>)]
 </span><span class="kw">pub fn </span>replica&lt;<span class="lifetime">'a</span>, K: KvKey, V: KvValue&gt;(
     replicas: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;,
-    p_to_replicas: Stream&lt;SequencedKv&lt;K, V&gt;, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
+    p_to_replicas: Stream&lt;SequencedKv&lt;K, V&gt;, Unbounded, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
     checkpoint_frequency: usize,
 ) -&gt; (
-    Stream&lt;i32, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
-    Stream&lt;KvPayload&lt;K, V&gt;, Unbounded, NoTick, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
+    Stream&lt;i32, Unbounded, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
+    Stream&lt;KvPayload&lt;K, V&gt;, Unbounded, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
 ) {
     <span class="kw">let </span>(r_buffered_payloads_complete_cycle, r_buffered_payloads) = replicas.tick_cycle();
     <span class="comment">// p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
@@ -296,7 +296,7 @@
         </span>.sort();
     <span class="comment">// Create a cycle since we'll use this seq before we define it
     </span><span class="kw">let </span>(r_highest_seq_complete_cycle, r_highest_seq) =
-        replicas.tick_cycle::&lt;Optional&lt;i32, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
+        replicas.tick_cycle::&lt;Optional&lt;i32, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
     <span class="kw">let </span>empty_slot = replicas.singleton_first_tick(<span class="macro">q!</span>(-<span class="number">1</span>));
     <span class="comment">// Either the max sequence number executed so far or -1. Need to union otherwise r_highest_seq is empty and joins with it will fail
     </span><span class="kw">let </span>r_highest_seq_with_default = r_highest_seq.union(empty_slot);
@@ -352,7 +352,7 @@
 
     <span class="comment">// Send checkpoints to the acceptors when we've processed enough payloads
     </span><span class="kw">let </span>(r_checkpointed_seqs_complete_cycle, r_checkpointed_seqs) =
-        replicas.tick_cycle::&lt;Optional&lt;i32, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
+        replicas.tick_cycle::&lt;Optional&lt;i32, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
     <span class="kw">let </span>r_max_checkpointed_seq = r_checkpointed_seqs
         .persist()
         .max()

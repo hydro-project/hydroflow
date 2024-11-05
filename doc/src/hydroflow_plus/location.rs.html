@@ -642,6 +642,19 @@
 <a href="#642" id="642">642</a>
 <a href="#643" id="643">643</a>
 <a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
+<a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+<a href="#657" id="657">657</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt::{Debug, Display};
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -656,9 +669,10 @@
 <span class="kw">use </span>stageleft::{q, quote_type, Quoted};
 
 <span class="kw">use </span><span class="kw">super</span>::builder::{ClusterIds, ClusterSelfId, FlowState};
-<span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleCollectionWithInitial, DeferTick, HfCycle};
+<span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleCollectionWithInitial, DeferTick, HfCycle, TickCycle};
 <span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusNode, HfPlusSource};
-<span class="kw">use crate</span>::{Bounded, HfForwardRef, NoTick, Optional, Singleton, Stream, Tick, Unbounded};
+<span class="kw">use </span><span class="kw">crate</span>::stream::NoTick;
+<span class="kw">use crate</span>::{Bounded, HfForwardRef, Optional, Singleton, Stream, Tick, Unbounded};
 
 <span class="attr">#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 </span><span class="kw">pub enum </span>LocationId {
@@ -672,9 +686,9 @@
 
     <span class="kw">fn </span>flow_state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>FlowState;
 
-    <span class="kw">fn </span>spin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;(), Unbounded, NoTick, <span class="self">Self</span>&gt;
+    <span class="kw">fn </span>spin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;(), Unbounded, <span class="self">Self</span>&gt;
     <span class="kw">where
-        </span><span class="self">Self</span>: Sized,
+        </span><span class="self">Self</span>: Sized + NoTick,
     {
         Stream::new(
             <span class="self">self</span>.id(),
@@ -689,9 +703,9 @@
     <span class="kw">fn </span>spin_batch(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         batch_size: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, usize&gt; + Copy + <span class="lifetime">'a</span>,
-    ) -&gt; Stream&lt;(), Bounded, Tick, <span class="self">Self</span>&gt;
+    ) -&gt; Stream&lt;(), Bounded, Tick&lt;<span class="self">Self</span>&gt;&gt;
     <span class="kw">where
-        </span><span class="self">Self</span>: Sized,
+        </span><span class="self">Self</span>: Sized + NoTick,
     {
         <span class="self">self</span>.spin()
             .flat_map(<span class="macro">q!</span>(<span class="kw">move </span>|<span class="kw">_</span>| <span class="number">0</span>..batch_size))
@@ -702,9 +716,9 @@
     <span class="kw">fn </span>source_stream&lt;T, E: FuturesStream&lt;Item = T&gt; + Unpin&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         e: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, E&gt;,
-    ) -&gt; Stream&lt;T, Unbounded, NoTick, <span class="self">Self</span>&gt;
+    ) -&gt; Stream&lt;T, Unbounded, <span class="self">Self</span>&gt;
     <span class="kw">where
-        </span><span class="self">Self</span>: Sized,
+        </span><span class="self">Self</span>: Sized + NoTick,
     {
         <span class="kw">let </span>e = e.splice_untyped();
 
@@ -721,9 +735,9 @@
     <span class="kw">fn </span>source_iter&lt;T, E: IntoIterator&lt;Item = T&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         e: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, E&gt;,
-    ) -&gt; Stream&lt;T, Bounded, NoTick, <span class="self">Self</span>&gt;
+    ) -&gt; Stream&lt;T, Bounded, <span class="self">Self</span>&gt;
     <span class="kw">where
-        </span><span class="self">Self</span>: Sized,
+        </span><span class="self">Self</span>: Sized + NoTick,
     {
         <span class="kw">let </span>e = e.splice_untyped();
 
@@ -737,9 +751,9 @@
         )
     }
 
-    <span class="kw">fn </span>singleton&lt;T: Clone&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, e: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, T&gt;) -&gt; Singleton&lt;T, Bounded, NoTick, <span class="self">Self</span>&gt;
+    <span class="kw">fn </span>singleton&lt;T: Clone&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, e: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, T&gt;) -&gt; Singleton&lt;T, Bounded, <span class="self">Self</span>&gt;
     <span class="kw">where
-        </span><span class="self">Self</span>: Sized,
+        </span><span class="self">Self</span>: Sized + NoTick,
     {
         <span class="kw">let </span>e_arr = <span class="macro">q!</span>([e]);
         <span class="kw">let </span>e = e_arr.splice_untyped();
@@ -762,9 +776,9 @@
     <span class="kw">fn </span>singleton_each_tick&lt;T: Clone&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         e: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, T&gt;,
-    ) -&gt; Singleton&lt;T, Bounded, Tick, <span class="self">Self</span>&gt;
+    ) -&gt; Singleton&lt;T, Bounded, Tick&lt;<span class="self">Self</span>&gt;&gt;
     <span class="kw">where
-        </span><span class="self">Self</span>: Sized,
+        </span><span class="self">Self</span>: Sized + NoTick,
     {
         <span class="self">self</span>.singleton(e).latest_tick()
     }
@@ -772,9 +786,9 @@
     <span class="kw">fn </span>singleton_first_tick&lt;T: Clone&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         e: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, T&gt;,
-    ) -&gt; Optional&lt;T, Bounded, Tick, <span class="self">Self</span>&gt;
+    ) -&gt; Optional&lt;T, Bounded, Tick&lt;<span class="self">Self</span>&gt;&gt;
     <span class="kw">where
-        </span><span class="self">Self</span>: Sized,
+        </span><span class="self">Self</span>: Sized + NoTick,
     {
         <span class="kw">let </span>e_arr = <span class="macro">q!</span>([e]);
         <span class="kw">let </span>e = e_arr.splice_untyped();
@@ -792,9 +806,9 @@
     <span class="kw">fn </span>source_interval(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         interval: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Duration&gt; + Copy + <span class="lifetime">'a</span>,
-    ) -&gt; Stream&lt;tokio::time::Instant, Unbounded, NoTick, <span class="self">Self</span>&gt;
+    ) -&gt; Stream&lt;tokio::time::Instant, Unbounded, <span class="self">Self</span>&gt;
     <span class="kw">where
-        </span><span class="self">Self</span>: Sized,
+        </span><span class="self">Self</span>: Sized + NoTick,
     {
         <span class="self">self</span>.source_stream(<span class="macro">q!</span>(tokio_stream::wrappers::IntervalStream::new(
             tokio::time::interval(interval)
@@ -805,18 +819,21 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         delay: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Duration&gt; + Copy + <span class="lifetime">'a</span>,
         interval: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Duration&gt; + Copy + <span class="lifetime">'a</span>,
-    ) -&gt; Stream&lt;tokio::time::Instant, Unbounded, NoTick, <span class="self">Self</span>&gt;
+    ) -&gt; Stream&lt;tokio::time::Instant, Unbounded, <span class="self">Self</span>&gt;
     <span class="kw">where
-        </span><span class="self">Self</span>: Sized,
+        </span><span class="self">Self</span>: Sized + NoTick,
     {
         <span class="self">self</span>.source_stream(<span class="macro">q!</span>(tokio_stream::wrappers::IntervalStream::new(
             tokio::time::interval_at(tokio::time::Instant::now() + delay, interval)
         )))
     }
 
-    <span class="kw">fn </span>forward_ref&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, NoTick, Location = <span class="self">Self</span>&gt;&gt;(
+    <span class="kw">fn </span>forward_ref&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, (), Location = <span class="self">Self</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; (HfForwardRef&lt;<span class="lifetime">'a</span>, NoTick, S&gt;, S) {
+    ) -&gt; (HfForwardRef&lt;<span class="lifetime">'a</span>, (), S&gt;, S)
+    <span class="kw">where
+        </span><span class="self">Self</span>: NoTick,
+    {
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span>on_id = <span class="kw">match </span><span class="self">self</span>.id() {
                 LocationId::Process(id) =&gt; id,
@@ -843,9 +860,12 @@
         )
     }
 
-    <span class="kw">fn </span>tick_forward_ref&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, Tick, Location = <span class="self">Self</span>&gt;&gt;(
+    <span class="kw">fn </span>tick_forward_ref&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, TickCycle, Location = <span class="self">Self</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; (HfForwardRef&lt;<span class="lifetime">'a</span>, Tick, S&gt;, S) {
+    ) -&gt; (HfForwardRef&lt;<span class="lifetime">'a</span>, TickCycle, S&gt;, S)
+    <span class="kw">where
+        </span><span class="self">Self</span>: NoTick,
+    {
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span>on_id = <span class="kw">match </span><span class="self">self</span>.id() {
                 LocationId::Process(id) =&gt; id,
@@ -872,9 +892,12 @@
         )
     }
 
-    <span class="kw">fn </span>tick_cycle&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, Tick, Location = <span class="self">Self</span>&gt; + DeferTick&gt;(
+    <span class="kw">fn </span>tick_cycle&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, TickCycle, Location = <span class="self">Self</span>&gt; + DeferTick&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; (HfCycle&lt;<span class="lifetime">'a</span>, S&gt;, S) {
+    ) -&gt; (HfCycle&lt;<span class="lifetime">'a</span>, S&gt;, S)
+    <span class="kw">where
+        </span><span class="self">Self</span>: NoTick,
+    {
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span>on_id = <span class="kw">match </span><span class="self">self</span>.id() {
                 LocationId::Process(id) =&gt; id,
@@ -902,11 +925,14 @@
     }
 
     <span class="kw">fn </span>tick_cycle_with_initial&lt;
-        S: CycleCollectionWithInitial&lt;<span class="lifetime">'a</span>, Tick, Location = <span class="self">Self</span>&gt; + DeferTick,
+        S: CycleCollectionWithInitial&lt;<span class="lifetime">'a</span>, TickCycle, Location = <span class="self">Self</span>&gt; + DeferTick,
     &gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         initial: S,
-    ) -&gt; (HfCycle&lt;<span class="lifetime">'a</span>, S&gt;, S) {
+    ) -&gt; (HfCycle&lt;<span class="lifetime">'a</span>, S&gt;, S)
+    <span class="kw">where
+        </span><span class="self">Self</span>: NoTick,
+    {
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span>on_id = <span class="kw">match </span><span class="self">self</span>.id() {
                 LocationId::Process(id) =&gt; id,
@@ -980,10 +1006,10 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P&gt; ExternalProcess&lt;<span class="lifetime">'a</span>, P&gt; {
-    <span class="kw">pub fn </span>source_external_bytes&lt;L: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>source_external_bytes&lt;L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         to: <span class="kw-2">&amp;</span>L,
-    ) -&gt; (ExternalBytesPort, Stream&lt;Bytes, Unbounded, NoTick, L&gt;) {
+    ) -&gt; (ExternalBytesPort, Stream&lt;Bytes, Unbounded, L&gt;) {
         <span class="kw">let </span>next_external_port_id = {
             <span class="kw">let </span><span class="kw-2">mut </span>flow_state = <span class="self">self</span>.flow_state.borrow_mut();
             <span class="kw">let </span>id = flow_state.next_external_out;
@@ -1016,10 +1042,10 @@
         )
     }
 
-    <span class="kw">pub fn </span>source_external_bincode&lt;L: Location&lt;<span class="lifetime">'a</span>&gt;, T: Serialize + DeserializeOwned&gt;(
+    <span class="kw">pub fn </span>source_external_bincode&lt;L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick, T: Serialize + DeserializeOwned&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         to: <span class="kw-2">&amp;</span>L,
-    ) -&gt; (ExternalBincodeSink&lt;T&gt;, Stream&lt;T, Unbounded, NoTick, L&gt;) {
+    ) -&gt; (ExternalBincodeSink&lt;T&gt;, Stream&lt;T, Unbounded, L&gt;) {
         <span class="kw">let </span>next_external_port_id = {
             <span class="kw">let </span><span class="kw-2">mut </span>flow_state = <span class="self">self</span>.flow_state.borrow_mut();
             <span class="kw">let </span>id = flow_state.next_external_out;
