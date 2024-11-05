@@ -9,10 +9,11 @@ use stageleft::{q, Quoted};
 
 use super::builder::FlowState;
 use crate::cycle::{
-    CycleCollection, CycleCollectionWithInitial, DeferTick, ForwardRef, HfCycle, TickCycle,
+    CycleCollection, CycleCollectionWithInitial, DeferTick, ForwardRef, HfCycle, HfForwardRef,
+    TickCycle,
 };
 use crate::ir::{HfPlusNode, HfPlusSource};
-use crate::{Bounded, HfForwardRef, Optional, Singleton, Stream, Unbounded};
+use crate::{Bounded, Optional, Singleton, Stream, Unbounded};
 
 pub mod external_process;
 pub use external_process::ExternalProcess;
