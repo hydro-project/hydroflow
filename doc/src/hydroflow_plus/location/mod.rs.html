@@ -330,6 +330,8 @@
 <a href="#330" id="330">330</a>
 <a href="#331" id="331">331</a>
 <a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::time::Duration;
@@ -340,7 +342,9 @@
 <span class="kw">use </span>stageleft::{q, Quoted};
 
 <span class="kw">use </span><span class="kw">super</span>::builder::FlowState;
-<span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleCollectionWithInitial, DeferTick, HfCycle, TickCycle};
+<span class="kw">use </span><span class="kw">crate</span>::cycle::{
+    CycleCollection, CycleCollectionWithInitial, DeferTick, ForwardRef, HfCycle, TickCycle,
+};
 <span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusNode, HfPlusSource};
 <span class="kw">use crate</span>::{Bounded, HfForwardRef, Optional, Singleton, Stream, Unbounded};
 
@@ -531,9 +535,9 @@
         )))
     }
 
-    <span class="kw">fn </span>forward_ref&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, (), Location = <span class="self">Self</span>&gt;&gt;(
+    <span class="kw">fn </span>forward_ref&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, ForwardRef, Location = <span class="self">Self</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; (HfForwardRef&lt;<span class="lifetime">'a</span>, (), S&gt;, S)
+    ) -&gt; (HfForwardRef&lt;<span class="lifetime">'a</span>, S&gt;, S)
     <span class="kw">where
         </span><span class="self">Self</span>: NoTick,
     {
@@ -563,9 +567,9 @@
         )
     }
 
-    <span class="kw">fn </span>tick_forward_ref&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, TickCycle, Location = Tick&lt;<span class="self">Self</span>&gt;&gt;&gt;(
+    <span class="kw">fn </span>tick_forward_ref&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, ForwardRef, Location = Tick&lt;<span class="self">Self</span>&gt;&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; (HfForwardRef&lt;<span class="lifetime">'a</span>, TickCycle, S&gt;, S)
+    ) -&gt; (HfForwardRef&lt;<span class="lifetime">'a</span>, S&gt;, S)
     <span class="kw">where
         </span><span class="self">Self</span>: NoTick,
     {
