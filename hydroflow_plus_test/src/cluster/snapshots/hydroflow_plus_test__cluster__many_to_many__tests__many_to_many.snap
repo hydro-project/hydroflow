@@ -4,7 +4,7 @@ expression: built.ir()
 ---
 [
     ForEach {
-        f: stageleft :: runtime_support :: fn1_type_hint :: < (hydroflow_plus :: location :: ClusterId < () > , i32) , () > ({ use crate :: __staged :: cluster :: many_to_many :: * ; | n | println ! ("cluster received: {:?}" , n) }),
+        f: stageleft :: runtime_support :: fn1_type_hint :: < (hydroflow_plus :: location :: cluster :: ClusterId < () > , i32) , () > ({ use crate :: __staged :: cluster :: many_to_many :: * ; | n | println ! ("cluster received: {:?}" , n) }),
         input: Network {
             from_location: Cluster(
                 0,
@@ -36,7 +36,7 @@ expression: built.ir()
                 ),
             ),
             input: FlatMap {
-                f: stageleft :: runtime_support :: fn1_type_hint :: < i32 , std :: iter :: Map < std :: slice :: Iter < hydroflow_plus :: location :: ClusterId < () > > , _ > > ({ use hydroflow_plus :: __staged :: stream :: * ; let ids = unsafe { :: std :: mem :: transmute :: < _ , & :: std :: vec :: Vec < hydroflow_plus :: ClusterId < () > > > (__hydroflow_plus_cluster_ids_0) } ; | b | ids . iter () . map (move | id | (:: std :: clone :: Clone :: clone (id) , :: std :: clone :: Clone :: clone (& b))) }),
+                f: stageleft :: runtime_support :: fn1_type_hint :: < i32 , std :: iter :: Map < std :: slice :: Iter < hydroflow_plus :: location :: cluster :: ClusterId < () > > , _ > > ({ use hydroflow_plus :: __staged :: stream :: * ; let ids = unsafe { :: std :: mem :: transmute :: < _ , & :: std :: vec :: Vec < hydroflow_plus :: ClusterId < () > > > (__hydroflow_plus_cluster_ids_0) } ; | b | ids . iter () . map (move | id | (:: std :: clone :: Clone :: clone (id) , :: std :: clone :: Clone :: clone (& b))) }),
                 input: Source {
                     source: Iter(
                         { use crate :: __staged :: cluster :: many_to_many :: * ; 0 .. 2 },
