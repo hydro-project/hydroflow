@@ -46,6 +46,12 @@ impl<'a, L: Location<'a>> Location<'a> for Tick<L> {
     fn flow_state(&self) -> &FlowState {
         self.l.flow_state()
     }
+
+    fn make_from(id: LocationId, flow_state: FlowState) -> Self {
+        Tick {
+            l: L::make_from(id, flow_state),
+        }
+    }
 }
 
 /// An infinite stream of elements of type `T`.
