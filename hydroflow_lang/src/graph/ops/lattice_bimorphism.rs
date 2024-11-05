@@ -48,8 +48,8 @@ pub const LATTICE_BIMORPHISM: OperatorConstraints = OperatorConstraints {
                 #[inline(always)]
                 fn check_inputs<'a, Func, LhsIter, RhsIter, LhsState, RhsState, Output>(
                     mut func: Func,
-                    mut lhs_iter: LhsIter,
-                    mut rhs_iter: RhsIter,
+                    lhs_iter: LhsIter,
+                    rhs_iter: RhsIter,
                     lhs_state_handle: #root::scheduled::state::StateHandle<::std::cell::RefCell<LhsState>>,
                     rhs_state_handle: #root::scheduled::state::StateHandle<::std::cell::RefCell<RhsState>>,
                     context: &'a #root::scheduled::context::Context,
@@ -67,26 +67,39 @@ pub const LATTICE_BIMORPHISM: OperatorConstraints = OperatorConstraints {
                     let lhs_state = context.state_ref(lhs_state_handle);
                     let rhs_state = context.state_ref(rhs_state_handle);
 
-                    let a = lhs_iter.next().map(|lhs_item| func.call(lhs_item, (*rhs_state.borrow()).clone()));
-                    let b = rhs_iter.next().map(|rhs_item| func.call((*lhs_state.borrow()).clone(), rhs_item));
-                    match (a, b) {
-                        (Some(mut a), Some(b)) => {
-                            // If both sides, merge the combined value, which will de-duplicate to prevent timing issues.
-                            #root::lattices::Merge::merge(&mut a, b);
-                            Some(a)
-                        },
-                        (a, b) => a.or(b),
+                    let mut output = ::std::option::Option::<Output>::None;
+                    for lhs_item in lhs_iter {
+                        let out_item = func.call(lhs_item, (*rhs_state.borrow()).clone());
+                        match &mut output {
+                            Some(accum) => {
+                                #root::lattices::Merge::merge(accum, out_item);
+                            }
+                            None => {
+                                output = Some(out_item);
+                            }
+                        }
                     }
+                    for rhs_item in rhs_iter {
+                        let out_item = func.call((*lhs_state.borrow()).clone(), rhs_item);
+                        match &mut output {
+                            Some(accum) => {
+                                #root::lattices::Merge::merge(accum, out_item);
+                            }
+                            None => {
+                                output = Some(out_item);
+                            }
+                        }
+                    }
+                    output
                 }
-                let opt = check_inputs(
+                check_inputs(
                     #func,
                     #lhs_items,
                     #rhs_items,
                     #lhs_state_handle,
                     #rhs_state_handle,
                     &#context,
-                );
-                opt.into_iter()
+                ).into_iter()
             };
         };
 

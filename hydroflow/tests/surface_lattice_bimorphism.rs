@@ -27,7 +27,6 @@ pub fn test_cartesian_product() {
         rhs -> [1]my_join;
 
         my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default(), #lhs, #rhs)
-            -> lattice_reduce()
             -> for_each(|x| out_send.send(x).unwrap());
     };
 
@@ -43,6 +42,35 @@ pub fn test_cartesian_product() {
             (2, 3),
             (2, 4),
         ]))],
+        &*collect_ready::<Vec<_>, _>(out_recv)
+    );
+}
+
+
+#[multiplatform_test(test, wasm, env_tracing)]
+pub fn test_cartesian_product_1401() {
+    let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
+
+    let mut df = hydroflow_syntax! {
+        lhs = source_iter(0..1)
+            -> map(SetUnionSingletonSet::new_from)
+            -> state::<'static, SetUnionHashSet<u32>>();
+        rhs = source_iter(1..2)
+            -> map(SetUnionSingletonSet::new_from)
+            -> state::<'static, SetUnionHashSet<u32>>();
+
+        lhs -> [0]my_join;
+        rhs -> [1]my_join;
+
+        my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default(), #lhs, #rhs)
+            //-> lattice_reduce()
+            -> for_each(|x| out_send.send(x).unwrap());
+    };
+    assert_graphvis_snapshots!(df);
+    df.run_available();
+
+    assert_eq!(
+        &[SetUnionHashSet::new(HashSet::from_iter([(0, 1)]))],
         &*collect_ready::<Vec<_>, _>(out_recv)
     );
 }
@@ -185,32 +213,4 @@ fn test_ght_join_bimorphism() {
     };
     // hf.meta_graph().unwrap().open_mermaid(&Default::default());
     hf.run_available();
-}
-
-#[multiplatform_test(test, wasm, env_tracing)]
-pub fn test_cartesian_product_1401() {
-    let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
-
-    let mut df = hydroflow_syntax! {
-        lhs = source_iter(0..1)
-            -> map(SetUnionSingletonSet::new_from)
-            -> state::<'static, SetUnionHashSet<u32>>();
-        rhs = source_iter(1..2)
-            -> map(SetUnionSingletonSet::new_from)
-            -> state::<'static, SetUnionHashSet<u32>>();
-
-        lhs -> [0]my_join;
-        rhs -> [1]my_join;
-
-        my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default(), #lhs, #rhs)
-            //-> lattice_reduce()
-            -> for_each(|x| out_send.send(x).unwrap());
-    };
-    assert_graphvis_snapshots!(df);
-    df.run_available();
-
-    assert_eq!(
-        &[SetUnionHashSet::new(HashSet::from_iter([(0, 1)]))],
-        &*collect_ready::<Vec<_>, _>(out_recv)
-    );
 }
