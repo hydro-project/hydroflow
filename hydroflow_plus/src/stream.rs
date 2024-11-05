@@ -15,7 +15,7 @@ use syn::parse_quote;
 // TODO(shadaj): have to user super due to stageleft limitations
 use super::staging_util::get_this_crate;
 use crate::builder::FlowState;
-use crate::cycle::{CycleCollection, CycleComplete, DeferTick, TickCycle};
+use crate::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRef, TickCycle};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, TeeNode};
 use crate::location::cluster::ClusterSelfId;
 use crate::location::external_process::{ExternalBincodeStream, ExternalBytesPort};
@@ -64,16 +64,6 @@ impl<'a, T, N: Location<'a>> DeferTick for Stream<T, Bounded, Tick<N>> {
     }
 }
 
-impl<'a, T, N: Location<'a>> CycleComplete<'a, TickCycle> for Stream<T, Bounded, Tick<N>> {
-    fn complete(self, ident: syn::Ident) {
-        self.flow_state().clone().borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
-            ident,
-            location_kind: self.location_kind(),
-            input: Box::new(self.ir_node.into_inner()),
-        });
-    }
-}
-
 impl<'a, T, N: Location<'a>> CycleCollection<'a, TickCycle> for Stream<T, Bounded, Tick<N>> {
     type Location = Tick<N>;
 
@@ -89,17 +79,17 @@ impl<'a, T, N: Location<'a>> CycleCollection<'a, TickCycle> for Stream<T, Bounde
     }
 }
 
-impl<'a, T, W, N: Location<'a> + NoTick> CycleComplete<'a, ()> for Stream<T, W, N> {
+impl<'a, T, N: Location<'a>> CycleComplete<'a, TickCycle> for Stream<T, Bounded, Tick<N>> {
     fn complete(self, ident: syn::Ident) {
         self.flow_state().clone().borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
             ident,
             location_kind: self.location_kind(),
-            input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
+            input: Box::new(self.ir_node.into_inner()),
         });
     }
 }
 
-impl<'a, T, W, N: Location<'a> + NoTick> CycleCollection<'a, ()> for Stream<T, W, N> {
+impl<'a, T, W, N: Location<'a> + NoTick> CycleCollection<'a, ForwardRef> for Stream<T, W, N> {
     type Location = N;
 
     fn create_source(ident: syn::Ident, location: N) -> Self {
@@ -111,6 +101,16 @@ impl<'a, T, W, N: Location<'a> + NoTick> CycleCollection<'a, ()> for Stream<T, W
                 location_kind: location_id,
             })),
         )
+    }
+}
+
+impl<'a, T, W, N: Location<'a> + NoTick> CycleComplete<'a, ForwardRef> for Stream<T, W, N> {
+    fn complete(self, ident: syn::Ident) {
+        self.flow_state().clone().borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
+            ident,
+            location_kind: self.location_kind(),
+            input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
+        });
     }
 }
 
