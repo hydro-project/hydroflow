@@ -19,13 +19,13 @@ pub mod runtime_support {
 }
 
 pub mod stream;
-pub use stream::{Bounded, Stream, Tick, Unbounded};
+pub use stream::{Bounded, Stream, Unbounded};
 
 pub mod singleton;
 pub use singleton::{Optional, Singleton};
 
 pub mod location;
-pub use location::{Cluster, ClusterId, Location, Process};
+pub use location::{Cluster, ClusterId, Location, Process, Tick};
 
 pub mod deploy;
 pub use deploy::{ClusterSpec, Deploy, ProcessSpec};
