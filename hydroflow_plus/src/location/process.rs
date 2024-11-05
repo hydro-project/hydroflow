@@ -28,14 +28,7 @@ impl<'a, P> Location<'a> for Process<'a, P> {
         &self.flow_state
     }
 
-    fn make_from(id: LocationId, flow_state: FlowState) -> Self {
-        match id {
-            LocationId::Process(id) => Process {
-                id,
-                flow_state,
-                _phantom: PhantomData,
-            },
-            _ => panic!(),
-        }
+    fn is_top_level() -> bool {
+        true
     }
 }

@@ -515,6 +515,15 @@ impl<'a, T: Clone, W, N: Location<'a>> Clone for Optional<T, W, N> {
 }
 
 impl<'a, T, W, N: Location<'a>> Optional<T, W, N> {
+    // TODO(shadaj): this is technically incorrect; we should only return the first element of the stream
+    pub fn into_stream(self) -> Stream<T, W, N> {
+        if N::is_top_level() {
+            panic!("Converting an optional to a stream is not yet supported at the top level");
+        }
+
+        Stream::new(self.location, self.ir_node.into_inner())
+    }
+
     pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Optional<U, W, N> {
         Optional::new(
             self.location,
@@ -563,11 +572,6 @@ impl<'a, T, W, N: Location<'a>> Optional<T, W, N> {
 }
 
 impl<'a, T, N: Location<'a>> Optional<T, Bounded, Tick<N>> {
-    // TODO(shadaj): this is technically incorrect; we should only return the first element of the stream
-    pub fn into_stream(self) -> Stream<T, Bounded, Tick<N>> {
-        Stream::new(self.location, self.ir_node.into_inner())
-    }
-
     pub fn cross_singleton<O>(
         self,
         other: impl Into<Optional<O, Bounded, Tick<N>>>,

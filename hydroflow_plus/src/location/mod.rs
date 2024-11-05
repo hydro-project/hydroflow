@@ -55,7 +55,7 @@ pub trait Location<'a>: Clone {
 
     fn flow_state(&self) -> &FlowState;
 
-    fn make_from(id: LocationId, flow_state: FlowState) -> Self;
+    fn is_top_level() -> bool;
 
     fn nest(&self) -> Tick<Self>
     where
@@ -111,10 +111,12 @@ pub trait Location<'a>: Clone {
     fn source_iter<T, E: IntoIterator<Item = T>>(
         &self,
         e: impl Quoted<'a, E>,
-    ) -> Stream<T, Bounded, Self>
+    ) -> Stream<T, Unbounded, Self>
     where
         Self: Sized + NoTick,
     {
+        // TODO(shadaj): we mark this as unbounded because we do not yet have a representation
+        // for bounded top-level streams, and this is the only way to generate one
         let e = e.splice_untyped();
 
         Stream::new(
@@ -126,10 +128,13 @@ pub trait Location<'a>: Clone {
         )
     }
 
-    fn singleton<T: Clone>(&self, e: impl Quoted<'a, T>) -> Singleton<T, Bounded, Self>
+    fn singleton<T: Clone>(&self, e: impl Quoted<'a, T>) -> Singleton<T, Unbounded, Self>
     where
         Self: Sized + NoTick,
     {
+        // TODO(shadaj): we mark this as unbounded because we do not yet have a representation
+        // for bounded top-level singletons, and this is the only way to generate one
+
         let e_arr = q!([e]);
         let e = e_arr.splice_untyped();
 
