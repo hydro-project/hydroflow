@@ -46,7 +46,6 @@ pub fn test_cartesian_product() {
     );
 }
 
-
 #[multiplatform_test(test, wasm, env_tracing)]
 pub fn test_cartesian_product_1401() {
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
@@ -63,7 +62,6 @@ pub fn test_cartesian_product_1401() {
         rhs -> [1]my_join;
 
         my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default(), #lhs, #rhs)
-            //-> lattice_reduce()
             -> for_each(|x| out_send.send(x).unwrap());
     };
     assert_graphvis_snapshots!(df);
@@ -91,7 +89,6 @@ pub fn test_join() {
         rhs -> [1]my_join;
 
         my_join = lattice_bimorphism(KeyedBimorphism::<HashMap<_, _>, _>::new(CartesianProductBimorphism::<HashSet<_>>::default()), #lhs, #rhs)
-            -> lattice_reduce()
             -> for_each(|x| out_send.send(x).unwrap());
     };
 
@@ -133,7 +130,6 @@ pub fn test_cartesian_product_tick_state() {
         rhs[items] -> [1]my_join;
 
         my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default(), #lhs, #rhs)
-            -> lattice_reduce()
             -> inspect(|x| println!("{:?}: {:?}", context.current_tick(), x))
             -> for_each(|x| out_send.send(x).unwrap());
     };
@@ -204,13 +200,10 @@ fn test_ght_join_bimorphism() {
 
 
         my_join = lattice_bimorphism(MyBim::default(), #lhs, #rhs)
-            -> lattice_reduce()
             -> enumerate()
             -> inspect(|x| println!("{:?} {:#?}", context.current_tick(), x))
             -> flat_map(|(_num, ght)| ght.recursive_iter().map(<JoinSchema as CloneVariadic>::clone_ref_var).collect::<Vec<_>>())
             -> null();
-            // -> for_each(|x| println!("{:#?}\n", x));
     };
-    // hf.meta_graph().unwrap().open_mermaid(&Default::default());
     hf.run_available();
 }
