@@ -19,7 +19,7 @@ pub mod runtime_support {
 }
 
 pub mod stream;
-pub use stream::{Bounded, NoTick, Stream, Tick, Unbounded};
+pub use stream::{Bounded, Stream, Tick, Unbounded};
 
 pub mod singleton;
 pub use singleton::{Optional, Singleton};
@@ -31,7 +31,7 @@ pub mod deploy;
 pub use deploy::{ClusterSpec, Deploy, ProcessSpec};
 
 pub mod cycle;
-pub use cycle::HfCycle;
+pub use cycle::HfForwardRef;
 
 pub mod builder;
 pub use builder::FlowBuilder;
