@@ -8,7 +8,7 @@ use proc_macro2::Span;
 use stageleft::{q, Quoted};
 
 use super::builder::FlowState;
-use crate::cycle::{CycleCollection, CycleCollectionWithInitial, DeferTick, HfCycle, TickCycle};
+use crate::cycle::{CycleCollection, CycleCollectionWithInitial, DeferTick, ForwardRef, HfCycle, TickCycle};
 use crate::ir::{HfPlusNode, HfPlusSource};
 use crate::{Bounded, HfForwardRef, Optional, Singleton, Stream, Unbounded};
 
@@ -199,9 +199,9 @@ pub trait Location<'a>: Clone {
         )))
     }
 
-    fn forward_ref<S: CycleCollection<'a, (), Location = Self>>(
+    fn forward_ref<S: CycleCollection<'a, ForwardRef, Location = Self>>(
         &self,
-    ) -> (HfForwardRef<'a, (), S>, S)
+    ) -> (HfForwardRef<'a, S>, S)
     where
         Self: NoTick,
     {
@@ -231,9 +231,9 @@ pub trait Location<'a>: Clone {
         )
     }
 
-    fn tick_forward_ref<S: CycleCollection<'a, TickCycle, Location = Tick<Self>>>(
+    fn tick_forward_ref<S: CycleCollection<'a, ForwardRef, Location = Tick<Self>>>(
         &self,
-    ) -> (HfForwardRef<'a, TickCycle, S>, S)
+    ) -> (HfForwardRef<'a, S>, S)
     where
         Self: NoTick,
     {
