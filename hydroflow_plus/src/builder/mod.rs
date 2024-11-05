@@ -67,7 +67,7 @@ impl<'a, C> FreeVariable<&'a Vec<ClusterId<C>>> for ClusterIds<'a, C> {
 
 impl<'a, C> Quoted<'a, &'a Vec<ClusterId<C>>> for ClusterIds<'a, C> {}
 
-pub(crate) struct ClusterSelfId<'a, C> {
+pub struct ClusterSelfId<'a, C> {
     pub(crate) id: usize,
     pub(crate) _phantom: PhantomData<&'a mut &'a C>,
 }
