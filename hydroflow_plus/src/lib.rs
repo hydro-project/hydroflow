@@ -34,10 +34,7 @@ pub use builder::FlowBuilder;
 
 pub mod ir;
 
-pub mod persist_pullup;
-pub mod profiler;
-
-pub mod properties;
+pub mod rewrites;
 
 mod staging_util;
 

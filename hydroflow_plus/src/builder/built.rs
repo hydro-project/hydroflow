@@ -73,7 +73,7 @@ impl<'a> BuiltFlow<'a> {
     }
 
     pub fn with_default_optimize(self) -> BuiltFlow<'a> {
-        self.optimize_with(crate::persist_pullup::persist_pullup)
+        self.optimize_with(crate::rewrites::persist_pullup::persist_pullup)
     }
 
     fn into_deploy<D: LocalDeploy<'a>>(mut self) -> DeployFlow<'a, D> {
