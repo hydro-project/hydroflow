@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use stageleft::{q, IntoQuotedMut, Quoted};
 
-use crate::builder::{FlowState, FLOW_USED_MESSAGE};
+use crate::builder::FLOW_USED_MESSAGE;
 use crate::cycle::{
     CycleCollection, CycleCollectionWithInitial, CycleComplete, DeferTick, ForwardRef, TickCycle,
 };
@@ -32,10 +32,6 @@ impl<'a, T, W, N: Location<'a>> Singleton<T, W, N> {
 
     fn location_kind(&self) -> LocationId {
         self.location.id()
-    }
-
-    fn flow_state(&self) -> &FlowState {
-        self.location.flow_state()
     }
 }
 
@@ -73,8 +69,8 @@ impl<'a, T, N: Location<'a>> CycleCollectionWithInitial<'a, TickCycle>
 
 impl<'a, T, N: Location<'a>> CycleComplete<'a, TickCycle> for Singleton<T, Bounded, Tick<N>> {
     fn complete(self, ident: syn::Ident) {
-        self.flow_state()
-            .clone()
+        self.location
+            .flow_state()
             .borrow_mut()
             .leaves
             .as_mut()
@@ -104,8 +100,8 @@ impl<'a, T, N: Location<'a>> CycleCollection<'a, ForwardRef> for Singleton<T, Bo
 
 impl<'a, T, N: Location<'a>> CycleComplete<'a, ForwardRef> for Singleton<T, Bounded, Tick<N>> {
     fn complete(self, ident: syn::Ident) {
-        self.flow_state()
-            .clone()
+        self.location
+            .flow_state()
             .borrow_mut()
             .leaves
             .as_mut()
