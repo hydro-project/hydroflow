@@ -129,11 +129,8 @@ pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildO
                         command.env("CARGO_TARGET_DIR", target_dir);
                     }
 
-                    #[allow(
-                        clippy::allow_attributes,
-                        clippy::zombie_processes,
-                        reason = "false positive"
-                    )]
+                    // TODO(mingwei): remove after updating nightly.
+                    #[expect(unknown_lints, clippy::zombie_processes, reason = "false positive")]
                     let mut spawned = command
                         .current_dir(&params.src)
                         .stdout(Stdio::piped())
