@@ -177,22 +177,34 @@
 <a href="#177" id="177">177</a>
 <a href="#178" id="178">178</a>
 <a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::convert::Infallible;
 <span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::future::ready;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::io::Error;
 <span class="kw">use </span>std::net::{IpAddr, Ipv4Addr, SocketAddr};
+<span class="kw">use </span>std::num::ParseFloatError;
+<span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>clap::Parser;
 <span class="kw">use </span>gossip_kv::membership::{MemberDataBuilder, Protocol};
 <span class="kw">use </span>gossip_kv::server::{server, SeedNode};
-<span class="kw">use </span>gossip_kv::{ClientRequest, GossipMessage};
-<span class="kw">use </span>hydroflow::futures::{SinkExt, StreamExt};
+<span class="kw">use </span>hydroflow::futures::{Sink, SinkExt, StreamExt};
 <span class="kw">use </span>hydroflow::tokio_stream::wrappers::IntervalStream;
 <span class="kw">use </span>hydroflow::util::{bind_udp_bytes, ipv4_resolve};
-<span class="kw">use </span>hydroflow::{bincode, tokio};
+<span class="kw">use </span>hydroflow::{bincode, bytes, tokio};
 <span class="kw">use </span>prometheus::{gather, Encoder, TextEncoder};
+<span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>tracing::{error, info, trace};
 <span class="kw">use </span>warp::Filter;
 
@@ -212,16 +224,28 @@
     <span class="doccomment">/// Port to listen for client requests.
     </span><span class="attr">#[clap(short, long, default_value = <span class="string">"3001"</span>)]
     </span>client_port: u16,
+
+    <span class="doccomment">/// The duration (in seconds) between gossip rounds.
+    </span><span class="attr">#[clap(short, long, default_value = <span class="string">"5"</span>, value_parser = clap_duration_from_secs)]
+    </span>gossip_frequency: Duration,
 }
 
-<span class="kw">fn </span>make_seed_node(settings: <span class="kw-2">&amp;</span>SeedNodeSettings) -&gt; SeedNode&lt;SocketAddr&gt; {
+<span class="doccomment">/// Parse duration from float string for clap args.
+</span><span class="kw">fn </span>clap_duration_from_secs(arg: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Duration, ParseFloatError&gt; {
+    arg.parse().map(Duration::from_secs_f32)
+}
+
+<span class="doccomment">/// Create a SeedNode from a SeedNodeSettings.
+/// Performs a DNS lookup on the address.
+</span><span class="kw">fn </span>make_seed_node(settings: <span class="kw-2">&amp;</span>SeedNodeSettings) -&gt; SeedNode&lt;SocketAddr&gt; {
     SeedNode {
         id: settings.id.clone(),
         address: ipv4_resolve(<span class="kw-2">&amp;</span>settings.address).unwrap(),
     }
 }
 
-<span class="kw">async fn </span>metrics_handler() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">impl </span>warp::Reply, Infallible&gt; {
+<span class="doccomment">/// Handler for the /metrics route. Used to expose prometheus metrics for the server.
+</span><span class="kw">async fn </span>metrics_handler() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">impl </span>warp::Reply, Infallible&gt; {
     <span class="kw">let </span>encoder = TextEncoder::new();
     <span class="kw">let </span>metric_families = gather();
     <span class="kw">let </span><span class="kw-2">mut </span>buffer = Vec::new();
@@ -234,19 +258,66 @@
     ))
 }
 
+<span class="doccomment">/// Setup serialization for outbound networking messages.
+</span><span class="kw">fn </span>setup_outbound_serialization&lt;Outbound, Message&gt;(
+    outbound: Outbound,
+) -&gt; <span class="kw">impl </span>Sink&lt;(Message, SocketAddr), Error = Error&gt;
+<span class="kw">where
+    </span>Outbound: Sink&lt;(bytes::Bytes, SocketAddr), Error = Error&gt;,
+    Message: Serialize + Debug + Send + <span class="lifetime">'static</span>,
+{
+    outbound.with(|(msg, addr): (Message, SocketAddr)| {
+        ready(<span class="prelude-val">Ok</span>::&lt;(bytes::Bytes, SocketAddr), Error&gt;((
+            hydroflow::util::serialize_to_bytes(msg),
+            addr,
+        )))
+    })
+}
+
+<span class="doccomment">/// Setup deserialization for inbound networking messages.
+
+</span><span class="kw">fn </span>setup_inbound_deserialization&lt;Inbound, Message&gt;(
+    inbound: Inbound,
+) -&gt; <span class="kw">impl </span>hydroflow::futures::Stream&lt;Item = (Message, SocketAddr)&gt;
+<span class="kw">where
+    </span>Inbound: hydroflow::futures::Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;(bytes::BytesMut, SocketAddr), Error&gt;&gt;,
+    Message: <span class="kw">for</span>&lt;<span class="lifetime">'de</span>&gt; serde::Deserialize&lt;<span class="lifetime">'de</span>&gt; + Debug + Send + <span class="lifetime">'static</span>,
+{
+    inbound.filter_map(|input| {
+        <span class="kw">let </span>mapped = <span class="kw">match </span>input {
+            <span class="prelude-val">Ok</span>((bytes, addr)) =&gt; {
+                <span class="kw">let </span>msg: bincode::Result&lt;Message&gt; = hydroflow::util::deserialize_from_bytes(<span class="kw-2">&amp;</span>bytes);
+                <span class="kw">match </span>msg {
+                    <span class="prelude-val">Ok</span>(msg) =&gt; <span class="prelude-val">Some</span>((msg, addr)),
+                    <span class="prelude-val">Err</span>(e) =&gt; {
+                        <span class="macro">error!</span>(<span class="string">"Error deserializing message: {:?}"</span>, e);
+                        <span class="prelude-val">None
+                    </span>}
+                }
+            }
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="macro">error!</span>(<span class="string">"Error receiving message: {:?}"</span>, e);
+                <span class="prelude-val">None
+            </span>}
+        };
+        ready(mapped)
+    })
+}
+
 <span class="attr">#[hydroflow::main]
 </span><span class="kw">async fn </span>main() {
     tracing_subscriber::fmt::init();
 
     <span class="kw">let </span>opts: Opts = Opts::parse();
 
-    <span class="kw">let </span>metrics_route = warp::path(<span class="string">"metrics"</span>).and_then(metrics_handler);
+    <span class="comment">// Setup metrics server
+    </span><span class="kw">let </span>metrics_route = warp::path(<span class="string">"metrics"</span>).and_then(metrics_handler);
     tokio::spawn(<span class="kw">async move </span>{
         <span class="macro">info!</span>(<span class="string">"Starting metrics server on port 4003"</span>);
         warp::serve(metrics_route).run(([<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>], <span class="number">4003</span>)).<span class="kw">await</span>;
     });
 
-    <span class="comment">// Setup protocol information in the member metadata.
+    <span class="comment">// Setup protocol information for this member
     </span><span class="kw">let </span>client_protocol_address =
         SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), opts.client_port);
     <span class="kw">let </span>gossip_protocol_address =
@@ -257,7 +328,8 @@
         .add_protocol(Protocol::new(<span class="string">"client"</span>.into(), client_protocol_address))
         .build();
 
-    <span class="kw">let </span>(client_outbound, client_inbound, <span class="kw">_</span>) = bind_udp_bytes(client_protocol_address).<span class="kw">await</span>;
+    <span class="comment">// Bind to the UDP ports
+    </span><span class="kw">let </span>(client_outbound, client_inbound, <span class="kw">_</span>) = bind_udp_bytes(client_protocol_address).<span class="kw">await</span>;
     <span class="kw">let </span>(gossip_outbound, gossip_inbound, <span class="kw">_</span>) = bind_udp_bytes(gossip_protocol_address).<span class="kw">await</span>;
 
     <span class="macro">info!</span>(
@@ -265,71 +337,19 @@
         member_data.id, client_protocol_address
     );
 
-    <span class="comment">// TODO: Remove code duplication here.
-    // Setup message serialization for outbound client responses.
-    </span><span class="kw">let </span>client_ob = client_outbound.with(|(msg, addr)| {
-        ready(<span class="prelude-val">Ok</span>::&lt;(hydroflow::bytes::Bytes, SocketAddr), Error&gt;((
-            hydroflow::util::serialize_to_bytes(msg),
-            addr,
-        )))
-    });
+    <span class="comment">// Setup serde for client requests
+    </span><span class="kw">let </span>client_ob = setup_outbound_serialization(client_outbound);
+    <span class="kw">let </span>client_ib = setup_inbound_deserialization(client_inbound);
 
-    <span class="comment">// Setup message deserialization for inbound client requests.
-    </span><span class="kw">let </span>client_ib = client_inbound.filter_map(|input| {
-        <span class="kw">let </span>mapped = <span class="kw">match </span>input {
-            <span class="prelude-val">Ok</span>((bytes, addr)) =&gt; {
-                <span class="kw">let </span>msg: bincode::Result&lt;ClientRequest&gt; =
-                    hydroflow::util::deserialize_from_bytes(<span class="kw-2">&amp;</span>bytes);
-                <span class="kw">match </span>msg {
-                    <span class="prelude-val">Ok</span>(msg) =&gt; <span class="prelude-val">Some</span>((msg, addr)),
-                    <span class="prelude-val">Err</span>(e) =&gt; {
-                        <span class="macro">error!</span>(<span class="string">"Error deserializing message: {:?}"</span>, e);
-                        <span class="prelude-val">None
-                    </span>}
-                }
-            }
-            <span class="prelude-val">Err</span>(e) =&gt; {
-                <span class="macro">error!</span>(<span class="string">"Error receiving message: {:?}"</span>, e);
-                <span class="prelude-val">None
-            </span>}
-        };
-        ready(mapped)
-    });
+    <span class="comment">// Setup serde for gossip messages
+    </span><span class="kw">let </span>gossip_ob = setup_outbound_serialization(gossip_outbound);
+    <span class="kw">let </span>gossip_ib = setup_inbound_deserialization(gossip_inbound);
 
-    <span class="comment">// Setup message serialization for outbound client responses.
-    </span><span class="kw">let </span>gossip_ob = gossip_outbound.with(|(msg, addr)| {
-        ready(<span class="prelude-val">Ok</span>::&lt;(hydroflow::bytes::Bytes, SocketAddr), Error&gt;((
-            hydroflow::util::serialize_to_bytes(msg),
-            addr,
-        )))
-    });
+    <span class="comment">// Setup regular gossip triggers
+    </span><span class="kw">let </span>gossip_rx = IntervalStream::new(tokio::time::interval(opts.gossip_frequency)).map(|<span class="kw">_</span>| ());
 
-    <span class="comment">// Setup message deserialization for inbound client requests.
-    </span><span class="kw">let </span>gossip_ib = gossip_inbound.filter_map(|input| {
-        <span class="kw">let </span>mapped = <span class="kw">match </span>input {
-            <span class="prelude-val">Ok</span>((bytes, addr)) =&gt; {
-                <span class="kw">let </span>msg: bincode::Result&lt;GossipMessage&gt; =
-                    hydroflow::util::deserialize_from_bytes(<span class="kw-2">&amp;</span>bytes);
-                <span class="kw">match </span>msg {
-                    <span class="prelude-val">Ok</span>(msg) =&gt; <span class="prelude-val">Some</span>((msg, addr)),
-                    <span class="prelude-val">Err</span>(e) =&gt; {
-                        <span class="macro">error!</span>(<span class="string">"Error deserializing message: {:?}"</span>, e);
-                        <span class="prelude-val">None
-                    </span>}
-                }
-            }
-            <span class="prelude-val">Err</span>(e) =&gt; {
-                <span class="macro">error!</span>(<span class="string">"Error receiving message: {:?}"</span>, e);
-                <span class="prelude-val">None
-            </span>}
-        };
-        ready(mapped)
-    });
-
-    <span class="kw">let </span>gossip_rx =
-        IntervalStream::new(tokio::time::interval(tokio::time::Duration::from_secs(<span class="number">5</span>))).map(|<span class="kw">_</span>| ());
-
-    <span class="kw">let </span>(_watcher, server_settings, settings_stream) = setup_settings_watch();
+    <span class="comment">// Setup watcher for setting changes
+    </span><span class="kw">let </span>(_watcher, server_settings, settings_stream) = setup_settings_watch();
 
     <span class="kw">let </span>seed_nodes = server_settings
         .seed_nodes
