@@ -12,7 +12,7 @@ use serde::Serialize;
 use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
 
-use crate::builder::{FlowState, FLOW_USED_MESSAGE};
+use crate::builder::FLOW_USED_MESSAGE;
 use crate::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRef, TickCycle};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, TeeNode};
 use crate::location::cluster::ClusterSelfId;
@@ -46,10 +46,6 @@ pub struct Stream<T, B, N> {
 }
 
 impl<'a, T, W, N: Location<'a>> Stream<T, W, N> {
-    fn flow_state(&self) -> &FlowState {
-        self.location.flow_state()
-    }
-
     fn location_kind(&self) -> LocationId {
         self.location.id()
     }
@@ -78,8 +74,8 @@ impl<'a, T, N: Location<'a>> CycleCollection<'a, TickCycle> for Stream<T, Bounde
 
 impl<'a, T, N: Location<'a>> CycleComplete<'a, TickCycle> for Stream<T, Bounded, Tick<N>> {
     fn complete(self, ident: syn::Ident) {
-        self.flow_state()
-            .clone()
+        self.location
+            .flow_state()
             .borrow_mut()
             .leaves
             .as_mut()
@@ -109,8 +105,8 @@ impl<'a, T, W, N: Location<'a> + NoTick> CycleCollection<'a, ForwardRef> for Str
 
 impl<'a, T, W, N: Location<'a> + NoTick> CycleComplete<'a, ForwardRef> for Stream<T, W, N> {
     fn complete(self, ident: syn::Ident) {
-        self.flow_state()
-            .clone()
+        self.location
+            .flow_state()
             .borrow_mut()
             .leaves
             .as_mut()
@@ -494,8 +490,8 @@ impl<'a, T, W, N: Location<'a> + NoTick> Stream<T, W, N> {
     }
 
     pub fn for_each<F: Fn(T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) {
-        self.flow_state()
-            .clone()
+        self.location
+            .flow_state()
             .borrow_mut()
             .leaves
             .as_mut()
@@ -507,8 +503,8 @@ impl<'a, T, W, N: Location<'a> + NoTick> Stream<T, W, N> {
     }
 
     pub fn dest_sink<S: Unpin + Sink<T> + 'a>(self, sink: impl Quoted<'a, S>) {
-        self.flow_state()
-            .clone()
+        self.location
+            .flow_state()
             .borrow_mut()
             .leaves
             .as_mut()
@@ -664,8 +660,7 @@ impl<'a, T, W, N: Location<'a> + NoTick> Stream<T, W, N> {
     {
         let serialize_pipeline = Some(serialize_bincode::<CoreType>(N::is_demux()));
 
-        let flow_state = self.flow_state().clone();
-        let mut flow_state_borrow = flow_state.borrow_mut();
+        let mut flow_state_borrow = self.location.flow_state().borrow_mut();
 
         let external_key = flow_state_borrow.next_external_out;
         flow_state_borrow.next_external_out += 1;
@@ -725,8 +720,7 @@ impl<'a, T, W, N: Location<'a> + NoTick> Stream<T, W, N> {
     where
         N: CanSend<'a, ExternalProcess<'a, N2>, In<Bytes> = T, Out<Bytes> = Bytes>,
     {
-        let flow_state = self.flow_state().clone();
-        let mut flow_state_borrow = flow_state.borrow_mut();
+        let mut flow_state_borrow = self.location.flow_state().borrow_mut();
         let external_key = flow_state_borrow.next_external_out;
         flow_state_borrow.next_external_out += 1;
 
