@@ -86,7 +86,6 @@ where
 }
 
 /// Setup deserialization for inbound networking messages.
-
 fn setup_inbound_deserialization<Inbound, Message>(
     inbound: Inbound,
 ) -> impl hydroflow::futures::Stream<Item = (Message, SocketAddr)>
