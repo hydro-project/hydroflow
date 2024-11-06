@@ -3,8 +3,8 @@ use std::cell::RefCell;
 use hydroflow::futures::channel::mpsc::UnboundedSender;
 use stageleft::*;
 
-use crate::ir::*;
-use crate::{profiler as myself, RuntimeContext};
+use crate::{ir::*, RuntimeContext};
+use super::profiler as myself; // TODO(shadaj): stageleft does not support `self::...`
 
 pub fn increment_counter(count: &mut u64) {
     *count += 1;
