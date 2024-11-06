@@ -69,7 +69,6 @@ pub enum HfPlusSource {
     Stream(DebugExpr),
     ExternalNetwork(),
     Iter(DebugExpr),
-    Interval(DebugExpr),
     Spin(),
 }
 
@@ -613,12 +612,6 @@ impl<'a> HfPlusNode {
                         HfPlusSource::Iter(expr) => {
                             parse_quote! {
                                 #source_ident = source_iter(#expr);
-                            }
-                        }
-
-                        HfPlusSource::Interval(expr) => {
-                            parse_quote! {
-                                #source_ident = source_interval(#expr);
                             }
                         }
 
