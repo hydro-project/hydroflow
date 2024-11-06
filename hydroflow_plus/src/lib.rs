@@ -22,7 +22,10 @@ pub mod stream;
 pub use stream::{Bounded, Stream, Unbounded};
 
 pub mod singleton;
-pub use singleton::{Optional, Singleton};
+pub use singleton::Singleton;
+
+pub mod optional;
+pub use optional::Optional;
 
 pub mod location;
 pub use location::{Cluster, ClusterId, Location, Process, Tick};
@@ -31,7 +34,6 @@ pub mod deploy;
 pub use deploy::{ClusterSpec, Deploy, ProcessSpec};
 
 pub mod cycle;
-pub use cycle::HfForwardRef;
 
 pub mod builder;
 pub use builder::FlowBuilder;

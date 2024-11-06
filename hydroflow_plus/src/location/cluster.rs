@@ -8,10 +8,9 @@ use serde::{Deserialize, Serialize};
 use stageleft::runtime_support::FreeVariable;
 use stageleft::{quote_type, Quoted};
 
-// TODO(shadaj): have to use super due to stageleft limitations
-use super::super::staging_util::get_this_crate;
 use super::{Location, LocationId};
 use crate::builder::FlowState;
+use crate::staging_util::get_this_crate;
 
 pub struct Cluster<'a, C> {
     pub(crate) id: usize,
@@ -54,15 +53,8 @@ impl<'a, C> Location<'a> for Cluster<'a, C> {
         &self.flow_state
     }
 
-    fn make_from(id: LocationId, flow_state: FlowState) -> Self {
-        match id {
-            LocationId::Cluster(id) => Cluster {
-                id,
-                flow_state,
-                _phantom: PhantomData,
-            },
-            _ => panic!(),
-        }
+    fn is_top_level() -> bool {
+        true
     }
 }
 

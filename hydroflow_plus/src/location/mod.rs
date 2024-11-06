@@ -8,9 +8,12 @@ use proc_macro2::Span;
 use stageleft::{q, Quoted};
 
 use super::builder::FlowState;
-use crate::cycle::{CycleCollection, CycleCollectionWithInitial, DeferTick, HfCycle, TickCycle};
+use crate::cycle::{
+    CycleCollection, CycleCollectionWithInitial, DeferTick, ForwardRef, HfCycle, HfForwardRef,
+    TickCycle,
+};
 use crate::ir::{HfPlusNode, HfPlusSource};
-use crate::{Bounded, HfForwardRef, Optional, Singleton, Stream, Unbounded};
+use crate::{Bounded, Optional, Singleton, Stream, Unbounded};
 
 pub mod external_process;
 pub use external_process::ExternalProcess;
@@ -53,7 +56,7 @@ pub trait Location<'a>: Clone {
 
     fn flow_state(&self) -> &FlowState;
 
-    fn make_from(id: LocationId, flow_state: FlowState) -> Self;
+    fn is_top_level() -> bool;
 
     fn nest(&self) -> Tick<Self>
     where
@@ -109,10 +112,12 @@ pub trait Location<'a>: Clone {
     fn source_iter<T, E: IntoIterator<Item = T>>(
         &self,
         e: impl Quoted<'a, E>,
-    ) -> Stream<T, Bounded, Self>
+    ) -> Stream<T, Unbounded, Self>
     where
         Self: Sized + NoTick,
     {
+        // TODO(shadaj): we mark this as unbounded because we do not yet have a representation
+        // for bounded top-level streams, and this is the only way to generate one
         let e = e.splice_untyped();
 
         Stream::new(
@@ -124,10 +129,13 @@ pub trait Location<'a>: Clone {
         )
     }
 
-    fn singleton<T: Clone>(&self, e: impl Quoted<'a, T>) -> Singleton<T, Bounded, Self>
+    fn singleton<T: Clone>(&self, e: impl Quoted<'a, T>) -> Singleton<T, Unbounded, Self>
     where
         Self: Sized + NoTick,
     {
+        // TODO(shadaj): we mark this as unbounded because we do not yet have a representation
+        // for bounded top-level singletons, and this is the only way to generate one
+
         let e_arr = q!([e]);
         let e = e_arr.splice_untyped();
 
@@ -199,9 +207,9 @@ pub trait Location<'a>: Clone {
         )))
     }
 
-    fn forward_ref<S: CycleCollection<'a, (), Location = Self>>(
+    fn forward_ref<S: CycleCollection<'a, ForwardRef, Location = Self>>(
         &self,
-    ) -> (HfForwardRef<'a, (), S>, S)
+    ) -> (HfForwardRef<'a, S>, S)
     where
         Self: NoTick,
     {
@@ -231,9 +239,9 @@ pub trait Location<'a>: Clone {
         )
     }
 
-    fn tick_forward_ref<S: CycleCollection<'a, TickCycle, Location = Tick<Self>>>(
+    fn tick_forward_ref<S: CycleCollection<'a, ForwardRef, Location = Tick<Self>>>(
         &self,
-    ) -> (HfForwardRef<'a, TickCycle, S>, S)
+    ) -> (HfForwardRef<'a, S>, S)
     where
         Self: NoTick,
     {
