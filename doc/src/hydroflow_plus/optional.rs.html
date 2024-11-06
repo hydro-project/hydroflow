@@ -390,10 +390,6 @@
 <a href="#390" id="390">390</a>
 <a href="#391" id="391">391</a>
 <a href="#392" id="392">392</a>
-<a href="#393" id="393">393</a>
-<a href="#394" id="394">394</a>
-<a href="#395" id="395">395</a>
-<a href="#396" id="396">396</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::ops::Deref;
@@ -402,7 +398,7 @@
 <span class="kw">use </span>stageleft::{q, IntoQuotedMut, Quoted};
 <span class="kw">use </span>syn::parse_quote;
 
-<span class="kw">use </span><span class="kw">crate</span>::builder::{FlowState, FLOW_USED_MESSAGE};
+<span class="kw">use </span><span class="kw">crate</span>::builder::FLOW_USED_MESSAGE;
 <span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRef, TickCycle};
 <span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource, TeeNode};
 <span class="kw">use </span><span class="kw">crate</span>::location::{check_matching_location, LocationId, NoTick};
@@ -431,10 +427,6 @@
     <span class="kw">fn </span>location_kind(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LocationId {
         <span class="self">self</span>.location.id()
     }
-
-    <span class="kw">fn </span>flow_state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>FlowState {
-        <span class="self">self</span>.location.flow_state()
-    }
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; DeferTick <span class="kw">for </span>Optional&lt;T, Bounded, Tick&lt;N&gt;&gt; {
@@ -460,8 +452,8 @@
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, TickCycle&gt; <span class="kw">for </span>Optional&lt;T, Bounded, Tick&lt;N&gt;&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
-        <span class="self">self</span>.flow_state()
-            .clone()
+        <span class="self">self</span>.location
+            .flow_state()
             .borrow_mut()
             .leaves
             .as_mut()
@@ -491,8 +483,8 @@
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRef&gt; <span class="kw">for </span>Optional&lt;T, Bounded, Tick&lt;N&gt;&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
-        <span class="self">self</span>.flow_state()
-            .clone()
+        <span class="self">self</span>.location
+            .flow_state()
             .borrow_mut()
             .leaves
             .as_mut()
@@ -522,8 +514,8 @@
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick&gt; CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRef&gt; <span class="kw">for </span>Optional&lt;T, W, N&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
-        <span class="self">self</span>.flow_state()
-            .clone()
+        <span class="self">self</span>.location
+            .flow_state()
             .borrow_mut()
             .leaves
             .as_mut()
