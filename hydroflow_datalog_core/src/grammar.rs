@@ -136,7 +136,11 @@ pub mod datalog {
     }
 
     #[derive(Debug, Clone)]
-    #[allow(clippy::allow_attributes, clippy::manual_non_exhaustive, reason = "`()` used for leaf")]
+    #[allow(
+        clippy::allow_attributes,
+        clippy::manual_non_exhaustive,
+        reason = "`()` used for leaf"
+    )]
     pub struct AtNode {
         #[rust_sitter::leaf(text = "@")]
         _at: (),
