@@ -15,7 +15,7 @@ pub struct MapUnionHashMapWrapper<'a, const SIZE: usize>(
     pub &'a MapUnionHashMap<u64, MyLastWriteWins<SIZE>>,
 );
 
-impl<'a, const SIZE: usize> Serialize for MapUnionHashMapWrapper<'a, SIZE> {
+impl<const SIZE: usize> Serialize for MapUnionHashMapWrapper<'_, SIZE> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

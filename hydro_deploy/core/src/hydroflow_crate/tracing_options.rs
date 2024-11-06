@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments, reason = "buildstructor")]
+
 use std::path::PathBuf;
 
 use inferno::collapse::dtrace::Options as DtraceOptions;

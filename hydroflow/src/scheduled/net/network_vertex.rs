@@ -18,7 +18,7 @@ pub type Address = String;
 // These methods can't be wrapped up in a trait because async methods are not
 // allowed in traits (yet).
 
-impl<'a> Hydroflow<'a> {
+impl Hydroflow<'_> {
     // TODO(justin): document these, but they're derivatives of inbound_tcp_vertex_internal.
     pub async fn inbound_tcp_vertex_port<T>(&mut self, port: u16) -> RecvPort<VecHandoff<T>>
     where

@@ -4,7 +4,7 @@ use gossip_kv::membership::MemberId;
 // use rand::distributions::Distribution;
 // use rand::{Rng};
 
-/// This is a simple distribution that generates a random lower-case alphanumeric
+// /// This is a simple distribution that generates a random lower-case alphanumeric
 // struct LowercaseAlphanumeric;
 //
 // impl Distribution<char> for LowercaseAlphanumeric {

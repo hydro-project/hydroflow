@@ -10,7 +10,7 @@ use crate::buffer_pool::{AutoReturnBuffer, AutoReturnBufferDeserializer, BufferP
 #[repr(transparent)]
 pub struct PointWrapper<'a, const SIZE: usize>(pub &'a Point<AutoReturnBuffer<SIZE>, ()>);
 
-impl<'a, const SIZE: usize> Serialize for PointWrapper<'a, SIZE> {
+impl<const SIZE: usize> Serialize for PointWrapper<'_, SIZE> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
