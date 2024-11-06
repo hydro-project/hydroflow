@@ -11,13 +11,14 @@ use serde::Serialize;
 use stageleft::Quoted;
 
 use super::built::build_inner;
+use super::compiled::HfCompiled;
 use crate::deploy::{ExternalSpec, LocalDeploy, Node, RegisterPort};
 use crate::ir::HfPlusLeaf;
 use crate::location::external_process::{
     ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort,
 };
 use crate::location::{ExternalProcess, Location, LocationId};
-use crate::{Cluster, ClusterSpec, Deploy, HfCompiled, Process, ProcessSpec};
+use crate::{Cluster, ClusterSpec, Deploy, Process, ProcessSpec};
 
 pub struct DeployFlow<'a, D: LocalDeploy<'a>> {
     pub(super) ir: Vec<HfPlusLeaf>,
