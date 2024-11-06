@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["built","deploy"],"struct":["FlowBuilder","FlowStateInner"],"type":["FlowState"]};
+window.SIDEBAR_ITEMS = {"constant":["FLOW_USED_MESSAGE"],"mod":["built","deploy"],"struct":["FlowBuilder","FlowStateInner"],"type":["FlowState"]};

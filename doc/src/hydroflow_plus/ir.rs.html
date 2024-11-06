@@ -1358,13 +1358,6 @@
 <a href="#1358" id="1358">1358</a>
 <a href="#1359" id="1359">1359</a>
 <a href="#1360" id="1360">1360</a>
-<a href="#1361" id="1361">1361</a>
-<a href="#1362" id="1362">1362</a>
-<a href="#1363" id="1363">1363</a>
-<a href="#1364" id="1364">1364</a>
-<a href="#1365" id="1365">1365</a>
-<a href="#1366" id="1366">1366</a>
-<a href="#1367" id="1367">1367</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::panic;
 <span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap};
@@ -1436,7 +1429,6 @@
     Stream(DebugExpr),
     ExternalNetwork(),
     Iter(DebugExpr),
-    Interval(DebugExpr),
     Spin(),
 }
 
@@ -1980,12 +1972,6 @@
                         HfPlusSource::Iter(expr) =&gt; {
                             <span class="macro">parse_quote!</span> {
                                 #source_ident = source_iter(#expr);
-                            }
-                        }
-
-                        HfPlusSource::Interval(expr) =&gt; {
-                            <span class="macro">parse_quote!</span> {
-                                #source_ident = source_interval(#expr);
                             }
                         }
 

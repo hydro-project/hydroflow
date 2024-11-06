@@ -154,6 +154,8 @@
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -182,6 +184,8 @@
 }
 
 <span class="kw">pub type </span>FlowState = Rc&lt;RefCell&lt;FlowStateInner&gt;&gt;;
+
+<span class="kw">pub const </span>FLOW_USED_MESSAGE: <span class="kw-2">&amp;</span>str = <span class="string">"Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled."</span>;
 
 <span class="kw">pub struct </span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt; {
     flow_state: FlowState,
