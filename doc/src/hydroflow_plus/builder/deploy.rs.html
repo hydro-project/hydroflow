@@ -293,6 +293,7 @@
 <a href="#293" id="293">293</a>
 <a href="#294" id="294">294</a>
 <a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::io::Error;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -306,13 +307,14 @@
 <span class="kw">use </span>stageleft::Quoted;
 
 <span class="kw">use </span><span class="kw">super</span>::built::build_inner;
+<span class="kw">use </span><span class="kw">super</span>::compiled::HfCompiled;
 <span class="kw">use </span><span class="kw">crate</span>::deploy::{ExternalSpec, LocalDeploy, Node, RegisterPort};
 <span class="kw">use </span><span class="kw">crate</span>::ir::HfPlusLeaf;
 <span class="kw">use </span><span class="kw">crate</span>::location::external_process::{
     ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort,
 };
 <span class="kw">use </span><span class="kw">crate</span>::location::{ExternalProcess, Location, LocationId};
-<span class="kw">use crate</span>::{Cluster, ClusterSpec, Deploy, HfCompiled, Process, ProcessSpec};
+<span class="kw">use crate</span>::{Cluster, ClusterSpec, Deploy, Process, ProcessSpec};
 
 <span class="kw">pub struct </span>DeployFlow&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">pub</span>(<span class="kw">super</span>) ir: Vec&lt;HfPlusLeaf&gt;,

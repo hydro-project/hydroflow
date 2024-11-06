@@ -146,11 +146,11 @@
 
 <span class="kw">use </span>hydroflow_lang::graph::{eliminate_extra_unions_tees, HydroflowGraph};
 
+<span class="kw">use </span><span class="kw">super</span>::compiled::HfCompiled;
 <span class="kw">use </span><span class="kw">super</span>::deploy::{DeployFlow, DeployResult};
 <span class="kw">use </span><span class="kw">crate</span>::deploy::{ClusterSpec, Deploy, ExternalSpec, LocalDeploy, ProcessSpec};
 <span class="kw">use </span><span class="kw">crate</span>::ir::HfPlusLeaf;
 <span class="kw">use </span><span class="kw">crate</span>::location::{Cluster, ExternalProcess, Process};
-<span class="kw">use </span><span class="kw">crate</span>::HfCompiled;
 
 <span class="kw">pub struct </span>BuiltFlow&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">pub</span>(<span class="kw">super</span>) ir: Vec&lt;HfPlusLeaf&gt;,
@@ -216,7 +216,7 @@
     }
 
     <span class="kw">pub fn </span>with_default_optimize(<span class="self">self</span>) -&gt; BuiltFlow&lt;<span class="lifetime">'a</span>&gt; {
-        <span class="self">self</span>.optimize_with(<span class="kw">crate</span>::persist_pullup::persist_pullup)
+        <span class="self">self</span>.optimize_with(<span class="kw">crate</span>::rewrites::persist_pullup::persist_pullup)
     }
 
     <span class="kw">fn </span>into_deploy&lt;D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt;(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; DeployFlow&lt;<span class="lifetime">'a</span>, D&gt; {

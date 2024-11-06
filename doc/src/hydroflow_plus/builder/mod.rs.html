@@ -155,7 +155,6 @@
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
 <a href="#157" id="157">157</a>
-<a href="#158" id="158">158</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -168,6 +167,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::RuntimeContext;
 
 <span class="kw">pub mod </span>built;
+<span class="kw">pub mod </span>compiled;
 <span class="kw">pub mod </span>deploy;
 
 <span class="kw">pub struct </span>FlowStateInner {
@@ -309,9 +309,7 @@
     }
 
     <span class="kw">pub fn </span>runtime_context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; RuntimeContext&lt;<span class="lifetime">'a</span>&gt; {
-        RuntimeContext {
-            _phantom: PhantomData,
-        }
+        RuntimeContext::new()
     }
 }
 </code></pre></div></section></main></body></html>
