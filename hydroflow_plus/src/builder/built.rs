@@ -3,11 +3,11 @@ use std::marker::PhantomData;
 
 use hydroflow_lang::graph::{eliminate_extra_unions_tees, HydroflowGraph};
 
+use super::compiled::HfCompiled;
 use super::deploy::{DeployFlow, DeployResult};
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, LocalDeploy, ProcessSpec};
 use crate::ir::HfPlusLeaf;
 use crate::location::{Cluster, ExternalProcess, Process};
-use crate::HfCompiled;
 
 pub struct BuiltFlow<'a> {
     pub(super) ir: Vec<HfPlusLeaf>,
