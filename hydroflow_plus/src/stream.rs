@@ -12,7 +12,7 @@ use serde::Serialize;
 use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
 
-use crate::builder::FlowState;
+use crate::builder::{FlowState, FLOW_USED_MESSAGE};
 use crate::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRef, TickCycle};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, TeeNode};
 use crate::location::cluster::ClusterSelfId;
@@ -78,11 +78,17 @@ impl<'a, T, N: Location<'a>> CycleCollection<'a, TickCycle> for Stream<T, Bounde
 
 impl<'a, T, N: Location<'a>> CycleComplete<'a, TickCycle> for Stream<T, Bounded, Tick<N>> {
     fn complete(self, ident: syn::Ident) {
-        self.flow_state().clone().borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
-            ident,
-            location_kind: self.location_kind(),
-            input: Box::new(self.ir_node.into_inner()),
-        });
+        self.flow_state()
+            .clone()
+            .borrow_mut()
+            .leaves
+            .as_mut()
+            .expect(FLOW_USED_MESSAGE)
+            .push(HfPlusLeaf::CycleSink {
+                ident,
+                location_kind: self.location_kind(),
+                input: Box::new(self.ir_node.into_inner()),
+            });
     }
 }
 
@@ -103,11 +109,17 @@ impl<'a, T, W, N: Location<'a> + NoTick> CycleCollection<'a, ForwardRef> for Str
 
 impl<'a, T, W, N: Location<'a> + NoTick> CycleComplete<'a, ForwardRef> for Stream<T, W, N> {
     fn complete(self, ident: syn::Ident) {
-        self.flow_state().clone().borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
-            ident,
-            location_kind: self.location_kind(),
-            input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
-        });
+        self.flow_state()
+            .clone()
+            .borrow_mut()
+            .leaves
+            .as_mut()
+            .expect(FLOW_USED_MESSAGE)
+            .push(HfPlusLeaf::CycleSink {
+                ident,
+                location_kind: self.location_kind(),
+                input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
+            });
     }
 }
 
@@ -482,17 +494,29 @@ impl<'a, T, W, N: Location<'a> + NoTick> Stream<T, W, N> {
     }
 
     pub fn for_each<F: Fn(T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) {
-        self.flow_state().clone().borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::ForEach {
-            input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
-            f: f.splice_fn1().into(),
-        });
+        self.flow_state()
+            .clone()
+            .borrow_mut()
+            .leaves
+            .as_mut()
+            .expect(FLOW_USED_MESSAGE)
+            .push(HfPlusLeaf::ForEach {
+                input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
+                f: f.splice_fn1().into(),
+            });
     }
 
     pub fn dest_sink<S: Unpin + Sink<T> + 'a>(self, sink: impl Quoted<'a, S>) {
-        self.flow_state().clone().borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::DestSink {
-            sink: sink.splice_typed().into(),
-            input: Box::new(self.ir_node.into_inner()),
-        });
+        self.flow_state()
+            .clone()
+            .borrow_mut()
+            .leaves
+            .as_mut()
+            .expect(FLOW_USED_MESSAGE)
+            .push(HfPlusLeaf::DestSink {
+                sink: sink.splice_typed().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            });
     }
 }
 

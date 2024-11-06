@@ -27,6 +27,8 @@ pub struct FlowStateInner {
 
 pub type FlowState = Rc<RefCell<FlowStateInner>>;
 
+pub const FLOW_USED_MESSAGE: &str = "Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.";
+
 pub struct FlowBuilder<'a> {
     flow_state: FlowState,
     nodes: RefCell<Vec<usize>>,

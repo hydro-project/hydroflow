@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use stageleft::{q, IntoQuotedMut, Quoted};
 
-use crate::builder::FlowState;
+use crate::builder::{FlowState, FLOW_USED_MESSAGE};
 use crate::cycle::{
     CycleCollection, CycleCollectionWithInitial, CycleComplete, DeferTick, ForwardRef, TickCycle,
 };
@@ -73,11 +73,17 @@ impl<'a, T, N: Location<'a>> CycleCollectionWithInitial<'a, TickCycle>
 
 impl<'a, T, N: Location<'a>> CycleComplete<'a, TickCycle> for Singleton<T, Bounded, Tick<N>> {
     fn complete(self, ident: syn::Ident) {
-        self.flow_state().clone().borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
-            ident,
-            location_kind: self.location_kind(),
-            input: Box::new(self.ir_node.into_inner()),
-        });
+        self.flow_state()
+            .clone()
+            .borrow_mut()
+            .leaves
+            .as_mut()
+            .expect(FLOW_USED_MESSAGE)
+            .push(HfPlusLeaf::CycleSink {
+                ident,
+                location_kind: self.location_kind(),
+                input: Box::new(self.ir_node.into_inner()),
+            });
     }
 }
 
@@ -98,11 +104,17 @@ impl<'a, T, N: Location<'a>> CycleCollection<'a, ForwardRef> for Singleton<T, Bo
 
 impl<'a, T, N: Location<'a>> CycleComplete<'a, ForwardRef> for Singleton<T, Bounded, Tick<N>> {
     fn complete(self, ident: syn::Ident) {
-        self.flow_state().clone().borrow_mut().leaves.as_mut().expect("Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.").push(HfPlusLeaf::CycleSink {
-            ident,
-            location_kind: self.location_kind(),
-            input: Box::new(self.ir_node.into_inner()),
-        });
+        self.flow_state()
+            .clone()
+            .borrow_mut()
+            .leaves
+            .as_mut()
+            .expect(FLOW_USED_MESSAGE)
+            .push(HfPlusLeaf::CycleSink {
+                ident,
+                location_kind: self.location_kind(),
+                input: Box::new(self.ir_node.into_inner()),
+            });
     }
 }
 
