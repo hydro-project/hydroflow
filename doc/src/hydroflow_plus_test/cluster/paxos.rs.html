@@ -1022,7 +1022,7 @@
 
     <span class="kw">let </span>p_new_ballot_num = p_received_max_ballot
         .clone()
-        .cross_singleton(p_ballot_num.clone())
+        .zip(p_ballot_num.clone())
         .map(<span class="macro">q!</span>(<span class="kw">move </span>|(received_max_ballot, ballot_num)| {
             <span class="kw">if </span>received_max_ballot
                 &gt; (Ballot {
@@ -1039,7 +1039,7 @@
 
     <span class="kw">let </span>p_has_largest_ballot = p_received_max_ballot
         .clone()
-        .cross_singleton(p_ballot_num.clone())
+        .zip(p_ballot_num.clone())
         .filter(<span class="macro">q!</span>(
             <span class="kw">move </span>|(received_max_ballot, ballot_num)| <span class="kw-2">*</span>received_max_ballot
                 &lt;= Ballot {
@@ -1392,7 +1392,7 @@
     <span class="kw">let </span>p_num_payloads = p_indexed_payloads.count();
     <span class="kw">let </span>p_next_slot_after_sending_payloads = p_num_payloads
         .clone()
-        .cross_singleton(p_next_slot.clone())
+        .zip(p_next_slot.clone())
         .map(<span class="macro">q!</span>(|(num_payloads, next_slot)| next_slot + num_payloads));
 
     <span class="kw">let </span>p_new_next_slot = p_next_slot_after_reconciling_p1bs
