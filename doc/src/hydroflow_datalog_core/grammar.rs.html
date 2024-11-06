@@ -333,6 +333,10 @@
 <a href="#333" id="333">333</a>
 <a href="#334" id="334">334</a>
 <a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
 </pre></div><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">"datalog"</span>)]
 </span><span class="comment">// #[expect(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
@@ -471,7 +475,11 @@
     }
 
     <span class="attr">#[derive(Debug, Clone)]
-    #[expect(clippy::manual_non_exhaustive, reason = <span class="string">"`()` used for leaf"</span>)]
+    #[allow(
+        clippy::allow_attributes,
+        clippy::manual_non_exhaustive,
+        reason = <span class="string">"`()` used for leaf"
+    </span>)]
     </span><span class="kw">pub struct </span>AtNode {
         <span class="attr">#[rust_sitter::leaf(text = <span class="string">"@"</span>)]
         </span>_at: (),

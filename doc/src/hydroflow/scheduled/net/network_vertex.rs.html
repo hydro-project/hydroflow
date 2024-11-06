@@ -246,7 +246,7 @@
 <span class="comment">// These methods can't be wrapped up in a trait because async methods are not
 // allowed in traits (yet).
 
-</span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Hydroflow&lt;<span class="lifetime">'a</span>&gt; {
+</span><span class="kw">impl </span>Hydroflow&lt;<span class="lifetime">'_</span>&gt; {
     <span class="comment">// TODO(justin): document these, but they're derivatives of inbound_tcp_vertex_internal.
     </span><span class="kw">pub async fn </span>inbound_tcp_vertex_port&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, port: u16) -&gt; RecvPort&lt;VecHandoff&lt;T&gt;&gt;
     <span class="kw">where

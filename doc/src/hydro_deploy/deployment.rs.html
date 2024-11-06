@@ -257,6 +257,11 @@
 <a href="#257" id="257">257</a>
 <a href="#258" id="258">258</a>
 <a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::sync::{Arc, Weak};
@@ -478,7 +483,12 @@
 <span class="doccomment">/// Buildstructor methods.
 </span><span class="attr">#[buildstructor::buildstructor]
 </span><span class="kw">impl </span>Deployment {
-    <span class="attr">#[builder(entry = <span class="string">"GcpComputeEngineHost"</span>, exit = <span class="string">"add"</span>)]
+    <span class="attr">#[allow(
+        clippy::allow_attributes,
+        clippy::too_many_arguments,
+        reason = <span class="string">"buildstructor"
+    </span>)]
+    #[builder(entry = <span class="string">"GcpComputeEngineHost"</span>, exit = <span class="string">"add"</span>)]
     </span><span class="kw">pub fn </span>add_gcp_compute_engine_host(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         project: String,

@@ -27,7 +27,11 @@
 <a href="#27" id="27">27</a>
 <a href="#28" id="28">28</a>
 <a href="#29" id="29">29</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
+<a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
+</pre></div><pre class="rust"><code><span class="attr">#![allow(clippy::too_many_arguments, reason = <span class="string">"buildstructor"</span>)]
+
+</span><span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span>inferno::collapse::dtrace::Options <span class="kw">as </span>DtraceOptions;
 <span class="kw">use </span>inferno::collapse::perf::Options <span class="kw">as </span>PerfOptions;
