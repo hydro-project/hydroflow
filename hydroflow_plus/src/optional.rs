@@ -6,7 +6,7 @@ use std::rc::Rc;
 use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
 
-use crate::builder::{FlowState, FLOW_USED_MESSAGE};
+use crate::builder::FLOW_USED_MESSAGE;
 use crate::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRef, TickCycle};
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource, TeeNode};
 use crate::location::{check_matching_location, LocationId, NoTick};
@@ -35,10 +35,6 @@ impl<'a, T, W, N: Location<'a>> Optional<T, W, N> {
     fn location_kind(&self) -> LocationId {
         self.location.id()
     }
-
-    fn flow_state(&self) -> &FlowState {
-        self.location.flow_state()
-    }
 }
 
 impl<'a, T, N: Location<'a>> DeferTick for Optional<T, Bounded, Tick<N>> {
@@ -64,8 +60,8 @@ impl<'a, T, N: Location<'a>> CycleCollection<'a, TickCycle> for Optional<T, Boun
 
 impl<'a, T, N: Location<'a>> CycleComplete<'a, TickCycle> for Optional<T, Bounded, Tick<N>> {
     fn complete(self, ident: syn::Ident) {
-        self.flow_state()
-            .clone()
+        self.location
+            .flow_state()
             .borrow_mut()
             .leaves
             .as_mut()
@@ -95,8 +91,8 @@ impl<'a, T, N: Location<'a>> CycleCollection<'a, ForwardRef> for Optional<T, Bou
 
 impl<'a, T, N: Location<'a>> CycleComplete<'a, ForwardRef> for Optional<T, Bounded, Tick<N>> {
     fn complete(self, ident: syn::Ident) {
-        self.flow_state()
-            .clone()
+        self.location
+            .flow_state()
             .borrow_mut()
             .leaves
             .as_mut()
@@ -126,8 +122,8 @@ impl<'a, T, W, N: Location<'a> + NoTick> CycleCollection<'a, ForwardRef> for Opt
 
 impl<'a, T, W, N: Location<'a> + NoTick> CycleComplete<'a, ForwardRef> for Optional<T, W, N> {
     fn complete(self, ident: syn::Ident) {
-        self.flow_state()
-            .clone()
+        self.location
+            .flow_state()
             .borrow_mut()
             .leaves
             .as_mut()
