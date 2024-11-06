@@ -10,6 +10,7 @@ use crate::location::{Cluster, ExternalProcess, Process};
 use crate::RuntimeContext;
 
 pub mod built;
+pub mod compiled;
 pub mod deploy;
 
 pub struct FlowStateInner {
@@ -151,8 +152,6 @@ impl<'a> FlowBuilder<'a> {
     }
 
     pub fn runtime_context(&self) -> RuntimeContext<'a> {
-        RuntimeContext {
-            _phantom: PhantomData,
-        }
+        RuntimeContext::new()
     }
 }
