@@ -129,8 +129,6 @@ pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildO
                         command.env("CARGO_TARGET_DIR", target_dir);
                     }
 
-                    // TODO(mingwei): remove after updating nightly.
-                    #[expect(unknown_lints, clippy::zombie_processes, reason = "false positive")]
                     let mut spawned = command
                         .current_dir(&params.src)
                         .stdout(Stdio::piped())
@@ -169,6 +167,7 @@ pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildO
                                     let path_buf: PathBuf = path.clone().into();
                                     let path = path.into_string();
                                     let data = std::fs::read(path).unwrap();
+                                    assert!(spawned.wait().unwrap().success());
                                     return Ok(BuildOutput {
                                         unique_id: nanoid!(8),
                                         bin_data: data,
