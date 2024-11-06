@@ -167,6 +167,7 @@ pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildO
                                     let path_buf: PathBuf = path.clone().into();
                                     let path = path.into_string();
                                     let data = std::fs::read(path).unwrap();
+                                    assert!(spawned.wait().unwrap().success());
                                     return Ok(BuildOutput {
                                         unique_id: nanoid!(8),
                                         bin_data: data,

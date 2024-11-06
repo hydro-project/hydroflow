@@ -14,7 +14,7 @@ pub struct WithBotWrapper<'a, const SIZE: usize>(
     pub &'a WithBot<Point<AutoReturnBuffer<SIZE>, ()>>,
 );
 
-impl<'a, const SIZE: usize> Serialize for WithBotWrapper<'a, SIZE> {
+impl<const SIZE: usize> Serialize for WithBotWrapper<'_, SIZE> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
