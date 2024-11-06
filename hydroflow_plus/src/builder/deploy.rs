@@ -13,10 +13,10 @@ use stageleft::Quoted;
 use super::built::build_inner;
 use crate::deploy::{ExternalSpec, LocalDeploy, Node, RegisterPort};
 use crate::ir::HfPlusLeaf;
-use crate::location::{
-    ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort, ExternalProcess, Location,
-    LocationId,
+use crate::location::external_process::{
+    ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort,
 };
+use crate::location::{ExternalProcess, Location, LocationId};
 use crate::{Cluster, ClusterSpec, Deploy, HfCompiled, Process, ProcessSpec};
 
 pub struct DeployFlow<'a, D: LocalDeploy<'a>> {

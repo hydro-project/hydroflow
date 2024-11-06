@@ -1,5 +1,6 @@
 use hydroflow_plus::*;
-use location::{ExternalBincodeSink, ExternalProcess};
+use location::external_process::ExternalBincodeSink;
+use location::ExternalProcess;
 use serde::{Deserialize, Serialize};
 use stageleft::*;
 

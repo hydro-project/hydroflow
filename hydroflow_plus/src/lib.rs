@@ -19,19 +19,21 @@ pub mod runtime_support {
 }
 
 pub mod stream;
-pub use stream::{Bounded, Stream, Tick, Unbounded};
+pub use stream::{Bounded, Stream, Unbounded};
 
 pub mod singleton;
-pub use singleton::{Optional, Singleton};
+pub use singleton::Singleton;
+
+pub mod optional;
+pub use optional::Optional;
 
 pub mod location;
-pub use location::{Cluster, ClusterId, Location, Process};
+pub use location::{Cluster, ClusterId, Location, Process, Tick};
 
 pub mod deploy;
 pub use deploy::{ClusterSpec, Deploy, ProcessSpec};
 
 pub mod cycle;
-pub use cycle::HfForwardRef;
 
 pub mod builder;
 pub use builder::FlowBuilder;
@@ -50,7 +52,21 @@ pub struct RuntimeContext<'a> {
     _phantom: PhantomData<&'a mut &'a ()>,
 }
 
+impl RuntimeContext<'_> {
+    pub fn new() -> Self {
+        Self {
+            _phantom: PhantomData,
+        }
+    }
+}
+
 impl Copy for RuntimeContext<'_> {}
+
+impl Default for RuntimeContext<'_> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl<'a> FreeVariable<&'a Context> for RuntimeContext<'a> {
     fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
@@ -67,6 +83,10 @@ pub struct HfCompiled<'a, ID> {
 impl<ID> HfCompiled<'_, ID> {
     pub fn hydroflow_ir(&self) -> &BTreeMap<usize, HydroflowGraph> {
         &self.hydroflow_ir
+    }
+
+    pub fn take_ir(self) -> BTreeMap<usize, HydroflowGraph> {
+        self.hydroflow_ir
     }
 }
 

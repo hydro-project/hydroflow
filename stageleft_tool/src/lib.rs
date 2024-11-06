@@ -4,9 +4,9 @@ use std::{env, fs};
 
 use proc_macro2::Span;
 use quote::ToTokens;
-use syn::parse_quote;
 use syn::visit::Visit;
 use syn::visit_mut::VisitMut;
+use syn::{parse_quote, UsePath};
 
 struct GenMacroVistor {
     exported_macros: BTreeSet<(String, String)>,
@@ -142,6 +142,18 @@ impl VisitMut for GenFinalPubVistor {
     fn visit_item_use_mut(&mut self, i: &mut syn::ItemUse) {
         i.vis = parse_quote!(pub);
         syn::visit_mut::visit_item_use_mut(self, i);
+    }
+
+    fn visit_use_path_mut(&mut self, i: &mut UsePath) {
+        if i.ident == "crate" {
+            i.tree = Box::new(syn::UseTree::Path(UsePath {
+                ident: parse_quote!(__staged),
+                colon2_token: Default::default(),
+                tree: i.tree.clone(),
+            }));
+        }
+
+        syn::visit_mut::visit_use_path_mut(self, i);
     }
 
     fn visit_item_mod_mut(&mut self, i: &mut syn::ItemMod) {
