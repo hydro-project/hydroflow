@@ -5,13 +5,13 @@ This is a guide on how to create releases for Hydroflow and all the other crates
 We use the [`cargo-smart-release` crate](https://github.com/Byron/cargo-smart-release) for our
 release workflow. Originally, cargo-smart-release [was part of gitoxide](https://github.com/Byron/gitoxide/pull/998)
 but it has since been separated into its own crate. We have our own [GitHub Action release workflow](https://github.com/hydro-project/hydroflow/actions/workflows/release.yml)
-([action specification here](.github/workflows/release.yml)) which is our intended way to create
+([action YAML here](.github/workflows/release.yml)) which is our intended way to create
 releases.
 
-Calling `cargo smart-release` is supposed to _just work_, but has a few rough edges that require a
-bit of manual attention before just calling the release workflow. It is supposed to generate
+Calling `cargo smart-release` is supposed to _just work_, but it has a few rough edges that can
+prevent the release workflow from completing successfully. Mainly, it is supposed to generate
 changelogs automatically from our [conventional commit](https://www.conventionalcommits.org/)
-messages, but requires manually intervention to do so in some situations.
+messages, but sometimes requires manual intervention in some situations.
 
 ## Installing `cargo-smart-release` locally
 
