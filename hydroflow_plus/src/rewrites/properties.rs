@@ -104,6 +104,7 @@ mod tests {
         let mut database = PropertyDatabase::default();
 
         let process = flow.process::<()>();
+        let tick = process.tick();
 
         let counter_func = q!(|count: &mut i32, _| *count += 1);
         let _ = database.add_commutative_tag(counter_func);
@@ -111,7 +112,7 @@ mod tests {
         process
             .source_iter(q!(vec![]))
             .map(q!(|string: String| (string, ())))
-            .tick_batch()
+            .tick_batch(&tick)
             .fold_keyed(q!(|| 0), counter_func)
             .all_ticks()
             .for_each(q!(|(string, count)| println!("{}: {}", string, count)));

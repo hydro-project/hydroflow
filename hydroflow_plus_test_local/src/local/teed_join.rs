@@ -18,8 +18,9 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let node_zero = flow.process::<N0>();
     let node_one = flow.process::<N1>();
+    let n0_tick = node_zero.tick();
 
-    let source = node_zero.source_stream(input_stream).tick_batch();
+    let source = node_zero.source_stream(input_stream).tick_batch(&n0_tick);
     let map1 = source.clone().map(q!(|v| (v + 1, ())));
     let map2 = source.map(q!(|v| (v - 1, ())));
 

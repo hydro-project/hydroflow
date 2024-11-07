@@ -24,6 +24,9 @@ pub struct FlowStateInner {
 
     /// Counters for generating identifiers for cycles.
     pub(crate) cycle_counts: HashMap<usize, usize>,
+
+    /// Counters for clock IDs.
+    pub(crate) next_clock_id: usize,
 }
 
 pub type FlowState = Rc<RefCell<FlowStateInner>>;
@@ -73,6 +76,7 @@ impl<'a> FlowBuilder<'a> {
                 leaves: Some(vec![]),
                 next_external_out: 0,
                 cycle_counts: HashMap::new(),
+                next_clock_id: 0,
             })),
             nodes: RefCell::new(vec![]),
             clusters: RefCell::new(vec![]),

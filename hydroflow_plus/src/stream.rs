@@ -467,26 +467,29 @@ impl<'a, K: Eq + Hash, V, N: Location<'a>> Stream<(K, V), Bounded, Tick<N>> {
 }
 
 impl<'a, T, W, N: Location<'a> + NoTick> Stream<T, W, N> {
-    pub fn tick_batch(self) -> Stream<T, Bounded, Tick<N>> {
+    pub fn tick_batch(self, tick: &Tick<N>) -> Stream<T, Bounded, Tick<N>> {
         Stream::new(
-            self.location.nest(),
+            tick.clone(),
             HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn tick_prefix(self) -> Stream<T, Bounded, Tick<N>>
+    pub fn tick_prefix(self, tick: &Tick<N>) -> Stream<T, Bounded, Tick<N>>
     where
         T: Clone,
     {
-        self.tick_batch().persist()
+        self.tick_batch(tick).persist()
     }
 
     pub fn sample_every(
         self,
         interval: impl Quoted<'a, std::time::Duration> + Copy + 'a,
     ) -> Stream<T, Unbounded, N> {
-        let samples = self.location.source_interval(interval).tick_batch();
-        self.tick_batch().continue_if(samples.first()).all_ticks()
+        let samples = self.location.source_interval(interval);
+        let tick = self.location.tick();
+        self.tick_batch(&tick)
+            .continue_if(samples.tick_batch(&tick).first())
+            .all_ticks()
     }
 
     pub fn for_each<F: Fn(T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) {
