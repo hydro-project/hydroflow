@@ -2,8 +2,8 @@
 
 # Architecture
 The Gossip Key-Value Store is a distributed key-value store that uses a gossip protocol to replicate data across all
-members of the cluster. The key-value store is eventually consistent and is designed to be used in scenarios where
-consistency is not a hard requirement.
+members of the cluster. The key-value store is eventually consistent and is designed to be used in scenarios where 
+strict consistency is not a hard requirement.
 
 ## Data Model
 Data stored in the key-value store is modelled as three level hierarchy `Namespace > Table > Rows`. 
