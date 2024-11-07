@@ -62,7 +62,7 @@ impl<'a, P> ExternalProcess<'a, P> {
     pub fn source_external_bytes<L: Location<'a> + NoTick>(
         &self,
         to: &L,
-    ) -> (ExternalBytesPort, Stream<Bytes, Unbounded, L>) {
+    ) -> (ExternalBytesPort, Stream<Bytes, L, Unbounded>) {
         let next_external_port_id = {
             let mut flow_state = self.flow_state.borrow_mut();
             let id = flow_state.next_external_out;
@@ -97,7 +97,7 @@ impl<'a, P> ExternalProcess<'a, P> {
     pub fn source_external_bincode<L: Location<'a> + NoTick, T: Serialize + DeserializeOwned>(
         &self,
         to: &L,
-    ) -> (ExternalBincodeSink<T>, Stream<T, Unbounded, L>) {
+    ) -> (ExternalBincodeSink<T>, Stream<T, L, Unbounded>) {
         let next_external_port_id = {
             let mut flow_state = self.flow_state.borrow_mut();
             let id = flow_state.next_external_out;

@@ -14,15 +14,15 @@ use crate::location::{check_matching_location, Location, LocationId, NoTick, Tic
 use crate::stream::{Bounded, Unbounded};
 use crate::{Optional, Stream};
 
-pub struct Singleton<T, W, N> {
-    pub(crate) location: N,
+pub struct Singleton<T, L, B> {
+    pub(crate) location: L,
     pub(crate) ir_node: RefCell<HfPlusNode>,
 
-    _phantom: PhantomData<(T, N, W)>,
+    _phantom: PhantomData<(T, L, B)>,
 }
 
-impl<'a, T, W, N: Location<'a>> Singleton<T, W, N> {
-    pub(crate) fn new(location: N, ir_node: HfPlusNode) -> Self {
+impl<'a, T, L: Location<'a>, B> Singleton<T, L, B> {
+    pub(crate) fn new(location: L, ir_node: HfPlusNode) -> Self {
         Singleton {
             location,
             ir_node: RefCell::new(ir_node),
@@ -35,24 +35,24 @@ impl<'a, T, W, N: Location<'a>> Singleton<T, W, N> {
     }
 }
 
-impl<'a, T, N: Location<'a>> From<Singleton<T, Bounded, N>> for Singleton<T, Unbounded, N> {
-    fn from(singleton: Singleton<T, Bounded, N>) -> Self {
+impl<'a, T, L: Location<'a>> From<Singleton<T, L, Bounded>> for Singleton<T, L, Unbounded> {
+    fn from(singleton: Singleton<T, L, Bounded>) -> Self {
         Singleton::new(singleton.location, singleton.ir_node.into_inner())
     }
 }
 
-impl<'a, T, N: Location<'a>> DeferTick for Singleton<T, Bounded, Tick<N>> {
+impl<'a, T, L: Location<'a>> DeferTick for Singleton<T, Tick<L>, Bounded> {
     fn defer_tick(self) -> Self {
         Singleton::defer_tick(self)
     }
 }
 
-impl<'a, T, N: Location<'a>> CycleCollectionWithInitial<'a, TickCycle>
-    for Singleton<T, Bounded, Tick<N>>
+impl<'a, T, L: Location<'a>> CycleCollectionWithInitial<'a, TickCycle>
+    for Singleton<T, Tick<L>, Bounded>
 {
-    type Location = Tick<N>;
+    type Location = Tick<L>;
 
-    fn create_source(ident: syn::Ident, initial: Self, location: Tick<N>) -> Self {
+    fn create_source(ident: syn::Ident, initial: Self, location: Tick<L>) -> Self {
         let location_id = location.id();
         Singleton::new(
             location,
@@ -67,7 +67,7 @@ impl<'a, T, N: Location<'a>> CycleCollectionWithInitial<'a, TickCycle>
     }
 }
 
-impl<'a, T, N: Location<'a>> CycleComplete<'a, TickCycle> for Singleton<T, Bounded, Tick<N>> {
+impl<'a, T, L: Location<'a>> CycleComplete<'a, TickCycle> for Singleton<T, Tick<L>, Bounded> {
     fn complete(self, ident: syn::Ident) {
         self.location
             .flow_state()
@@ -83,10 +83,10 @@ impl<'a, T, N: Location<'a>> CycleComplete<'a, TickCycle> for Singleton<T, Bound
     }
 }
 
-impl<'a, T, N: Location<'a>> CycleCollection<'a, ForwardRef> for Singleton<T, Bounded, Tick<N>> {
-    type Location = Tick<N>;
+impl<'a, T, L: Location<'a>> CycleCollection<'a, ForwardRef> for Singleton<T, Tick<L>, Bounded> {
+    type Location = Tick<L>;
 
-    fn create_source(ident: syn::Ident, location: Tick<N>) -> Self {
+    fn create_source(ident: syn::Ident, location: Tick<L>) -> Self {
         let location_id = location.id();
         Singleton::new(
             location,
@@ -98,7 +98,7 @@ impl<'a, T, N: Location<'a>> CycleCollection<'a, ForwardRef> for Singleton<T, Bo
     }
 }
 
-impl<'a, T, N: Location<'a>> CycleComplete<'a, ForwardRef> for Singleton<T, Bounded, Tick<N>> {
+impl<'a, T, L: Location<'a>> CycleComplete<'a, ForwardRef> for Singleton<T, Tick<L>, Bounded> {
     fn complete(self, ident: syn::Ident) {
         self.location
             .flow_state()
@@ -114,7 +114,7 @@ impl<'a, T, N: Location<'a>> CycleComplete<'a, ForwardRef> for Singleton<T, Boun
     }
 }
 
-impl<'a, T: Clone, W, N: Location<'a>> Clone for Singleton<T, W, N> {
+impl<'a, T: Clone, L: Location<'a>, B> Clone for Singleton<T, L, B> {
     fn clone(&self) -> Self {
         if !matches!(self.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
             let orig_ir_node = self.ir_node.replace(HfPlusNode::Placeholder);
@@ -138,13 +138,13 @@ impl<'a, T: Clone, W, N: Location<'a>> Clone for Singleton<T, W, N> {
     }
 }
 
-impl<'a, T, W, N: Location<'a>> Singleton<T, W, N> {
+impl<'a, T, L: Location<'a>, B> Singleton<T, L, B> {
     // TODO(shadaj): this is technically incorrect; we should only return the first element of the stream
-    pub fn into_stream(self) -> Stream<T, Bounded, N> {
+    pub fn into_stream(self) -> Stream<T, L, Bounded> {
         Stream::new(self.location, self.ir_node.into_inner())
     }
 
-    pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Singleton<U, W, N> {
+    pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Singleton<U, L, B> {
         Singleton::new(
             self.location,
             HfPlusNode::Map {
@@ -157,7 +157,7 @@ impl<'a, T, W, N: Location<'a>> Singleton<T, W, N> {
     pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
-    ) -> Stream<U, W, N> {
+    ) -> Stream<U, L, B> {
         Stream::new(
             self.location,
             HfPlusNode::FlatMap {
@@ -167,7 +167,7 @@ impl<'a, T, W, N: Location<'a>> Singleton<T, W, N> {
         )
     }
 
-    pub fn filter<F: Fn(&T) -> bool + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Optional<T, W, N> {
+    pub fn filter<F: Fn(&T) -> bool + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Optional<T, L, B> {
         Optional::new(
             self.location,
             HfPlusNode::Filter {
@@ -180,7 +180,7 @@ impl<'a, T, W, N: Location<'a>> Singleton<T, W, N> {
     pub fn filter_map<U, F: Fn(T) -> Option<U> + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
-    ) -> Optional<U, W, N> {
+    ) -> Optional<U, L, B> {
         Optional::new(
             self.location,
             HfPlusNode::FilterMap {
@@ -192,11 +192,11 @@ impl<'a, T, W, N: Location<'a>> Singleton<T, W, N> {
 
     pub fn zip<Other>(self, other: Other) -> <Self as ZipResult<'a, Other>>::Out
     where
-        Self: ZipResult<'a, Other, Location = N>,
+        Self: ZipResult<'a, Other, Location = L>,
     {
         check_matching_location(&self.location, &Self::other_location(&other));
 
-        if N::is_top_level() {
+        if L::is_top_level() {
             Self::make(
                 self.location,
                 HfPlusNode::Persist(Box::new(HfPlusNode::CrossSingleton(
@@ -216,25 +216,25 @@ impl<'a, T, W, N: Location<'a>> Singleton<T, W, N> {
     }
 }
 
-impl<'a, T, N: Location<'a>> Singleton<T, Bounded, N> {
-    pub fn continue_if<U>(self, signal: Optional<U, Bounded, N>) -> Optional<T, Bounded, N> {
+impl<'a, T, L: Location<'a>> Singleton<T, L, Bounded> {
+    pub fn continue_if<U>(self, signal: Optional<U, L, Bounded>) -> Optional<T, L, Bounded> {
         self.zip(signal.map(q!(|_u| ()))).map(q!(|(d, _signal)| d))
     }
 
-    pub fn continue_unless<U>(self, other: Optional<U, Bounded, N>) -> Optional<T, Bounded, N> {
+    pub fn continue_unless<U>(self, other: Optional<U, L, Bounded>) -> Optional<T, L, Bounded> {
         self.continue_if(other.into_stream().count().filter(q!(|c| *c == 0)))
     }
 }
 
-impl<'a, T, B, N: Location<'a> + NoTick> Singleton<T, B, N> {
-    pub fn latest_tick(self, tick: &Tick<N>) -> Singleton<T, Bounded, Tick<N>> {
+impl<'a, T, L: Location<'a> + NoTick, B> Singleton<T, L, B> {
+    pub fn latest_tick(self, tick: &Tick<L>) -> Singleton<T, Tick<L>, Bounded> {
         Singleton::new(
             tick.clone(),
             HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn tick_samples(self) -> Stream<T, Unbounded, N> {
+    pub fn tick_samples(self) -> Stream<T, L, Unbounded> {
         let tick = self.location.tick();
         self.latest_tick(&tick).all_ticks()
     }
@@ -242,7 +242,7 @@ impl<'a, T, B, N: Location<'a> + NoTick> Singleton<T, B, N> {
     pub fn sample_every(
         self,
         interval: impl Quoted<'a, std::time::Duration> + Copy + 'a,
-    ) -> Stream<T, Unbounded, N> {
+    ) -> Stream<T, L, Unbounded> {
         let samples = self.location.source_interval(interval);
         let tick = self.location.tick();
 
@@ -252,36 +252,36 @@ impl<'a, T, B, N: Location<'a> + NoTick> Singleton<T, B, N> {
     }
 }
 
-impl<'a, T, N: Location<'a>> Singleton<T, Bounded, Tick<N>> {
-    pub fn all_ticks(self) -> Stream<T, Unbounded, N> {
+impl<'a, T, L: Location<'a>> Singleton<T, Tick<L>, Bounded> {
+    pub fn all_ticks(self) -> Stream<T, L, Unbounded> {
         Stream::new(
             self.location.outer().clone(),
             HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn latest(self) -> Singleton<T, Unbounded, N> {
+    pub fn latest(self) -> Singleton<T, L, Unbounded> {
         Singleton::new(
             self.location.outer().clone(),
             HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn defer_tick(self) -> Singleton<T, Bounded, Tick<N>> {
+    pub fn defer_tick(self) -> Singleton<T, Tick<L>, Bounded> {
         Singleton::new(
             self.location,
             HfPlusNode::DeferTick(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn persist(self) -> Stream<T, Bounded, Tick<N>> {
+    pub fn persist(self) -> Stream<T, Tick<L>, Bounded> {
         Stream::new(
             self.location,
             HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn delta(self) -> Optional<T, Bounded, Tick<N>> {
+    pub fn delta(self) -> Optional<T, Tick<L>, Bounded> {
         Optional::new(
             self.location,
             HfPlusNode::Delta(Box::new(self.ir_node.into_inner())),
@@ -299,36 +299,36 @@ pub trait ZipResult<'a, Other> {
     fn make(location: Self::Location, ir_node: HfPlusNode) -> Self::Out;
 }
 
-impl<'a, T, U: Clone, W, N: Location<'a>> ZipResult<'a, Singleton<U, W, N>> for Singleton<T, W, N> {
-    type Out = Singleton<(T, U), W, N>;
-    type Location = N;
+impl<'a, T, U: Clone, L: Location<'a>, B> ZipResult<'a, Singleton<U, L, B>> for Singleton<T, L, B> {
+    type Out = Singleton<(T, U), L, B>;
+    type Location = L;
 
-    fn other_location(other: &Singleton<U, W, N>) -> N {
+    fn other_location(other: &Singleton<U, L, B>) -> L {
         other.location.clone()
     }
 
-    fn other_ir_node(other: Singleton<U, W, N>) -> HfPlusNode {
+    fn other_ir_node(other: Singleton<U, L, B>) -> HfPlusNode {
         other.ir_node.into_inner()
     }
 
-    fn make(location: N, ir_node: HfPlusNode) -> Self::Out {
+    fn make(location: L, ir_node: HfPlusNode) -> Self::Out {
         Singleton::new(location, ir_node)
     }
 }
 
-impl<'a, T, U: Clone, W, N: Location<'a>> ZipResult<'a, Optional<U, W, N>> for Singleton<T, W, N> {
-    type Out = Optional<(T, U), W, N>;
-    type Location = N;
+impl<'a, T, U: Clone, L: Location<'a>, B> ZipResult<'a, Optional<U, L, B>> for Singleton<T, L, B> {
+    type Out = Optional<(T, U), L, B>;
+    type Location = L;
 
-    fn other_location(other: &Optional<U, W, N>) -> N {
+    fn other_location(other: &Optional<U, L, B>) -> L {
         other.location.clone()
     }
 
-    fn other_ir_node(other: Optional<U, W, N>) -> HfPlusNode {
+    fn other_ir_node(other: Optional<U, L, B>) -> HfPlusNode {
         other.ir_node.into_inner()
     }
 
-    fn make(location: N, ir_node: HfPlusNode) -> Self::Out {
+    fn make(location: L, ir_node: HfPlusNode) -> Self::Out {
         Optional::new(location, ir_node)
     }
 }

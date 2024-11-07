@@ -51,15 +51,15 @@ pub fn paxos_kv<'a, K: KvKey, V: KvValue>(
     proposers: &Cluster<'a, Proposer>,
     acceptors: &Cluster<'a, Acceptor>,
     replicas: &Cluster<'a, Replica>,
-    c_to_proposers: Stream<KvPayload<K, V>, Unbounded, Cluster<'a, Proposer>>,
+    c_to_proposers: Stream<KvPayload<K, V>, Cluster<'a, Proposer>, Unbounded>,
     f: usize,
     i_am_leader_send_timeout: u64,
     i_am_leader_check_timeout: u64,
     i_am_leader_check_timeout_delay_multiplier: usize,
     checkpoint_frequency: usize,
 ) -> (
-    Stream<(), Unbounded, Cluster<'a, Proposer>>,
-    Stream<KvPayload<K, V>, Unbounded, Cluster<'a, Replica>>,
+    Stream<(), Cluster<'a, Proposer>, Unbounded>,
+    Stream<KvPayload<K, V>, Cluster<'a, Replica>, Unbounded>,
 ) {
     let (r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
         replicas.forward_ref::<Stream<_, _, _>>();
@@ -92,11 +92,11 @@ pub fn paxos_kv<'a, K: KvKey, V: KvValue>(
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 pub fn replica<'a, K: KvKey, V: KvValue>(
     replicas: &Cluster<'a, Replica>,
-    p_to_replicas: Stream<SequencedKv<K, V>, Unbounded, Cluster<'a, Replica>>,
+    p_to_replicas: Stream<SequencedKv<K, V>, Cluster<'a, Replica>, Unbounded>,
     checkpoint_frequency: usize,
 ) -> (
-    Stream<usize, Unbounded, Cluster<'a, Replica>>,
-    Stream<KvPayload<K, V>, Unbounded, Cluster<'a, Replica>>,
+    Stream<usize, Cluster<'a, Replica>, Unbounded>,
+    Stream<KvPayload<K, V>, Cluster<'a, Replica>, Unbounded>,
 ) {
     let replica_tick = replicas.tick();
 
