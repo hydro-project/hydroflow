@@ -5,6 +5,12 @@ sidebar_position: 0
 # Introduction
 Hydroflow+ layers a high-level Rust API over the Hydroflow IR, making it possible to write dataflow programs that span multiple processes with straightline, functional Rust code. Hydroflow+ is built on top of [Stageleft](./stageleft.mdx), which allows Hydroflow+ to emit regular Hydroflow programs that are compiled into efficient Rust binaries. It also integrates with [Hydro Deploy](../deploy/index.md) to make it easy to deploy and run Hydroflow+ programs on a cluster.
 
+:::caution
+
+The docs for Hydroflow+ are still a work in progress. If you have any questions or run into bugs, please file an issue on the [Hydroflow GitHub repository](https://github.com/hydro-project/hydroflow).
+
+:::
+
 The main logic of Hydroflow+ programs manipulates **streams**, which capture infinite ordered sequences of elements. Streams are transformed using classic functional operators such as `map`, `filter`, and `fold`, as well as relational operators such as `join`. To build **distributed** dataflow programs, Hydroflow+ also introduces the concept of **processes**, which capture _where_ a stream is being processed.
 
 ## Setup
