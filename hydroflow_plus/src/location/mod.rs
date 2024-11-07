@@ -78,7 +78,7 @@ pub trait Location<'a>: Clone {
         }
     }
 
-    fn spin(&self) -> Stream<(), Unbounded, Self>
+    fn spin(&self) -> Stream<(), Self, Unbounded>
     where
         Self: Sized + NoTick,
     {
@@ -94,7 +94,7 @@ pub trait Location<'a>: Clone {
     fn source_stream<T, E: FuturesStream<Item = T> + Unpin>(
         &self,
         e: impl Quoted<'a, E>,
-    ) -> Stream<T, Unbounded, Self>
+    ) -> Stream<T, Self, Unbounded>
     where
         Self: Sized + NoTick,
     {
@@ -112,7 +112,7 @@ pub trait Location<'a>: Clone {
     fn source_iter<T, E: IntoIterator<Item = T>>(
         &self,
         e: impl Quoted<'a, E>,
-    ) -> Stream<T, Unbounded, Self>
+    ) -> Stream<T, Self, Unbounded>
     where
         Self: Sized + NoTick,
     {
@@ -129,7 +129,7 @@ pub trait Location<'a>: Clone {
         )
     }
 
-    fn singleton<T: Clone>(&self, e: impl Quoted<'a, T>) -> Singleton<T, Unbounded, Self>
+    fn singleton<T: Clone>(&self, e: impl Quoted<'a, T>) -> Singleton<T, Self, Unbounded>
     where
         Self: Sized + NoTick,
     {
@@ -156,7 +156,7 @@ pub trait Location<'a>: Clone {
     fn source_interval(
         &self,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
-    ) -> Stream<tokio::time::Instant, Unbounded, Self>
+    ) -> Stream<tokio::time::Instant, Self, Unbounded>
     where
         Self: Sized + NoTick,
     {
@@ -169,7 +169,7 @@ pub trait Location<'a>: Clone {
         &self,
         delay: impl Quoted<'a, Duration> + Copy + 'a,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
-    ) -> Stream<tokio::time::Instant, Unbounded, Self>
+    ) -> Stream<tokio::time::Instant, Self, Unbounded>
     where
         Self: Sized + NoTick,
     {
