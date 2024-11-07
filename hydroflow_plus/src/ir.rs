@@ -186,9 +186,10 @@ impl HfPlusLeaf {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
-                let location_id = match location_kind {
+                let location_id = match location_kind.root() {
                     LocationId::Process(id) => id,
                     LocationId::Cluster(id) => id,
+                    LocationId::Tick(_, _) => panic!(),
                     LocationId::ExternalProcess(_) => panic!(),
                 };
 
@@ -586,6 +587,7 @@ impl<'a> HfPlusNode {
                 let location_id = match location_kind {
                     LocationId::Process(id) => id,
                     LocationId::Cluster(id) => id,
+                    LocationId::Tick(_, _) => panic!(),
                     LocationId::ExternalProcess(id) => id,
                 };
 
@@ -635,9 +637,10 @@ impl<'a> HfPlusNode {
                 ident,
                 location_kind,
             } => {
-                let location_id = match location_kind {
+                let location_id = match location_kind.root() {
                     LocationId::Process(id) => id,
                     LocationId::Cluster(id) => id,
+                    LocationId::Tick(_, _) => panic!(),
                     LocationId::ExternalProcess(_) => panic!(),
                 };
 
@@ -1161,6 +1164,7 @@ impl<'a> HfPlusNode {
                 let to_id = match to_location {
                     LocationId::Process(id) => id,
                     LocationId::Cluster(id) => id,
+                    LocationId::Tick(_, _) => panic!(),
                     LocationId::ExternalProcess(id) => id,
                 };
 
@@ -1355,6 +1359,8 @@ fn instantiate_network<'a, D: Deploy<'a> + 'a>(
         (LocationId::Cluster(_from), LocationId::ExternalProcess(_to)) => {
             todo!("NYI")
         }
+        (LocationId::Tick(_, _), _) => panic!(),
+        (_, LocationId::Tick(_, _)) => panic!(),
     };
     (sink, source, connect_fn)
 }

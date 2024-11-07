@@ -88,6 +88,7 @@ fn bench_client<'a>(
     median_latency_window_size: usize,
     f: usize,
 ) {
+    let client_tick = clients.tick();
     let c_id = clients.self_id();
     // r_to_clients_payload_applied.clone().inspect(q!(|payload: &(u32, ReplicaPayload)| println!("Client received payload: {:?}", payload)));
     // Only keep the latest leader
@@ -97,7 +98,7 @@ fn bench_client<'a>(
             ballot
         )))
         .max();
-    let c_new_leader_ballot = current_leader.clone().latest_tick().delta();
+    let c_new_leader_ballot = current_leader.clone().latest_tick(&client_tick).delta();
     // Whenever the leader changes, make all clients send a message
     let c_new_payloads_when_leader_elected =
         c_new_leader_ballot
@@ -116,10 +117,9 @@ fn bench_client<'a>(
     let transaction_results = transaction_cycle(c_to_proposers);
 
     // Whenever replicas confirm that a payload was committed, collected it and wait for a quorum
-    let (c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) =
-        clients.tick_cycle();
+    let (c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) = client_tick.cycle();
     let c_received_payloads = transaction_results
-        .tick_batch()
+        .tick_batch(&client_tick)
         .map(q!(|(sender, replica_payload)| (
             replica_payload.key,
             sender
@@ -146,7 +146,7 @@ fn bench_client<'a>(
     // Whenever all replicas confirm that a payload was committed, send another payload
     let c_new_payloads_when_committed = c_received_quorum_payloads
         .clone()
-        .cross_singleton(current_leader.clone().latest_tick())
+        .cross_singleton(current_leader.clone().latest_tick(&client_tick))
         .map(q!(move |(key, cur_leader)| (
             cur_leader,
             KvPayload { key, value: c_id }
@@ -159,7 +159,7 @@ fn bench_client<'a>(
 
     // Track statistics
     let (c_timers_complete_cycle, c_timers) =
-        clients.tick_cycle::<Stream<(usize, SystemTime), _, _>>();
+        client_tick.cycle::<Stream<(usize, SystemTime), _, _>>();
     let c_new_timers_when_leader_elected = c_new_leader_ballot
         .map(q!(|_| SystemTime::now()))
         .flat_map(q!(
@@ -181,7 +181,7 @@ fn bench_client<'a>(
 
     let c_stats_output_timer = clients
         .source_interval(q!(Duration::from_secs(1)))
-        .tick_batch()
+        .tick_batch(&client_tick)
         .first();
 
     let c_latency_reset = c_stats_output_timer.clone().map(q!(|_| None)).defer_tick();
@@ -243,7 +243,7 @@ fn bench_client<'a>(
 
     c_latencies
         .zip(c_throughput)
-        .latest_tick()
+        .latest_tick(&client_tick)
         .continue_if(c_stats_output_timer)
         .all_ticks()
         .for_each(q!(move |(latencies, throughput)| {

@@ -40,7 +40,7 @@ pub fn simple_cluster<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, ()>, Cluster<'
     ids.cross_product(numbers)
         .map(q!(|(id, n)| (id, (id, n))))
         .send_bincode(&cluster)
-        .tick_batch()
+        .tick_batch(&cluster.tick())
         .inspect(q!(move |n| println!(
             "cluster received: {:?} (self cluster id: {})",
             n, cluster_self_id

@@ -299,7 +299,7 @@ impl<'a, T, W, N: Location<'a>> Optional<T, W, N> {
         let none: syn::Expr = parse_quote!([::std::option::Option::None]);
         let core_ir = HfPlusNode::Persist(Box::new(HfPlusNode::Source {
             source: HfPlusSource::Iter(none.into()),
-            location_kind: self.location.id(),
+            location_kind: self.location.id().root().clone(),
         }));
 
         let none_singleton = if N::is_top_level() {
@@ -330,27 +330,28 @@ impl<'a, T, N: Location<'a>> Optional<T, Bounded, N> {
 }
 
 impl<'a, T, B, N: Location<'a> + NoTick> Optional<T, B, N> {
-    pub fn latest_tick(self) -> Optional<T, Bounded, Tick<N>> {
+    pub fn latest_tick(self, tick: &Tick<N>) -> Optional<T, Bounded, Tick<N>> {
         Optional::new(
-            self.location.nest(),
+            tick.clone(),
             HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
         )
     }
 
     pub fn tick_samples(self) -> Stream<T, Unbounded, N> {
-        self.latest_tick().all_ticks()
+        let tick = self.location.tick();
+        self.latest_tick(&tick).all_ticks()
     }
 
     pub fn sample_every(
         self,
         interval: impl Quoted<'a, std::time::Duration> + Copy + 'a,
     ) -> Stream<T, Unbounded, N> {
-        let samples = self.location.source_interval(interval).tick_batch();
+        let samples = self.location.source_interval(interval);
+        let tick = self.location.tick();
 
-        self.latest_tick()
-            .continue_if(samples.first())
-            .latest()
-            .tick_samples()
+        self.latest_tick(&tick)
+            .continue_if(samples.tick_batch(&tick).first())
+            .all_ticks()
     }
 }
 

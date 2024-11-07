@@ -69,7 +69,7 @@ pub fn two_pc<'a>(
     .map(q!(|(id, (t, _reply))| (t, id)))
     // fold_keyed: 1 input stream of type (K, V1), 1 output stream of type (K, V2). 
     // The output will have one tuple for each distinct K, with an accumulated value of type V2.
-    .tick_batch().fold_keyed(q!(|| 0), q!(|old: &mut u32, _| *old += 1)).filter_map(q!(move |(t, count)| {
+    .tick_batch(&coordinator.tick()).fold_keyed(q!(|| 0), q!(|old: &mut u32, _| *old += 1)).filter_map(q!(move |(t, count)| {
         // here I set the participant to 3. If want more or less participant, fix line 26 of examples/broadcast.rs
         if count == num_participants {
             Some(t)
