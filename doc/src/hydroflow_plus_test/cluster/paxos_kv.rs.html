@@ -183,6 +183,8 @@
 <a href="#183" id="183">183</a>
 <a href="#184" id="184">184</a>
 <a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::hash::Hash;
@@ -236,15 +238,15 @@
     proposers: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;,
     acceptors: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Acceptor&gt;,
     replicas: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;,
-    c_to_proposers: Stream&lt;KvPayload&lt;K, V&gt;, Unbounded, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
+    c_to_proposers: Stream&lt;KvPayload&lt;K, V&gt;, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;, Unbounded&gt;,
     f: usize,
     i_am_leader_send_timeout: u64,
     i_am_leader_check_timeout: u64,
     i_am_leader_check_timeout_delay_multiplier: usize,
     checkpoint_frequency: usize,
 ) -&gt; (
-    Stream&lt;(), Unbounded, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
-    Stream&lt;KvPayload&lt;K, V&gt;, Unbounded, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
+    Stream&lt;(), Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;, Unbounded&gt;,
+    Stream&lt;KvPayload&lt;K, V&gt;, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;, Unbounded&gt;,
 ) {
     <span class="kw">let </span>(r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
         replicas.forward_ref::&lt;Stream&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
@@ -277,21 +279,23 @@
 </span><span class="attr">#[expect(clippy::type_complexity, reason = <span class="string">"internal paxos code // TODO"</span>)]
 </span><span class="kw">pub fn </span>replica&lt;<span class="lifetime">'a</span>, K: KvKey, V: KvValue&gt;(
     replicas: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;,
-    p_to_replicas: Stream&lt;SequencedKv&lt;K, V&gt;, Unbounded, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
+    p_to_replicas: Stream&lt;SequencedKv&lt;K, V&gt;, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;, Unbounded&gt;,
     checkpoint_frequency: usize,
 ) -&gt; (
-    Stream&lt;usize, Unbounded, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
-    Stream&lt;KvPayload&lt;K, V&gt;, Unbounded, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;&gt;,
+    Stream&lt;usize, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;, Unbounded&gt;,
+    Stream&lt;KvPayload&lt;K, V&gt;, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;, Unbounded&gt;,
 ) {
-    <span class="kw">let </span>(r_buffered_payloads_complete_cycle, r_buffered_payloads) = replicas.tick_cycle();
+    <span class="kw">let </span>replica_tick = replicas.tick();
+
+    <span class="kw">let </span>(r_buffered_payloads_complete_cycle, r_buffered_payloads) = replica_tick.cycle();
     <span class="comment">// p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
     </span><span class="kw">let </span>r_sorted_payloads = p_to_replicas
-        .tick_batch()
+        .tick_batch(<span class="kw-2">&amp;</span>replica_tick)
         .union(r_buffered_payloads) <span class="comment">// Combine with all payloads that we've received and not processed yet
         </span>.sort();
     <span class="comment">// Create a cycle since we'll use this seq before we define it
     </span><span class="kw">let </span>(r_highest_seq_complete_cycle, r_highest_seq) =
-        replicas.tick_cycle::&lt;Optional&lt;usize, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
+        replica_tick.cycle::&lt;Optional&lt;usize, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
     <span class="comment">// Find highest the sequence number of any payload that can be processed in this tick. This is the payload right before a hole.
     </span><span class="kw">let </span>r_highest_seq_processable_payload = r_sorted_payloads
         .clone()
@@ -345,7 +349,7 @@
 
     <span class="comment">// Send checkpoints to the acceptors when we've processed enough payloads
     </span><span class="kw">let </span>(r_checkpointed_seqs_complete_cycle, r_checkpointed_seqs) =
-        replicas.tick_cycle::&lt;Optional&lt;usize, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
+        replica_tick.cycle::&lt;Optional&lt;usize, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
     <span class="kw">let </span>r_max_checkpointed_seq = r_checkpointed_seqs.persist().max().into_singleton();
     <span class="kw">let </span>r_checkpoint_seq_new =
         r_max_checkpointed_seq

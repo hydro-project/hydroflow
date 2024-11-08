@@ -155,6 +155,10 @@
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
 <a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -181,6 +185,9 @@
 
     <span class="doccomment">/// Counters for generating identifiers for cycles.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) cycle_counts: HashMap&lt;usize, usize&gt;,
+
+    <span class="doccomment">/// Counters for clock IDs.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) next_clock_id: usize,
 }
 
 <span class="kw">pub type </span>FlowState = Rc&lt;RefCell&lt;FlowStateInner&gt;&gt;;
@@ -230,6 +237,7 @@
                 leaves: <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[]),
                 next_external_out: <span class="number">0</span>,
                 cycle_counts: HashMap::new(),
+                next_clock_id: <span class="number">0</span>,
             })),
             nodes: RefCell::new(<span class="macro">vec!</span>[]),
             clusters: RefCell::new(<span class="macro">vec!</span>[]),

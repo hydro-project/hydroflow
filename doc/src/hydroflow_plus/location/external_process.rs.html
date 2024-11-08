@@ -194,7 +194,7 @@
     <span class="kw">pub fn </span>source_external_bytes&lt;L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         to: <span class="kw-2">&amp;</span>L,
-    ) -&gt; (ExternalBytesPort, Stream&lt;Bytes, Unbounded, L&gt;) {
+    ) -&gt; (ExternalBytesPort, Stream&lt;Bytes, L, Unbounded&gt;) {
         <span class="kw">let </span>next_external_port_id = {
             <span class="kw">let </span><span class="kw-2">mut </span>flow_state = <span class="self">self</span>.flow_state.borrow_mut();
             <span class="kw">let </span>id = flow_state.next_external_out;
@@ -229,7 +229,7 @@
     <span class="kw">pub fn </span>source_external_bincode&lt;L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick, T: Serialize + DeserializeOwned&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         to: <span class="kw-2">&amp;</span>L,
-    ) -&gt; (ExternalBincodeSink&lt;T&gt;, Stream&lt;T, Unbounded, L&gt;) {
+    ) -&gt; (ExternalBincodeSink&lt;T&gt;, Stream&lt;T, L, Unbounded&gt;) {
         <span class="kw">let </span>next_external_port_id = {
             <span class="kw">let </span><span class="kw-2">mut </span>flow_state = <span class="self">self</span>.flow_state.borrow_mut();
             <span class="kw">let </span>id = flow_state.next_external_out;

@@ -81,7 +81,7 @@
 
     <span class="kw">let </span>all_ids_vec = cluster.members();
     <span class="kw">let </span>words_partitioned = words
-        .tick_batch()
+        .tick_batch(<span class="kw-2">&amp;</span>process.tick())
         .enumerate()
         .map(<span class="macro">q!</span>(|(i, w)| (
             ClusterId::from_raw((i % all_ids_vec.len()) <span class="kw">as </span>u32),
@@ -92,7 +92,7 @@
     words_partitioned
         .send_bincode(<span class="kw-2">&amp;</span>cluster)
         .map(<span class="macro">q!</span>(|string| (string, ())))
-        .tick_batch()
+        .tick_batch(<span class="kw-2">&amp;</span>cluster.tick())
         .fold_keyed(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|count, <span class="kw">_</span>| <span class="kw-2">*</span>count += <span class="number">1</span>))
         .inspect(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(
             <span class="string">"partition count: {} - {}"</span>,
@@ -100,7 +100,7 @@
         )))
         .all_ticks()
         .send_bincode_interleaved(<span class="kw-2">&amp;</span>process)
-        .tick_batch()
+        .tick_batch(<span class="kw-2">&amp;</span>process.tick())
         .persist()
         .reduce_keyed(<span class="macro">q!</span>(|total, count| <span class="kw-2">*</span>total += count))
         .all_ticks()

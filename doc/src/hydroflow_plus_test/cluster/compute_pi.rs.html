@@ -70,6 +70,7 @@
 <a href="#70" id="70">70</a>
 <a href="#71" id="71">71</a>
 <a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
@@ -86,6 +87,7 @@
     <span class="kw">let </span>process = flow.process();
 
     <span class="kw">let </span>trials = cluster
+        .tick()
         .spin_batch(<span class="macro">q!</span>(batch_size))
         .map(<span class="macro">q!</span>(|<span class="kw">_</span>| rand::random::&lt;(f64, f64)&gt;()))
         .map(<span class="macro">q!</span>(|(x, y)| x * x + y * y &lt; <span class="number">1.0</span>))

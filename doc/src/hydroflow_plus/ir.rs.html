@@ -1358,6 +1358,12 @@
 <a href="#1358" id="1358">1358</a>
 <a href="#1359" id="1359">1359</a>
 <a href="#1360" id="1360">1360</a>
+<a href="#1361" id="1361">1361</a>
+<a href="#1362" id="1362">1362</a>
+<a href="#1363" id="1363">1363</a>
+<a href="#1364" id="1364">1364</a>
+<a href="#1365" id="1365">1365</a>
+<a href="#1366" id="1366">1366</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::panic;
 <span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap};
@@ -1546,9 +1552,10 @@
                 <span class="kw">let </span>(input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
-                <span class="kw">let </span>location_id = <span class="kw">match </span>location_kind {
+                <span class="kw">let </span>location_id = <span class="kw">match </span>location_kind.root() {
                     LocationId::Process(id) =&gt; id,
                     LocationId::Cluster(id) =&gt; id,
+                    LocationId::Tick(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(),
                     LocationId::ExternalProcess(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(),
                 };
 
@@ -1946,6 +1953,7 @@
                 <span class="kw">let </span>location_id = <span class="kw">match </span>location_kind {
                     LocationId::Process(id) =&gt; id,
                     LocationId::Cluster(id) =&gt; id,
+                    LocationId::Tick(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(),
                     LocationId::ExternalProcess(id) =&gt; id,
                 };
 
@@ -1995,9 +2003,10 @@
                 ident,
                 location_kind,
             } =&gt; {
-                <span class="kw">let </span>location_id = <span class="kw">match </span>location_kind {
+                <span class="kw">let </span>location_id = <span class="kw">match </span>location_kind.root() {
                     LocationId::Process(id) =&gt; id,
                     LocationId::Cluster(id) =&gt; id,
+                    LocationId::Tick(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(),
                     LocationId::ExternalProcess(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(),
                 };
 
@@ -2521,6 +2530,7 @@
                 <span class="kw">let </span>to_id = <span class="kw">match </span>to_location {
                     LocationId::Process(id) =&gt; id,
                     LocationId::Cluster(id) =&gt; id,
+                    LocationId::Tick(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(),
                     LocationId::ExternalProcess(id) =&gt; id,
                 };
 
@@ -2715,6 +2725,8 @@
         (LocationId::Cluster(_from), LocationId::ExternalProcess(_to)) =&gt; {
             <span class="macro">todo!</span>(<span class="string">"NYI"</span>)
         }
+        (LocationId::Tick(<span class="kw">_</span>, <span class="kw">_</span>), <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(),
+        (<span class="kw">_</span>, LocationId::Tick(<span class="kw">_</span>, <span class="kw">_</span>)) =&gt; <span class="macro">panic!</span>(),
     };
     (sink, source, connect_fn)
 }

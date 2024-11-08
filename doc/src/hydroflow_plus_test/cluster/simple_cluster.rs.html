@@ -230,7 +230,7 @@
     ids.cross_product(numbers)
         .map(<span class="macro">q!</span>(|(id, n)| (id, (id, n))))
         .send_bincode(<span class="kw-2">&amp;</span>cluster)
-        .tick_batch()
+        .tick_batch(<span class="kw-2">&amp;</span>cluster.tick())
         .inspect(<span class="macro">q!</span>(<span class="kw">move </span>|n| <span class="macro">println!</span>(
             <span class="string">"cluster received: {:?} (self cluster id: {})"</span>,
             n, cluster_self_id

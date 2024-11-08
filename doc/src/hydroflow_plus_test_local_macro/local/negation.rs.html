@@ -200,6 +200,8 @@
 <a href="#200" id="200">200</a>
 <a href="#201" id="201">201</a>
 <a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
 <span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
@@ -213,13 +215,14 @@
     persist2: bool,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
+    <span class="kw">let </span>tick = process.tick();
 
-    <span class="kw">let </span><span class="kw-2">mut </span>source = process.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>)).tick_batch();
+    <span class="kw">let </span><span class="kw-2">mut </span>source = process.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>)).tick_batch(<span class="kw-2">&amp;</span>tick);
     <span class="kw">if </span>persist1 {
         source = source.persist();
     }
 
-    <span class="kw">let </span><span class="kw-2">mut </span>source2 = process.source_iter(<span class="macro">q!</span>(<span class="number">3</span>..<span class="number">6</span>)).tick_batch();
+    <span class="kw">let </span><span class="kw-2">mut </span>source2 = process.source_iter(<span class="macro">q!</span>(<span class="number">3</span>..<span class="number">6</span>)).tick_batch(<span class="kw-2">&amp;</span>tick);
     <span class="kw">if </span>persist2 {
         source2 = source2.persist();
     }
@@ -240,16 +243,17 @@
     persist2: bool,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
+    <span class="kw">let </span>tick = process.tick();
 
     <span class="kw">let </span><span class="kw-2">mut </span>source = process
         .source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>))
         .map(<span class="macro">q!</span>(|v| (v, v)))
-        .tick_batch();
+        .tick_batch(<span class="kw-2">&amp;</span>tick);
     <span class="kw">if </span>persist1 {
         source = source.persist();
     }
 
-    <span class="kw">let </span><span class="kw-2">mut </span>source2 = process.source_iter(<span class="macro">q!</span>(<span class="number">3</span>..<span class="number">6</span>)).tick_batch();
+    <span class="kw">let </span><span class="kw-2">mut </span>source2 = process.source_iter(<span class="macro">q!</span>(<span class="number">3</span>..<span class="number">6</span>)).tick_batch(<span class="kw-2">&amp;</span>tick);
     <span class="kw">if </span>persist2 {
         source2 = source2.persist();
     }

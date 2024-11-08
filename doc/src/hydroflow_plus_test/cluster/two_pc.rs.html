@@ -162,7 +162,7 @@
     .map(<span class="macro">q!</span>(|(id, (t, _reply))| (t, id)))
     <span class="comment">// fold_keyed: 1 input stream of type (K, V1), 1 output stream of type (K, V2). 
     // The output will have one tuple for each distinct K, with an accumulated value of type V2.
-    </span>.tick_batch().fold_keyed(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|old: <span class="kw-2">&amp;mut </span>u32, <span class="kw">_</span>| <span class="kw-2">*</span>old += <span class="number">1</span>)).filter_map(<span class="macro">q!</span>(<span class="kw">move </span>|(t, count)| {
+    </span>.tick_batch(<span class="kw-2">&amp;</span>coordinator.tick()).fold_keyed(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|old: <span class="kw-2">&amp;mut </span>u32, <span class="kw">_</span>| <span class="kw-2">*</span>old += <span class="number">1</span>)).filter_map(<span class="macro">q!</span>(<span class="kw">move </span>|(t, count)| {
         <span class="comment">// here I set the participant to 3. If want more or less participant, fix line 26 of examples/broadcast.rs
         </span><span class="kw">if </span>count == num_participants {
             <span class="prelude-val">Some</span>(t)

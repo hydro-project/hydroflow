@@ -351,22 +351,23 @@
 <span class="comment">// Clients. All relations for clients will be prefixed with c. All ClientPayloads will contain the virtual client number as key and the client's machine ID (to string) as value. Expects p_to_clients_leader_elected containing Ballots whenever the leader is elected, and r_to_clients_payload_applied containing ReplicaPayloads whenever a payload is committed. Outputs (leader address, ClientPayload) when a new leader is elected or when the previous payload is committed.
 </span><span class="kw">fn </span>bench_client&lt;<span class="lifetime">'a</span>&gt;(
     clients: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Client&gt;,
-    p_to_clients_leader_elected: Stream&lt;ClusterId&lt;Proposer&gt;, Unbounded, Cluster&lt;<span class="lifetime">'a</span>, Client&gt;&gt;,
+    p_to_clients_leader_elected: Stream&lt;ClusterId&lt;Proposer&gt;, Cluster&lt;<span class="lifetime">'a</span>, Client&gt;, Unbounded&gt;,
     transaction_cycle: <span class="kw">impl </span>FnOnce(
         Stream&lt;
             (ClusterId&lt;Proposer&gt;, KvPayload&lt;u32, ClusterId&lt;Client&gt;&gt;),
-            Unbounded,
             Cluster&lt;<span class="lifetime">'a</span>, Client&gt;,
+            Unbounded,
         &gt;,
     ) -&gt; Stream&lt;
         (ClusterId&lt;Replica&gt;, KvPayload&lt;u32, ClusterId&lt;Client&gt;&gt;),
-        Unbounded,
         Cluster&lt;<span class="lifetime">'a</span>, Client&gt;,
+        Unbounded,
     &gt;,
     num_clients_per_node: usize,
     median_latency_window_size: usize,
     f: usize,
 ) {
+    <span class="kw">let </span>client_tick = clients.tick();
     <span class="kw">let </span>c_id = clients.self_id();
     <span class="comment">// r_to_clients_payload_applied.clone().inspect(q!(|payload: &amp;(u32, ReplicaPayload)| println!("Client received payload: {:?}", payload)));
     // Only keep the latest leader
@@ -376,7 +377,7 @@
             ballot
         )))
         .max();
-    <span class="kw">let </span>c_new_leader_ballot = current_leader.clone().latest_tick().delta();
+    <span class="kw">let </span>c_new_leader_ballot = current_leader.clone().latest_tick(<span class="kw-2">&amp;</span>client_tick).delta();
     <span class="comment">// Whenever the leader changes, make all clients send a message
     </span><span class="kw">let </span>c_new_payloads_when_leader_elected =
         c_new_leader_ballot
@@ -395,10 +396,9 @@
     <span class="kw">let </span>transaction_results = transaction_cycle(c_to_proposers);
 
     <span class="comment">// Whenever replicas confirm that a payload was committed, collected it and wait for a quorum
-    </span><span class="kw">let </span>(c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) =
-        clients.tick_cycle();
+    </span><span class="kw">let </span>(c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) = client_tick.cycle();
     <span class="kw">let </span>c_received_payloads = transaction_results
-        .tick_batch()
+        .tick_batch(<span class="kw-2">&amp;</span>client_tick)
         .map(<span class="macro">q!</span>(|(sender, replica_payload)| (
             replica_payload.key,
             sender
@@ -425,7 +425,7 @@
     <span class="comment">// Whenever all replicas confirm that a payload was committed, send another payload
     </span><span class="kw">let </span>c_new_payloads_when_committed = c_received_quorum_payloads
         .clone()
-        .cross_singleton(current_leader.clone().latest_tick())
+        .cross_singleton(current_leader.clone().latest_tick(<span class="kw-2">&amp;</span>client_tick))
         .map(<span class="macro">q!</span>(<span class="kw">move </span>|(key, cur_leader)| (
             cur_leader,
             KvPayload { key, value: c_id }
@@ -438,7 +438,7 @@
 
     <span class="comment">// Track statistics
     </span><span class="kw">let </span>(c_timers_complete_cycle, c_timers) =
-        clients.tick_cycle::&lt;Stream&lt;(usize, SystemTime), <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
+        client_tick.cycle::&lt;Stream&lt;(usize, SystemTime), <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
     <span class="kw">let </span>c_new_timers_when_leader_elected = c_new_leader_ballot
         .map(<span class="macro">q!</span>(|<span class="kw">_</span>| SystemTime::now()))
         .flat_map(<span class="macro">q!</span>(
@@ -460,7 +460,7 @@
 
     <span class="kw">let </span>c_stats_output_timer = clients
         .source_interval(<span class="macro">q!</span>(Duration::from_secs(<span class="number">1</span>)))
-        .tick_batch()
+        .tick_batch(<span class="kw-2">&amp;</span>client_tick)
         .first();
 
     <span class="kw">let </span>c_latency_reset = c_stats_output_timer.clone().map(<span class="macro">q!</span>(|<span class="kw">_</span>| <span class="prelude-val">None</span>)).defer_tick();
@@ -522,7 +522,7 @@
 
     c_latencies
         .zip(c_throughput)
-        .latest_tick()
+        .latest_tick(<span class="kw-2">&amp;</span>client_tick)
         .continue_if(c_stats_output_timer)
         .all_ticks()
         .for_each(<span class="macro">q!</span>(<span class="kw">move </span>|(latencies, throughput)| {

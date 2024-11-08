@@ -390,6 +390,13 @@
 <a href="#390" id="390">390</a>
 <a href="#391" id="391">391</a>
 <a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::ops::Deref;
@@ -404,15 +411,15 @@
 <span class="kw">use </span><span class="kw">crate</span>::location::{check_matching_location, LocationId, NoTick};
 <span class="kw">use crate</span>::{Bounded, Location, Singleton, Stream, Tick, Unbounded};
 
-<span class="kw">pub struct </span>Optional&lt;T, W, N&gt; {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) location: N,
+<span class="kw">pub struct </span>Optional&lt;T, L, B&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) location: L,
     <span class="kw">pub</span>(<span class="kw">crate</span>) ir_node: RefCell&lt;HfPlusNode&gt;,
 
-    _phantom: PhantomData&lt;(T, N, W)&gt;,
+    _phantom: PhantomData&lt;(T, L, B)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Optional&lt;T, W, N&gt; {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(location: N, ir_node: HfPlusNode) -&gt; <span class="self">Self </span>{
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;, B&gt; Optional&lt;T, L, B&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(location: L, ir_node: HfPlusNode) -&gt; <span class="self">Self </span>{
         Optional {
             location,
             ir_node: RefCell::new(ir_node),
@@ -420,7 +427,7 @@
         }
     }
 
-    <span class="kw">pub fn </span>some(singleton: Singleton&lt;T, W, N&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>some(singleton: Singleton&lt;T, L, B&gt;) -&gt; <span class="self">Self </span>{
         Optional::new(singleton.location, singleton.ir_node.into_inner())
     }
 
@@ -429,16 +436,16 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; DeferTick <span class="kw">for </span>Optional&lt;T, Bounded, Tick&lt;N&gt;&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; DeferTick <span class="kw">for </span>Optional&lt;T, Tick&lt;L&gt;, Bounded&gt; {
     <span class="kw">fn </span>defer_tick(<span class="self">self</span>) -&gt; <span class="self">Self </span>{
         Optional::defer_tick(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleCollection&lt;<span class="lifetime">'a</span>, TickCycle&gt; <span class="kw">for </span>Optional&lt;T, Bounded, Tick&lt;N&gt;&gt; {
-    <span class="kw">type </span>Location = Tick&lt;N&gt;;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleCollection&lt;<span class="lifetime">'a</span>, TickCycle&gt; <span class="kw">for </span>Optional&lt;T, Tick&lt;L&gt;, Bounded&gt; {
+    <span class="kw">type </span>Location = Tick&lt;L&gt;;
 
-    <span class="kw">fn </span>create_source(ident: syn::Ident, location: Tick&lt;N&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">fn </span>create_source(ident: syn::Ident, location: Tick&lt;L&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>location_id = location.id();
         Optional::new(
             location,
@@ -450,7 +457,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, TickCycle&gt; <span class="kw">for </span>Optional&lt;T, Bounded, Tick&lt;N&gt;&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, TickCycle&gt; <span class="kw">for </span>Optional&lt;T, Tick&lt;L&gt;, Bounded&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
         <span class="self">self</span>.location
             .flow_state()
@@ -466,10 +473,10 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleCollection&lt;<span class="lifetime">'a</span>, ForwardRef&gt; <span class="kw">for </span>Optional&lt;T, Bounded, Tick&lt;N&gt;&gt; {
-    <span class="kw">type </span>Location = Tick&lt;N&gt;;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleCollection&lt;<span class="lifetime">'a</span>, ForwardRef&gt; <span class="kw">for </span>Optional&lt;T, Tick&lt;L&gt;, Bounded&gt; {
+    <span class="kw">type </span>Location = Tick&lt;L&gt;;
 
-    <span class="kw">fn </span>create_source(ident: syn::Ident, location: Tick&lt;N&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">fn </span>create_source(ident: syn::Ident, location: Tick&lt;L&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>location_id = location.id();
         Optional::new(
             location,
@@ -481,7 +488,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRef&gt; <span class="kw">for </span>Optional&lt;T, Bounded, Tick&lt;N&gt;&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRef&gt; <span class="kw">for </span>Optional&lt;T, Tick&lt;L&gt;, Bounded&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
         <span class="self">self</span>.location
             .flow_state()
@@ -497,10 +504,10 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick&gt; CycleCollection&lt;<span class="lifetime">'a</span>, ForwardRef&gt; <span class="kw">for </span>Optional&lt;T, W, N&gt; {
-    <span class="kw">type </span>Location = N;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick, B&gt; CycleCollection&lt;<span class="lifetime">'a</span>, ForwardRef&gt; <span class="kw">for </span>Optional&lt;T, L, B&gt; {
+    <span class="kw">type </span>Location = L;
 
-    <span class="kw">fn </span>create_source(ident: syn::Ident, location: N) -&gt; <span class="self">Self </span>{
+    <span class="kw">fn </span>create_source(ident: syn::Ident, location: L) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>location_id = location.id();
         Optional::new(
             location,
@@ -512,7 +519,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick&gt; CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRef&gt; <span class="kw">for </span>Optional&lt;T, W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick, B&gt; CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRef&gt; <span class="kw">for </span>Optional&lt;T, L, B&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
         <span class="self">self</span>.location
             .flow_state()
@@ -528,13 +535,19 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; From&lt;Singleton&lt;T, W, N&gt;&gt; <span class="kw">for </span>Optional&lt;T, W, N&gt; {
-    <span class="kw">fn </span>from(singleton: Singleton&lt;T, W, N&gt;) -&gt; <span class="self">Self </span>{
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; From&lt;Optional&lt;T, L, Bounded&gt;&gt; <span class="kw">for </span>Optional&lt;T, L, Unbounded&gt; {
+    <span class="kw">fn </span>from(singleton: Optional&lt;T, L, Bounded&gt;) -&gt; <span class="self">Self </span>{
+        Optional::new(singleton.location, singleton.ir_node.into_inner())
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;, B&gt; From&lt;Singleton&lt;T, L, B&gt;&gt; <span class="kw">for </span>Optional&lt;T, L, B&gt; {
+    <span class="kw">fn </span>from(singleton: Singleton&lt;T, L, B&gt;) -&gt; <span class="self">Self </span>{
         Optional::some(singleton)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: Clone, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Clone <span class="kw">for </span>Optional&lt;T, W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: Clone, L: Location&lt;<span class="lifetime">'a</span>&gt;, B&gt; Clone <span class="kw">for </span>Optional&lt;T, L, B&gt; {
     <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         <span class="kw">if </span>!<span class="macro">matches!</span>(<span class="self">self</span>.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
             <span class="kw">let </span>orig_ir_node = <span class="self">self</span>.ir_node.replace(HfPlusNode::Placeholder);
@@ -558,17 +571,17 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Optional&lt;T, W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;, B&gt; Optional&lt;T, L, B&gt; {
     <span class="comment">// TODO(shadaj): this is technically incorrect; we should only return the first element of the stream
-    </span><span class="kw">pub fn </span>into_stream(<span class="self">self</span>) -&gt; Stream&lt;T, W, N&gt; {
-        <span class="kw">if </span>N::is_top_level() {
+    </span><span class="kw">pub fn </span>into_stream(<span class="self">self</span>) -&gt; Stream&lt;T, L, B&gt; {
+        <span class="kw">if </span>L::is_top_level() {
             <span class="macro">panic!</span>(<span class="string">"Converting an optional to a stream is not yet supported at the top level"</span>);
         }
 
         Stream::new(<span class="self">self</span>.location, <span class="self">self</span>.ir_node.into_inner())
     }
 
-    <span class="kw">pub fn </span>map&lt;U, F: Fn(T) -&gt; U + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) -&gt; Optional&lt;U, W, N&gt; {
+    <span class="kw">pub fn </span>map&lt;U, F: Fn(T) -&gt; U + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) -&gt; Optional&lt;U, L, B&gt; {
         Optional::new(
             <span class="self">self</span>.location,
             HfPlusNode::Map {
@@ -581,7 +594,7 @@
     <span class="kw">pub fn </span>flat_map&lt;U, I: IntoIterator&lt;Item = U&gt;, F: Fn(T) -&gt; I + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
-    ) -&gt; Stream&lt;U, W, N&gt; {
+    ) -&gt; Stream&lt;U, L, B&gt; {
         Stream::new(
             <span class="self">self</span>.location,
             HfPlusNode::FlatMap {
@@ -591,7 +604,7 @@
         )
     }
 
-    <span class="kw">pub fn </span>filter&lt;F: Fn(<span class="kw-2">&amp;</span>T) -&gt; bool + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) -&gt; Optional&lt;T, W, N&gt; {
+    <span class="kw">pub fn </span>filter&lt;F: Fn(<span class="kw-2">&amp;</span>T) -&gt; bool + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) -&gt; Optional&lt;T, L, B&gt; {
         Optional::new(
             <span class="self">self</span>.location,
             HfPlusNode::Filter {
@@ -604,7 +617,7 @@
     <span class="kw">pub fn </span>filter_map&lt;U, F: Fn(T) -&gt; <span class="prelude-ty">Option</span>&lt;U&gt; + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
-    ) -&gt; Optional&lt;U, W, N&gt; {
+    ) -&gt; Optional&lt;U, L, B&gt; {
         Optional::new(
             <span class="self">self</span>.location,
             HfPlusNode::FilterMap {
@@ -614,10 +627,10 @@
         )
     }
 
-    <span class="kw">pub fn </span>union(<span class="self">self</span>, other: Optional&lt;T, W, N&gt;) -&gt; Optional&lt;T, W, N&gt; {
+    <span class="kw">pub fn </span>union(<span class="self">self</span>, other: Optional&lt;T, L, B&gt;) -&gt; Optional&lt;T, L, B&gt; {
         check_matching_location(<span class="kw-2">&amp;</span><span class="self">self</span>.location, <span class="kw-2">&amp;</span>other.location);
 
-        <span class="kw">if </span>N::is_top_level() {
+        <span class="kw">if </span>L::is_top_level() {
             Optional::new(
                 <span class="self">self</span>.location,
                 HfPlusNode::Persist(Box::new(HfPlusNode::Union(
@@ -636,14 +649,14 @@
         }
     }
 
-    <span class="kw">pub fn </span>zip&lt;O&gt;(<span class="self">self</span>, other: <span class="kw">impl </span>Into&lt;Optional&lt;O, W, N&gt;&gt;) -&gt; Optional&lt;(T, O), W, N&gt;
+    <span class="kw">pub fn </span>zip&lt;O&gt;(<span class="self">self</span>, other: <span class="kw">impl </span>Into&lt;Optional&lt;O, L, B&gt;&gt;) -&gt; Optional&lt;(T, O), L, B&gt;
     <span class="kw">where
         </span>O: Clone,
     {
-        <span class="kw">let </span>other: Optional&lt;O, W, N&gt; = other.into();
+        <span class="kw">let </span>other: Optional&lt;O, L, B&gt; = other.into();
         check_matching_location(<span class="kw-2">&amp;</span><span class="self">self</span>.location, <span class="kw-2">&amp;</span>other.location);
 
-        <span class="kw">if </span>N::is_top_level() {
+        <span class="kw">if </span>L::is_top_level() {
             Optional::new(
                 <span class="self">self</span>.location,
                 HfPlusNode::Persist(Box::new(HfPlusNode::CrossSingleton(
@@ -662,10 +675,10 @@
         }
     }
 
-    <span class="kw">pub fn </span>unwrap_or(<span class="self">self</span>, other: Singleton&lt;T, W, N&gt;) -&gt; Singleton&lt;T, W, N&gt; {
+    <span class="kw">pub fn </span>unwrap_or(<span class="self">self</span>, other: Singleton&lt;T, L, B&gt;) -&gt; Singleton&lt;T, L, B&gt; {
         check_matching_location(<span class="kw-2">&amp;</span><span class="self">self</span>.location, <span class="kw-2">&amp;</span>other.location);
 
-        <span class="kw">if </span>N::is_top_level() {
+        <span class="kw">if </span>L::is_top_level() {
             Singleton::new(
                 <span class="self">self</span>.location,
                 HfPlusNode::Persist(Box::new(HfPlusNode::Union(
@@ -684,17 +697,17 @@
         }
     }
 
-    <span class="kw">pub fn </span>into_singleton(<span class="self">self</span>) -&gt; Singleton&lt;<span class="prelude-ty">Option</span>&lt;T&gt;, W, N&gt;
+    <span class="kw">pub fn </span>into_singleton(<span class="self">self</span>) -&gt; Singleton&lt;<span class="prelude-ty">Option</span>&lt;T&gt;, L, B&gt;
     <span class="kw">where
         </span>T: Clone,
     {
         <span class="kw">let </span>none: syn::Expr = <span class="macro">parse_quote!</span>([::std::option::Option::None]);
         <span class="kw">let </span>core_ir = HfPlusNode::Persist(Box::new(HfPlusNode::Source {
             source: HfPlusSource::Iter(none.into()),
-            location_kind: <span class="self">self</span>.location.id(),
+            location_kind: <span class="self">self</span>.location.id().root().clone(),
         }));
 
-        <span class="kw">let </span>none_singleton = <span class="kw">if </span>N::is_top_level() {
+        <span class="kw">let </span>none_singleton = <span class="kw">if </span>L::is_top_level() {
             Singleton::new(
                 <span class="self">self</span>.location.clone(),
                 HfPlusNode::Persist(Box::new(core_ir)),
@@ -707,75 +720,76 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Optional&lt;T, Bounded, N&gt; {
-    <span class="kw">pub fn </span>continue_if&lt;U&gt;(<span class="self">self</span>, signal: Optional&lt;U, Bounded, N&gt;) -&gt; Optional&lt;T, Bounded, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Optional&lt;T, L, Bounded&gt; {
+    <span class="kw">pub fn </span>continue_if&lt;U&gt;(<span class="self">self</span>, signal: Optional&lt;U, L, Bounded&gt;) -&gt; Optional&lt;T, L, Bounded&gt; {
         <span class="self">self</span>.zip(signal.map(<span class="macro">q!</span>(|_u| ()))).map(<span class="macro">q!</span>(|(d, _signal)| d))
     }
 
-    <span class="kw">pub fn </span>continue_unless&lt;U&gt;(<span class="self">self</span>, other: Optional&lt;U, Bounded, N&gt;) -&gt; Optional&lt;T, Bounded, N&gt; {
+    <span class="kw">pub fn </span>continue_unless&lt;U&gt;(<span class="self">self</span>, other: Optional&lt;U, L, Bounded&gt;) -&gt; Optional&lt;T, L, Bounded&gt; {
         <span class="self">self</span>.continue_if(other.into_stream().count().filter(<span class="macro">q!</span>(|c| <span class="kw-2">*</span>c == <span class="number">0</span>)))
     }
 
-    <span class="kw">pub fn </span>then&lt;U&gt;(<span class="self">self</span>, value: Singleton&lt;U, Bounded, N&gt;) -&gt; Optional&lt;U, Bounded, N&gt; {
+    <span class="kw">pub fn </span>then&lt;U&gt;(<span class="self">self</span>, value: Singleton&lt;U, L, Bounded&gt;) -&gt; Optional&lt;U, L, Bounded&gt; {
         value.continue_if(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, B, N: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick&gt; Optional&lt;T, B, N&gt; {
-    <span class="kw">pub fn </span>latest_tick(<span class="self">self</span>) -&gt; Optional&lt;T, Bounded, Tick&lt;N&gt;&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick, B&gt; Optional&lt;T, L, B&gt; {
+    <span class="kw">pub fn </span>latest_tick(<span class="self">self</span>, tick: <span class="kw-2">&amp;</span>Tick&lt;L&gt;) -&gt; Optional&lt;T, Tick&lt;L&gt;, Bounded&gt; {
         Optional::new(
-            <span class="self">self</span>.location.nest(),
+            tick.clone(),
             HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner())),
         )
     }
 
-    <span class="kw">pub fn </span>tick_samples(<span class="self">self</span>) -&gt; Stream&lt;T, Unbounded, N&gt; {
-        <span class="self">self</span>.latest_tick().all_ticks()
+    <span class="kw">pub fn </span>tick_samples(<span class="self">self</span>) -&gt; Stream&lt;T, L, Unbounded&gt; {
+        <span class="kw">let </span>tick = <span class="self">self</span>.location.tick();
+        <span class="self">self</span>.latest_tick(<span class="kw-2">&amp;</span>tick).all_ticks()
     }
 
     <span class="kw">pub fn </span>sample_every(
         <span class="self">self</span>,
         interval: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, std::time::Duration&gt; + Copy + <span class="lifetime">'a</span>,
-    ) -&gt; Stream&lt;T, Unbounded, N&gt; {
-        <span class="kw">let </span>samples = <span class="self">self</span>.location.source_interval(interval).tick_batch();
+    ) -&gt; Stream&lt;T, L, Unbounded&gt; {
+        <span class="kw">let </span>samples = <span class="self">self</span>.location.source_interval(interval);
+        <span class="kw">let </span>tick = <span class="self">self</span>.location.tick();
 
-        <span class="self">self</span>.latest_tick()
-            .continue_if(samples.first())
-            .latest()
-            .tick_samples()
+        <span class="self">self</span>.latest_tick(<span class="kw-2">&amp;</span>tick)
+            .continue_if(samples.tick_batch(<span class="kw-2">&amp;</span>tick).first())
+            .all_ticks()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Optional&lt;T, Bounded, Tick&lt;N&gt;&gt; {
-    <span class="kw">pub fn </span>all_ticks(<span class="self">self</span>) -&gt; Stream&lt;T, Unbounded, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Optional&lt;T, Tick&lt;L&gt;, Bounded&gt; {
+    <span class="kw">pub fn </span>all_ticks(<span class="self">self</span>) -&gt; Stream&lt;T, L, Unbounded&gt; {
         Stream::new(
             <span class="self">self</span>.location.outer().clone(),
             HfPlusNode::Persist(Box::new(<span class="self">self</span>.ir_node.into_inner())),
         )
     }
 
-    <span class="kw">pub fn </span>latest(<span class="self">self</span>) -&gt; Optional&lt;T, Unbounded, N&gt; {
+    <span class="kw">pub fn </span>latest(<span class="self">self</span>) -&gt; Optional&lt;T, L, Unbounded&gt; {
         Optional::new(
             <span class="self">self</span>.location.outer().clone(),
             HfPlusNode::Persist(Box::new(<span class="self">self</span>.ir_node.into_inner())),
         )
     }
 
-    <span class="kw">pub fn </span>defer_tick(<span class="self">self</span>) -&gt; Optional&lt;T, Bounded, Tick&lt;N&gt;&gt; {
+    <span class="kw">pub fn </span>defer_tick(<span class="self">self</span>) -&gt; Optional&lt;T, Tick&lt;L&gt;, Bounded&gt; {
         Optional::new(
             <span class="self">self</span>.location,
             HfPlusNode::DeferTick(Box::new(<span class="self">self</span>.ir_node.into_inner())),
         )
     }
 
-    <span class="kw">pub fn </span>persist(<span class="self">self</span>) -&gt; Stream&lt;T, Bounded, Tick&lt;N&gt;&gt; {
+    <span class="kw">pub fn </span>persist(<span class="self">self</span>) -&gt; Stream&lt;T, Tick&lt;L&gt;, Bounded&gt; {
         Stream::new(
             <span class="self">self</span>.location,
             HfPlusNode::Persist(Box::new(<span class="self">self</span>.ir_node.into_inner())),
         )
     }
 
-    <span class="kw">pub fn </span>delta(<span class="self">self</span>) -&gt; Optional&lt;T, Bounded, Tick&lt;N&gt;&gt; {
+    <span class="kw">pub fn </span>delta(<span class="self">self</span>) -&gt; Optional&lt;T, Tick&lt;L&gt;, Bounded&gt; {
         Optional::new(
             <span class="self">self</span>.location,
             HfPlusNode::Delta(Box::new(<span class="self">self</span>.ir_node.into_inner())),
