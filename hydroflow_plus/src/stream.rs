@@ -832,14 +832,11 @@ impl<'a, T, W, N: Location<'a> + NoTick> Stream<T, W, N> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
-    use hydro_deploy::{Deployment, Host};
+    use hydro_deploy::Deployment;
     use hydroflow::futures::StreamExt;
     use serde::{Deserialize, Serialize};
     use stageleft::q;
 
-    use crate::deploy::TrybuildHost;
     use crate::location::Location;
     use crate::FlowBuilder;
 
@@ -868,9 +865,9 @@ mod tests {
 
         let nodes = flow
             .with_default_optimize()
-            .with_process(&first_node, TrybuildHost::new(deployment.Localhost()))
-            .with_process(&second_node, TrybuildHost::new(deployment.Localhost()))
-            .with_external(&external, deployment.Localhost() as Arc<dyn Host>)
+            .with_process(&first_node, deployment.Localhost())
+            .with_process(&second_node, deployment.Localhost())
+            .with_external(&external, deployment.Localhost())
             .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();

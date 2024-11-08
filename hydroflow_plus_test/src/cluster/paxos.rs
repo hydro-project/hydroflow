@@ -5,7 +5,6 @@ use std::time::Duration;
 use hydroflow_plus::*;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use stageleft::*;
 use tokio::time::Instant;
 
 pub struct Proposer {}

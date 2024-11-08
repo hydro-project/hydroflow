@@ -1,5 +1,4 @@
 use hydroflow_plus::*;
-use stageleft::*;
 
 pub struct Leader {}
 pub struct Worker {}
