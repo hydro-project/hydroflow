@@ -2,7 +2,6 @@ use hydroflow_plus::*;
 use location::external_process::ExternalBincodeSink;
 use location::ExternalProcess;
 use serde::{Deserialize, Serialize};
-use stageleft::*;
 
 #[derive(Serialize, Deserialize)]
 struct SendOverNetwork {
@@ -44,11 +43,9 @@ pub fn first_ten_distributed<'a>(
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use futures::SinkExt;
-    use hydro_deploy::{Deployment, Host};
-    use hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
+    use hydro_deploy::Deployment;
+    use hydroflow_plus::deploy::DeployCrateWrapper;
 
     #[tokio::test]
     async fn first_ten_distributed() {
@@ -63,9 +60,9 @@ mod tests {
         insta::assert_debug_snapshot!(built.ir());
 
         let nodes = built
-            .with_process(&first_node, TrybuildHost::new(deployment.Localhost()))
-            .with_process(&second_node, TrybuildHost::new(deployment.Localhost()))
-            .with_external(&external_process, deployment.Localhost() as Arc<dyn Host>)
+            .with_process(&first_node, deployment.Localhost())
+            .with_process(&second_node, deployment.Localhost())
+            .with_external(&external_process, deployment.Localhost())
             .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();

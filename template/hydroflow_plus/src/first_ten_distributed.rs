@@ -1,5 +1,4 @@
 use hydroflow_plus::*;
-use stageleft::*;
 
 pub struct P1 {}
 pub struct P2 {}
@@ -19,7 +18,7 @@ pub fn first_ten_distributed<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, P1>, Pr
 #[cfg(test)]
 mod tests {
     use hydro_deploy::Deployment;
-    use hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
+    use hydroflow_plus::deploy::DeployCrateWrapper;
     use hydroflow_plus::futures::StreamExt;
     use tokio_stream::wrappers::UnboundedReceiverStream;
 
@@ -33,8 +32,8 @@ mod tests {
 
         let nodes = flow
             .with_default_optimize()
-            .with_process(&p1, TrybuildHost::new(localhost.clone()))
-            .with_process(&p2, TrybuildHost::new(localhost.clone()))
+            .with_process(&p1, localhost.clone())
+            .with_process(&p2, localhost.clone())
             .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
