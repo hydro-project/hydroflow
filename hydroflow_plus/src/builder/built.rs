@@ -8,6 +8,7 @@ use super::deploy::{DeployFlow, DeployResult};
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDeploy};
 use crate::ir::HfPlusLeaf;
 use crate::location::{Cluster, ExternalProcess, Process};
+use crate::staging_util::Invariant;
 
 pub struct BuiltFlow<'a> {
     pub(super) ir: Vec<HfPlusLeaf>,
@@ -15,7 +16,7 @@ pub struct BuiltFlow<'a> {
     pub(super) clusters: Vec<usize>,
     pub(super) used: bool,
 
-    pub(super) _phantom: PhantomData<&'a mut &'a ()>,
+    pub(super) _phantom: Invariant<'a>,
 }
 
 impl Drop for BuiltFlow<'_> {
@@ -119,15 +120,15 @@ impl<'a> BuiltFlow<'a> {
         self.into_deploy().with_cluster(cluster, spec)
     }
 
-    pub fn compile<D: Deploy<'a> + 'a>(self, env: &D::CompileEnv) -> CompiledFlow<'a, D::GraphId> {
+    pub fn compile<D: Deploy<'a>>(self, env: &D::CompileEnv) -> CompiledFlow<'a, D::GraphId> {
         self.into_deploy::<D>().compile(env)
     }
 
-    pub fn compile_no_network<D: LocalDeploy<'a> + 'a>(self) -> CompiledFlow<'a, D::GraphId> {
+    pub fn compile_no_network<D: LocalDeploy<'a>>(self) -> CompiledFlow<'a, D::GraphId> {
         self.into_deploy::<D>().compile_no_network()
     }
 
-    pub fn deploy<D: Deploy<'a, CompileEnv = ()> + 'a>(
+    pub fn deploy<D: Deploy<'a, CompileEnv = ()>>(
         self,
         env: &mut D::InstantiateEnv,
     ) -> DeployResult<'a, D> {
