@@ -1,5 +1,4 @@
 use hydroflow_plus::*;
-use stageleft::*;
 
 pub fn decouple_cluster<'a>(flow: &FlowBuilder<'a>) -> (Cluster<'a, ()>, Cluster<'a, ()>) {
     let cluster1 = flow.cluster();
@@ -55,7 +54,7 @@ pub fn simple_cluster<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, ()>, Cluster<'
 #[cfg(test)]
 mod tests {
     use hydro_deploy::Deployment;
-    use hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
+    use hydroflow_plus::deploy::DeployCrateWrapper;
 
     #[tokio::test]
     async fn simple_cluster() {
@@ -68,13 +67,8 @@ mod tests {
         insta::assert_debug_snapshot!(built.ir());
 
         let nodes = built
-            .with_process(&node, TrybuildHost::new(deployment.Localhost()))
-            .with_cluster(
-                &cluster,
-                (0..2)
-                    .map(|_| TrybuildHost::new(deployment.Localhost()))
-                    .collect::<Vec<_>>(),
-            )
+            .with_process(&node, deployment.Localhost())
+            .with_cluster(&cluster, (0..2).map(|_| deployment.Localhost()))
             .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
@@ -128,8 +122,8 @@ mod tests {
         let built = builder.with_default_optimize();
 
         let nodes = built
-            .with_process(&process1, TrybuildHost::new(deployment.Localhost()))
-            .with_process(&process2, TrybuildHost::new(deployment.Localhost()))
+            .with_process(&process1, deployment.Localhost())
+            .with_process(&process2, deployment.Localhost())
             .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
@@ -150,18 +144,8 @@ mod tests {
         let built = builder.with_default_optimize();
 
         let nodes = built
-            .with_cluster(
-                &cluster1,
-                (0..3)
-                    .map(|_| TrybuildHost::new(deployment.Localhost()))
-                    .collect::<Vec<_>>(),
-            )
-            .with_cluster(
-                &cluster2,
-                (0..3)
-                    .map(|_| TrybuildHost::new(deployment.Localhost()))
-                    .collect::<Vec<_>>(),
-            )
+            .with_cluster(&cluster1, (0..3).map(|_| deployment.Localhost()))
+            .with_cluster(&cluster2, (0..3).map(|_| deployment.Localhost()))
             .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();

@@ -60,26 +60,22 @@ async fn main() {
         .with_cluster(
             &proposers,
             (0..f + 1)
-                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags))
-                .collect::<Vec<_>>(),
+                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags)),
         )
         .with_cluster(
             &acceptors,
             (0..2 * f + 1)
-                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags))
-                .collect::<Vec<_>>(),
+                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags)),
         )
         .with_cluster(
             &clients,
             (0..num_clients)
-                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags))
-                .collect::<Vec<_>>(),
+                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags)),
         )
         .with_cluster(
             &replicas,
             (0..f + 1)
-                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags))
-                .collect::<Vec<_>>(),
+                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags)),
         )
         .deploy(&mut deployment);
 

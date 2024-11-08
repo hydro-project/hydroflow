@@ -52,7 +52,7 @@ async fn main() {
             &p2,
             TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags),
         )
-        .with_external(&external_process, deployment.Localhost() as Arc<dyn Host>)
+        .with_external(&external_process, deployment.Localhost())
         .deploy(&mut deployment);
 
     deployment.deploy().await.unwrap();

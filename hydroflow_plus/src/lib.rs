@@ -5,6 +5,8 @@ stageleft::stageleft_no_entry_crate!();
 pub use hydroflow::scheduled::graph::Hydroflow;
 pub use hydroflow::*;
 
+pub use stageleft::*;
+
 pub mod runtime_support {
     pub use bincode;
 }

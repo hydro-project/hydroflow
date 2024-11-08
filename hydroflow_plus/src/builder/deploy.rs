@@ -12,7 +12,7 @@ use stageleft::Quoted;
 
 use super::built::build_inner;
 use super::compiled::HfCompiled;
-use crate::deploy::{ExternalSpec, LocalDeploy, Node, RegisterPort};
+use crate::deploy::{ExternalSpec, IntoProcessSpec, LocalDeploy, Node, RegisterPort};
 use crate::ir::HfPlusLeaf;
 use crate::location::external_process::{
     ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort,
@@ -39,10 +39,16 @@ impl<'a, D: LocalDeploy<'a>> Drop for DeployFlow<'a, D> {
 }
 
 impl<'a, D: LocalDeploy<'a>> DeployFlow<'a, D> {
-    pub fn with_process<P>(mut self, process: &Process<P>, spec: impl ProcessSpec<'a, D>) -> Self {
+    pub fn with_process<P>(
+        mut self,
+        process: &Process<P>,
+        spec: impl IntoProcessSpec<'a, D>,
+    ) -> Self {
         let tag_name = std::any::type_name::<P>().to_string();
-        self.nodes
-            .insert(process.id, spec.build(process.id, &tag_name));
+        self.nodes.insert(
+            process.id,
+            spec.into_process_spec().build(process.id, &tag_name),
+        );
         self
     }
 

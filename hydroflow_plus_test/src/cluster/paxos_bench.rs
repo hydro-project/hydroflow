@@ -3,7 +3,6 @@ use std::rc::Rc;
 use std::time::{Duration, SystemTime};
 
 use hydroflow_plus::*;
-use stageleft::*;
 
 use super::paxos::{Acceptor, Proposer};
 use super::paxos_kv::{paxos_kv, KvPayload, Replica};

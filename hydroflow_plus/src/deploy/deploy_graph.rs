@@ -26,7 +26,7 @@ use trybuild_internals_api::path;
 
 use super::deploy_runtime::*;
 use super::trybuild::{compile_graph_trybuild, create_trybuild};
-use super::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
+use super::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, Node, ProcessSpec, RegisterPort};
 use crate::futures::SinkExt;
 use crate::lang::graph::HydroflowGraph;
 
@@ -409,6 +409,32 @@ pub struct TrybuildHost {
     pub cluster_idx: Option<usize>,
 }
 
+impl From<Arc<dyn Host>> for TrybuildHost {
+    fn from(host: Arc<dyn Host>) -> Self {
+        Self {
+            host,
+            display_name: None,
+            rustflags: None,
+            tracing: None,
+            name_hint: None,
+            cluster_idx: None,
+        }
+    }
+}
+
+impl<H: Host + 'static> From<Arc<H>> for TrybuildHost {
+    fn from(host: Arc<H>) -> Self {
+        Self {
+            host,
+            display_name: None,
+            rustflags: None,
+            tracing: None,
+            name_hint: None,
+            cluster_idx: None,
+        }
+    }
+}
+
 impl TrybuildHost {
     pub fn new(host: Arc<dyn Host>) -> Self {
         Self {
@@ -455,10 +481,25 @@ impl TrybuildHost {
     }
 }
 
-impl From<Arc<dyn Host>> for TrybuildHost {
-    fn from(h: Arc<dyn Host>) -> Self {
-        Self {
-            host: h,
+impl IntoProcessSpec<'_, HydroDeploy> for Arc<dyn Host> {
+    type ProcessSpec = TrybuildHost;
+    fn into_process_spec(self) -> TrybuildHost {
+        TrybuildHost {
+            host: self,
+            display_name: None,
+            rustflags: None,
+            tracing: None,
+            name_hint: None,
+            cluster_idx: None,
+        }
+    }
+}
+
+impl<H: Host + 'static> IntoProcessSpec<'_, HydroDeploy> for Arc<H> {
+    type ProcessSpec = TrybuildHost;
+    fn into_process_spec(self) -> TrybuildHost {
+        TrybuildHost {
+            host: self,
             display_name: None,
             rustflags: None,
             tracing: None,
@@ -575,6 +616,18 @@ impl Node for DeployExternal {
 }
 
 impl ExternalSpec<'_, HydroDeploy> for Arc<dyn Host> {
+    fn build(self, _id: usize, _name_hint: &str) -> DeployExternal {
+        DeployExternal {
+            next_port: Rc::new(RefCell::new(0)),
+            host: self,
+            underlying: Rc::new(RefCell::new(None)),
+            allocated_ports: Rc::new(RefCell::new(HashMap::new())),
+            client_ports: Rc::new(RefCell::new(HashMap::new())),
+        }
+    }
+}
+
+impl<H: Host + 'static> ExternalSpec<'_, HydroDeploy> for Arc<H> {
     fn build(self, _id: usize, _name_hint: &str) -> DeployExternal {
         DeployExternal {
             next_port: Rc::new(RefCell::new(0)),
@@ -799,7 +852,7 @@ impl ClusterSpec<'_, HydroDeploy> for DeployClusterSpec {
     }
 }
 
-impl ClusterSpec<'_, HydroDeploy> for Vec<TrybuildHost> {
+impl<T: Into<TrybuildHost>, I: IntoIterator<Item = T>> ClusterSpec<'_, HydroDeploy> for I {
     fn build(self, id: usize, name_hint: &str) -> DeployCluster {
         let name_hint = format!("{} (cluster {id})", name_hint);
         DeployCluster {
@@ -808,7 +861,8 @@ impl ClusterSpec<'_, HydroDeploy> for Vec<TrybuildHost> {
             cluster_spec: Rc::new(RefCell::new(Some(
                 self.into_iter()
                     .enumerate()
-                    .map(|(idx, mut b)| {
+                    .map(|(idx, b)| {
+                        let mut b = b.into();
                         b.name_hint = Some(name_hint.clone());
                         b.cluster_idx = Some(idx);
                         CrateOrTrybuild::Trybuild(b)
