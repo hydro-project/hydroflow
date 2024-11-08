@@ -210,7 +210,7 @@ const config = {
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
-        additionalLanguages: ['rust'],
+        additionalLanguages: ['rust', 'bash'],
         magicComments: [
           {
             className: 'theme-code-block-highlighted-line',
