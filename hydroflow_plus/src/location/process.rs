@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use super::{Location, LocationId};
 use crate::builder::FlowState;
 
-pub struct Process<'a, P> {
+pub struct Process<'a, P = ()> {
     pub(crate) id: usize,
     pub(crate) flow_state: FlowState,
     pub(crate) _phantom: PhantomData<&'a &'a mut P>,

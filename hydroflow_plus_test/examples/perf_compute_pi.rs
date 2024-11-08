@@ -81,8 +81,7 @@ async fn main() {
                                 .frequency(128)
                                 .build(),
                         )
-                })
-                .collect::<Vec<_>>(),
+                }),
         )
         .deploy(&mut deployment);
     deployment.run_ctrl_c().await.unwrap();

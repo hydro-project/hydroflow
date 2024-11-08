@@ -49,8 +49,7 @@ async fn main() {
         .with_cluster(
             &cluster,
             (0..2)
-                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags))
-                .collect::<Vec<_>>(),
+                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags)),
         )
         .deploy(&mut deployment);
 
