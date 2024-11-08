@@ -50,14 +50,11 @@ mod tests {
     fn map_reduce_ir() {
         let builder = hydroflow_plus::FlowBuilder::new();
         let _ = super::map_reduce(&builder);
-        let built = builder.with_default_optimize();
+        let built = builder.with_default_optimize::<DeployRuntime>();
 
         insta::assert_debug_snapshot!(built.ir());
 
-        for (id, ir) in built
-            .compile::<DeployRuntime>(&RuntimeData::new("FAKE"))
-            .hydroflow_ir()
-        {
+        for (id, ir) in built.compile(&RuntimeData::new("FAKE")).hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_snapshot!(ir.surface_syntax_string());
             });

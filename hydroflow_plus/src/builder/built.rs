@@ -26,23 +26,6 @@ impl Drop for BuiltFlow<'_> {
     }
 }
 
-impl BuiltFlow<'_> {
-    pub fn ir(&self) -> &Vec<HfPlusLeaf> {
-        &self.ir
-    }
-
-    pub fn optimize_with(mut self, f: impl FnOnce(Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf>) -> Self {
-        self.used = true;
-        BuiltFlow {
-            ir: f(std::mem::take(&mut self.ir)),
-            processes: std::mem::take(&mut self.processes),
-            clusters: std::mem::take(&mut self.clusters),
-            used: false,
-            _phantom: PhantomData,
-        }
-    }
-}
-
 pub(crate) fn build_inner(ir: &mut Vec<HfPlusLeaf>) -> BTreeMap<usize, HydroflowGraph> {
     let mut builders = BTreeMap::new();
     let mut built_tees = HashMap::new();
@@ -62,18 +45,24 @@ pub(crate) fn build_inner(ir: &mut Vec<HfPlusLeaf>) -> BTreeMap<usize, Hydroflow
 }
 
 impl<'a> BuiltFlow<'a> {
-    pub fn compile_no_network<D: LocalDeploy<'a>>(mut self) -> CompiledFlow<'a, D::GraphId> {
-        self.used = true;
+    pub fn ir(&self) -> &Vec<HfPlusLeaf> {
+        &self.ir
+    }
 
-        CompiledFlow {
-            hydroflow_ir: build_inner(&mut self.ir),
-            extra_stmts: BTreeMap::new(),
+    pub fn optimize_with(mut self, f: impl FnOnce(Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf>) -> Self {
+        self.used = true;
+        BuiltFlow {
+            ir: f(std::mem::take(&mut self.ir)),
+            processes: std::mem::take(&mut self.processes),
+            clusters: std::mem::take(&mut self.clusters),
+            used: false,
             _phantom: PhantomData,
         }
     }
 
-    pub fn with_default_optimize(self) -> BuiltFlow<'a> {
+    pub fn with_default_optimize<D: LocalDeploy<'a>>(self) -> DeployFlow<'a, D> {
         self.optimize_with(crate::rewrites::persist_pullup::persist_pullup)
+            .into_deploy()
     }
 
     fn into_deploy<D: LocalDeploy<'a>>(mut self) -> DeployFlow<'a, D> {
@@ -132,6 +121,10 @@ impl<'a> BuiltFlow<'a> {
 
     pub fn compile<D: Deploy<'a> + 'a>(self, env: &D::CompileEnv) -> CompiledFlow<'a, D::GraphId> {
         self.into_deploy::<D>().compile(env)
+    }
+
+    pub fn compile_no_network<D: LocalDeploy<'a> + 'a>(self) -> CompiledFlow<'a, D::GraphId> {
+        self.into_deploy::<D>().compile_no_network()
     }
 
     pub fn deploy<D: Deploy<'a, CompileEnv = ()> + 'a>(

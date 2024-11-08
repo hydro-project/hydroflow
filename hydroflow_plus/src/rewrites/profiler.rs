@@ -105,7 +105,7 @@ mod tests {
         let counter_queue = RuntimeData::new("Fake");
 
         let pushed_down = built
-            .with_default_optimize()
+            .optimize_with(crate::rewrites::persist_pullup::persist_pullup)
             .optimize_with(|ir| super::profiling(ir, runtime_context, counters, counter_queue));
 
         insta::assert_debug_snapshot!(&pushed_down.ir());

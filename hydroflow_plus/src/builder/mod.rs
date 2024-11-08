@@ -3,11 +3,14 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
+use compiled::CompiledFlow;
+use deploy::{DeployFlow, DeployResult};
 use stageleft::*;
 
+use crate::deploy::{ExternalSpec, IntoProcessSpec, LocalDeploy};
 use crate::ir::HfPlusLeaf;
 use crate::location::{Cluster, ExternalProcess, Process};
-use crate::RuntimeContext;
+use crate::{ClusterSpec, Deploy, RuntimeContext};
 
 pub mod built;
 pub mod compiled;
@@ -98,7 +101,7 @@ impl<'a> FlowBuilder<'a> {
         }
     }
 
-    pub fn with_default_optimize(self) -> built::BuiltFlow<'a> {
+    pub fn with_default_optimize<D: LocalDeploy<'a>>(self) -> DeployFlow<'a, D> {
         self.finalize().with_default_optimize()
     }
 
@@ -157,5 +160,44 @@ impl<'a> FlowBuilder<'a> {
 
     pub fn runtime_context(&self) -> RuntimeContext<'a> {
         RuntimeContext::new()
+    }
+
+    pub fn with_process<P, D: LocalDeploy<'a>>(
+        self,
+        process: &Process<P>,
+        spec: impl IntoProcessSpec<'a, D>,
+    ) -> DeployFlow<'a, D> {
+        self.with_default_optimize().with_process(process, spec)
+    }
+
+    pub fn with_external<P, D: LocalDeploy<'a>>(
+        self,
+        process: &ExternalProcess<P>,
+        spec: impl ExternalSpec<'a, D>,
+    ) -> DeployFlow<'a, D> {
+        self.with_default_optimize().with_external(process, spec)
+    }
+
+    pub fn with_cluster<C, D: LocalDeploy<'a>>(
+        self,
+        cluster: &Cluster<C>,
+        spec: impl ClusterSpec<'a, D>,
+    ) -> DeployFlow<'a, D> {
+        self.with_default_optimize().with_cluster(cluster, spec)
+    }
+
+    pub fn compile<D: Deploy<'a> + 'a>(self, env: &D::CompileEnv) -> CompiledFlow<'a, D::GraphId> {
+        self.with_default_optimize::<D>().compile(env)
+    }
+
+    pub fn compile_no_network<D: LocalDeploy<'a> + 'a>(self) -> CompiledFlow<'a, D::GraphId> {
+        self.with_default_optimize::<D>().compile_no_network()
+    }
+
+    pub fn deploy<D: Deploy<'a, CompileEnv = ()> + 'a>(
+        self,
+        env: &mut D::InstantiateEnv,
+    ) -> DeployResult<'a, D> {
+        self.with_default_optimize().deploy(env)
     }
 }

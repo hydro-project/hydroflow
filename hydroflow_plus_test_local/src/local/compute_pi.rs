@@ -46,6 +46,5 @@ pub fn compute_pi_runtime<'a>(
     batch_size: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = compute_pi(&flow, batch_size);
-    flow.with_default_optimize()
-        .compile_no_network::<SingleProcessGraph>()
+    flow.compile_no_network::<SingleProcessGraph>()
 }

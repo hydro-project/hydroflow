@@ -41,7 +41,6 @@ async fn main() {
     let builder = hydroflow_plus::FlowBuilder::new();
     let (leader, cluster) = hydroflow_plus_test::cluster::map_reduce::map_reduce(&builder);
     let _nodes = builder
-        .with_default_optimize()
         .with_process(
             &leader,
             TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags),

@@ -25,20 +25,22 @@ cargo generate gh:hydro-project/hydroflow template/hydroflow_plus
 
 ## Writing a Dataflow
 
-Hydroflow+ programs are _explicit_ about where computation takes place. So our dataflow program takes a single `&Process` parameter which is a handle to the single machine our program will run on. We can use this handle to materialize a stream using `source_iter` (which emits values from a provided collection), and then print out the values using `for_each`.
+In Hydroflow+, streams are attached to a **`Location`**, which is a virtual handle to a **single machine** (the `Process` type) or **set of machines** (the `Cluster` type). To write distributed programs, a single piece of code can use multiple locations.
 
-<CodeBlock language="rust" title="src/first_ten.rs">{getLines(firstTenSrc, 1, 7)}</CodeBlock>
+Our first dataflow will run on a single machine, so we take a `&Process` parameter. We can materialize a stream on this machine using `process.source_iter` (which emits values from a provided collection), and then print out the values using `for_each`.
+
+<CodeBlock language="rust" title="src/first_ten.rs">{firstTenSrc}</CodeBlock>
 
 You'll notice that the arguments to `source_iter` and `for_each` are wrapped in `q!` macros. This is because Hydroflow+ uses a two-stage compilation process, where the first stage generates a deployment plan that is then compiled to individual binaries for each machine in the distributed system. The `q!` macro is used to mark Rust code that will be executed in the second stage ("runtime" code). This generally includes snippets of Rust code that are used to define static sources of data or closures that transform them.
 
 ## Running the Dataflow
-Next, let's launch the dataflow program we just wrote. To do this, we'll need to write a bit more code in `examples/first_ten.rs` to configure our deployment.
+Next, let's launch the dataflow program we just wrote. To do this, we'll need to write a bit more code in `examples/first_ten.rs` to configure our deployment (generally, we will place deployment scripts in `examples` because Hydro Deploy is a dev dependency).
 
-<CodeBlock language="rust">{getLines(firstTenExampleSrc, 1, 17)}</CodeBlock>
+<CodeBlock language="rust" title="examples/first_ten.rs">{firstTenExampleSrc}</CodeBlock>
 
 First, we initialize a new [Hydro Deploy](../../deploy/index.md) deployment with `Deployment::new()`. Then, we create a `FlowBuilder` which will store the entire dataflow program and manage its compilation.
 
-To get the `&Process` we provide to `first_ten`, we can call `flow.process()`. After the dataflow has been created, we optimize it using `flow.with_default_optimize()`. Then, we map our virtual `Process` to a physical deployment target using `flow.with_process` (in this case we deploy to localhost).
+To create a `Process`, we call `flow.process()`. After the dataflow has been created, we must map each instantiated `Process` to a deployment target using `flow.with_process` (in this case we deploy to localhost).
 
 Finally, we call `flow.deploy(&mut deployment)` to provision the dataflow program on the target machine. This returns a struct with handles to the instantiated machines, which we must store in the `_nodes` variable to prevent them from being dropped. Then, we can start the dataflow program and block until `Ctrl-C` using `deployment.run_ctrl_c()`.
 

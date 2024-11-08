@@ -31,7 +31,6 @@ mod tests {
         let (p1, p2) = super::first_ten_distributed(&flow);
 
         let nodes = flow
-            .with_default_optimize()
             .with_process(&p1, localhost.clone())
             .with_process(&p2, localhost.clone())
             .deploy(&mut deployment);

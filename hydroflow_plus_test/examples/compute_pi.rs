@@ -42,7 +42,6 @@ async fn main() {
     let (cluster, leader) = hydroflow_plus_test::cluster::compute_pi::compute_pi(&builder, 8192);
 
     let _nodes = builder
-        .with_default_optimize()
         .with_process(
             &leader,
             TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags),

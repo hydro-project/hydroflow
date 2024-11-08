@@ -41,8 +41,7 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
         output.send(v).unwrap();
     }));
 
-    flow.with_default_optimize()
-        .compile_no_network::<MultiGraph>()
+    flow.compile_no_network::<MultiGraph>()
         .with_dynamic_id(subgraph_id)
 }
 

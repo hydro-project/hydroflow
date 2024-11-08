@@ -42,7 +42,6 @@ async fn main() {
     let (process, cluster) = hydroflow_plus_test::cluster::simple_cluster::simple_cluster(&builder);
 
     let _nodes = builder
-        .with_default_optimize()
         .with_process(
             &process,
             TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags),

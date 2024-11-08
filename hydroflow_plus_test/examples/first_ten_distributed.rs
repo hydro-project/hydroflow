@@ -43,7 +43,6 @@ async fn main() {
     let (external_process, external_port, p1, p2) =
         hydroflow_plus_test::distributed::first_ten::first_ten_distributed(&builder);
     let nodes = builder
-        .with_default_optimize()
         .with_process(
             &p1,
             TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags),

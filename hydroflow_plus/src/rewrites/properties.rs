@@ -118,12 +118,11 @@ mod tests {
             .for_each(q!(|(string, count)| println!("{}: {}", string, count)));
 
         let built = flow
-            .finalize()
             .optimize_with(|ir| properties_optimize(ir, &database))
-            .with_default_optimize();
+            .with_default_optimize::<SingleProcessGraph>();
 
         insta::assert_debug_snapshot!(built.ir());
 
-        let _ = built.compile_no_network::<SingleProcessGraph>();
+        let _ = built.compile_no_network();
     }
 }
