@@ -2,7 +2,6 @@ use hydroflow_plus::deploy::SingleProcessGraph;
 use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::*;
-use stageleft::*;
 
 #[stageleft::entry]
 pub fn graph_reachability<'a>(

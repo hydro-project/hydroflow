@@ -1,7 +1,7 @@
 # Quickstart
 In this tutorial, we'll walk through the basics of Hydroflow+ by building a simple dataflow that prints out the first 10 natural numbers. We'll start with a single process, then pipeline the computation, and finally distribute it across a cluster.
 
-To get started with a new project, we'll use the Hydroflow+ template. The template comes with a pre-configured build system and an implementation of the following examples.
+To get started with a new project, we'll use the Hydroflow+ template. The template comes with a simple distributed program.
 
 ```bash
 #shell-command-next-line
@@ -13,10 +13,8 @@ cargo generate gh:hydro-project/hydroflow template/hydroflow_plus
 cd my-example-project
 ```
 
-After `cd`ing into the generated folder, ensure the correct nightly version of rust is installed and test the generated project:
+After `cd`ing into the generated folder, we can run tests for the included sample:
 ```bash
-#shell-command-next-line
-rustup update
 #shell-command-next-line
 cargo test
 ```

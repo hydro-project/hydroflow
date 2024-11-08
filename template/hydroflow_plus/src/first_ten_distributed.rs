@@ -1,5 +1,4 @@
 use hydroflow_plus::*;
-use stageleft::*;
 
 pub struct P1 {}
 pub struct P2 {}
@@ -33,8 +32,8 @@ mod tests {
 
         let nodes = flow
             .with_default_optimize()
-            .with_process(&p1, TrybuildHost::new(localhost.clone()))
-            .with_process(&p2, TrybuildHost::new(localhost.clone()))
+            .with_process(&p1, localhost.clone())
+            .with_process(&p2, localhost.clone())
             .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
