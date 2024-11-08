@@ -3,16 +3,9 @@ use hydroflow_plus::*;
 pub struct P1 {}
 pub struct P2 {}
 
-pub fn first_ten_distributed<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, P1>, Process<'a, P2>) {
-    let process = flow.process::<P1>();
-    let second_process = flow.process::<P2>();
-
-    let numbers = process.source_iter(q!(0..10));
-    numbers
-        .send_bincode(&second_process)
-        .for_each(q!(|n| println!("{}", n)));
-
-    (process, second_process)
+pub fn first_ten_distributed<'a>(p1: &Process<'a, P1>, p2: &Process<'a, P2>) {
+    let numbers = p1.source_iter(q!(0..10));
+    numbers.send_bincode(p2).for_each(q!(|n| println!("{}", n)));
 }
 
 #[cfg(test)]
@@ -28,7 +21,9 @@ mod tests {
         let localhost = deployment.Localhost();
 
         let flow = hydroflow_plus::FlowBuilder::new();
-        let (p1, p2) = super::first_ten_distributed(&flow);
+        let p1 = flow.process();
+        let p2 = flow.process();
+        super::first_ten_distributed(&p1, &p2);
 
         let nodes = flow
             .with_process(&p1, localhost.clone())
