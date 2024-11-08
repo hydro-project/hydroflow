@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use hydroflow_plus::*;
-use stageleft::*;
 
 pub struct Worker {}
 pub struct Leader {}

@@ -5,7 +5,6 @@ use std::hash::Hash;
 use hydroflow_plus::*;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use stageleft::*;
 
 use super::paxos::{paxos_core, Acceptor, Proposer};
 

@@ -23,7 +23,6 @@ pub mod broadcast;
 
 ```rust title="src/broadcast.rs"
 use hydroflow_plus::*;
-use stageleft::*;
 
 pub struct Leader {}
 pub struct Workers {}
@@ -69,10 +68,9 @@ async fn main() {
     let (leader, workers) = flow::broadcast::broadcast(&builder);
 
     flow.with_default_optimize()
-        .with_process(&leader, TrybuildHost::new(deployment.Localhost()))
+        .with_process(&leader, deployment.Localhost())
         .with_cluster(&workers, (0..2)
-            .map(|idx| TrybuildHost::new(deployment.Localhost()))
-            .collect::<Vec<_>>()
+            .map(|idx| deployment.Localhost())
         )
         .deploy(&mut deployment);
 
