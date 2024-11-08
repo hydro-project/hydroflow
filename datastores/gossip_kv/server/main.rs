@@ -39,6 +39,9 @@ struct Opts {
     /// The duration (in seconds) between gossip rounds.
     #[clap(short, long, default_value = "5", value_parser = clap_duration_from_secs)]
     gossip_frequency: Duration,
+
+    #[clap(env = "GOSSIP_MEMBER_SUFFIX_LEN", default_value = "4")]
+    member_suffix_len: usize,
 }
 
 /// Parse duration from float string for clap args.
@@ -133,7 +136,7 @@ async fn main() {
     let gossip_protocol_address =
         SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), opts.gossip_port);
 
-    let member_data = MemberDataBuilder::new(member_name().clone())
+    let member_data = MemberDataBuilder::new(member_name(opts.member_suffix_len).clone())
         .add_protocol(Protocol::new("gossip".into(), gossip_protocol_address))
         .add_protocol(Protocol::new("client".into(), client_protocol_address))
         .build();
