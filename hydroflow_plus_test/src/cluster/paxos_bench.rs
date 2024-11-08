@@ -72,17 +72,17 @@ pub fn paxos_bench<'a>(
 // Clients. All relations for clients will be prefixed with c. All ClientPayloads will contain the virtual client number as key and the client's machine ID (to string) as value. Expects p_to_clients_leader_elected containing Ballots whenever the leader is elected, and r_to_clients_payload_applied containing ReplicaPayloads whenever a payload is committed. Outputs (leader address, ClientPayload) when a new leader is elected or when the previous payload is committed.
 fn bench_client<'a>(
     clients: &Cluster<'a, Client>,
-    p_to_clients_leader_elected: Stream<ClusterId<Proposer>, Unbounded, Cluster<'a, Client>>,
+    p_to_clients_leader_elected: Stream<ClusterId<Proposer>, Cluster<'a, Client>, Unbounded>,
     transaction_cycle: impl FnOnce(
         Stream<
             (ClusterId<Proposer>, KvPayload<u32, ClusterId<Client>>),
-            Unbounded,
             Cluster<'a, Client>,
+            Unbounded,
         >,
     ) -> Stream<
         (ClusterId<Replica>, KvPayload<u32, ClusterId<Client>>),
-        Unbounded,
         Cluster<'a, Client>,
+        Unbounded,
     >,
     num_clients_per_node: usize,
     median_latency_window_size: usize,
