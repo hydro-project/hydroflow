@@ -7,7 +7,7 @@ use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
 
 use crate::builder::FLOW_USED_MESSAGE;
-use crate::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRef, TickCycle};
+use crate::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRefMarker, TickCycleMarker};
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource, TeeNode};
 use crate::location::{check_matching_location, LocationId, NoTick};
 use crate::{Bounded, Location, Singleton, Stream, Tick, Unbounded};
@@ -43,7 +43,9 @@ impl<'a, T, L: Location<'a>> DeferTick for Optional<T, Tick<L>, Bounded> {
     }
 }
 
-impl<'a, T, L: Location<'a>> CycleCollection<'a, TickCycle> for Optional<T, Tick<L>, Bounded> {
+impl<'a, T, L: Location<'a>> CycleCollection<'a, TickCycleMarker>
+    for Optional<T, Tick<L>, Bounded>
+{
     type Location = Tick<L>;
 
     fn create_source(ident: syn::Ident, location: Tick<L>) -> Self {
@@ -58,7 +60,7 @@ impl<'a, T, L: Location<'a>> CycleCollection<'a, TickCycle> for Optional<T, Tick
     }
 }
 
-impl<'a, T, L: Location<'a>> CycleComplete<'a, TickCycle> for Optional<T, Tick<L>, Bounded> {
+impl<'a, T, L: Location<'a>> CycleComplete<'a, TickCycleMarker> for Optional<T, Tick<L>, Bounded> {
     fn complete(self, ident: syn::Ident) {
         self.location
             .flow_state()
@@ -74,7 +76,9 @@ impl<'a, T, L: Location<'a>> CycleComplete<'a, TickCycle> for Optional<T, Tick<L
     }
 }
 
-impl<'a, T, L: Location<'a>> CycleCollection<'a, ForwardRef> for Optional<T, Tick<L>, Bounded> {
+impl<'a, T, L: Location<'a>> CycleCollection<'a, ForwardRefMarker>
+    for Optional<T, Tick<L>, Bounded>
+{
     type Location = Tick<L>;
 
     fn create_source(ident: syn::Ident, location: Tick<L>) -> Self {
@@ -89,7 +93,7 @@ impl<'a, T, L: Location<'a>> CycleCollection<'a, ForwardRef> for Optional<T, Tic
     }
 }
 
-impl<'a, T, L: Location<'a>> CycleComplete<'a, ForwardRef> for Optional<T, Tick<L>, Bounded> {
+impl<'a, T, L: Location<'a>> CycleComplete<'a, ForwardRefMarker> for Optional<T, Tick<L>, Bounded> {
     fn complete(self, ident: syn::Ident) {
         self.location
             .flow_state()
@@ -105,7 +109,9 @@ impl<'a, T, L: Location<'a>> CycleComplete<'a, ForwardRef> for Optional<T, Tick<
     }
 }
 
-impl<'a, T, L: Location<'a> + NoTick, B> CycleCollection<'a, ForwardRef> for Optional<T, L, B> {
+impl<'a, T, L: Location<'a> + NoTick, B> CycleCollection<'a, ForwardRefMarker>
+    for Optional<T, L, B>
+{
     type Location = L;
 
     fn create_source(ident: syn::Ident, location: L) -> Self {
@@ -120,7 +126,7 @@ impl<'a, T, L: Location<'a> + NoTick, B> CycleCollection<'a, ForwardRef> for Opt
     }
 }
 
-impl<'a, T, L: Location<'a> + NoTick, B> CycleComplete<'a, ForwardRef> for Optional<T, L, B> {
+impl<'a, T, L: Location<'a> + NoTick, B> CycleComplete<'a, ForwardRefMarker> for Optional<T, L, B> {
     fn complete(self, ident: syn::Ident) {
         self.location
             .flow_state()

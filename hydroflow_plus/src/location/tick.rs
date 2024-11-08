@@ -6,8 +6,8 @@ use stageleft::{q, Quoted};
 use super::{Cluster, Location, LocationId, Process};
 use crate::builder::FlowState;
 use crate::cycle::{
-    CycleCollection, CycleCollectionWithInitial, DeferTick, ForwardRef, HfCycle, HfForwardRef,
-    TickCycle,
+    CycleCollection, CycleCollectionWithInitial, DeferTick, ForwardRef, ForwardRefMarker,
+    TickCycle, TickCycleMarker,
 };
 use crate::ir::{HfPlusNode, HfPlusSource};
 use crate::{Bounded, Optional, Singleton, Stream};
@@ -82,9 +82,9 @@ impl<'a, L: Location<'a>> Tick<L> {
         )
     }
 
-    pub fn forward_ref<S: CycleCollection<'a, ForwardRef, Location = Self>>(
+    pub fn forward_ref<S: CycleCollection<'a, ForwardRefMarker, Location = Self>>(
         &self,
-    ) -> (HfForwardRef<'a, S>, S)
+    ) -> (ForwardRef<'a, S>, S)
     where
         L: NoTick,
     {
@@ -107,7 +107,7 @@ impl<'a, L: Location<'a>> Tick<L> {
         let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
 
         (
-            HfForwardRef {
+            ForwardRef {
                 ident: ident.clone(),
                 _phantom: PhantomData,
             },
@@ -115,9 +115,9 @@ impl<'a, L: Location<'a>> Tick<L> {
         )
     }
 
-    pub fn cycle<S: CycleCollection<'a, TickCycle, Location = Self> + DeferTick>(
+    pub fn cycle<S: CycleCollection<'a, TickCycleMarker, Location = Self> + DeferTick>(
         &self,
-    ) -> (HfCycle<'a, S>, S)
+    ) -> (TickCycle<'a, S>, S)
     where
         L: NoTick,
     {
@@ -140,7 +140,7 @@ impl<'a, L: Location<'a>> Tick<L> {
         let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
 
         (
-            HfCycle {
+            TickCycle {
                 ident: ident.clone(),
                 _phantom: PhantomData,
             },
@@ -149,11 +149,11 @@ impl<'a, L: Location<'a>> Tick<L> {
     }
 
     pub fn cycle_with_initial<
-        S: CycleCollectionWithInitial<'a, TickCycle, Location = Self> + DeferTick,
+        S: CycleCollectionWithInitial<'a, TickCycleMarker, Location = Self> + DeferTick,
     >(
         &self,
         initial: S,
-    ) -> (HfCycle<'a, S>, S)
+    ) -> (TickCycle<'a, S>, S)
     where
         L: NoTick,
     {
@@ -176,7 +176,7 @@ impl<'a, L: Location<'a>> Tick<L> {
         let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
 
         (
-            HfCycle {
+            TickCycle {
                 ident: ident.clone(),
                 _phantom: PhantomData,
             },
