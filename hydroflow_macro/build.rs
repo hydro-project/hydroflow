@@ -3,7 +3,7 @@
 use std::env::VarError;
 use std::fmt::Write as _FmtWrite;
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Result, Write};
+use std::io::{BufReader, BufWriter, Read, Result, Write};
 use std::path::{Path, PathBuf};
 
 use hydroflow_lang::graph::ops::{PortListSpec, OPERATORS};
@@ -26,14 +26,15 @@ fn book_file_writer(filename: impl AsRef<Path>) -> Result<BufWriter<File>> {
     Ok(BufWriter::new(File::create(pathbuf)?))
 }
 
-fn write_operator_docgen(op_name: &str, mut write: &mut impl Write) -> Result<()> {
+fn write_operator_docgen(op_name: &str, write: &mut impl Write) -> Result<()> {
     let doctest_path = PathBuf::from_iter([
         std::env!("CARGO_MANIFEST_DIR"),
         "../docs/docgen",
         &*format!("{}.md", op_name),
     ]);
-    let mut read = BufReader::new(File::open(doctest_path)?);
-    std::io::copy(&mut read, &mut write)?;
+    let mut read_string = String::new();
+    File::open(doctest_path)?.read_to_string(&mut read_string)?;
+    write!(write, "{}", read_string.split("<!--").map(|t| t.replace("<", "\\<")).join("<!--"))?;
     Ok(())
 }
 
