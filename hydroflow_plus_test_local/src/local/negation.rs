@@ -11,13 +11,14 @@ pub fn test_difference<'a>(
     persist2: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process::<()>();
+    let tick = process.tick();
 
-    let mut source = process.source_iter(q!(0..5)).tick_batch();
+    let mut source = process.source_iter(q!(0..5)).tick_batch(&tick);
     if persist1 {
         source = source.persist();
     }
 
-    let mut source2 = process.source_iter(q!(3..6)).tick_batch();
+    let mut source2 = process.source_iter(q!(3..6)).tick_batch(&tick);
     if persist2 {
         source2 = source2.persist();
     }
@@ -38,16 +39,17 @@ pub fn test_anti_join<'a>(
     persist2: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process::<()>();
+    let tick = process.tick();
 
     let mut source = process
         .source_iter(q!(0..5))
         .map(q!(|v| (v, v)))
-        .tick_batch();
+        .tick_batch(&tick);
     if persist1 {
         source = source.persist();
     }
 
-    let mut source2 = process.source_iter(q!(3..6)).tick_batch();
+    let mut source2 = process.source_iter(q!(3..6)).tick_batch(&tick);
     if persist2 {
         source2 = source2.persist();
     }

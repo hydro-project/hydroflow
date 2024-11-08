@@ -10,11 +10,12 @@ pub fn count_elems_generic<'a, T: 'a>(
     output: RuntimeData<&'a UnboundedSender<u32>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process::<()>();
+    let tick = process.tick();
 
     let source = process.source_stream(input_stream);
     let count = source
         .map(q!(|_| 1))
-        .tick_batch()
+        .tick_batch(&tick)
         .fold(q!(|| 0), q!(|a, b| *a += b))
         .all_ticks();
 

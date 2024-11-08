@@ -29,8 +29,11 @@ expression: built.ir()
         ident: Ident {
             sym: cycle_4,
         },
-        location_kind: Cluster(
-            0,
+        location_kind: Tick(
+            1,
+            Cluster(
+                0,
+            ),
         ),
         input: DeferTick(
             Map {
@@ -95,8 +98,11 @@ expression: built.ir()
                                 ident: Ident {
                                     sym: cycle_4,
                                 },
-                                location_kind: Cluster(
-                                    0,
+                                location_kind: Tick(
+                                    1,
+                                    Cluster(
+                                        0,
+                                    ),
                                 ),
                             },
                             Persist(
@@ -175,8 +181,11 @@ expression: built.ir()
                                                         ident: Ident {
                                                             sym: cycle_3,
                                                         },
-                                                        location_kind: Cluster(
-                                                            0,
+                                                        location_kind: Tick(
+                                                            1,
+                                                            Cluster(
+                                                                0,
+                                                            ),
                                                         ),
                                                     },
                                                 },
@@ -383,8 +392,11 @@ expression: built.ir()
                                     ident: Ident {
                                         sym: cycle_0,
                                     },
-                                    location_kind: Cluster(
-                                        1,
+                                    location_kind: Tick(
+                                        2,
+                                        Cluster(
+                                            1,
+                                        ),
                                     ),
                                 },
                             },
@@ -398,8 +410,11 @@ expression: built.ir()
         ident: Ident {
             sym: cycle_3,
         },
-        location_kind: Cluster(
-            0,
+        location_kind: Tick(
+            1,
+            Cluster(
+                0,
+            ),
         ),
         input: Tee {
             inner: <tee 7>: Map {
@@ -457,8 +472,11 @@ expression: built.ir()
         ident: Ident {
             sym: cycle_5,
         },
-        location_kind: Cluster(
-            0,
+        location_kind: Tick(
+            1,
+            Cluster(
+                0,
+            ),
         ),
         input: DeferTick(
             Map {
@@ -515,8 +533,11 @@ expression: built.ir()
                                                     ident: Ident {
                                                         sym: cycle_5,
                                                     },
-                                                    location_kind: Cluster(
-                                                        0,
+                                                    location_kind: Tick(
+                                                        1,
+                                                        Cluster(
+                                                            0,
+                                                        ),
                                                     ),
                                                 },
                                             },
@@ -613,8 +634,11 @@ expression: built.ir()
         ident: Ident {
             sym: cycle_6,
         },
-        location_kind: Cluster(
-            0,
+        location_kind: Tick(
+            1,
+            Cluster(
+                0,
+            ),
         ),
         input: DeferTick(
             Difference(
@@ -804,8 +828,11 @@ expression: built.ir()
                                                         ident: Ident {
                                                             sym: cycle_7,
                                                         },
-                                                        location_kind: Cluster(
-                                                            0,
+                                                        location_kind: Tick(
+                                                            1,
+                                                            Cluster(
+                                                                0,
+                                                            ),
                                                         ),
                                                     },
                                                 ),
@@ -832,8 +859,11 @@ expression: built.ir()
         ident: Ident {
             sym: cycle_7,
         },
-        location_kind: Cluster(
-            0,
+        location_kind: Tick(
+            1,
+            Cluster(
+                0,
+            ),
         ),
         input: DeferTick(
             Map {
@@ -856,8 +886,11 @@ expression: built.ir()
         ident: Ident {
             sym: cycle_0,
         },
-        location_kind: Cluster(
-            1,
+        location_kind: Tick(
+            2,
+            Cluster(
+                1,
+            ),
         ),
         input: Fold {
             init: stageleft :: runtime_support :: fn0_type_hint :: < (core :: option :: Option < usize > , std :: collections :: hash_map :: HashMap < usize , hydroflow_plus_test :: cluster :: paxos :: LogValue < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > >) > ({ use crate :: __staged :: cluster :: paxos :: * ; | | (None , HashMap :: new ()) }),
@@ -972,8 +1005,11 @@ expression: built.ir()
         ident: Ident {
             sym: cycle_1,
         },
-        location_kind: Cluster(
-            3,
+        location_kind: Tick(
+            4,
+            Cluster(
+                3,
+            ),
         ),
         input: DeferTick(
             Map {
@@ -1028,8 +1064,11 @@ expression: built.ir()
                                                             ident: Ident {
                                                                 sym: cycle_6,
                                                             },
-                                                            location_kind: Cluster(
-                                                                0,
+                                                            location_kind: Tick(
+                                                                1,
+                                                                Cluster(
+                                                                    0,
+                                                                ),
                                                             ),
                                                         },
                                                     ),
@@ -1041,8 +1080,11 @@ expression: built.ir()
                                         ident: Ident {
                                             sym: cycle_1,
                                         },
-                                        location_kind: Cluster(
-                                            3,
+                                        location_kind: Tick(
+                                            4,
+                                            Cluster(
+                                                3,
+                                            ),
                                         ),
                                     },
                                 ),
@@ -1065,8 +1107,11 @@ expression: built.ir()
                                                     ident: Ident {
                                                         sym: cycle_2,
                                                     },
-                                                    location_kind: Cluster(
-                                                        3,
+                                                    location_kind: Tick(
+                                                        4,
+                                                        Cluster(
+                                                            3,
+                                                        ),
                                                     ),
                                                 },
                                             },
@@ -1094,8 +1139,11 @@ expression: built.ir()
         ident: Ident {
             sym: cycle_2,
         },
-        location_kind: Cluster(
-            3,
+        location_kind: Tick(
+            4,
+            Cluster(
+                3,
+            ),
         ),
         input: DeferTick(
             Tee {
@@ -1131,8 +1179,11 @@ expression: built.ir()
         ident: Ident {
             sym: cycle_3,
         },
-        location_kind: Cluster(
-            3,
+        location_kind: Tick(
+            4,
+            Cluster(
+                3,
+            ),
         ),
         input: DeferTick(
             Tee {
@@ -1149,8 +1200,11 @@ expression: built.ir()
                                             ident: Ident {
                                                 sym: cycle_3,
                                             },
-                                            location_kind: Cluster(
-                                                3,
+                                            location_kind: Tick(
+                                                4,
+                                                Cluster(
+                                                    3,
+                                                ),
                                             ),
                                         },
                                     ),
@@ -1241,8 +1295,11 @@ expression: built.ir()
         ident: Ident {
             sym: cycle_2,
         },
-        location_kind: Cluster(
-            2,
+        location_kind: Tick(
+            0,
+            Cluster(
+                2,
+            ),
         ),
         input: DeferTick(
             AntiJoin(
@@ -1295,8 +1352,11 @@ expression: built.ir()
                             ident: Ident {
                                 sym: cycle_2,
                             },
-                            location_kind: Cluster(
-                                2,
+                            location_kind: Tick(
+                                0,
+                                Cluster(
+                                    2,
+                                ),
                             ),
                         },
                     ),
@@ -1366,8 +1426,11 @@ expression: built.ir()
         ident: Ident {
             sym: cycle_3,
         },
-        location_kind: Cluster(
-            2,
+        location_kind: Tick(
+            0,
+            Cluster(
+                2,
+            ),
         ),
         input: DeferTick(
             ReduceKeyed {
@@ -1379,8 +1442,11 @@ expression: built.ir()
                                 ident: Ident {
                                     sym: cycle_3,
                                 },
-                                location_kind: Cluster(
-                                    2,
+                                location_kind: Tick(
+                                    0,
+                                    Cluster(
+                                        2,
+                                    ),
                                 ),
                             },
                         },

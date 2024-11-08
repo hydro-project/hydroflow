@@ -8,12 +8,9 @@ use proc_macro2::Span;
 use stageleft::{q, Quoted};
 
 use super::builder::FlowState;
-use crate::cycle::{
-    CycleCollection, CycleCollectionWithInitial, DeferTick, ForwardRef, HfCycle, HfForwardRef,
-    TickCycle,
-};
+use crate::cycle::{CycleCollection, ForwardRef, HfForwardRef};
 use crate::ir::{HfPlusNode, HfPlusSource};
-use crate::{Bounded, Optional, Singleton, Stream, Unbounded};
+use crate::{Singleton, Stream, Unbounded};
 
 pub mod external_process;
 pub use external_process::ExternalProcess;
@@ -30,18 +27,29 @@ pub use can_send::CanSend;
 pub mod tick;
 pub use tick::{NoTick, Tick};
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum LocationId {
     Process(usize),
     Cluster(usize),
+    Tick(usize, Box<LocationId>),
     ExternalProcess(usize),
 }
 
 impl LocationId {
+    pub fn root(&self) -> &LocationId {
+        match self {
+            LocationId::Process(_) => self,
+            LocationId::Cluster(_) => self,
+            LocationId::Tick(_, id) => id.root(),
+            LocationId::ExternalProcess(_) => self,
+        }
+    }
+
     pub fn raw_id(&self) -> usize {
         match self {
             LocationId::Process(id) => *id,
             LocationId::Cluster(id) => *id,
+            LocationId::Tick(_, _) => panic!("cannot get raw id for tick"),
             LocationId::ExternalProcess(id) => *id,
         }
     }
@@ -58,11 +66,16 @@ pub trait Location<'a>: Clone {
 
     fn is_top_level() -> bool;
 
-    fn nest(&self) -> Tick<Self>
+    fn tick(&self) -> Tick<Self>
     where
         Self: NoTick,
     {
-        Tick { l: self.clone() }
+        let next_id = self.flow_state().borrow_mut().next_clock_id;
+        self.flow_state().borrow_mut().next_clock_id += 1;
+        Tick {
+            id: next_id,
+            l: self.clone(),
+        }
     }
 
     fn spin(&self) -> Stream<(), Unbounded, Self>
@@ -76,19 +89,6 @@ pub trait Location<'a>: Clone {
                 location_kind: self.id(),
             })),
         )
-    }
-
-    fn spin_batch(
-        &self,
-        batch_size: impl Quoted<'a, usize> + Copy + 'a,
-    ) -> Stream<(), Bounded, Tick<Self>>
-    where
-        Self: Sized + NoTick,
-    {
-        self.spin()
-            .flat_map(q!(move |_| 0..batch_size))
-            .map(q!(|_| ()))
-            .tick_batch()
     }
 
     fn source_stream<T, E: FuturesStream<Item = T> + Unpin>(
@@ -153,35 +153,6 @@ pub trait Location<'a>: Clone {
         )
     }
 
-    fn singleton_each_tick<T: Clone>(
-        &self,
-        e: impl Quoted<'a, T>,
-    ) -> Singleton<T, Bounded, Tick<Self>>
-    where
-        Self: Sized + NoTick,
-    {
-        self.singleton(e).latest_tick()
-    }
-
-    fn singleton_first_tick<T: Clone>(
-        &self,
-        e: impl Quoted<'a, T>,
-    ) -> Optional<T, Bounded, Tick<Self>>
-    where
-        Self: Sized + NoTick,
-    {
-        let e_arr = q!([e]);
-        let e = e_arr.splice_untyped();
-
-        Optional::new(
-            self.clone().nest(),
-            HfPlusNode::Source {
-                source: HfPlusSource::Iter(e.into()),
-                location_kind: self.id(),
-            },
-        )
-    }
-
     fn source_interval(
         &self,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
@@ -217,6 +188,7 @@ pub trait Location<'a>: Clone {
             let on_id = match self.id() {
                 LocationId::Process(id) => id,
                 LocationId::Cluster(id) => id,
+                LocationId::Tick(_, _) => panic!(),
                 LocationId::ExternalProcess(_) => panic!(),
             };
 
@@ -236,105 +208,6 @@ pub trait Location<'a>: Clone {
                 _phantom: PhantomData,
             },
             S::create_source(ident, self.clone()),
-        )
-    }
-
-    fn tick_forward_ref<S: CycleCollection<'a, ForwardRef, Location = Tick<Self>>>(
-        &self,
-    ) -> (HfForwardRef<'a, S>, S)
-    where
-        Self: NoTick,
-    {
-        let next_id = {
-            let on_id = match self.id() {
-                LocationId::Process(id) => id,
-                LocationId::Cluster(id) => id,
-                LocationId::ExternalProcess(_) => panic!(),
-            };
-
-            let mut flow_state = self.flow_state().borrow_mut();
-            let next_id_entry = flow_state.cycle_counts.entry(on_id).or_default();
-
-            let id = *next_id_entry;
-            *next_id_entry += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
-
-        (
-            HfForwardRef {
-                ident: ident.clone(),
-                _phantom: PhantomData,
-            },
-            S::create_source(ident, self.nest().clone()),
-        )
-    }
-
-    fn tick_cycle<S: CycleCollection<'a, TickCycle, Location = Tick<Self>> + DeferTick>(
-        &self,
-    ) -> (HfCycle<'a, S>, S)
-    where
-        Self: NoTick,
-    {
-        let next_id = {
-            let on_id = match self.id() {
-                LocationId::Process(id) => id,
-                LocationId::Cluster(id) => id,
-                LocationId::ExternalProcess(_) => panic!(),
-            };
-
-            let mut flow_state = self.flow_state().borrow_mut();
-            let next_id_entry = flow_state.cycle_counts.entry(on_id).or_default();
-
-            let id = *next_id_entry;
-            *next_id_entry += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
-
-        (
-            HfCycle {
-                ident: ident.clone(),
-                _phantom: PhantomData,
-            },
-            S::create_source(ident, self.nest().clone()),
-        )
-    }
-
-    fn tick_cycle_with_initial<
-        S: CycleCollectionWithInitial<'a, TickCycle, Location = Tick<Self>> + DeferTick,
-    >(
-        &self,
-        initial: S,
-    ) -> (HfCycle<'a, S>, S)
-    where
-        Self: NoTick,
-    {
-        let next_id = {
-            let on_id = match self.id() {
-                LocationId::Process(id) => id,
-                LocationId::Cluster(id) => id,
-                LocationId::ExternalProcess(_) => panic!(),
-            };
-
-            let mut flow_state = self.flow_state().borrow_mut();
-            let next_id_entry = flow_state.cycle_counts.entry(on_id).or_default();
-
-            let id = *next_id_entry;
-            *next_id_entry += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
-
-        (
-            HfCycle {
-                ident: ident.clone(),
-                _phantom: PhantomData,
-            },
-            S::create_source(ident, initial, self.nest().clone()),
         )
     }
 }

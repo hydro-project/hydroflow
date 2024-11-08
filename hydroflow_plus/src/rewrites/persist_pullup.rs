@@ -167,7 +167,8 @@ mod tests {
         let flow = crate::builder::FlowBuilder::new();
         let process = flow.process::<()>();
 
-        let before_tee = process.source_iter(q!(0..10)).tick_batch().persist();
+        let tick = process.tick();
+        let before_tee = process.source_iter(q!(0..10)).tick_batch(&tick).persist();
 
         before_tee
             .clone()

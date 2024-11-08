@@ -14,7 +14,7 @@ pub fn map_reduce<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, Leader>, Cluster<'
 
     let all_ids_vec = cluster.members();
     let words_partitioned = words
-        .tick_batch()
+        .tick_batch(&process.tick())
         .enumerate()
         .map(q!(|(i, w)| (
             ClusterId::from_raw((i % all_ids_vec.len()) as u32),
@@ -25,7 +25,7 @@ pub fn map_reduce<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, Leader>, Cluster<'
     words_partitioned
         .send_bincode(&cluster)
         .map(q!(|string| (string, ())))
-        .tick_batch()
+        .tick_batch(&cluster.tick())
         .fold_keyed(q!(|| 0), q!(|count, _| *count += 1))
         .inspect(q!(|(string, count)| println!(
             "partition count: {} - {}",
@@ -33,7 +33,7 @@ pub fn map_reduce<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, Leader>, Cluster<'
         )))
         .all_ticks()
         .send_bincode_interleaved(&process)
-        .tick_batch()
+        .tick_batch(&process.tick())
         .persist()
         .reduce_keyed(q!(|total, count| *total += count))
         .all_ticks()

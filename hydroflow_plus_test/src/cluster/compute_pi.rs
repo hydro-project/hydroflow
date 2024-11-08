@@ -14,6 +14,7 @@ pub fn compute_pi<'a>(
     let process = flow.process();
 
     let trials = cluster
+        .tick()
         .spin_batch(q!(batch_size))
         .map(q!(|_| rand::random::<(f64, f64)>()))
         .map(q!(|(x, y)| x * x + y * y < 1.0))
