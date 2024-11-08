@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 
 use hydroflow_lang::graph::{eliminate_extra_unions_tees, HydroflowGraph};
 
-use super::compiled::HfCompiled;
+use super::compiled::CompiledFlow;
 use super::deploy::{DeployFlow, DeployResult};
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDeploy};
 use crate::ir::HfPlusLeaf;
@@ -62,10 +62,10 @@ pub(crate) fn build_inner(ir: &mut Vec<HfPlusLeaf>) -> BTreeMap<usize, Hydroflow
 }
 
 impl<'a> BuiltFlow<'a> {
-    pub fn compile_no_network<D: LocalDeploy<'a>>(mut self) -> HfCompiled<'a, D::GraphId> {
+    pub fn compile_no_network<D: LocalDeploy<'a>>(mut self) -> CompiledFlow<'a, D::GraphId> {
         self.used = true;
 
-        HfCompiled {
+        CompiledFlow {
             hydroflow_ir: build_inner(&mut self.ir),
             extra_stmts: BTreeMap::new(),
             _phantom: PhantomData,
@@ -130,7 +130,7 @@ impl<'a> BuiltFlow<'a> {
         self.into_deploy().with_cluster(cluster, spec)
     }
 
-    pub fn compile<D: Deploy<'a> + 'a>(self, env: &D::CompileEnv) -> HfCompiled<'a, D::GraphId> {
+    pub fn compile<D: Deploy<'a> + 'a>(self, env: &D::CompileEnv) -> CompiledFlow<'a, D::GraphId> {
         self.into_deploy::<D>().compile(env)
     }
 

@@ -2,8 +2,8 @@ use std::marker::PhantomData;
 
 use crate::location::Location;
 
-pub enum ForwardRef {}
-pub enum TickCycle {}
+pub enum ForwardRefMarker {}
+pub enum TickCycleMarker {}
 
 pub trait DeferTick {
     fn defer_tick(self) -> Self;
@@ -29,24 +29,24 @@ pub trait CycleCollectionWithInitial<'a, T>: CycleComplete<'a, T> {
 /// by a stream that is not yet known.
 ///
 /// See [`crate::FlowBuilder`] for an explainer on the type parameters.
-pub struct HfForwardRef<'a, S: CycleComplete<'a, ForwardRef>> {
+pub struct ForwardRef<'a, S: CycleComplete<'a, ForwardRefMarker>> {
     pub(crate) ident: syn::Ident,
     pub(crate) _phantom: PhantomData<(&'a mut &'a (), S)>,
 }
 
-impl<'a, S: CycleComplete<'a, ForwardRef>> HfForwardRef<'a, S> {
+impl<'a, S: CycleComplete<'a, ForwardRefMarker>> ForwardRef<'a, S> {
     pub fn complete(self, stream: S) {
         let ident = self.ident;
         S::complete(stream, ident)
     }
 }
 
-pub struct HfCycle<'a, S: CycleComplete<'a, TickCycle> + DeferTick> {
+pub struct TickCycle<'a, S: CycleComplete<'a, TickCycleMarker> + DeferTick> {
     pub(crate) ident: syn::Ident,
     pub(crate) _phantom: PhantomData<(&'a mut &'a (), S)>,
 }
 
-impl<'a, S: CycleComplete<'a, TickCycle> + DeferTick> HfCycle<'a, S> {
+impl<'a, S: CycleComplete<'a, TickCycleMarker> + DeferTick> TickCycle<'a, S> {
     pub fn complete_next_tick(self, stream: S) {
         let ident = self.ident;
         S::complete(stream.defer_tick(), ident)
