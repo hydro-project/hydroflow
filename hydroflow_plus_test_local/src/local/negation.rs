@@ -27,8 +27,7 @@ pub fn test_difference<'a>(
         output.send(v).unwrap();
     }));
 
-    flow.with_default_optimize()
-        .compile_no_network::<SingleProcessGraph>()
+    flow.compile_no_network::<SingleProcessGraph>()
 }
 
 #[stageleft::entry]
@@ -58,8 +57,7 @@ pub fn test_anti_join<'a>(
         output.send(v.0).unwrap();
     }));
 
-    flow.with_default_optimize()
-        .compile_no_network::<SingleProcessGraph>()
+    flow.compile_no_network::<SingleProcessGraph>()
 }
 
 #[stageleft::runtime]

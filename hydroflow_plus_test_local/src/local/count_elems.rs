@@ -23,8 +23,7 @@ pub fn count_elems_generic<'a, T: 'a>(
         output.send(v).unwrap();
     }));
 
-    flow.with_default_optimize()
-        .compile_no_network::<SingleProcessGraph>()
+    flow.compile_no_network::<SingleProcessGraph>()
 }
 
 #[stageleft::entry]

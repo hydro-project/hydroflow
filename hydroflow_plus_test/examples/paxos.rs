@@ -56,7 +56,6 @@ async fn main() {
     let rustflags = "-C opt-level=3 -C codegen-units=1 -C strip=none -C debuginfo=2 -C lto=off";
 
     let _nodes = builder
-        .with_default_optimize()
         .with_cluster(
             &proposers,
             (0..f + 1)

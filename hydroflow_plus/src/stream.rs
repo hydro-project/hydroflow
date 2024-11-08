@@ -864,7 +864,6 @@ mod tests {
             .send_bincode_external(&external);
 
         let nodes = flow
-            .with_default_optimize()
             .with_process(&first_node, deployment.Localhost())
             .with_process(&second_node, deployment.Localhost())
             .with_external(&external, deployment.Localhost())

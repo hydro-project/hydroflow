@@ -39,6 +39,10 @@ impl<'a, D: LocalDeploy<'a>> Drop for DeployFlow<'a, D> {
 }
 
 impl<'a, D: LocalDeploy<'a>> DeployFlow<'a, D> {
+    pub fn ir(&self) -> &Vec<HfPlusLeaf> {
+        &self.ir
+    }
+
     pub fn with_process<P>(
         mut self,
         process: &Process<P>,
@@ -68,6 +72,16 @@ impl<'a, D: LocalDeploy<'a>> DeployFlow<'a, D> {
         self.clusters
             .insert(cluster.id, spec.build(cluster.id, &tag_name));
         self
+    }
+
+    pub fn compile_no_network(mut self) -> CompiledFlow<'a, D::GraphId> {
+        self.used = true;
+
+        CompiledFlow {
+            hydroflow_ir: build_inner(&mut self.ir),
+            extra_stmts: BTreeMap::new(),
+            _phantom: PhantomData,
+        }
     }
 }
 

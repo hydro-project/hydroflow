@@ -38,8 +38,7 @@ pub fn chat_app<'a>(
         output.send(t).unwrap();
     }));
 
-    flow.with_default_optimize()
-        .compile_no_network::<SingleProcessGraph>()
+    flow.compile_no_network::<SingleProcessGraph>()
 }
 
 #[stageleft::runtime]

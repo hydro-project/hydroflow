@@ -9,7 +9,6 @@ async fn main() {
     hydroflow_plus_template::first_ten::first_ten(&process);
 
     let _nodes = flow
-        .with_default_optimize()
         .with_process(&process, deployment.Localhost())
         .deploy(&mut deployment);
 

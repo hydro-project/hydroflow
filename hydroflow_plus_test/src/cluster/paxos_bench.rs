@@ -267,12 +267,12 @@ mod tests {
     fn paxos_ir() {
         let builder = hydroflow_plus::FlowBuilder::new();
         let _ = super::paxos_bench(&builder, 1, 1, 1, 1, 1, 1, 1);
-        let built = builder.with_default_optimize();
+        let built = builder.with_default_optimize::<DeployRuntime>();
 
         hydroflow_plus::ir::dbg_dedup_tee(|| {
             insta::assert_debug_snapshot!(built.ir());
         });
 
-        let _ = built.compile::<DeployRuntime>(&RuntimeData::new("FAKE"));
+        let _ = built.compile(&RuntimeData::new("FAKE"));
     }
 }

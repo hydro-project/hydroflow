@@ -51,7 +51,6 @@ async fn main() {
     //     .ir());
 
     let _nodes = builder
-        .with_default_optimize()
         .with_process(
             &leader,
             TrybuildHost::new(create_host(&mut deployment))

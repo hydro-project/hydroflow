@@ -29,8 +29,7 @@ pub fn graph_reachability<'a>(
         reached_out.send(v).unwrap();
     }));
 
-    flow.with_default_optimize()
-        .compile_no_network::<SingleProcessGraph>()
+    flow.compile_no_network::<SingleProcessGraph>()
 }
 
 #[stageleft::runtime]

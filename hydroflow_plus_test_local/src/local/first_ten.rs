@@ -10,8 +10,7 @@ pub fn first_ten(flow: &FlowBuilder) {
 #[stageleft::entry]
 pub fn first_ten_runtime<'a>(flow: FlowBuilder<'a>) -> impl Quoted<'a, Hydroflow<'a>> {
     first_ten(&flow);
-    flow.with_default_optimize()
-        .compile_no_network::<SingleProcessGraph>()
+    flow.compile_no_network::<SingleProcessGraph>()
 }
 
 #[stageleft::runtime]
