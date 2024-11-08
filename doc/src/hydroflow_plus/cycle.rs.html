@@ -56,8 +56,8 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::location::Location;
 
-<span class="kw">pub enum </span>ForwardRef {}
-<span class="kw">pub enum </span>TickCycle {}
+<span class="kw">pub enum </span>ForwardRefMarker {}
+<span class="kw">pub enum </span>TickCycleMarker {}
 
 <span class="kw">pub trait </span>DeferTick {
     <span class="kw">fn </span>defer_tick(<span class="self">self</span>) -&gt; <span class="self">Self</span>;
@@ -83,24 +83,24 @@
 /// by a stream that is not yet known.
 ///
 /// See [`crate::FlowBuilder`] for an explainer on the type parameters.
-</span><span class="kw">pub struct </span>HfForwardRef&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRef&gt;&gt; {
+</span><span class="kw">pub struct </span>ForwardRef&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRefMarker&gt;&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), S)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRef&gt;&gt; HfForwardRef&lt;<span class="lifetime">'a</span>, S&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRefMarker&gt;&gt; ForwardRef&lt;<span class="lifetime">'a</span>, S&gt; {
     <span class="kw">pub fn </span>complete(<span class="self">self</span>, stream: S) {
         <span class="kw">let </span>ident = <span class="self">self</span>.ident;
         S::complete(stream, ident)
     }
 }
 
-<span class="kw">pub struct </span>HfCycle&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, TickCycle&gt; + DeferTick&gt; {
+<span class="kw">pub struct </span>TickCycle&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, TickCycleMarker&gt; + DeferTick&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), S)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, TickCycle&gt; + DeferTick&gt; HfCycle&lt;<span class="lifetime">'a</span>, S&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, TickCycleMarker&gt; + DeferTick&gt; TickCycle&lt;<span class="lifetime">'a</span>, S&gt; {
     <span class="kw">pub fn </span>complete_next_tick(<span class="self">self</span>, stream: S) {
         <span class="kw">let </span>ident = <span class="self">self</span>.ident;
         S::complete(stream.defer_tick(), ident)

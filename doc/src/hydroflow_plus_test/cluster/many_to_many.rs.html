@@ -62,14 +62,7 @@
 <a href="#62" id="62">62</a>
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
-<a href="#65" id="65">65</a>
-<a href="#66" id="66">66</a>
-<a href="#67" id="67">67</a>
-<a href="#68" id="68">68</a>
-<a href="#69" id="69">69</a>
-<a href="#70" id="70">70</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
-<span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
 <span class="kw">pub fn </span>many_to_many&lt;<span class="lifetime">'a</span>&gt;(flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt;) -&gt; Cluster&lt;<span class="lifetime">'a</span>, ()&gt; {
     <span class="kw">let </span>cluster = flow.cluster();
@@ -84,7 +77,7 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>hydro_deploy::Deployment;
-    <span class="kw">use </span>hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
+    <span class="kw">use </span>hydroflow_plus::deploy::DeployCrateWrapper;
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>many_to_many() {
@@ -97,12 +90,7 @@
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
         <span class="kw">let </span>nodes = built
-            .with_cluster(
-                <span class="kw-2">&amp;</span>cluster,
-                (<span class="number">0</span>..<span class="number">2</span>)
-                    .map(|<span class="kw">_</span>| TrybuildHost::new(deployment.Localhost()))
-                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
-            )
+            .with_cluster(<span class="kw-2">&amp;</span>cluster, (<span class="number">0</span>..<span class="number">2</span>).map(|<span class="kw">_</span>| deployment.Localhost()))
             .deploy(<span class="kw-2">&amp;mut </span>deployment);
 
         deployment.deploy().<span class="kw">await</span>.unwrap();

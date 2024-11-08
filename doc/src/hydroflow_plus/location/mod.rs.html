@@ -221,7 +221,7 @@
 <span class="kw">use </span>stageleft::{q, Quoted};
 
 <span class="kw">use </span><span class="kw">super</span>::builder::FlowState;
-<span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, ForwardRef, HfForwardRef};
+<span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, ForwardRef, ForwardRefMarker};
 <span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusNode, HfPlusSource};
 <span class="kw">use crate</span>::{Singleton, Stream, Unbounded};
 
@@ -391,9 +391,9 @@
         )))
     }
 
-    <span class="kw">fn </span>forward_ref&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, ForwardRef, Location = <span class="self">Self</span>&gt;&gt;(
+    <span class="kw">fn </span>forward_ref&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, ForwardRefMarker, Location = <span class="self">Self</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; (HfForwardRef&lt;<span class="lifetime">'a</span>, S&gt;, S)
+    ) -&gt; (ForwardRef&lt;<span class="lifetime">'a</span>, S&gt;, S)
     <span class="kw">where
         </span><span class="self">Self</span>: NoTick,
     {
@@ -416,7 +416,7 @@
         <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"cycle_{}"</span>, next_id), Span::call_site());
 
         (
-            HfForwardRef {
+            ForwardRef {
                 ident: ident.clone(),
                 _phantom: PhantomData,
             },

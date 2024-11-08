@@ -192,8 +192,8 @@
 <span class="kw">use super</span>::{Cluster, Location, LocationId, Process};
 <span class="kw">use </span><span class="kw">crate</span>::builder::FlowState;
 <span class="kw">use </span><span class="kw">crate</span>::cycle::{
-    CycleCollection, CycleCollectionWithInitial, DeferTick, ForwardRef, HfCycle, HfForwardRef,
-    TickCycle,
+    CycleCollection, CycleCollectionWithInitial, DeferTick, ForwardRef, ForwardRefMarker,
+    TickCycle, TickCycleMarker,
 };
 <span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusNode, HfPlusSource};
 <span class="kw">use crate</span>::{Bounded, Optional, Singleton, Stream};
@@ -268,9 +268,9 @@
         )
     }
 
-    <span class="kw">pub fn </span>forward_ref&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, ForwardRef, Location = <span class="self">Self</span>&gt;&gt;(
+    <span class="kw">pub fn </span>forward_ref&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, ForwardRefMarker, Location = <span class="self">Self</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; (HfForwardRef&lt;<span class="lifetime">'a</span>, S&gt;, S)
+    ) -&gt; (ForwardRef&lt;<span class="lifetime">'a</span>, S&gt;, S)
     <span class="kw">where
         </span>L: NoTick,
     {
@@ -293,7 +293,7 @@
         <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"cycle_{}"</span>, next_id), Span::call_site());
 
         (
-            HfForwardRef {
+            ForwardRef {
                 ident: ident.clone(),
                 _phantom: PhantomData,
             },
@@ -301,9 +301,9 @@
         )
     }
 
-    <span class="kw">pub fn </span>cycle&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, TickCycle, Location = <span class="self">Self</span>&gt; + DeferTick&gt;(
+    <span class="kw">pub fn </span>cycle&lt;S: CycleCollection&lt;<span class="lifetime">'a</span>, TickCycleMarker, Location = <span class="self">Self</span>&gt; + DeferTick&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; (HfCycle&lt;<span class="lifetime">'a</span>, S&gt;, S)
+    ) -&gt; (TickCycle&lt;<span class="lifetime">'a</span>, S&gt;, S)
     <span class="kw">where
         </span>L: NoTick,
     {
@@ -326,7 +326,7 @@
         <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"cycle_{}"</span>, next_id), Span::call_site());
 
         (
-            HfCycle {
+            TickCycle {
                 ident: ident.clone(),
                 _phantom: PhantomData,
             },
@@ -335,11 +335,11 @@
     }
 
     <span class="kw">pub fn </span>cycle_with_initial&lt;
-        S: CycleCollectionWithInitial&lt;<span class="lifetime">'a</span>, TickCycle, Location = <span class="self">Self</span>&gt; + DeferTick,
+        S: CycleCollectionWithInitial&lt;<span class="lifetime">'a</span>, TickCycleMarker, Location = <span class="self">Self</span>&gt; + DeferTick,
     &gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         initial: S,
-    ) -&gt; (HfCycle&lt;<span class="lifetime">'a</span>, S&gt;, S)
+    ) -&gt; (TickCycle&lt;<span class="lifetime">'a</span>, S&gt;, S)
     <span class="kw">where
         </span>L: NoTick,
     {
@@ -362,7 +362,7 @@
         <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"cycle_{}"</span>, next_id), Span::call_site());
 
         (
-            HfCycle {
+            TickCycle {
                 ident: ident.clone(),
                 _phantom: PhantomData,
             },

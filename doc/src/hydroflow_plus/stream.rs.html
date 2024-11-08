@@ -881,9 +881,6 @@
 <a href="#881" id="881">881</a>
 <a href="#882" id="882">882</a>
 <a href="#883" id="883">883</a>
-<a href="#884" id="884">884</a>
-<a href="#885" id="885">885</a>
-<a href="#886" id="886">886</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -899,7 +896,7 @@
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use </span><span class="kw">crate</span>::builder::FLOW_USED_MESSAGE;
-<span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRef, TickCycle};
+<span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRefMarker, TickCycleMarker};
 <span class="kw">use </span><span class="kw">crate</span>::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, TeeNode};
 <span class="kw">use </span><span class="kw">crate</span>::location::cluster::ClusterSelfId;
 <span class="kw">use </span><span class="kw">crate</span>::location::external_process::{ExternalBincodeStream, ExternalBytesPort};
@@ -943,7 +940,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleCollection&lt;<span class="lifetime">'a</span>, TickCycle&gt; <span class="kw">for </span>Stream&lt;T, Tick&lt;L&gt;, Bounded&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleCollection&lt;<span class="lifetime">'a</span>, TickCycleMarker&gt; <span class="kw">for </span>Stream&lt;T, Tick&lt;L&gt;, Bounded&gt; {
     <span class="kw">type </span>Location = Tick&lt;L&gt;;
 
     <span class="kw">fn </span>create_source(ident: syn::Ident, location: Tick&lt;L&gt;) -&gt; <span class="self">Self </span>{
@@ -958,7 +955,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, TickCycle&gt; <span class="kw">for </span>Stream&lt;T, Tick&lt;L&gt;, Bounded&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, TickCycleMarker&gt; <span class="kw">for </span>Stream&lt;T, Tick&lt;L&gt;, Bounded&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
         <span class="self">self</span>.location
             .flow_state()
@@ -974,7 +971,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick, B&gt; CycleCollection&lt;<span class="lifetime">'a</span>, ForwardRef&gt; <span class="kw">for </span>Stream&lt;T, L, B&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick, B&gt; CycleCollection&lt;<span class="lifetime">'a</span>, ForwardRefMarker&gt; <span class="kw">for </span>Stream&lt;T, L, B&gt; {
     <span class="kw">type </span>Location = L;
 
     <span class="kw">fn </span>create_source(ident: syn::Ident, location: L) -&gt; <span class="self">Self </span>{
@@ -989,7 +986,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick, B&gt; CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRef&gt; <span class="kw">for </span>Stream&lt;T, L, B&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick, B&gt; CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRefMarker&gt; <span class="kw">for </span>Stream&lt;T, L, B&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
         <span class="self">self</span>.location
             .flow_state()
@@ -1718,14 +1715,11 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>std::sync::Arc;
-
-    <span class="kw">use </span>hydro_deploy::{Deployment, Host};
+    <span class="kw">use </span>hydro_deploy::Deployment;
     <span class="kw">use </span>hydroflow::futures::StreamExt;
     <span class="kw">use </span>serde::{Deserialize, Serialize};
     <span class="kw">use </span>stageleft::q;
 
-    <span class="kw">use </span><span class="kw">crate</span>::deploy::TrybuildHost;
     <span class="kw">use </span><span class="kw">crate</span>::location::Location;
     <span class="kw">use </span><span class="kw">crate</span>::FlowBuilder;
 
@@ -1754,9 +1748,9 @@
 
         <span class="kw">let </span>nodes = flow
             .with_default_optimize()
-            .with_process(<span class="kw-2">&amp;</span>first_node, TrybuildHost::new(deployment.Localhost()))
-            .with_process(<span class="kw-2">&amp;</span>second_node, TrybuildHost::new(deployment.Localhost()))
-            .with_external(<span class="kw-2">&amp;</span>external, deployment.Localhost() <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>Host&gt;)
+            .with_process(<span class="kw-2">&amp;</span>first_node, deployment.Localhost())
+            .with_process(<span class="kw-2">&amp;</span>second_node, deployment.Localhost())
+            .with_external(<span class="kw-2">&amp;</span>external, deployment.Localhost())
             .deploy(<span class="kw-2">&amp;mut </span>deployment);
 
         deployment.deploy().<span class="kw">await</span>.unwrap();

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["member_name"]};
+window.SIDEBAR_ITEMS = {"fn":["member_name"],"struct":["LowercaseAlphanumeric"]};

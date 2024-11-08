@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ForwardRef","TickCycle"],"struct":["HfCycle","HfForwardRef"],"trait":["CycleCollection","CycleCollectionWithInitial","CycleComplete","DeferTick"]};
+window.SIDEBAR_ITEMS = {"enum":["ForwardRefMarker","TickCycleMarker"],"struct":["ForwardRef","TickCycle"],"trait":["CycleCollection","CycleCollectionWithInitial","CycleComplete","DeferTick"]};

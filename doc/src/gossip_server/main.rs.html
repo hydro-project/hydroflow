@@ -186,6 +186,9 @@
 <a href="#186" id="186">186</a>
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::convert::Infallible;
 <span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::future::ready;
@@ -227,6 +230,9 @@
     <span class="doccomment">/// The duration (in seconds) between gossip rounds.
     </span><span class="attr">#[clap(short, long, default_value = <span class="string">"5"</span>, value_parser = clap_duration_from_secs)]
     </span>gossip_frequency: Duration,
+
+    <span class="attr">#[clap(env = <span class="string">"GOSSIP_MEMBER_SUFFIX_LEN"</span>, default_value = <span class="string">"4"</span>)]
+    </span>member_suffix_len: usize,
 }
 
 <span class="doccomment">/// Parse duration from float string for clap args.
@@ -321,7 +327,7 @@
     <span class="kw">let </span>gossip_protocol_address =
         SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), opts.gossip_port);
 
-    <span class="kw">let </span>member_data = MemberDataBuilder::new(member_name().clone())
+    <span class="kw">let </span>member_data = MemberDataBuilder::new(member_name(opts.member_suffix_len).clone())
         .add_protocol(Protocol::new(<span class="string">"gossip"</span>.into(), gossip_protocol_address))
         .add_protocol(Protocol::new(<span class="string">"client"</span>.into(), client_protocol_address))
         .build();

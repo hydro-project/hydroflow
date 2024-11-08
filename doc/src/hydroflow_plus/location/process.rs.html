@@ -37,7 +37,7 @@
 <span class="kw">use super</span>::{Location, LocationId};
 <span class="kw">use </span><span class="kw">crate</span>::builder::FlowState;
 
-<span class="kw">pub struct </span>Process&lt;<span class="lifetime">'a</span>, P&gt; {
+<span class="kw">pub struct </span>Process&lt;<span class="lifetime">'a</span>, P = ()&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) id: usize,
     <span class="kw">pub</span>(<span class="kw">crate</span>) flow_state: FlowState,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>P&gt;,

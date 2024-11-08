@@ -88,14 +88,10 @@
 <a href="#88" id="88">88</a>
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
-<a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
-<a href="#93" id="93">93</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>location::external_process::ExternalBincodeSink;
 <span class="kw">use </span>location::ExternalProcess;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
 <span class="attr">#[derive(Serialize, Deserialize)]
 </span><span class="kw">struct </span>SendOverNetwork {
@@ -137,11 +133,9 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>std::sync::Arc;
-
     <span class="kw">use </span>futures::SinkExt;
-    <span class="kw">use </span>hydro_deploy::{Deployment, Host};
-    <span class="kw">use </span>hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
+    <span class="kw">use </span>hydro_deploy::Deployment;
+    <span class="kw">use </span>hydroflow_plus::deploy::DeployCrateWrapper;
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>first_ten_distributed() {
@@ -156,9 +150,9 @@
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
         <span class="kw">let </span>nodes = built
-            .with_process(<span class="kw-2">&amp;</span>first_node, TrybuildHost::new(deployment.Localhost()))
-            .with_process(<span class="kw-2">&amp;</span>second_node, TrybuildHost::new(deployment.Localhost()))
-            .with_external(<span class="kw-2">&amp;</span>external_process, deployment.Localhost() <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>Host&gt;)
+            .with_process(<span class="kw-2">&amp;</span>first_node, deployment.Localhost())
+            .with_process(<span class="kw-2">&amp;</span>second_node, deployment.Localhost())
+            .with_external(<span class="kw-2">&amp;</span>external_process, deployment.Localhost())
             .deploy(<span class="kw-2">&amp;mut </span>deployment);
 
         deployment.deploy().<span class="kw">await</span>.unwrap();

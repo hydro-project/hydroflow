@@ -332,6 +332,11 @@
 <a href="#332" id="332">332</a>
 <a href="#333" id="333">333</a>
 <a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::ops::Deref;
@@ -341,7 +346,8 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::builder::FLOW_USED_MESSAGE;
 <span class="kw">use </span><span class="kw">crate</span>::cycle::{
-    CycleCollection, CycleCollectionWithInitial, CycleComplete, DeferTick, ForwardRef, TickCycle,
+    CycleCollection, CycleCollectionWithInitial, CycleComplete, DeferTick, ForwardRefMarker,
+    TickCycleMarker,
 };
 <span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusLeaf, HfPlusNode, TeeNode};
 <span class="kw">use </span><span class="kw">crate</span>::location::{check_matching_location, Location, LocationId, NoTick, Tick};
@@ -381,7 +387,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleCollectionWithInitial&lt;<span class="lifetime">'a</span>, TickCycle&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleCollectionWithInitial&lt;<span class="lifetime">'a</span>, TickCycleMarker&gt;
     <span class="kw">for </span>Singleton&lt;T, Tick&lt;L&gt;, Bounded&gt;
 {
     <span class="kw">type </span>Location = Tick&lt;L&gt;;
@@ -401,7 +407,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, TickCycle&gt; <span class="kw">for </span>Singleton&lt;T, Tick&lt;L&gt;, Bounded&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, TickCycleMarker&gt; <span class="kw">for </span>Singleton&lt;T, Tick&lt;L&gt;, Bounded&gt; {
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
         <span class="self">self</span>.location
             .flow_state()
@@ -417,7 +423,9 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleCollection&lt;<span class="lifetime">'a</span>, ForwardRef&gt; <span class="kw">for </span>Singleton&lt;T, Tick&lt;L&gt;, Bounded&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleCollection&lt;<span class="lifetime">'a</span>, ForwardRefMarker&gt;
+    <span class="kw">for </span>Singleton&lt;T, Tick&lt;L&gt;, Bounded&gt;
+{
     <span class="kw">type </span>Location = Tick&lt;L&gt;;
 
     <span class="kw">fn </span>create_source(ident: syn::Ident, location: Tick&lt;L&gt;) -&gt; <span class="self">Self </span>{
@@ -432,7 +440,9 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRef&gt; <span class="kw">for </span>Singleton&lt;T, Tick&lt;L&gt;, Bounded&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRefMarker&gt;
+    <span class="kw">for </span>Singleton&lt;T, Tick&lt;L&gt;, Bounded&gt;
+{
     <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
         <span class="self">self</span>.location
             .flow_state()

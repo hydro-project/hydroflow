@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["HfBuiltWithId","HfCompiled"]};
+window.SIDEBAR_ITEMS = {"struct":["CompiledFlow","CompiledFlowWithId"]};
