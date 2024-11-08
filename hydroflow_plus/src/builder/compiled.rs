@@ -8,10 +8,12 @@ use quote::quote;
 use stageleft::runtime_support::FreeVariable;
 use stageleft::Quoted;
 
+use crate::staging_util::Invariant;
+
 pub struct CompiledFlow<'a, ID> {
     pub(super) hydroflow_ir: BTreeMap<usize, HydroflowGraph>,
     pub(super) extra_stmts: BTreeMap<usize, Vec<syn::Stmt>>,
-    pub(super) _phantom: PhantomData<&'a mut &'a ID>,
+    pub(super) _phantom: Invariant<'a, ID>,
 }
 
 impl<ID> CompiledFlow<'_, ID> {
@@ -111,7 +113,7 @@ impl<'a> FreeVariable<Hydroflow<'a>> for CompiledFlow<'a, ()> {
 
 pub struct CompiledFlowWithId<'a> {
     tokens: TokenStream,
-    _phantom: PhantomData<&'a mut &'a ()>,
+    _phantom: Invariant<'a>,
 }
 
 impl<'a> Quoted<'a, Hydroflow<'a>> for CompiledFlowWithId<'a> {}

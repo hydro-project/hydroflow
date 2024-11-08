@@ -7,6 +7,7 @@ use serde::Serialize;
 use super::{Location, LocationId, NoTick};
 use crate::builder::FlowState;
 use crate::ir::{HfPlusNode, HfPlusSource};
+use crate::staging_util::Invariant;
 use crate::{Stream, Unbounded};
 
 pub struct ExternalBytesPort {
@@ -31,7 +32,7 @@ pub struct ExternalProcess<'a, P> {
 
     pub(crate) flow_state: FlowState,
 
-    pub(crate) _phantom: PhantomData<&'a &'a mut P>,
+    pub(crate) _phantom: Invariant<'a, P>,
 }
 
 impl<P> Clone for ExternalProcess<'_, P> {

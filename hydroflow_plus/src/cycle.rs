@@ -1,6 +1,5 @@
-use std::marker::PhantomData;
-
 use crate::location::Location;
+use crate::staging_util::Invariant;
 
 pub enum ForwardRefMarker {}
 pub enum TickCycleMarker {}
@@ -31,7 +30,7 @@ pub trait CycleCollectionWithInitial<'a, T>: CycleComplete<'a, T> {
 /// See [`crate::FlowBuilder`] for an explainer on the type parameters.
 pub struct ForwardRef<'a, S: CycleComplete<'a, ForwardRefMarker>> {
     pub(crate) ident: syn::Ident,
-    pub(crate) _phantom: PhantomData<(&'a mut &'a (), S)>,
+    pub(crate) _phantom: Invariant<'a, S>,
 }
 
 impl<'a, S: CycleComplete<'a, ForwardRefMarker>> ForwardRef<'a, S> {
@@ -43,7 +42,7 @@ impl<'a, S: CycleComplete<'a, ForwardRefMarker>> ForwardRef<'a, S> {
 
 pub struct TickCycle<'a, S: CycleComplete<'a, TickCycleMarker> + DeferTick> {
     pub(crate) ident: syn::Ident,
-    pub(crate) _phantom: PhantomData<(&'a mut &'a (), S)>,
+    pub(crate) _phantom: Invariant<'a, S>,
 }
 
 impl<'a, S: CycleComplete<'a, TickCycleMarker> + DeferTick> TickCycle<'a, S> {

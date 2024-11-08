@@ -10,6 +10,7 @@ use stageleft::*;
 use crate::deploy::{ExternalSpec, IntoProcessSpec, LocalDeploy};
 use crate::ir::HfPlusLeaf;
 use crate::location::{Cluster, ExternalProcess, Process};
+use crate::staging_util::Invariant;
 use crate::{ClusterSpec, Deploy, RuntimeContext};
 
 pub mod built;
@@ -51,7 +52,7 @@ pub struct FlowBuilder<'a> {
     /// capture more data that it is allowed to; 'a is generated at the
     /// entrypoint of the staged code and we keep it invariant here
     /// to enforce the appropriate constraints
-    _phantom: PhantomData<&'a mut &'a ()>,
+    _phantom: Invariant<'a>,
 }
 
 impl Drop for FlowBuilder<'_> {
@@ -186,15 +187,15 @@ impl<'a> FlowBuilder<'a> {
         self.with_default_optimize().with_cluster(cluster, spec)
     }
 
-    pub fn compile<D: Deploy<'a> + 'a>(self, env: &D::CompileEnv) -> CompiledFlow<'a, D::GraphId> {
+    pub fn compile<D: Deploy<'a>>(self, env: &D::CompileEnv) -> CompiledFlow<'a, D::GraphId> {
         self.with_default_optimize::<D>().compile(env)
     }
 
-    pub fn compile_no_network<D: LocalDeploy<'a> + 'a>(self) -> CompiledFlow<'a, D::GraphId> {
+    pub fn compile_no_network<D: LocalDeploy<'a>>(self) -> CompiledFlow<'a, D::GraphId> {
         self.with_default_optimize::<D>().compile_no_network()
     }
 
-    pub fn deploy<D: Deploy<'a, CompileEnv = ()> + 'a>(
+    pub fn deploy<D: Deploy<'a, CompileEnv = ()>>(
         self,
         env: &mut D::InstantiateEnv,
     ) -> DeployResult<'a, D> {

@@ -5,9 +5,11 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use stageleft::runtime_support::FreeVariable;
 
+use crate::staging_util::Invariant;
+
 #[derive(Clone)]
 pub struct RuntimeContext<'a> {
-    _phantom: PhantomData<&'a mut &'a ()>,
+    _phantom: Invariant<'a>,
 }
 
 impl RuntimeContext<'_> {
