@@ -61,15 +61,15 @@ struct P2b<P> {
 pub fn paxos_core<'a, P: PaxosPayload, R>(
     proposers: &Cluster<'a, Proposer>,
     acceptors: &Cluster<'a, Acceptor>,
-    r_to_acceptors_checkpoint: Stream<(ClusterId<R>, usize), Unbounded, Cluster<'a, Acceptor>>,
-    c_to_proposers: Stream<P, Unbounded, Cluster<'a, Proposer>>,
+    r_to_acceptors_checkpoint: Stream<(ClusterId<R>, usize), Cluster<'a, Acceptor>, Unbounded>,
+    c_to_proposers: Stream<P, Cluster<'a, Proposer>, Unbounded>,
     f: usize,
     i_am_leader_send_timeout: u64,
     i_am_leader_check_timeout: u64,
     i_am_leader_check_timeout_delay_multiplier: usize,
 ) -> (
-    Stream<(), Unbounded, Cluster<'a, Proposer>>,
-    Stream<(usize, Option<P>), Unbounded, Cluster<'a, Proposer>>,
+    Stream<(), Cluster<'a, Proposer>, Unbounded>,
+    Stream<(usize, Option<P>), Cluster<'a, Proposer>, Unbounded>,
 ) {
     proposers
         .source_iter(q!(["Proposers say hello"]))
@@ -153,13 +153,13 @@ fn leader_election<'a, L: Clone + Debug + Serialize + DeserializeOwned>(
     i_am_leader_send_timeout: u64,
     i_am_leader_check_timeout: u64,
     i_am_leader_check_timeout_delay_multiplier: usize,
-    p_received_p2b_ballots: Stream<Ballot, Unbounded, Cluster<'a, Proposer>>,
-    a_log: Singleton<L, Bounded, Tick<Cluster<'a, Acceptor>>>,
+    p_received_p2b_ballots: Stream<Ballot, Cluster<'a, Proposer>, Unbounded>,
+    a_log: Singleton<L, Tick<Cluster<'a, Acceptor>>, Bounded>,
 ) -> (
-    Singleton<u32, Bounded, Tick<Cluster<'a, Proposer>>>,
-    Optional<bool, Bounded, Tick<Cluster<'a, Proposer>>>,
-    Stream<P1b<L>, Bounded, Tick<Cluster<'a, Proposer>>>,
-    Singleton<Ballot, Bounded, Tick<Cluster<'a, Acceptor>>>,
+    Singleton<u32, Tick<Cluster<'a, Proposer>>, Bounded>,
+    Optional<bool, Tick<Cluster<'a, Proposer>>, Bounded>,
+    Stream<P1b<L>, Tick<Cluster<'a, Proposer>>, Bounded>,
+    Singleton<Ballot, Tick<Cluster<'a, Acceptor>>, Bounded>,
 ) {
     let (a_to_proposers_p1b_complete_cycle, a_to_proposers_p1b_forward_ref) =
         proposers.forward_ref::<Stream<P1b<L>, _, _>>();
@@ -222,10 +222,10 @@ fn leader_election<'a, L: Clone + Debug + Serialize + DeserializeOwned>(
 // Proposer logic to calculate the largest ballot received so far.
 fn p_max_ballot<'a>(
     proposers: &Cluster<'a, Proposer>,
-    p_received_p1b_ballots: Stream<Ballot, Unbounded, Cluster<'a, Proposer>>,
-    p_received_p2b_ballots: Stream<Ballot, Unbounded, Cluster<'a, Proposer>>,
-    p_to_proposers_i_am_leader: Stream<Ballot, Unbounded, Cluster<'a, Proposer>>,
-) -> Singleton<Ballot, Unbounded, Cluster<'a, Proposer>> {
+    p_received_p1b_ballots: Stream<Ballot, Cluster<'a, Proposer>, Unbounded>,
+    p_received_p2b_ballots: Stream<Ballot, Cluster<'a, Proposer>, Unbounded>,
+    p_to_proposers_i_am_leader: Stream<Ballot, Cluster<'a, Proposer>, Unbounded>,
+) -> Singleton<Ballot, Cluster<'a, Proposer>, Unbounded> {
     p_received_p1b_ballots
         .union(p_received_p2b_ballots)
         .union(p_to_proposers_i_am_leader)
@@ -241,10 +241,10 @@ fn p_max_ballot<'a>(
 fn p_ballot_calc<'a>(
     proposers: &Cluster<'a, Proposer>,
     proposer_tick: &Tick<Cluster<'a, Proposer>>,
-    p_received_max_ballot: Singleton<Ballot, Bounded, Tick<Cluster<'a, Proposer>>>,
+    p_received_max_ballot: Singleton<Ballot, Tick<Cluster<'a, Proposer>>, Bounded>,
 ) -> (
-    Singleton<u32, Bounded, Tick<Cluster<'a, Proposer>>>,
-    Optional<(Ballot, u32), Bounded, Tick<Cluster<'a, Proposer>>>,
+    Singleton<u32, Tick<Cluster<'a, Proposer>>, Bounded>,
+    Optional<(Ballot, u32), Tick<Cluster<'a, Proposer>>, Bounded>,
 ) {
     let p_id = proposers.self_id();
     let (p_ballot_num_complete_cycle, p_ballot_num) =
@@ -284,10 +284,10 @@ fn p_ballot_calc<'a>(
 
 fn p_leader_expired<'a>(
     proposer_tick: &Tick<Cluster<'a, Proposer>>,
-    p_to_proposers_i_am_leader: Stream<Ballot, Unbounded, Cluster<'a, Proposer>>,
-    p_is_leader: Optional<bool, Bounded, Tick<Cluster<'a, Proposer>>>,
+    p_to_proposers_i_am_leader: Stream<Ballot, Cluster<'a, Proposer>, Unbounded>,
+    p_is_leader: Optional<bool, Tick<Cluster<'a, Proposer>>, Bounded>,
     i_am_leader_check_timeout: u64, // How often to check if heartbeat expired
-) -> Optional<Option<Instant>, Bounded, Tick<Cluster<'a, Proposer>>> {
+) -> Optional<Option<Instant>, Tick<Cluster<'a, Proposer>>, Bounded> {
     let p_latest_received_i_am_leader = p_to_proposers_i_am_leader.clone().fold(
         q!(|| None),
         q!(|latest, _| {
@@ -313,14 +313,14 @@ fn p_leader_expired<'a>(
 fn p_leader_heartbeat<'a>(
     proposers: &Cluster<'a, Proposer>,
     proposer_tick: &Tick<Cluster<'a, Proposer>>,
-    p_is_leader: Optional<bool, Bounded, Tick<Cluster<'a, Proposer>>>,
-    p_ballot_num: Singleton<u32, Bounded, Tick<Cluster<'a, Proposer>>>,
+    p_is_leader: Optional<bool, Tick<Cluster<'a, Proposer>>, Bounded>,
+    p_ballot_num: Singleton<u32, Tick<Cluster<'a, Proposer>>, Bounded>,
     i_am_leader_send_timeout: u64,  // How often to heartbeat
     i_am_leader_check_timeout: u64, // How often to check if heartbeat expired
     i_am_leader_check_timeout_delay_multiplier: usize, /* Initial delay, multiplied by proposer pid, to stagger proposers checking for timeouts */
 ) -> (
-    Stream<Ballot, Unbounded, Cluster<'a, Proposer>>,
-    Optional<Option<Instant>, Bounded, Tick<Cluster<'a, Proposer>>>,
+    Stream<Ballot, Cluster<'a, Proposer>, Unbounded>,
+    Optional<Option<Instant>, Tick<Cluster<'a, Proposer>>, Bounded>,
 ) {
     let p_id = proposers.self_id();
     let p_to_proposers_i_am_leader = p_is_leader
@@ -358,11 +358,11 @@ fn p_leader_heartbeat<'a>(
 
 // Proposer logic to send "I am leader" messages periodically to other proposers, or send p1a to acceptors if other leaders expired.
 fn p_p1a<'a>(
-    p_ballot_num: Singleton<u32, Bounded, Tick<Cluster<'a, Proposer>>>,
-    p_trigger_election: Optional<Option<Instant>, Bounded, Tick<Cluster<'a, Proposer>>>,
+    p_ballot_num: Singleton<u32, Tick<Cluster<'a, Proposer>>, Bounded>,
+    p_trigger_election: Optional<Option<Instant>, Tick<Cluster<'a, Proposer>>, Bounded>,
     proposers: &Cluster<'a, Proposer>,
     acceptors: &Cluster<'a, Acceptor>,
-) -> Stream<P1a, Unbounded, Cluster<'a, Acceptor>> {
+) -> Stream<P1a, Cluster<'a, Acceptor>, Unbounded> {
     let p_id = proposers.self_id();
 
     p_trigger_election
@@ -381,12 +381,12 @@ fn p_p1a<'a>(
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 fn acceptor_p1<'a, L: Serialize + DeserializeOwned + Clone>(
     acceptor_tick: &Tick<Cluster<'a, Acceptor>>,
-    p_to_acceptors_p1a: Stream<P1a, Unbounded, Cluster<'a, Acceptor>>,
-    a_log: Singleton<L, Bounded, Tick<Cluster<'a, Acceptor>>>,
+    p_to_acceptors_p1a: Stream<P1a, Cluster<'a, Acceptor>, Unbounded>,
+    a_log: Singleton<L, Tick<Cluster<'a, Acceptor>>, Bounded>,
     proposers: &Cluster<'a, Proposer>,
 ) -> (
-    Singleton<Ballot, Bounded, Tick<Cluster<'a, Acceptor>>>,
-    Stream<P1b<L>, Unbounded, Cluster<'a, Proposer>>,
+    Singleton<Ballot, Tick<Cluster<'a, Acceptor>>, Bounded>,
+    Stream<P1b<L>, Cluster<'a, Proposer>, Unbounded>,
 ) {
     let p_to_acceptors_p1a = p_to_acceptors_p1a.tick_batch(acceptor_tick);
     let a_max_ballot = p_to_acceptors_p1a
@@ -423,13 +423,13 @@ fn acceptor_p1<'a, L: Serialize + DeserializeOwned + Clone>(
 fn p_p1b<'a, P: Clone + Serialize + DeserializeOwned>(
     proposers: &Cluster<'a, Proposer>,
     proposer_tick: &Tick<Cluster<'a, Proposer>>,
-    a_to_proposers_p1b: Stream<P1b<P>, Unbounded, Cluster<'a, Proposer>>,
-    p_ballot_num: Singleton<u32, Bounded, Tick<Cluster<'a, Proposer>>>,
-    p_has_largest_ballot: Optional<(Ballot, u32), Bounded, Tick<Cluster<'a, Proposer>>>,
+    a_to_proposers_p1b: Stream<P1b<P>, Cluster<'a, Proposer>, Unbounded>,
+    p_ballot_num: Singleton<u32, Tick<Cluster<'a, Proposer>>, Bounded>,
+    p_has_largest_ballot: Optional<(Ballot, u32), Tick<Cluster<'a, Proposer>>, Bounded>,
     f: usize,
 ) -> (
-    Optional<bool, Bounded, Tick<Cluster<'a, Proposer>>>,
-    Stream<P1b<P>, Bounded, Tick<Cluster<'a, Proposer>>>,
+    Optional<bool, Tick<Cluster<'a, Proposer>>, Bounded>,
+    Stream<P1b<P>, Tick<Cluster<'a, Proposer>>, Bounded>,
 ) {
     let p_id = proposers.self_id();
     let p_relevant_p1bs = a_to_proposers_p1b
@@ -456,13 +456,13 @@ fn p_p1b<'a, P: Clone + Serialize + DeserializeOwned>(
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 fn recommit_after_leader_election<'a, P: PaxosPayload>(
     proposers: &Cluster<'a, Proposer>,
-    p_relevant_p1bs: Stream<P1b<HashMap<usize, LogValue<P>>>, Bounded, Tick<Cluster<'a, Proposer>>>,
-    p_ballot_num: Singleton<u32, Bounded, Tick<Cluster<'a, Proposer>>>,
+    p_relevant_p1bs: Stream<P1b<HashMap<usize, LogValue<P>>>, Tick<Cluster<'a, Proposer>>, Bounded>,
+    p_ballot_num: Singleton<u32, Tick<Cluster<'a, Proposer>>, Bounded>,
     f: usize,
 ) -> (
-    Stream<P2a<P>, Bounded, Tick<Cluster<'a, Proposer>>>,
-    Optional<usize, Bounded, Tick<Cluster<'a, Proposer>>>,
-    Stream<P2a<P>, Bounded, Tick<Cluster<'a, Proposer>>>,
+    Stream<P2a<P>, Tick<Cluster<'a, Proposer>>, Bounded>,
+    Optional<usize, Tick<Cluster<'a, Proposer>>, Bounded>,
+    Stream<P2a<P>, Tick<Cluster<'a, Proposer>>, Bounded>,
 ) {
     let p_id = proposers.self_id();
 
@@ -540,21 +540,21 @@ fn sequence_payload<'a, P: PaxosPayload, R>(
     acceptors: &Cluster<'a, Acceptor>,
     proposer_tick: &Tick<Cluster<'a, Proposer>>,
     acceptor_tick: &Tick<Cluster<'a, Acceptor>>,
-    c_to_proposers: Stream<P, Unbounded, Cluster<'a, Proposer>>,
-    r_to_acceptors_checkpoint: Stream<(ClusterId<R>, usize), Unbounded, Cluster<'a, Acceptor>>,
+    c_to_proposers: Stream<P, Cluster<'a, Proposer>, Unbounded>,
+    r_to_acceptors_checkpoint: Stream<(ClusterId<R>, usize), Cluster<'a, Acceptor>, Unbounded>,
 
-    p_ballot_num: Singleton<u32, Bounded, Tick<Cluster<'a, Proposer>>>,
-    p_is_leader: Optional<bool, Bounded, Tick<Cluster<'a, Proposer>>>,
-    p_max_slot: Optional<usize, Bounded, Tick<Cluster<'a, Proposer>>>,
+    p_ballot_num: Singleton<u32, Tick<Cluster<'a, Proposer>>, Bounded>,
+    p_is_leader: Optional<bool, Tick<Cluster<'a, Proposer>>, Bounded>,
+    p_max_slot: Optional<usize, Tick<Cluster<'a, Proposer>>, Bounded>,
 
-    p_log_to_recommit: Stream<P2a<P>, Bounded, Tick<Cluster<'a, Proposer>>>,
+    p_log_to_recommit: Stream<P2a<P>, Tick<Cluster<'a, Proposer>>, Bounded>,
     f: usize,
 
-    a_max_ballot: Singleton<Ballot, Bounded, Tick<Cluster<'a, Acceptor>>>,
+    a_max_ballot: Singleton<Ballot, Tick<Cluster<'a, Acceptor>>, Bounded>,
 ) -> (
-    Stream<(usize, Option<P>), Unbounded, Cluster<'a, Proposer>>,
-    Singleton<(Option<usize>, HashMap<usize, LogValue<P>>), Bounded, Tick<Cluster<'a, Acceptor>>>,
-    Stream<P2b<P>, Unbounded, Cluster<'a, Proposer>>,
+    Stream<(usize, Option<P>), Cluster<'a, Proposer>, Unbounded>,
+    Singleton<(Option<usize>, HashMap<usize, LogValue<P>>), Tick<Cluster<'a, Acceptor>>, Bounded>,
+    Stream<P2b<P>, Cluster<'a, Proposer>, Unbounded>,
 ) {
     let p_to_acceptors_p2a = p_p2a(
         proposers,
@@ -594,13 +594,13 @@ enum CheckpointOrP2a<P> {
 fn p_p2a<'a, P: PaxosPayload>(
     proposers: &Cluster<'a, Proposer>,
     proposer_tick: &Tick<Cluster<'a, Proposer>>,
-    p_max_slot: Optional<usize, Bounded, Tick<Cluster<'a, Proposer>>>,
-    c_to_proposers: Stream<P, Unbounded, Cluster<'a, Proposer>>,
-    p_ballot_num: Singleton<u32, Bounded, Tick<Cluster<'a, Proposer>>>,
-    p_log_to_recommit: Stream<P2a<P>, Bounded, Tick<Cluster<'a, Proposer>>>,
-    p_is_leader: Optional<bool, Bounded, Tick<Cluster<'a, Proposer>>>,
+    p_max_slot: Optional<usize, Tick<Cluster<'a, Proposer>>, Bounded>,
+    c_to_proposers: Stream<P, Cluster<'a, Proposer>, Unbounded>,
+    p_ballot_num: Singleton<u32, Tick<Cluster<'a, Proposer>>, Bounded>,
+    p_log_to_recommit: Stream<P2a<P>, Tick<Cluster<'a, Proposer>>, Bounded>,
+    p_is_leader: Optional<bool, Tick<Cluster<'a, Proposer>>, Bounded>,
     acceptors: &Cluster<'a, Acceptor>,
-) -> Stream<P2a<P>, Unbounded, Cluster<'a, Acceptor>> {
+) -> Stream<P2a<P>, Cluster<'a, Acceptor>, Unbounded> {
     let p_id = proposers.self_id();
     let (p_next_slot_complete_cycle, p_next_slot) = proposer_tick.cycle::<Optional<usize, _, _>>();
     let p_next_slot_after_reconciling_p1bs = p_max_slot
@@ -648,14 +648,14 @@ fn p_p2a<'a, P: PaxosPayload>(
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 fn acceptor_p2<'a, P: PaxosPayload, R>(
     acceptor_tick: &Tick<Cluster<'a, Acceptor>>,
-    a_max_ballot: Singleton<Ballot, Bounded, Tick<Cluster<'a, Acceptor>>>,
-    p_to_acceptors_p2a: Stream<P2a<P>, Unbounded, Cluster<'a, Acceptor>>,
-    r_to_acceptors_checkpoint: Stream<(ClusterId<R>, usize), Unbounded, Cluster<'a, Acceptor>>,
+    a_max_ballot: Singleton<Ballot, Tick<Cluster<'a, Acceptor>>, Bounded>,
+    p_to_acceptors_p2a: Stream<P2a<P>, Cluster<'a, Acceptor>, Unbounded>,
+    r_to_acceptors_checkpoint: Stream<(ClusterId<R>, usize), Cluster<'a, Acceptor>, Unbounded>,
     proposers: &Cluster<'a, Proposer>,
     f: usize,
 ) -> (
-    Singleton<(Option<usize>, HashMap<usize, LogValue<P>>), Bounded, Tick<Cluster<'a, Acceptor>>>,
-    Stream<P2b<P>, Unbounded, Cluster<'a, Proposer>>,
+    Singleton<(Option<usize>, HashMap<usize, LogValue<P>>), Tick<Cluster<'a, Acceptor>>, Bounded>,
+    Stream<P2b<P>, Cluster<'a, Proposer>, Unbounded>,
 ) {
     let p_to_acceptors_p2a_batch = p_to_acceptors_p2a.tick_batch(acceptor_tick);
 
@@ -746,9 +746,9 @@ fn acceptor_p2<'a, P: PaxosPayload, R>(
 
 fn p_p2b<'a, P: PaxosPayload>(
     proposer_tick: &Tick<Cluster<'a, Proposer>>,
-    a_to_proposers_p2b: Stream<P2b<P>, Unbounded, Cluster<'a, Proposer>>,
+    a_to_proposers_p2b: Stream<P2b<P>, Cluster<'a, Proposer>, Unbounded>,
     f: usize,
-) -> Stream<(usize, Option<P>), Unbounded, Cluster<'a, Proposer>> {
+) -> Stream<(usize, Option<P>), Cluster<'a, Proposer>, Unbounded> {
     let (p_broadcasted_p2b_slots_complete_cycle, p_broadcasted_p2b_slots) = proposer_tick.cycle();
     let (p_persisted_p2bs_complete_cycle, p_persisted_p2bs) = proposer_tick.cycle();
     let p_p2b = a_to_proposers_p2b

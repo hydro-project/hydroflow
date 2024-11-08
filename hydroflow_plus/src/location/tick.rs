@@ -45,7 +45,7 @@ impl<'a, L: Location<'a>> Tick<L> {
     pub fn spin_batch(
         &self,
         batch_size: impl Quoted<'a, usize> + Copy + 'a,
-    ) -> Stream<(), Bounded, Self>
+    ) -> Stream<(), Self, Bounded>
     where
         L: NoTick,
     {
@@ -56,7 +56,7 @@ impl<'a, L: Location<'a>> Tick<L> {
             .tick_batch(self)
     }
 
-    pub fn singleton<T: Clone>(&self, e: impl Quoted<'a, T>) -> Singleton<T, Bounded, Self>
+    pub fn singleton<T: Clone>(&self, e: impl Quoted<'a, T>) -> Singleton<T, Self, Bounded>
     where
         L: NoTick,
     {
@@ -66,7 +66,7 @@ impl<'a, L: Location<'a>> Tick<L> {
     pub fn singleton_first_tick<T: Clone>(
         &self,
         e: impl Quoted<'a, T>,
-    ) -> Optional<T, Bounded, Self>
+    ) -> Optional<T, Self, Bounded>
     where
         L: NoTick,
     {
