@@ -300,6 +300,20 @@
 <a href="#300" id="300">300</a>
 <a href="#301" id="301">301</a>
 <a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::io::Error;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -341,6 +355,10 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; DeployFlow&lt;<span class="lifetime">'a</span>, D&gt; {
+    <span class="kw">pub fn </span>ir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;HfPlusLeaf&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.ir
+    }
+
     <span class="kw">pub fn </span>with_process&lt;P&gt;(
         <span class="kw-2">mut </span><span class="self">self</span>,
         process: <span class="kw-2">&amp;</span>Process&lt;P&gt;,
@@ -371,6 +389,16 @@
             .insert(cluster.id, spec.build(cluster.id, <span class="kw-2">&amp;</span>tag_name));
         <span class="self">self
     </span>}
+
+    <span class="kw">pub fn </span>compile_no_network(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; CompiledFlow&lt;<span class="lifetime">'a</span>, D::GraphId&gt; {
+        <span class="self">self</span>.used = <span class="bool-val">true</span>;
+
+        CompiledFlow {
+            hydroflow_ir: build_inner(<span class="kw-2">&amp;mut </span><span class="self">self</span>.ir),
+            extra_stmts: BTreeMap::new(),
+            _phantom: PhantomData,
+        }
+    }
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt; DeployFlow&lt;<span class="lifetime">'a</span>, D&gt; {

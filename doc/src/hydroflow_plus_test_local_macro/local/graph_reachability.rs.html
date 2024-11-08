@@ -63,7 +63,6 @@
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
-<a href="#66" id="66">66</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
 <span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
@@ -95,8 +94,7 @@
         reached_out.send(v).unwrap();
     }));
 
-    flow.with_default_optimize()
-        .compile_no_network::&lt;SingleProcessGraph&gt;()
+    flow.compile_no_network::&lt;SingleProcessGraph&gt;()
 }
 
 <span class="attr">#[stageleft::runtime]

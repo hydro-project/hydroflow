@@ -220,7 +220,7 @@
         <span class="kw">let </span>counter_queue = RuntimeData::new(<span class="string">"Fake"</span>);
 
         <span class="kw">let </span>pushed_down = built
-            .with_default_optimize()
+            .optimize_with(<span class="kw">crate</span>::rewrites::persist_pullup::persist_pullup)
             .optimize_with(|ir| <span class="kw">super</span>::profiling(ir, runtime_context, counters, counter_queue));
 
         <span class="macro">insta::assert_debug_snapshot!</span>(<span class="kw-2">&amp;</span>pushed_down.ir());

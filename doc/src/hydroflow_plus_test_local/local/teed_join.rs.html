@@ -103,7 +103,6 @@
 <a href="#103" id="103">103</a>
 <a href="#104" id="104">104</a>
 <a href="#105" id="105">105</a>
-<a href="#106" id="106">106</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::deploy::MultiGraph;
 <span class="kw">use </span>hydroflow_plus::futures::stream::Stream;
 <span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
@@ -147,8 +146,7 @@
         output.send(v).unwrap();
     }));
 
-    flow.with_default_optimize()
-        .compile_no_network::&lt;MultiGraph&gt;()
+    flow.compile_no_network::&lt;MultiGraph&gt;()
         .with_dynamic_id(subgraph_id)
 }
 

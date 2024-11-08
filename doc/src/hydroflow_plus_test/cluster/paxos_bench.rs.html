@@ -545,13 +545,13 @@
     </span><span class="kw">fn </span>paxos_ir() {
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let _ </span>= <span class="kw">super</span>::paxos_bench(<span class="kw-2">&amp;</span>builder, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>);
-        <span class="kw">let </span>built = builder.with_default_optimize();
+        <span class="kw">let </span>built = builder.with_default_optimize::&lt;DeployRuntime&gt;();
 
         hydroflow_plus::ir::dbg_dedup_tee(|| {
             <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
         });
 
-        <span class="kw">let _ </span>= built.compile::&lt;DeployRuntime&gt;(<span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>));
+        <span class="kw">let _ </span>= built.compile(<span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>));
     }
 }
 </code></pre></div></section></main></body></html>

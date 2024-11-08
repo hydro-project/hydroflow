@@ -61,9 +61,6 @@
 <a href="#61" id="61">61</a>
 <a href="#62" id="62">62</a>
 <a href="#63" id="63">63</a>
-<a href="#64" id="64">64</a>
-<a href="#65" id="65">65</a>
-<a href="#66" id="66">66</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 
 <span class="kw">pub struct </span>Leader {}
@@ -116,14 +113,11 @@
     </span><span class="kw">fn </span>map_reduce_ir() {
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let _ </span>= <span class="kw">super</span>::map_reduce(<span class="kw-2">&amp;</span>builder);
-        <span class="kw">let </span>built = builder.with_default_optimize();
+        <span class="kw">let </span>built = builder.with_default_optimize::&lt;DeployRuntime&gt;();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
-        <span class="kw">for </span>(id, ir) <span class="kw">in </span>built
-            .compile::&lt;DeployRuntime&gt;(<span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>))
-            .hydroflow_ir()
-        {
+        <span class="kw">for </span>(id, ir) <span class="kw">in </span>built.compile(<span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>)).hydroflow_ir() {
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="macro">format!</span>(<span class="string">"surface_graph_{id}"</span>)}, {
                 <span class="macro">insta::assert_snapshot!</span>(ir.surface_syntax_string());
             });

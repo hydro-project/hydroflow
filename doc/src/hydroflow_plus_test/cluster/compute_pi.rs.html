@@ -67,9 +67,6 @@
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
-<a href="#70" id="70">70</a>
-<a href="#71" id="71">71</a>
-<a href="#72" id="72">72</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
@@ -128,14 +125,11 @@
     </span><span class="kw">fn </span>compute_pi_ir() {
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let _ </span>= <span class="kw">super</span>::compute_pi(<span class="kw-2">&amp;</span>builder, <span class="number">8192</span>);
-        <span class="kw">let </span>built = builder.with_default_optimize();
+        <span class="kw">let </span>built = builder.with_default_optimize::&lt;DeployRuntime&gt;();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
-        <span class="kw">for </span>(id, ir) <span class="kw">in </span>built
-            .compile::&lt;DeployRuntime&gt;(<span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>))
-            .hydroflow_ir()
-        {
+        <span class="kw">for </span>(id, ir) <span class="kw">in </span>built.compile(<span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>)).hydroflow_ir() {
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="macro">format!</span>(<span class="string">"surface_graph_{id}"</span>)}, {
                 <span class="macro">insta::assert_snapshot!</span>(ir.surface_syntax_string());
             });
