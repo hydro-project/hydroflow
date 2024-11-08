@@ -1404,7 +1404,7 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hydro_cli"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "anyhow",
  "async-ssh2-lite",
@@ -1435,7 +1435,7 @@ dependencies = [
 
 [[package]]
 name = "hydro_deploy"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "anyhow",
  "async-process",
@@ -1467,7 +1467,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "bincode",
  "byteorder",
@@ -1514,7 +1514,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "hydroflow_datalog_core",
  "proc-macro-crate",
@@ -1525,7 +1525,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog_core"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "hydroflow_lang",
  "insta",
@@ -1541,7 +1541,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_deploy_integration"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "async-recursion",
  "async-trait",
@@ -1557,7 +1557,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_lang"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "auto_impl",
  "clap",
@@ -1575,7 +1575,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_macro"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "hydroflow_lang",
  "itertools",
@@ -1587,7 +1587,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_plus"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "async-ssh2-lite",
  "bincode",
@@ -1897,7 +1897,7 @@ dependencies = [
 
 [[package]]
 name = "lattices"
-version = "0.5.7"
+version = "0.5.8"
 dependencies = [
  "cc-traits",
  "lattices_macro",
@@ -1911,7 +1911,7 @@ dependencies = [
 
 [[package]]
 name = "lattices_macro"
-version = "0.5.6"
+version = "0.5.7"
 dependencies = [
  "insta",
  "prettyplease",
@@ -2119,7 +2119,7 @@ dependencies = [
 
 [[package]]
 name = "multiplatform_test"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "env_logger",
  "log",
@@ -2637,7 +2637,7 @@ checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 
 [[package]]
 name = "pusherator"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "either",
  "variadics",
@@ -3333,7 +3333,7 @@ dependencies = [
 
 [[package]]
 name = "stageleft"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -3344,7 +3344,7 @@ dependencies = [
 
 [[package]]
 name = "stageleft_macro"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "insta",
  "prettyplease",
@@ -3374,7 +3374,7 @@ dependencies = [
 
 [[package]]
 name = "stageleft_tool"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4090,7 +4090,7 @@ checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
 
 [[package]]
 name = "variadics"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "hashbrown 0.14.5",
  "sealed",

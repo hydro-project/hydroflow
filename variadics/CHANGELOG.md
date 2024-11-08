@@ -5,7 +5,82 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.0.7 (2024-11-08)
+
+### Chore
+
+ - <csr-id-d5677604e93c07a5392f4229af94a0b736eca382/> update pinned rust version, clippy lints, remove some dead code
+
+### New Features
+
+ - <csr-id-f7e740fb2ba36d0fcf3fd196d60333552911e3a4/> generalized hash trie indexes for relational tuples
+   Generalized Hash Tries are part of the SIGMOD '23 FreeJoin
+   [paper](https://dl.acm.org/doi/abs/10.1145/3589295) by
+   Wang/Willsey/Suciu. They provide a compressed ("factorized")
+   representation of relations. By operating in the factorized domain, join
+   algorithms can defer cross-products and achieve asymptotically optimal
+   performance.
+   
+   ---------
+ - <csr-id-1c2825942f8a326699a7fb68b5372b49918851b5/> additions to variadics including collection types
+   adds a number of features:
+   
+   collection types for variadics (sets, multisets) that allow search via
+   RefVars (variadic of refs)
+   into_option (convert a variadic to a variadic of options)
+   into_vec (convert a variadic to a variadic of vecs)
+ - <csr-id-8afd3266dac43c04c3fc29065a13c9c9a6a55afe/> additions to variadics including collection types
+   adds a number of features:
+   - collection types for variadics (sets, multisets) that allow search via
+   RefVars (variadic of refs)
+   - into_option (convert a variadic to a variadic of options)
+   - into_vec (convert a variadic to a variadic of vecs)
+
+### Style
+
+ - <csr-id-47cb703e771f7d1c451ceb9d185ada96410949da/> fixes for nightly clippy
+   a couple few spurious `too_many_arguments` and a spurious
+   `zombie_processes` still on current nightly (`clippy 0.1.84 (4392847410
+   2024-10-21)`)
+
+### Test
+
+ - <csr-id-656ee328c8710bce7370c851437a80ca3db46a5a/> ignore trybuild tests inconsistent on latest nightly
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 7 commits contributed to the release.
+ - 69 days passed between releases.
+ - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 6 unique issues were worked on: [#1444](https://github.com/hydro-project/hydroflow/issues/1444), [#1473](https://github.com/hydro-project/hydroflow/issues/1473), [#1474](https://github.com/hydro-project/hydroflow/issues/1474), [#1475](https://github.com/hydro-project/hydroflow/issues/1475), [#1503](https://github.com/hydro-project/hydroflow/issues/1503), [#1505](https://github.com/hydro-project/hydroflow/issues/1505)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1444](https://github.com/hydro-project/hydroflow/issues/1444)**
+    - Update pinned rust version, clippy lints, remove some dead code ([`d567760`](https://github.com/hydro-project/hydroflow/commit/d5677604e93c07a5392f4229af94a0b736eca382))
+ * **[#1473](https://github.com/hydro-project/hydroflow/issues/1473)**
+    - Additions to variadics including collection types ([`8afd326`](https://github.com/hydro-project/hydroflow/commit/8afd3266dac43c04c3fc29065a13c9c9a6a55afe))
+ * **[#1474](https://github.com/hydro-project/hydroflow/issues/1474)**
+    - Revert "feat: additions to variadics including collection types" ([`08c2af5`](https://github.com/hydro-project/hydroflow/commit/08c2af538821bbf460d2a52b4f0474082b5de7da))
+ * **[#1475](https://github.com/hydro-project/hydroflow/issues/1475)**
+    - Additions to variadics including collection types ([`1c28259`](https://github.com/hydro-project/hydroflow/commit/1c2825942f8a326699a7fb68b5372b49918851b5))
+ * **[#1503](https://github.com/hydro-project/hydroflow/issues/1503)**
+    - Generalized hash trie indexes for relational tuples ([`f7e740f`](https://github.com/hydro-project/hydroflow/commit/f7e740fb2ba36d0fcf3fd196d60333552911e3a4))
+ * **[#1505](https://github.com/hydro-project/hydroflow/issues/1505)**
+    - Fixes for nightly clippy ([`47cb703`](https://github.com/hydro-project/hydroflow/commit/47cb703e771f7d1c451ceb9d185ada96410949da))
+ * **Uncategorized**
+    - Ignore trybuild tests inconsistent on latest nightly ([`656ee32`](https://github.com/hydro-project/hydroflow/commit/656ee328c8710bce7370c851437a80ca3db46a5a))
+</details>
+
 ## 0.0.6 (2024-08-30)
+
+<csr-id-11af32828bab6e4a4264d2635ff71a12bb0bb778/>
 
 ### Chore
 
@@ -23,7 +98,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release.
+ - 3 commits contributed to the release.
+ - 38 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1367](https://github.com/hydro-project/hydroflow/issues/1367), [#1423](https://github.com/hydro-project/hydroflow/issues/1423)
 
@@ -37,6 +113,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Allow `PartialEqVariadic::eq_ref` to take `AsRefVar`s with different lifetimes ([`43ff49d`](https://github.com/hydro-project/hydroflow/commit/43ff49d72789d78535717d2db04cf595cc511274))
  * **[#1423](https://github.com/hydro-project/hydroflow/issues/1423)**
     - Lower min dependency versions where possible, update `Cargo.lock` ([`11af328`](https://github.com/hydro-project/hydroflow/commit/11af32828bab6e4a4264d2635ff71a12bb0bb778))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.9.0, hydroflow_datalog_core v0.9.0, hydroflow_datalog v0.9.0, hydroflow_deploy_integration v0.9.0, hydroflow_macro v0.9.0, lattices_macro v0.5.6, lattices v0.5.7, multiplatform_test v0.2.0, variadics v0.0.6, pusherator v0.0.8, hydroflow v0.9.0, stageleft_macro v0.3.0, stageleft v0.4.0, stageleft_tool v0.3.0, hydroflow_plus v0.9.0, hydro_deploy v0.9.0, hydro_cli v0.9.0, hydroflow_plus_deploy v0.9.0, safety bump 8 crates ([`0750117`](https://github.com/hydro-project/hydroflow/commit/0750117de7088c01a439b102adeb4c832889f171))
 </details>
 
 ## 0.0.5 (2024-07-23)
@@ -65,6 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 6 commits contributed to the release.
+ - 143 days passed between releases.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 5 unique issues were worked on: [#1241](https://github.com/hydro-project/hydroflow/issues/1241), [#1245](https://github.com/hydro-project/hydroflow/issues/1245), [#1324](https://github.com/hydro-project/hydroflow/issues/1324), [#1325](https://github.com/hydro-project/hydroflow/issues/1325), [#1352](https://github.com/hydro-project/hydroflow/issues/1352)
 
@@ -108,6 +187,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 4 commits contributed to the release.
+ - 32 days passed between releases.
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -149,6 +229,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 3 commits contributed to the release.
+ - 253 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#974](https://github.com/hydro-project/hydroflow/issues/974)
 
@@ -178,6 +259,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 2 commits contributed to the release.
+ - 25 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#660](https://github.com/hydro-project/hydroflow/issues/660)
 
