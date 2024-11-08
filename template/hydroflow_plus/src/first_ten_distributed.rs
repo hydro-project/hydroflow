@@ -3,16 +3,10 @@ use hydroflow_plus::*;
 pub struct P1 {}
 pub struct P2 {}
 
-pub fn first_ten_distributed<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, P1>, Process<'a, P2>) {
-    let process = flow.process::<P1>();
-    let second_process = flow.process::<P2>();
-
-    let numbers = process.source_iter(q!(0..10));
+pub fn first_ten_distributed(p1: &Process<P1>, p2: &Process<P2>) {
     numbers
-        .send_bincode(&second_process)
+        .send_bincode(p2)
         .for_each(q!(|n| println!("{}", n)));
-
-    (process, second_process)
 }
 
 #[cfg(test)]
