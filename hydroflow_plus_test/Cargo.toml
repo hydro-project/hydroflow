@@ -12,18 +12,18 @@ default = ["stageleft_devel"]
 stageleft_devel = []
 
 [dependencies]
-hydroflow_plus = { path = "../hydroflow_plus", version = "^0.9.0" }
+hydroflow_plus = { path = "../hydroflow_plus", version = "^0.10.0" }
 tokio = { version = "1.29.0", features = [ "full" ] }
-stageleft = { path = "../stageleft", version = "^0.4.0" }
+stageleft = { path = "../stageleft", version = "^0.5.0" }
 rand = "0.8.0"
 serde = { version = "1.0.197", features = [ "derive" ] }
 
 [build-dependencies]
-stageleft_tool = { path = "../stageleft_tool", version = "^0.3.0" }
+stageleft_tool = { path = "../stageleft_tool", version = "^0.4.0" }
 
 [dev-dependencies]
 insta = "1.39"
-hydro_deploy = { path = "../hydro_deploy/core", version = "^0.9.0" }
-hydroflow_plus = { path = "../hydroflow_plus", version = "^0.9.0", features = [ "deploy" ] }
+hydro_deploy = { path = "../hydro_deploy/core", version = "^0.10.0" }
+hydroflow_plus = { path = "../hydroflow_plus", version = "^0.10.0", features = [ "deploy" ] }
 futures = "0.3.0"
 async-ssh2-lite = { version = "0.5.0", features = ["vendored-openssl"] }

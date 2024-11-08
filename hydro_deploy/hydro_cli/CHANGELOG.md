@@ -5,7 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.10.0 (2024-11-08)
+
+### Chore
+
+ - <csr-id-d5677604e93c07a5392f4229af94a0b736eca382/> update pinned rust version, clippy lints, remove some dead code
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 69 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#1444](https://github.com/hydro-project/hydroflow/issues/1444)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1444](https://github.com/hydro-project/hydroflow/issues/1444)**
+    - Update pinned rust version, clippy lints, remove some dead code ([`d567760`](https://github.com/hydro-project/hydroflow/commit/d5677604e93c07a5392f4229af94a0b736eca382))
+</details>
+
 ## 0.9.0 (2024-08-30)
+
+<csr-id-a2ec110ccadb97e293b19d83a155d98d94224bba/>
+<csr-id-11af32828bab6e4a4264d2635ff71a12bb0bb778/>
+<csr-id-0a465e55dd39c76bc1aefb020460a639d792fe87/>
+<csr-id-a2147864b24110c9ae2c1553e9e8b55bd5065f15/>
+<csr-id-8856c8596d5ad9d5f24a46467690bfac1549fae2/>
 
 ### Chore
 
@@ -46,7 +77,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 8 commits contributed to the release.
+ - 9 commits contributed to the release.
+ - 38 days passed between releases.
  - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 7 unique issues were worked on: [#1313](https://github.com/hydro-project/hydroflow/issues/1313), [#1366](https://github.com/hydro-project/hydroflow/issues/1366), [#1370](https://github.com/hydro-project/hydroflow/issues/1370), [#1398](https://github.com/hydro-project/hydroflow/issues/1398), [#1403](https://github.com/hydro-project/hydroflow/issues/1403), [#1413](https://github.com/hydro-project/hydroflow/issues/1413), [#1423](https://github.com/hydro-project/hydroflow/issues/1423)
 
@@ -71,6 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#1423](https://github.com/hydro-project/hydroflow/issues/1423)**
     - Lower min dependency versions where possible, update `Cargo.lock` ([`11af328`](https://github.com/hydro-project/hydroflow/commit/11af32828bab6e4a4264d2635ff71a12bb0bb778))
  * **Uncategorized**
+    - Release hydroflow_lang v0.9.0, hydroflow_datalog_core v0.9.0, hydroflow_datalog v0.9.0, hydroflow_deploy_integration v0.9.0, hydroflow_macro v0.9.0, lattices_macro v0.5.6, lattices v0.5.7, multiplatform_test v0.2.0, variadics v0.0.6, pusherator v0.0.8, hydroflow v0.9.0, stageleft_macro v0.3.0, stageleft v0.4.0, stageleft_tool v0.3.0, hydroflow_plus v0.9.0, hydro_deploy v0.9.0, hydro_cli v0.9.0, hydroflow_plus_deploy v0.9.0, safety bump 8 crates ([`0750117`](https://github.com/hydro-project/hydroflow/commit/0750117de7088c01a439b102adeb4c832889f171))
     - Manually set versions for crates renamed in #1413 ([`a2ec110`](https://github.com/hydro-project/hydroflow/commit/a2ec110ccadb97e293b19d83a155d98d94224bba))
 </details>
 
@@ -130,6 +163,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 9 commits contributed to the release.
+ - 59 days passed between releases.
  - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 8 unique issues were worked on: [#1309](https://github.com/hydro-project/hydroflow/issues/1309), [#1334](https://github.com/hydro-project/hydroflow/issues/1334), [#1339](https://github.com/hydro-project/hydroflow/issues/1339), [#1340](https://github.com/hydro-project/hydroflow/issues/1340), [#1345](https://github.com/hydro-project/hydroflow/issues/1345), [#1346](https://github.com/hydro-project/hydroflow/issues/1346), [#1347](https://github.com/hydro-project/hydroflow/issues/1347), [#1356](https://github.com/hydro-project/hydroflow/issues/1356)
 
@@ -176,6 +210,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 3 commits contributed to the release.
+ - 44 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1152](https://github.com/hydro-project/hydroflow/issues/1152), [#1157](https://github.com/hydro-project/hydroflow/issues/1157)
 
@@ -206,6 +241,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 4 commits contributed to the release.
+ - 38 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#1090](https://github.com/hydro-project/hydroflow/issues/1090)
 
@@ -242,6 +278,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 3 commits contributed to the release.
+ - 28 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1015](https://github.com/hydro-project/hydroflow/issues/1015), [#1043](https://github.com/hydro-project/hydroflow/issues/1043)
 
@@ -326,6 +363,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 7 commits contributed to the release.
+ - 114 days passed between releases.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1046](https://github.com/hydro-project/hydroflow/issues/1046), [#986](https://github.com/hydro-project/hydroflow/issues/986), [#987](https://github.com/hydro-project/hydroflow/issues/987), [#994](https://github.com/hydro-project/hydroflow/issues/994)
 
