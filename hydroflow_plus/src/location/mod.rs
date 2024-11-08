@@ -8,7 +8,7 @@ use proc_macro2::Span;
 use stageleft::{q, Quoted};
 
 use super::builder::FlowState;
-use crate::cycle::{CycleCollection, ForwardRef, HfForwardRef};
+use crate::cycle::{CycleCollection, ForwardRef, ForwardRefMarker};
 use crate::ir::{HfPlusNode, HfPlusSource};
 use crate::{Singleton, Stream, Unbounded};
 
@@ -178,9 +178,9 @@ pub trait Location<'a>: Clone {
         )))
     }
 
-    fn forward_ref<S: CycleCollection<'a, ForwardRef, Location = Self>>(
+    fn forward_ref<S: CycleCollection<'a, ForwardRefMarker, Location = Self>>(
         &self,
-    ) -> (HfForwardRef<'a, S>, S)
+    ) -> (ForwardRef<'a, S>, S)
     where
         Self: NoTick,
     {
@@ -203,7 +203,7 @@ pub trait Location<'a>: Clone {
         let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
 
         (
-            HfForwardRef {
+            ForwardRef {
                 ident: ident.clone(),
                 _phantom: PhantomData,
             },

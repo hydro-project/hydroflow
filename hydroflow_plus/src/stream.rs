@@ -13,7 +13,7 @@ use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
 
 use crate::builder::FLOW_USED_MESSAGE;
-use crate::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRef, TickCycle};
+use crate::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRefMarker, TickCycleMarker};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, TeeNode};
 use crate::location::cluster::ClusterSelfId;
 use crate::location::external_process::{ExternalBincodeStream, ExternalBytesPort};
@@ -57,7 +57,7 @@ impl<'a, T, L: Location<'a>> DeferTick for Stream<T, Tick<L>, Bounded> {
     }
 }
 
-impl<'a, T, L: Location<'a>> CycleCollection<'a, TickCycle> for Stream<T, Tick<L>, Bounded> {
+impl<'a, T, L: Location<'a>> CycleCollection<'a, TickCycleMarker> for Stream<T, Tick<L>, Bounded> {
     type Location = Tick<L>;
 
     fn create_source(ident: syn::Ident, location: Tick<L>) -> Self {
@@ -72,7 +72,7 @@ impl<'a, T, L: Location<'a>> CycleCollection<'a, TickCycle> for Stream<T, Tick<L
     }
 }
 
-impl<'a, T, L: Location<'a>> CycleComplete<'a, TickCycle> for Stream<T, Tick<L>, Bounded> {
+impl<'a, T, L: Location<'a>> CycleComplete<'a, TickCycleMarker> for Stream<T, Tick<L>, Bounded> {
     fn complete(self, ident: syn::Ident) {
         self.location
             .flow_state()
@@ -88,7 +88,7 @@ impl<'a, T, L: Location<'a>> CycleComplete<'a, TickCycle> for Stream<T, Tick<L>,
     }
 }
 
-impl<'a, T, L: Location<'a> + NoTick, B> CycleCollection<'a, ForwardRef> for Stream<T, L, B> {
+impl<'a, T, L: Location<'a> + NoTick, B> CycleCollection<'a, ForwardRefMarker> for Stream<T, L, B> {
     type Location = L;
 
     fn create_source(ident: syn::Ident, location: L) -> Self {
@@ -103,7 +103,7 @@ impl<'a, T, L: Location<'a> + NoTick, B> CycleCollection<'a, ForwardRef> for Str
     }
 }
 
-impl<'a, T, L: Location<'a> + NoTick, B> CycleComplete<'a, ForwardRef> for Stream<T, L, B> {
+impl<'a, T, L: Location<'a> + NoTick, B> CycleComplete<'a, ForwardRefMarker> for Stream<T, L, B> {
     fn complete(self, ident: syn::Ident) {
         self.location
             .flow_state()

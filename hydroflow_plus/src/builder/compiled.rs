@@ -8,13 +8,13 @@ use quote::quote;
 use stageleft::runtime_support::FreeVariable;
 use stageleft::Quoted;
 
-pub struct HfCompiled<'a, ID> {
+pub struct CompiledFlow<'a, ID> {
     pub(super) hydroflow_ir: BTreeMap<usize, HydroflowGraph>,
     pub(super) extra_stmts: BTreeMap<usize, Vec<syn::Stmt>>,
     pub(super) _phantom: PhantomData<&'a mut &'a ID>,
 }
 
-impl<ID> HfCompiled<'_, ID> {
+impl<ID> CompiledFlow<'_, ID> {
     pub fn hydroflow_ir(&self) -> &BTreeMap<usize, HydroflowGraph> {
         &self.hydroflow_ir
     }
@@ -24,8 +24,8 @@ impl<ID> HfCompiled<'_, ID> {
     }
 }
 
-impl<'a> HfCompiled<'a, usize> {
-    pub fn with_dynamic_id(self, id: impl Quoted<'a, usize>) -> HfBuiltWithId<'a> {
+impl<'a> CompiledFlow<'a, usize> {
+    pub fn with_dynamic_id(self, id: impl Quoted<'a, usize>) -> CompiledFlowWithId<'a> {
         let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
             .expect("hydroflow_plus should be present in `Cargo.toml`");
         let root = match hydroflow_crate {
@@ -68,7 +68,7 @@ impl<'a> HfCompiled<'a, usize> {
 
         let conditioned_tokens: TokenStream = conditioned_tokens.unwrap();
         let id = id.splice_untyped();
-        HfBuiltWithId {
+        CompiledFlowWithId {
             tokens: syn::parse_quote!({
                 let __given_id = #id;
                 #conditioned_tokens else {
@@ -80,9 +80,9 @@ impl<'a> HfCompiled<'a, usize> {
     }
 }
 
-impl<'a> Quoted<'a, Hydroflow<'a>> for HfCompiled<'a, ()> {}
+impl<'a> Quoted<'a, Hydroflow<'a>> for CompiledFlow<'a, ()> {}
 
-impl<'a> FreeVariable<Hydroflow<'a>> for HfCompiled<'a, ()> {
+impl<'a> FreeVariable<Hydroflow<'a>> for CompiledFlow<'a, ()> {
     fn to_tokens(mut self) -> (Option<TokenStream>, Option<TokenStream>) {
         let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
             .expect("hydroflow_plus should be present in `Cargo.toml`");
@@ -109,14 +109,14 @@ impl<'a> FreeVariable<Hydroflow<'a>> for HfCompiled<'a, ()> {
     }
 }
 
-pub struct HfBuiltWithId<'a> {
+pub struct CompiledFlowWithId<'a> {
     tokens: TokenStream,
     _phantom: PhantomData<&'a mut &'a ()>,
 }
 
-impl<'a> Quoted<'a, Hydroflow<'a>> for HfBuiltWithId<'a> {}
+impl<'a> Quoted<'a, Hydroflow<'a>> for CompiledFlowWithId<'a> {}
 
-impl<'a> FreeVariable<Hydroflow<'a>> for HfBuiltWithId<'a> {
+impl<'a> FreeVariable<Hydroflow<'a>> for CompiledFlowWithId<'a> {
     fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
         (None, Some(self.tokens))
     }
