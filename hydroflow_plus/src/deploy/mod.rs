@@ -208,6 +208,18 @@ pub trait ProcessSpec<'a, D: LocalDeploy<'a> + ?Sized> {
     fn build(self, id: usize, name_hint: &str) -> D::Process;
 }
 
+pub trait IntoProcessSpec<'a, D: LocalDeploy<'a> + ?Sized> {
+    type ProcessSpec: ProcessSpec<'a, D>;
+    fn into_process_spec(self) -> Self::ProcessSpec;
+}
+
+impl<'a, D: LocalDeploy<'a> + ?Sized, T: ProcessSpec<'a, D>> IntoProcessSpec<'a, D> for T {
+    type ProcessSpec = T;
+    fn into_process_spec(self) -> Self::ProcessSpec {
+        self
+    }
+}
+
 pub trait ClusterSpec<'a, D: LocalDeploy<'a> + ?Sized> {
     fn build(self, id: usize, name_hint: &str) -> D::Cluster;
 }

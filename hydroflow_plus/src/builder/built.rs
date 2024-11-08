@@ -5,7 +5,7 @@ use hydroflow_lang::graph::{eliminate_extra_unions_tees, HydroflowGraph};
 
 use super::compiled::HfCompiled;
 use super::deploy::{DeployFlow, DeployResult};
-use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, LocalDeploy, ProcessSpec};
+use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDeploy};
 use crate::ir::HfPlusLeaf;
 use crate::location::{Cluster, ExternalProcess, Process};
 
@@ -109,7 +109,7 @@ impl<'a> BuiltFlow<'a> {
     pub fn with_process<P, D: LocalDeploy<'a>>(
         self,
         process: &Process<P>,
-        spec: impl ProcessSpec<'a, D>,
+        spec: impl IntoProcessSpec<'a, D>,
     ) -> DeployFlow<'a, D> {
         self.into_deploy().with_process(process, spec)
     }

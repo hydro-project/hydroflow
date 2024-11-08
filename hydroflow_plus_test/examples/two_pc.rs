@@ -19,9 +19,7 @@ async fn main() {
         .with_process(&coordinator, TrybuildHost::new(deployment.Localhost()))
         .with_cluster(
             &participants,
-            (0..num_participants)
-                .map(|_| TrybuildHost::new(deployment.Localhost()))
-                .collect::<Vec<_>>(),
+            (0..num_participants).map(|_| TrybuildHost::new(deployment.Localhost())),
         )
         .with_process(&client, TrybuildHost::new(deployment.Localhost()))
         .deploy(&mut deployment);
