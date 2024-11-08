@@ -40,8 +40,11 @@ async fn main() {
     };
 
     let builder = hydroflow_plus::FlowBuilder::new();
-    let (external_process, external_port, p1, p2) =
-        hydroflow_plus_test::distributed::first_ten::first_ten_distributed(&builder);
+    let external = builder.external_process();
+    let p1 = builder.process();
+    let p2 = builder.process();
+    let external_port =
+        hydroflow_plus_test::distributed::first_ten::first_ten_distributed(&external, &p1, &p2);
     let nodes = builder
         .with_process(
             &p1,
@@ -51,7 +54,7 @@ async fn main() {
             &p2,
             TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags),
         )
-        .with_external(&external_process, deployment.Localhost())
+        .with_external(&external, deployment.Localhost())
         .deploy(&mut deployment);
 
     deployment.deploy().await.unwrap();

@@ -2,11 +2,12 @@ use std::marker::PhantomData;
 
 use super::{Location, LocationId};
 use crate::builder::FlowState;
+use crate::staging_util::Invariant;
 
 pub struct Process<'a, P = ()> {
     pub(crate) id: usize,
     pub(crate) flow_state: FlowState,
-    pub(crate) _phantom: PhantomData<&'a &'a mut P>,
+    pub(crate) _phantom: Invariant<'a, P>,
 }
 
 impl<P> Clone for Process<'_, P> {
