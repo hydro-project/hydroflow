@@ -10,23 +10,23 @@ use stageleft::{quote_type, Quoted};
 
 use super::{Location, LocationId};
 use crate::builder::FlowState;
-use crate::staging_util::get_this_crate;
+use crate::staging_util::{get_this_crate, Invariant};
 
 pub struct Cluster<'a, C> {
     pub(crate) id: usize,
     pub(crate) flow_state: FlowState,
-    pub(crate) _phantom: PhantomData<&'a &'a mut C>,
+    pub(crate) _phantom: Invariant<'a, C>,
 }
 
 impl<'a, C> Cluster<'a, C> {
-    pub fn self_id(&self) -> impl Quoted<'a, ClusterId<C>> + Copy + 'a {
+    pub fn self_id(&self) -> impl Quoted<'a, ClusterId<C>> + Copy {
         ClusterSelfId {
             id: self.id,
             _phantom: PhantomData,
         }
     }
 
-    pub fn members(&self) -> impl Quoted<'a, &'a Vec<ClusterId<C>>> + Copy + 'a {
+    pub fn members(&self) -> impl Quoted<'a, &'a Vec<ClusterId<C>>> + Copy {
         ClusterIds {
             id: self.id,
             _phantom: PhantomData,
@@ -152,7 +152,7 @@ impl<C> ClusterId<C> {
 
 pub struct ClusterIds<'a, C> {
     pub(crate) id: usize,
-    pub(crate) _phantom: PhantomData<&'a mut &'a C>,
+    _phantom: Invariant<'a, C>,
 }
 
 impl<C> Clone for ClusterIds<'_, C> {
@@ -187,7 +187,7 @@ impl<'a, C> Quoted<'a, &'a Vec<ClusterId<C>>> for ClusterIds<'a, C> {}
 
 pub struct ClusterSelfId<'a, C> {
     pub(crate) id: usize,
-    pub(crate) _phantom: PhantomData<&'a mut &'a C>,
+    pub(crate) _phantom: Invariant<'a, C>,
 }
 
 impl<C> Clone for ClusterSelfId<'_, C> {
