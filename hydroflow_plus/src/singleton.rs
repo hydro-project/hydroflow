@@ -7,7 +7,8 @@ use stageleft::{q, IntoQuotedMut, Quoted};
 
 use crate::builder::FLOW_USED_MESSAGE;
 use crate::cycle::{
-    CycleCollection, CycleCollectionWithInitial, CycleComplete, DeferTick, ForwardRef, TickCycle,
+    CycleCollection, CycleCollectionWithInitial, CycleComplete, DeferTick, ForwardRefMarker,
+    TickCycleMarker,
 };
 use crate::ir::{HfPlusLeaf, HfPlusNode, TeeNode};
 use crate::location::{check_matching_location, Location, LocationId, NoTick, Tick};
@@ -47,7 +48,7 @@ impl<'a, T, L: Location<'a>> DeferTick for Singleton<T, Tick<L>, Bounded> {
     }
 }
 
-impl<'a, T, L: Location<'a>> CycleCollectionWithInitial<'a, TickCycle>
+impl<'a, T, L: Location<'a>> CycleCollectionWithInitial<'a, TickCycleMarker>
     for Singleton<T, Tick<L>, Bounded>
 {
     type Location = Tick<L>;
@@ -67,7 +68,7 @@ impl<'a, T, L: Location<'a>> CycleCollectionWithInitial<'a, TickCycle>
     }
 }
 
-impl<'a, T, L: Location<'a>> CycleComplete<'a, TickCycle> for Singleton<T, Tick<L>, Bounded> {
+impl<'a, T, L: Location<'a>> CycleComplete<'a, TickCycleMarker> for Singleton<T, Tick<L>, Bounded> {
     fn complete(self, ident: syn::Ident) {
         self.location
             .flow_state()
@@ -83,7 +84,9 @@ impl<'a, T, L: Location<'a>> CycleComplete<'a, TickCycle> for Singleton<T, Tick<
     }
 }
 
-impl<'a, T, L: Location<'a>> CycleCollection<'a, ForwardRef> for Singleton<T, Tick<L>, Bounded> {
+impl<'a, T, L: Location<'a>> CycleCollection<'a, ForwardRefMarker>
+    for Singleton<T, Tick<L>, Bounded>
+{
     type Location = Tick<L>;
 
     fn create_source(ident: syn::Ident, location: Tick<L>) -> Self {
@@ -98,7 +101,9 @@ impl<'a, T, L: Location<'a>> CycleCollection<'a, ForwardRef> for Singleton<T, Ti
     }
 }
 
-impl<'a, T, L: Location<'a>> CycleComplete<'a, ForwardRef> for Singleton<T, Tick<L>, Bounded> {
+impl<'a, T, L: Location<'a>> CycleComplete<'a, ForwardRefMarker>
+    for Singleton<T, Tick<L>, Bounded>
+{
     fn complete(self, ident: syn::Ident) {
         self.location
             .flow_state()

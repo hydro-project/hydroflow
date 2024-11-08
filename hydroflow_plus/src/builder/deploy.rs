@@ -11,7 +11,7 @@ use serde::Serialize;
 use stageleft::Quoted;
 
 use super::built::build_inner;
-use super::compiled::HfCompiled;
+use super::compiled::CompiledFlow;
 use crate::deploy::{ExternalSpec, LocalDeploy, Node, RegisterPort};
 use crate::ir::HfPlusLeaf;
 use crate::location::external_process::{
@@ -66,7 +66,7 @@ impl<'a, D: LocalDeploy<'a>> DeployFlow<'a, D> {
 }
 
 impl<'a, D: Deploy<'a>> DeployFlow<'a, D> {
-    pub fn compile(mut self, env: &D::CompileEnv) -> HfCompiled<'a, D::GraphId> {
+    pub fn compile(mut self, env: &D::CompileEnv) -> CompiledFlow<'a, D::GraphId> {
         self.used = true;
 
         let mut seen_tees: HashMap<_, _> = HashMap::new();
@@ -85,7 +85,7 @@ impl<'a, D: Deploy<'a>> DeployFlow<'a, D> {
 
         let extra_stmts = self.extra_stmts(env);
 
-        HfCompiled {
+        CompiledFlow {
             hydroflow_ir: build_inner(&mut flow_state_networked),
             extra_stmts,
             _phantom: PhantomData,
