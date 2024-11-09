@@ -5,21 +5,36 @@ This is a guide on how to create releases for Hydroflow and all the other crates
 We use the [`cargo-smart-release` crate](https://github.com/Byron/cargo-smart-release) for our
 release workflow. Originally, cargo-smart-release [was part of gitoxide](https://github.com/Byron/gitoxide/pull/998)
 but it has since been separated into its own crate. We have our own [GitHub Action release workflow](https://github.com/hydro-project/hydroflow/actions/workflows/release.yml)
-([action specification here](.github/workflows/release.yml)) which is our intended way to create
+([action YAML here](.github/workflows/release.yml)) which is our intended way to create
 releases.
 
-Calling `cargo smart-release` is supposed to _just work_, but has a few rough edges that require a
-bit of manual attention before just calling the release workflow. It is supposed to generate
+Calling `cargo smart-release` is supposed to _just work_, but it has a few rough edges that can
+prevent the release workflow from completing successfully. Mainly, it is supposed to generate
 changelogs automatically from our [conventional commit](https://www.conventionalcommits.org/)
-messages, but requires manually intervention to do so in some situations.
+messages, but sometimes requires manual intervention in some situations.
 
-## Installing `cargo-smart-release` locally
+## Optional: Installing and running `cargo-smart-release` locally
 
 ```sh
 cargo install cargo-smart-release
 ```
 Re-run this command before each release to update the tool before testing locally, as the CI will
 always use the latest version.
+
+Re-run this command before each release to update the tool before testing locally, as the CI will always use the latest version.
+
+To (dry) run the command locally to spot-check for errors and warnings:
+```bash
+cargo smart-release --update-crates-index \
+   --no-changelog-preview --allow-fully-generated-changelogs \
+   --bump-dependencies auto --bump minor \ # or `patch`, `major`, `keep`, `auto`
+   hydroflow hydroflow_lang hydroflow_macro hydroflow_plus \
+   hydroflow_datalog hydroflow_datalog_core \
+   hydro_deploy hydro_cli hydroflow_cli_integration \
+   hydroflow_plus_cli_integration \
+   stageleft stageleft_macro stageleft_tool \
+   multiplatform_test
+```
 
 ## Dry run to ensure changelogs can be generated
 
@@ -65,6 +80,8 @@ showing that all the changelogs can be modified. Make sure the version bumps loo
 [INFO ] WOULD modify existing changelog for 'hydro_cli'.
 ```
 
+### Check log for this!
+
 If the job does not succeed or succeeds but fails to generate changelogs for certain packages, then you will
 need to do a bit of manual work. That looks like this in the log (check for this!):
 ```log
@@ -73,6 +90,8 @@ need to do a bit of manual work. That looks like this in the log (check for this
 In this case, you will need to create a commit to each package's `CHANGELOG.md` to mark it as
 unchanged (or minimally changed). For example, [hydro_datalog 0.4](https://github.com/hydro-project/hydroflow/commit/5faee64ab82eeb7a24f62a1b55c46d72d8eb5320)
 or [hydro_cli 0.3](https://github.com/hydro-project/hydroflow/commit/4c2cf81411835529b5d7daa35717834e46e28b9b).
+
+Once all changelogs are ok to autogenerate, we can move on to the real-deal run.
 
 ## Real-deal run
 
@@ -164,6 +183,14 @@ Commit those changes, then continue as normal.
 
 (There may be other issues with the `git tag`s `cargo-smart-release` uses to track versions if you
 are renaming a crate _back to an old name_).
+
+## Addendum: `[build-dependencies]`
+
+Due to bug [cargo-smart-release#16](https://github.com/Byron/cargo-smart-release/issues/16), `cargo-smart-release`
+does not properly handle `[build-dependencies]` in `Cargo.toml`. If one workspace crate has another
+workspace crate as a build dependency `cargo-smart-release` will fail to find this dependency and
+may fail due to versioning issues. The workspace dependency should also be added to the `[depedencies]`
+section in order to work around this issue.
 
 ## Addendum: The GitHub App account
 
