@@ -1,13 +1,12 @@
 use std::fs;
 use std::path::PathBuf;
 
+use hydroflow_lang::graph::{partition_graph, HydroflowGraph};
 use stageleft::internal::quote;
 use trybuild_internals_api::cargo::{self, Metadata};
 use trybuild_internals_api::env::Update;
 use trybuild_internals_api::run::{PathDependency, Project};
 use trybuild_internals_api::{dependencies, features, path, Runner};
-
-use crate::lang::graph::{partition_graph, HydroflowGraph};
 
 pub static IS_TEST: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
@@ -19,26 +18,30 @@ pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>
     let partitioned_graph = partition_graph(graph).expect("Failed to partition (cycle detected).");
 
     let mut diagnostics = Vec::new();
-    let tokens =
-        partitioned_graph.as_code(&quote! { hydroflow_plus }, true, quote!(), &mut diagnostics);
+    let tokens = partitioned_graph.as_code(
+        &quote! { hydroflow_plus::hydroflow },
+        true,
+        quote!(),
+        &mut diagnostics,
+    );
 
     let source_ast: syn::File = syn::parse_quote! {
         #![feature(box_patterns)]
-        #![allow(unused_crate_dependencies, missing_docs)]
+        #![allow(unused_imports, unused_crate_dependencies, missing_docs)]
         use hydroflow_plus::*;
 
         #[allow(unused)]
-        fn __hfplus_runtime<'a>(__hydroflow_plus_trybuild_cli: &'a hydroflow_plus::util::deploy::DeployPorts<hydroflow_plus::deploy::HydroflowPlusMeta>) -> hydroflow_plus::Hydroflow<'a> {
+        fn __hfplus_runtime<'a>(__hydroflow_plus_trybuild_cli: &'a hydroflow_plus::hydroflow::util::deploy::DeployPorts<hydroflow_plus::deploy::HydroflowPlusMeta>) -> hydroflow_plus::Hydroflow<'a> {
             #(#extra_stmts)*
             #tokens
         }
 
         #[tokio::main]
         async fn main() {
-            let ports = hydroflow_plus::util::deploy::init_no_ack_start().await;
+            let ports = hydroflow_plus::hydroflow::util::deploy::init_no_ack_start().await;
             let flow = __hfplus_runtime(&ports);
             println!("ack start");
-            hydroflow_plus::util::deploy::launch_flow(flow).await;
+            hydroflow_plus::hydroflow::util::deploy::launch_flow(flow).await;
         }
     };
     source_ast
