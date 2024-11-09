@@ -132,6 +132,10 @@ const config = {
                 type: 'docSidebar',
                 sidebarId: 'deploySidebar',
                 label: 'Hydro Deploy',
+              },
+              {
+                href: 'https://docs.hydro.run',
+                label: 'Rustdoc',
               }
             ]
           },
