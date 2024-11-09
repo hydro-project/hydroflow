@@ -7,10 +7,10 @@ use compiled::CompiledFlow;
 use deploy::{DeployFlow, DeployResult};
 use stageleft::*;
 
-use crate::deploy::{ExternalSpec, IntoProcessSpec, LocalDeploy};
+use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDeploy};
 use crate::ir::HfPlusLeaf;
 use crate::location::{Cluster, ExternalProcess, Process};
-use crate::{ClusterSpec, Deploy, RuntimeContext};
+use crate::RuntimeContext;
 
 pub mod built;
 pub mod compiled;

@@ -12,13 +12,15 @@ use stageleft::Quoted;
 
 use super::built::build_inner;
 use super::compiled::CompiledFlow;
-use crate::deploy::{ExternalSpec, IntoProcessSpec, LocalDeploy, Node, RegisterPort};
+use crate::deploy::{
+    ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDeploy, Node, ProcessSpec,
+    RegisterPort,
+};
 use crate::ir::HfPlusLeaf;
 use crate::location::external_process::{
     ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort,
 };
-use crate::location::{ExternalProcess, Location, LocationId};
-use crate::{Cluster, ClusterSpec, Deploy, Process, ProcessSpec};
+use crate::location::{Cluster, ExternalProcess, Location, LocationId, Process};
 
 pub struct DeployFlow<'a, D: LocalDeploy<'a>> {
     pub(super) ir: Vec<HfPlusLeaf>,
