@@ -12,7 +12,7 @@ pub fn first_ten_distributed<'a>(p1: &Process<'a, P1>, p2: &Process<'a, P2>) {
 mod tests {
     use hydro_deploy::Deployment;
     use hydroflow_plus::deploy::DeployCrateWrapper;
-    use hydroflow_plus::futures::StreamExt;
+    use hydroflow_plus::hydroflow::futures::StreamExt;
     use tokio_stream::wrappers::UnboundedReceiverStream;
 
     #[tokio::test]

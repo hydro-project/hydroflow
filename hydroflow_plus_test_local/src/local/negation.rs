@@ -1,7 +1,6 @@
+use hydroflow::tokio::sync::mpsc::UnboundedSender;
 use hydroflow_plus::deploy::SingleProcessGraph;
-use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 use hydroflow_plus::*;
-use stageleft::{q, Quoted, RuntimeData};
 
 #[stageleft::entry]
 pub fn test_difference<'a>(
@@ -63,12 +62,12 @@ pub fn test_anti_join<'a>(
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use hydroflow_plus::assert_graphvis_snapshots;
-    use hydroflow_plus::util::collect_ready;
+    use hydroflow::assert_graphvis_snapshots;
+    use hydroflow::util::collect_ready;
 
     #[test]
     fn test_difference_tick_tick() {
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut flow = super::test_difference!(&out, false, false);
         assert_graphvis_snapshots!(flow);
@@ -84,7 +83,7 @@ mod tests {
 
     #[test]
     fn test_difference_tick_static() {
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut flow = super::test_difference!(&out, false, true);
         assert_graphvis_snapshots!(flow);
@@ -100,7 +99,7 @@ mod tests {
 
     #[test]
     fn test_difference_static_tick() {
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut flow = super::test_difference!(&out, true, false);
         assert_graphvis_snapshots!(flow);
@@ -119,7 +118,7 @@ mod tests {
 
     #[test]
     fn test_difference_static_static() {
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut flow = super::test_difference!(&out, true, true);
         assert_graphvis_snapshots!(flow);
@@ -135,7 +134,7 @@ mod tests {
 
     #[test]
     fn test_anti_join_tick_tick() {
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut flow = super::test_anti_join!(&out, false, false);
         assert_graphvis_snapshots!(flow);
@@ -151,7 +150,7 @@ mod tests {
 
     #[test]
     fn test_anti_join_tick_static() {
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut flow = super::test_anti_join!(&out, false, true);
         assert_graphvis_snapshots!(flow);
@@ -167,7 +166,7 @@ mod tests {
 
     #[test]
     fn test_anti_join_static_tick() {
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut flow = super::test_anti_join!(&out, true, false);
         assert_graphvis_snapshots!(flow);
@@ -186,7 +185,7 @@ mod tests {
 
     #[test]
     fn test_anti_join_static_static() {
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut flow = super::test_anti_join!(&out, true, true);
         assert_graphvis_snapshots!(flow);

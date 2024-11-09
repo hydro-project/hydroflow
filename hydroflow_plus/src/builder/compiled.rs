@@ -31,10 +31,10 @@ impl<'a> CompiledFlow<'a, usize> {
         let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
             .expect("hydroflow_plus should be present in `Cargo.toml`");
         let root = match hydroflow_crate {
-            proc_macro_crate::FoundCrate::Itself => quote! { hydroflow_plus },
+            proc_macro_crate::FoundCrate::Itself => quote! { hydroflow_plus::hydroflow },
             proc_macro_crate::FoundCrate::Name(name) => {
                 let ident = syn::Ident::new(&name, proc_macro2::Span::call_site());
-                quote! { #ident }
+                quote! { #ident::hydroflow }
             }
         };
 
@@ -89,10 +89,10 @@ impl<'a> FreeVariable<Hydroflow<'a>> for CompiledFlow<'a, ()> {
         let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
             .expect("hydroflow_plus should be present in `Cargo.toml`");
         let root = match hydroflow_crate {
-            proc_macro_crate::FoundCrate::Itself => quote! { hydroflow_plus },
+            proc_macro_crate::FoundCrate::Itself => quote! { hydroflow_plus::hydroflow },
             proc_macro_crate::FoundCrate::Name(name) => {
                 let ident = syn::Ident::new(&name, proc_macro2::Span::call_site());
-                quote! { #ident }
+                quote! { #ident::hydroflow }
             }
         };
 

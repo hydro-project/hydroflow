@@ -1,9 +1,8 @@
+use hydroflow::futures::stream::Stream;
+use hydroflow::tokio::sync::mpsc::UnboundedSender;
+use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::deploy::MultiGraph;
-use hydroflow_plus::futures::stream::Stream;
-use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
-use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::*;
-use stageleft::{q, Quoted, RuntimeData};
 
 struct N0 {}
 struct N1 {}
@@ -48,13 +47,13 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use hydroflow_plus::assert_graphvis_snapshots;
-    use hydroflow_plus::util::collect_ready;
+    use hydroflow::assert_graphvis_snapshots;
+    use hydroflow::util::collect_ready;
 
     #[test]
     fn test_teed_join() {
-        let (in_send, input) = hydroflow_plus::util::unbounded_channel();
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (in_send, input) = hydroflow::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut joined = super::teed_join!(input, &out, false, 0);
         assert_graphvis_snapshots!(joined);
@@ -71,8 +70,8 @@ mod tests {
 
     #[test]
     fn test_teed_join_twice() {
-        let (in_send, input) = hydroflow_plus::util::unbounded_channel();
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (in_send, input) = hydroflow::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut joined = super::teed_join!(input, &out, true, 0);
         assert_graphvis_snapshots!(joined);
@@ -89,8 +88,8 @@ mod tests {
 
     #[test]
     fn test_teed_join_multi_node() {
-        let (_, input) = hydroflow_plus::util::unbounded_channel();
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (_, input) = hydroflow::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut joined = super::teed_join!(input, &out, true, 1);
         assert_graphvis_snapshots!(joined);
