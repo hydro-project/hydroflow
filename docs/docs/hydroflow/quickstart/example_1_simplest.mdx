@@ -52,15 +52,15 @@ And then run the program:
 ## Understanding the Code
 Although this is a trivial program, it's useful to go through it line by line.
 
-<CodeBlock language="rust">{getLines(exampleCode, 1)}</CodeBlock>
+<CodeBlock language="rust">{getLines(exampleCode, 'use')}</CodeBlock>
 
-This import gives you everything you need from Hydroflow to write code with Hydroflow's
+This import gives you the macro you need from Hydroflow to write code in Hydroflow's
 [_surface syntax_](../syntax).
 
 Next, inside the main method we specify a flow by calling the
 `hydroflow_syntax!` macro. We assign the resulting `Hydroflow` instance to
 a mutable variable `flow`––mutable because we will be changing its status when we run it.
-<CodeBlock language="rust">{getLines(exampleCode, 3, 6)}</CodeBlock>
+<CodeBlock language="rust">{getLines(exampleCode, 'macro_call')}</CodeBlock>
 
 Hydroflow surface syntax defines a "flow" consisting of *operators* connected via `->` arrows.
 This simplest example uses a simple two-step linear flow.
@@ -74,7 +74,7 @@ The Hydroflow surface syntax is merely a *specification*; it does not actually d
 until we run it.
 We can run this flow from within Rust via the [`run_available()` method](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_available).
 
-<CodeBlock language="rust">{getLines(exampleCode, 8)}</CodeBlock>
+<CodeBlock language="rust">{getLines(exampleCode, 'run')}</CodeBlock>
 
 Note that `run_available()` runs the Hydroflow graph until no more work is immediately
 available. In this example flow, running the graph drains the iterator completely, so no
