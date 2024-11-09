@@ -18,7 +18,9 @@ async fn main() {
     let vpc = Arc::new(RwLock::new(GcpNetwork::new(&gcp_project, None)));
 
     let flow = hydroflow_plus::FlowBuilder::new();
-    let (p1, p2) = hydroflow_plus_template::first_ten_distributed::first_ten_distributed(&flow);
+    let p1 = flow.process();
+    let p2 = flow.process();
+    hydroflow_plus_template::first_ten_distributed::first_ten_distributed(&p1, &p2);
 
     let _nodes = flow
         .with_process(

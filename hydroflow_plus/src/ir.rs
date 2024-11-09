@@ -93,7 +93,7 @@ pub enum HfPlusLeaf {
 }
 
 impl HfPlusLeaf {
-    pub fn compile_network<'a, D: Deploy<'a> + 'a>(
+    pub fn compile_network<'a, D: Deploy<'a>>(
         self,
         compile_env: &D::CompileEnv,
         seen_tees: &mut SeenTees,
@@ -355,7 +355,7 @@ pub enum HfPlusNode {
 pub type SeenTees = HashMap<*const RefCell<HfPlusNode>, Rc<RefCell<HfPlusNode>>>;
 
 impl<'a> HfPlusNode {
-    pub fn compile_network<D: Deploy<'a> + 'a>(
+    pub fn compile_network<D: Deploy<'a>>(
         &mut self,
         compile_env: &D::CompileEnv,
         seen_tees: &mut SeenTees,
@@ -1192,7 +1192,7 @@ impl<'a> HfPlusNode {
 }
 
 #[expect(clippy::too_many_arguments, reason = "networking internals")]
-fn instantiate_network<'a, D: Deploy<'a> + 'a>(
+fn instantiate_network<'a, D: Deploy<'a>>(
     from_location: &mut LocationId,
     from_key: Option<usize>,
     to_location: &mut LocationId,

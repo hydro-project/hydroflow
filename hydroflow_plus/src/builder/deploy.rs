@@ -18,6 +18,7 @@ use crate::location::external_process::{
     ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort,
 };
 use crate::location::{ExternalProcess, Location, LocationId};
+use crate::staging_util::Invariant;
 use crate::{Cluster, ClusterSpec, Deploy, Process, ProcessSpec};
 
 pub struct DeployFlow<'a, D: LocalDeploy<'a>> {
@@ -27,7 +28,7 @@ pub struct DeployFlow<'a, D: LocalDeploy<'a>> {
     pub(super) clusters: HashMap<usize, D::Cluster>,
     pub(super) used: bool,
 
-    pub(super) _phantom: PhantomData<&'a mut &'a D>,
+    pub(super) _phantom: Invariant<'a, D>,
 }
 
 impl<'a, D: LocalDeploy<'a>> Drop for DeployFlow<'a, D> {
