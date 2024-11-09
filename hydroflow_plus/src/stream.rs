@@ -605,7 +605,7 @@ impl<'a, T, L: Location<'a> + NoTick, B> Stream<T, L, B> {
         self.send_bincode::<Process<'a, P2>, T>(other)
     }
 
-    pub fn decouple_cluster<C2, Tag>(
+    pub fn decouple_cluster<C2: 'a, Tag>(
         self,
         other: &Cluster<'a, C2>,
     ) -> Stream<T, Cluster<'a, C2>, Unbounded>
@@ -772,7 +772,7 @@ impl<'a, T, L: Location<'a> + NoTick, B> Stream<T, L, B> {
         self.send_bytes::<L2>(other).map(q!(|(_, b)| b))
     }
 
-    pub fn broadcast_bincode<C2>(
+    pub fn broadcast_bincode<C2: 'a>(
         self,
         other: &Cluster<'a, C2>,
     ) -> Stream<L::Out<T>, Cluster<'a, C2>, Unbounded>
@@ -789,7 +789,7 @@ impl<'a, T, L: Location<'a> + NoTick, B> Stream<T, L, B> {
         .send_bincode(other)
     }
 
-    pub fn broadcast_bincode_interleaved<C2, Tag>(
+    pub fn broadcast_bincode_interleaved<C2: 'a, Tag>(
         self,
         other: &Cluster<'a, C2>,
     ) -> Stream<T, Cluster<'a, C2>, Unbounded>
@@ -800,7 +800,7 @@ impl<'a, T, L: Location<'a> + NoTick, B> Stream<T, L, B> {
         self.broadcast_bincode(other).map(q!(|(_, b)| b))
     }
 
-    pub fn broadcast_bytes<C2>(
+    pub fn broadcast_bytes<C2: 'a>(
         self,
         other: &Cluster<'a, C2>,
     ) -> Stream<L::Out<Bytes>, Cluster<'a, C2>, Unbounded>
@@ -817,7 +817,7 @@ impl<'a, T, L: Location<'a> + NoTick, B> Stream<T, L, B> {
         .send_bytes(other)
     }
 
-    pub fn broadcast_bytes_interleaved<C2, Tag>(
+    pub fn broadcast_bytes_interleaved<C2: 'a, Tag>(
         self,
         other: &Cluster<'a, C2>,
     ) -> Stream<Bytes, Cluster<'a, C2>, Unbounded>
