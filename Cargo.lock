@@ -1608,6 +1608,7 @@ dependencies = [
  "syn 2.0.75",
  "tokio",
  "toml",
+ "trybuild",
  "trybuild-internals-api",
 ]
 
