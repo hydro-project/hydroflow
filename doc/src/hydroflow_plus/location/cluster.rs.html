@@ -229,23 +229,23 @@
 
 <span class="kw">use super</span>::{Location, LocationId};
 <span class="kw">use </span><span class="kw">crate</span>::builder::FlowState;
-<span class="kw">use </span><span class="kw">crate</span>::staging_util::get_this_crate;
+<span class="kw">use </span><span class="kw">crate</span>::staging_util::{get_this_crate, Invariant};
 
 <span class="kw">pub struct </span>Cluster&lt;<span class="lifetime">'a</span>, C&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) id: usize,
     <span class="kw">pub</span>(<span class="kw">crate</span>) flow_state: FlowState,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>C&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: Invariant&lt;<span class="lifetime">'a</span>, C&gt;,
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, C&gt; Cluster&lt;<span class="lifetime">'a</span>, C&gt; {
-    <span class="kw">pub fn </span>self_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, ClusterId&lt;C&gt;&gt; + Copy + <span class="lifetime">'a </span>{
+    <span class="kw">pub fn </span>self_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, ClusterId&lt;C&gt;&gt; + Copy {
         ClusterSelfId {
             id: <span class="self">self</span>.id,
             _phantom: PhantomData,
         }
     }
 
-    <span class="kw">pub fn </span>members(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Vec&lt;ClusterId&lt;C&gt;&gt;&gt; + Copy + <span class="lifetime">'a </span>{
+    <span class="kw">pub fn </span>members(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Vec&lt;ClusterId&lt;C&gt;&gt;&gt; + Copy {
         ClusterIds {
             id: <span class="self">self</span>.id,
             _phantom: PhantomData,
@@ -371,7 +371,7 @@
 
 <span class="kw">pub struct </span>ClusterIds&lt;<span class="lifetime">'a</span>, C&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) id: usize,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>C&gt;,
+    _phantom: Invariant&lt;<span class="lifetime">'a</span>, C&gt;,
 }
 
 <span class="kw">impl</span>&lt;C&gt; Clone <span class="kw">for </span>ClusterIds&lt;<span class="lifetime">'_</span>, C&gt; {
@@ -406,7 +406,7 @@
 
 <span class="kw">pub struct </span>ClusterSelfId&lt;<span class="lifetime">'a</span>, C&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) id: usize,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>C&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: Invariant&lt;<span class="lifetime">'a</span>, C&gt;,
 }
 
 <span class="kw">impl</span>&lt;C&gt; Clone <span class="kw">for </span>ClusterSelfId&lt;<span class="lifetime">'_</span>, C&gt; {

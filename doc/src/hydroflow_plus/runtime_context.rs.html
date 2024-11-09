@@ -31,6 +31,8 @@
 <a href="#31" id="31">31</a>
 <a href="#32" id="32">32</a>
 <a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
 <span class="kw">use </span>hydroflow::scheduled::context::Context;
@@ -38,9 +40,11 @@
 <span class="kw">use </span>quote::quote;
 <span class="kw">use </span>stageleft::runtime_support::FreeVariable;
 
+<span class="kw">use </span><span class="kw">crate</span>::staging_util::Invariant;
+
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>RuntimeContext&lt;<span class="lifetime">'a</span>&gt; {
-    _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>()&gt;,
+    _phantom: Invariant&lt;<span class="lifetime">'a</span>&gt;,
 }
 
 <span class="kw">impl </span>RuntimeContext&lt;<span class="lifetime">'_</span>&gt; {

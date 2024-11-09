@@ -77,17 +77,6 @@
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
-<a href="#80" id="80">80</a>
-<a href="#81" id="81">81</a>
-<a href="#82" id="82">82</a>
-<a href="#83" id="83">83</a>
-<a href="#84" id="84">84</a>
-<a href="#85" id="85">85</a>
-<a href="#86" id="86">86</a>
-<a href="#87" id="87">87</a>
-<a href="#88" id="88">88</a>
-<a href="#89" id="89">89</a>
-<a href="#90" id="90">90</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>location::external_process::ExternalBincodeSink;
 <span class="kw">use </span>location::ExternalProcess;
@@ -102,33 +91,20 @@
 <span class="kw">pub struct </span>P2 {}
 
 <span class="kw">pub fn </span>first_ten_distributed&lt;<span class="lifetime">'a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
-) -&gt; (
-    ExternalProcess&lt;<span class="lifetime">'a</span>, ()&gt;,
-    ExternalBincodeSink&lt;String&gt;,
-    Process&lt;<span class="lifetime">'a</span>, P1&gt;,
-    Process&lt;<span class="lifetime">'a</span>, P2&gt;,
-) {
-    <span class="kw">let </span>external_process = flow.external_process::&lt;()&gt;();
-    <span class="kw">let </span>process = flow.process::&lt;P1&gt;();
-    <span class="kw">let </span>second_process = flow.process::&lt;P2&gt;();
-
-    <span class="kw">let </span>(numbers_external_port, numbers_external) =
-        external_process.source_external_bincode(<span class="kw-2">&amp;</span>process);
+    external: <span class="kw-2">&amp;</span>ExternalProcess&lt;<span class="lifetime">'a</span>, ()&gt;,
+    process: <span class="kw-2">&amp;</span>Process&lt;<span class="lifetime">'a</span>, P1&gt;,
+    second_process: <span class="kw-2">&amp;</span>Process&lt;<span class="lifetime">'a</span>, P2&gt;,
+) -&gt; ExternalBincodeSink&lt;String&gt; {
+    <span class="kw">let </span>(numbers_external_port, numbers_external) = external.source_external_bincode(process);
     numbers_external.for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"hi: {:?}"</span>, n)));
 
     <span class="kw">let </span>numbers = process.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
     numbers
         .map(<span class="macro">q!</span>(|n| SendOverNetwork { n }))
-        .send_bincode(<span class="kw-2">&amp;</span>second_process)
+        .send_bincode(second_process)
         .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n.n)));
 
-    (
-        external_process,
-        numbers_external_port,
-        process,
-        second_process,
-    )
+    numbers_external_port
 }
 
 <span class="attr">#[cfg(test)]
@@ -142,25 +118,27 @@
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
 
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
-        <span class="kw">let </span>(external_process, external_port, first_node, second_node) =
-            <span class="kw">super</span>::first_ten_distributed(<span class="kw-2">&amp;</span>builder);
+        <span class="kw">let </span>external = builder.external_process();
+        <span class="kw">let </span>p1 = builder.process();
+        <span class="kw">let </span>p2 = builder.process();
+        <span class="kw">let </span>external_port = <span class="kw">super</span>::first_ten_distributed(<span class="kw-2">&amp;</span>external, <span class="kw-2">&amp;</span>p1, <span class="kw-2">&amp;</span>p2);
 
         <span class="kw">let </span>built = builder.with_default_optimize();
 
         <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
         <span class="kw">let </span>nodes = built
-            .with_process(<span class="kw-2">&amp;</span>first_node, deployment.Localhost())
-            .with_process(<span class="kw-2">&amp;</span>second_node, deployment.Localhost())
-            .with_external(<span class="kw-2">&amp;</span>external_process, deployment.Localhost())
+            .with_process(<span class="kw-2">&amp;</span>p1, deployment.Localhost())
+            .with_process(<span class="kw-2">&amp;</span>p2, deployment.Localhost())
+            .with_external(<span class="kw-2">&amp;</span>external, deployment.Localhost())
             .deploy(<span class="kw-2">&amp;mut </span>deployment);
 
         deployment.deploy().<span class="kw">await</span>.unwrap();
 
         <span class="kw">let </span><span class="kw-2">mut </span>external_port = nodes.connect_sink_bincode(external_port).<span class="kw">await</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>first_node_stdout = nodes.get_process(<span class="kw-2">&amp;</span>first_node).stdout().<span class="kw">await</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>second_node_stdout = nodes.get_process(<span class="kw-2">&amp;</span>second_node).stdout().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>first_node_stdout = nodes.get_process(<span class="kw-2">&amp;</span>p1).stdout().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>second_node_stdout = nodes.get_process(<span class="kw-2">&amp;</span>p2).stdout().<span class="kw">await</span>;
 
         deployment.start().<span class="kw">await</span>.unwrap();
 

@@ -51,10 +51,8 @@
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
-<a href="#54" id="54">54</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
-
-<span class="kw">use </span><span class="kw">crate</span>::location::Location;
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::location::Location;
+<span class="kw">use </span><span class="kw">crate</span>::staging_util::Invariant;
 
 <span class="kw">pub enum </span>ForwardRefMarker {}
 <span class="kw">pub enum </span>TickCycleMarker {}
@@ -85,7 +83,7 @@
 /// See [`crate::FlowBuilder`] for an explainer on the type parameters.
 </span><span class="kw">pub struct </span>ForwardRef&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRefMarker&gt;&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), S)&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: Invariant&lt;<span class="lifetime">'a</span>, S&gt;,
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRefMarker&gt;&gt; ForwardRef&lt;<span class="lifetime">'a</span>, S&gt; {
@@ -97,7 +95,7 @@
 
 <span class="kw">pub struct </span>TickCycle&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, TickCycleMarker&gt; + DeferTick&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), S)&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: Invariant&lt;<span class="lifetime">'a</span>, S&gt;,
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, TickCycleMarker&gt; + DeferTick&gt; TickCycle&lt;<span class="lifetime">'a</span>, S&gt; {

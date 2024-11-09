@@ -1487,7 +1487,7 @@
         <span class="self">self</span>.send_bincode::&lt;Process&lt;<span class="lifetime">'a</span>, P2&gt;, T&gt;(other)
     }
 
-    <span class="kw">pub fn </span>decouple_cluster&lt;C2, Tag&gt;(
+    <span class="kw">pub fn </span>decouple_cluster&lt;C2: <span class="lifetime">'a</span>, Tag&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, C2&gt;,
     ) -&gt; Stream&lt;T, Cluster&lt;<span class="lifetime">'a</span>, C2&gt;, Unbounded&gt;
@@ -1654,7 +1654,7 @@
         <span class="self">self</span>.send_bytes::&lt;L2&gt;(other).map(<span class="macro">q!</span>(|(<span class="kw">_</span>, b)| b))
     }
 
-    <span class="kw">pub fn </span>broadcast_bincode&lt;C2&gt;(
+    <span class="kw">pub fn </span>broadcast_bincode&lt;C2: <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, C2&gt;,
     ) -&gt; Stream&lt;L::Out&lt;T&gt;, Cluster&lt;<span class="lifetime">'a</span>, C2&gt;, Unbounded&gt;
@@ -1671,7 +1671,7 @@
         .send_bincode(other)
     }
 
-    <span class="kw">pub fn </span>broadcast_bincode_interleaved&lt;C2, Tag&gt;(
+    <span class="kw">pub fn </span>broadcast_bincode_interleaved&lt;C2: <span class="lifetime">'a</span>, Tag&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, C2&gt;,
     ) -&gt; Stream&lt;T, Cluster&lt;<span class="lifetime">'a</span>, C2&gt;, Unbounded&gt;
@@ -1682,7 +1682,7 @@
         <span class="self">self</span>.broadcast_bincode(other).map(<span class="macro">q!</span>(|(<span class="kw">_</span>, b)| b))
     }
 
-    <span class="kw">pub fn </span>broadcast_bytes&lt;C2&gt;(
+    <span class="kw">pub fn </span>broadcast_bytes&lt;C2: <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, C2&gt;,
     ) -&gt; Stream&lt;L::Out&lt;Bytes&gt;, Cluster&lt;<span class="lifetime">'a</span>, C2&gt;, Unbounded&gt;
@@ -1699,7 +1699,7 @@
         .send_bytes(other)
     }
 
-    <span class="kw">pub fn </span>broadcast_bytes_interleaved&lt;C2, Tag&gt;(
+    <span class="kw">pub fn </span>broadcast_bytes_interleaved&lt;C2: <span class="lifetime">'a</span>, Tag&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, C2&gt;,
     ) -&gt; Stream&lt;Bytes, Cluster&lt;<span class="lifetime">'a</span>, C2&gt;, Unbounded&gt;

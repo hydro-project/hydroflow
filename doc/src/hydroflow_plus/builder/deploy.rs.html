@@ -314,6 +314,7 @@
 <a href="#314" id="314">314</a>
 <a href="#315" id="315">315</a>
 <a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::io::Error;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -334,6 +335,7 @@
     ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort,
 };
 <span class="kw">use </span><span class="kw">crate</span>::location::{ExternalProcess, Location, LocationId};
+<span class="kw">use </span><span class="kw">crate</span>::staging_util::Invariant;
 <span class="kw">use crate</span>::{Cluster, ClusterSpec, Deploy, Process, ProcessSpec};
 
 <span class="kw">pub struct </span>DeployFlow&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; {
@@ -343,7 +345,7 @@
     <span class="kw">pub</span>(<span class="kw">super</span>) clusters: HashMap&lt;usize, D::Cluster&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) used: bool,
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>D&gt;,
+    <span class="kw">pub</span>(<span class="kw">super</span>) _phantom: Invariant&lt;<span class="lifetime">'a</span>, D&gt;,
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; Drop <span class="kw">for </span>DeployFlow&lt;<span class="lifetime">'a</span>, D&gt; {

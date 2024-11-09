@@ -134,6 +134,7 @@
 <a href="#134" id="134">134</a>
 <a href="#135" id="135">135</a>
 <a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -144,6 +145,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::deploy::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDeploy};
 <span class="kw">use </span><span class="kw">crate</span>::ir::HfPlusLeaf;
 <span class="kw">use </span><span class="kw">crate</span>::location::{Cluster, ExternalProcess, Process};
+<span class="kw">use </span><span class="kw">crate</span>::staging_util::Invariant;
 
 <span class="kw">pub struct </span>BuiltFlow&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">pub</span>(<span class="kw">super</span>) ir: Vec&lt;HfPlusLeaf&gt;,
@@ -151,7 +153,7 @@
     <span class="kw">pub</span>(<span class="kw">super</span>) clusters: Vec&lt;usize&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) used: bool,
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>()&gt;,
+    <span class="kw">pub</span>(<span class="kw">super</span>) _phantom: Invariant&lt;<span class="lifetime">'a</span>&gt;,
 }
 
 <span class="kw">impl </span>Drop <span class="kw">for </span>BuiltFlow&lt;<span class="lifetime">'_</span>&gt; {
@@ -255,15 +257,15 @@
         <span class="self">self</span>.into_deploy().with_cluster(cluster, spec)
     }
 
-    <span class="kw">pub fn </span>compile&lt;D: Deploy&lt;<span class="lifetime">'a</span>&gt; + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, env: <span class="kw-2">&amp;</span>D::CompileEnv) -&gt; CompiledFlow&lt;<span class="lifetime">'a</span>, D::GraphId&gt; {
+    <span class="kw">pub fn </span>compile&lt;D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(<span class="self">self</span>, env: <span class="kw-2">&amp;</span>D::CompileEnv) -&gt; CompiledFlow&lt;<span class="lifetime">'a</span>, D::GraphId&gt; {
         <span class="self">self</span>.into_deploy::&lt;D&gt;().compile(env)
     }
 
-    <span class="kw">pub fn </span>compile_no_network&lt;D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt; + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>) -&gt; CompiledFlow&lt;<span class="lifetime">'a</span>, D::GraphId&gt; {
+    <span class="kw">pub fn </span>compile_no_network&lt;D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt;(<span class="self">self</span>) -&gt; CompiledFlow&lt;<span class="lifetime">'a</span>, D::GraphId&gt; {
         <span class="self">self</span>.into_deploy::&lt;D&gt;().compile_no_network()
     }
 
-    <span class="kw">pub fn </span>deploy&lt;D: Deploy&lt;<span class="lifetime">'a</span>, CompileEnv = ()&gt; + <span class="lifetime">'a</span>&gt;(
+    <span class="kw">pub fn </span>deploy&lt;D: Deploy&lt;<span class="lifetime">'a</span>, CompileEnv = ()&gt;&gt;(
         <span class="self">self</span>,
         env: <span class="kw-2">&amp;mut </span>D::InstantiateEnv,
     ) -&gt; DeployResult&lt;<span class="lifetime">'a</span>, D&gt; {
