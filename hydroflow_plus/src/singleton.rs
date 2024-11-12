@@ -57,7 +57,7 @@ impl<'a, T, L: Location<'a>> CycleCollectionWithInitial<'a, TickCycleMarker>
         let location_id = location.id();
         Singleton::new(
             location,
-            HfPlusNode::Union(
+            HfPlusNode::Chain(
                 Box::new(HfPlusNode::CycleSource {
                     ident,
                     location_kind: location_id,

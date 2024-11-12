@@ -260,18 +260,6 @@ impl<'a, T, L: Location<'a>, B> Stream<T, L, B> {
         )
     }
 
-    pub fn union(self, other: Stream<T, L, B>) -> Stream<T, L, B> {
-        check_matching_location(&self.location, &other.location);
-
-        Stream::new(
-            self.location,
-            HfPlusNode::Union(
-                Box::new(self.ir_node.into_inner()),
-                Box::new(other.ir_node.into_inner()),
-            ),
-        )
-    }
-
     pub fn enumerate(self) -> Stream<(usize, T), L, B> {
         Stream::new(
             self.location,
@@ -400,6 +388,18 @@ impl<'a, T, L: Location<'a>> Stream<T, L, Bounded> {
         Stream::new(
             self.location,
             HfPlusNode::Sort(Box::new(self.ir_node.into_inner())),
+        )
+    }
+
+    pub fn chain<B2>(self, other: Stream<T, L, B2>) -> Stream<T, L, B2> {
+        check_matching_location(&self.location, &other.location);
+
+        Stream::new(
+            self.location,
+            HfPlusNode::Chain(
+                Box::new(self.ir_node.into_inner()),
+                Box::new(other.ir_node.into_inner()),
+            ),
         )
     }
 }
