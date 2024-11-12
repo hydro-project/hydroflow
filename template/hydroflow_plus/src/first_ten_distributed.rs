@@ -4,8 +4,9 @@ pub struct P1 {}
 pub struct P2 {}
 
 pub fn first_ten_distributed<'a>(p1: &Process<'a, P1>, p2: &Process<'a, P2>) {
-    let numbers = p1.source_iter(q!(0..10));
-    numbers.send_bincode(p2).for_each(q!(|n| println!("{}", n)));
+    p1.source_iter(q!(0..10)) // : Stream<i32, Process<P1>, ...>
+        .send_bincode(p2) // : Stream<i32, Process<P2>, ...>
+        .for_each(q!(|n| println!("{}", n)));
 }
 
 #[cfg(test)]
