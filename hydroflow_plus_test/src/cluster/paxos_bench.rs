@@ -123,7 +123,7 @@ fn bench_client<'a>(
             replica_payload.key,
             sender
         )))
-        .union(c_pending_quorum_payloads);
+        .chain(c_pending_quorum_payloads);
     let c_received_quorum_payloads = c_received_payloads
         .clone()
         .fold_keyed(
@@ -152,7 +152,7 @@ fn bench_client<'a>(
         )));
     c_to_proposers_complete_cycle.complete(
         c_new_payloads_when_leader_elected
-            .union(c_new_payloads_when_committed)
+            .chain(c_new_payloads_when_committed)
             .all_ticks(),
     );
 
@@ -169,8 +169,8 @@ fn bench_client<'a>(
         .map(q!(|key| (key as usize, SystemTime::now())));
     let c_new_timers = c_timers
         .clone() // Update c_timers in tick+1 so we can record differences during this tick (to track latency)
-        .union(c_new_timers_when_leader_elected)
-        .union(c_updated_timers.clone())
+        .chain(c_new_timers_when_leader_elected)
+        .chain(c_updated_timers.clone())
         .reduce_keyed(q!(|curr_time, new_time| {
             if new_time > *curr_time {
                 *curr_time = new_time;
@@ -190,7 +190,7 @@ fn bench_client<'a>(
         .map(q!(|(_virtual_id, (prev_time, curr_time))| Some(
             curr_time.duration_since(prev_time).unwrap().as_micros()
         )))
-        .union(c_latency_reset.into_stream())
+        .chain(c_latency_reset.into_stream())
         .all_ticks()
         .flatten()
         .fold(
