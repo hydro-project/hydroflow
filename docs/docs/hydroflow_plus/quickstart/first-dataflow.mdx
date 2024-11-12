@@ -44,4 +44,21 @@ To create a `Process`, we call `flow.process()`. After the dataflow has been cre
 
 Finally, we call `flow.deploy(&mut deployment)` to provision the dataflow program on the target machine. This returns a struct with handles to the instantiated machines, which we must store in the `_nodes` variable to prevent them from being dropped. Then, we can start the dataflow program and block until `Ctrl-C` using `deployment.run_ctrl_c()`.
 
+We can then launch the program using the following command:
+
+```bash
+#shell-command-next-line
+cargo run --example first_ten
+[() (process 0)] 0
+[() (process 0)] 1
+[() (process 0)] 2
+[() (process 0)] 3
+[() (process 0)] 4
+[() (process 0)] 5
+[() (process 0)] 6
+[() (process 0)] 7
+[() (process 0)] 8
+[() (process 0)] 9     
+```
+
 In the next section, we will look at how to distribute this program across multiple processes.
