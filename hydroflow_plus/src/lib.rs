@@ -2,8 +2,8 @@
 
 stageleft::stageleft_no_entry_crate!();
 
+pub use hydroflow;
 pub use hydroflow::scheduled::graph::Hydroflow;
-pub use hydroflow::*;
 pub use stageleft::*;
 
 pub mod runtime_support {
@@ -26,7 +26,6 @@ pub mod location;
 pub use location::{Cluster, ClusterId, Location, Process, Tick};
 
 pub mod deploy;
-pub use deploy::{ClusterSpec, Deploy, ProcessSpec};
 
 pub mod cycle;
 

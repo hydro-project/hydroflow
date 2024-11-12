@@ -13,7 +13,9 @@ use hydro_deploy::hydroflow_crate::ports::{
 use hydro_deploy::hydroflow_crate::tracing_options::TracingOptions;
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{CustomService, Deployment, Host, HydroflowCrate};
-use hydroflow::futures::StreamExt;
+use hydroflow::bytes::Bytes;
+use hydroflow::futures::{Sink, SinkExt, Stream, StreamExt};
+use hydroflow::lang::graph::HydroflowGraph;
 use hydroflow::util::deploy::{ConnectedSink, ConnectedSource};
 use nameof::name_of;
 use serde::de::DeserializeOwned;
@@ -27,8 +29,6 @@ use trybuild_internals_api::path;
 use super::deploy_runtime::*;
 use super::trybuild::{compile_graph_trybuild, create_trybuild};
 use super::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, Node, ProcessSpec, RegisterPort};
-use crate::futures::SinkExt;
-use crate::lang::graph::HydroflowGraph;
 
 pub struct HydroDeploy {}
 
@@ -542,49 +542,46 @@ impl<'a> RegisterPort<'a, HydroDeploy> for DeployExternal {
     fn as_bytes_sink(
         &self,
         key: usize,
-    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Sink<crate::bytes::Bytes, Error = Error>>>> + 'a
-    {
+    ) -> impl Future<Output = Pin<Box<dyn Sink<Bytes, Error = Error>>>> + 'a {
         let port = self.raw_port(key);
         async move {
             let sink = port.connect().await.into_sink();
-            sink as Pin<Box<dyn crate::futures::Sink<crate::bytes::Bytes, Error = Error>>>
+            sink as Pin<Box<dyn Sink<Bytes, Error = Error>>>
         }
     }
 
     fn as_bincode_sink<T: Serialize + 'static>(
         &self,
         key: usize,
-    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Sink<T, Error = Error>>>> + 'a {
+    ) -> impl Future<Output = Pin<Box<dyn Sink<T, Error = Error>>>> + 'a {
         let port = self.raw_port(key);
         async move {
             let sink = port.connect().await.into_sink();
             Box::pin(sink.with(|item| async move { Ok(bincode::serialize(&item).unwrap().into()) }))
-                as Pin<Box<dyn crate::futures::Sink<T, Error = Error>>>
+                as Pin<Box<dyn Sink<T, Error = Error>>>
         }
     }
 
     fn as_bytes_source(
         &self,
         key: usize,
-    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Stream<Item = crate::bytes::Bytes>>>> + 'a
-    {
+    ) -> impl Future<Output = Pin<Box<dyn Stream<Item = Bytes>>>> + 'a {
         let port = self.raw_port(key);
         async move {
             let source = port.connect().await.into_source();
-            Box::pin(source.map(|r| r.unwrap().freeze()))
-                as Pin<Box<dyn crate::futures::Stream<Item = crate::bytes::Bytes>>>
+            Box::pin(source.map(|r| r.unwrap().freeze())) as Pin<Box<dyn Stream<Item = Bytes>>>
         }
     }
 
     fn as_bincode_source<T: DeserializeOwned + 'static>(
         &self,
         key: usize,
-    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Stream<Item = T>>>> + 'a {
+    ) -> impl Future<Output = Pin<Box<dyn Stream<Item = T>>>> + 'a {
         let port = self.raw_port(key);
         async move {
             let source = port.connect().await.into_source();
             Box::pin(source.map(|item| bincode::deserialize(&item.unwrap()).unwrap()))
-                as Pin<Box<dyn crate::futures::Stream<Item = T>>>
+                as Pin<Box<dyn Stream<Item = T>>>
         }
     }
 }

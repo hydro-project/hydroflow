@@ -1,6 +1,6 @@
+use hydroflow::tokio::sync::mpsc::UnboundedSender;
+use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::deploy::SingleProcessGraph;
-use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
-use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::*;
 
 #[stageleft::entry]
@@ -35,14 +35,14 @@ pub fn graph_reachability<'a>(
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use hydroflow_plus::assert_graphvis_snapshots;
-    use hydroflow_plus::util::collect_ready;
+    use hydroflow::assert_graphvis_snapshots;
+    use hydroflow::util::collect_ready;
 
     #[test]
     pub fn test_reachability() {
-        let (roots_send, roots) = hydroflow_plus::util::unbounded_channel();
-        let (edges_send, edges) = hydroflow_plus::util::unbounded_channel();
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (roots_send, roots) = hydroflow::util::unbounded_channel();
+        let (edges_send, edges) = hydroflow::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut reachability = super::graph_reachability!(roots, edges, &out);
         assert_graphvis_snapshots!(reachability);
