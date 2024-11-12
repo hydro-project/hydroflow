@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Color","GraphNode","PortIndexValue","WriteGraphType"],"fn":["build_hfcode","eliminate_extra_unions_tees","get_operator_generics","partition_graph"],"mod":["graph_algorithms","ops"],"struct":["DiMulGraph","FlatGraphBuilder","GraphEdgeId","GraphNodeId","GraphSubgraphId","HydroflowGraph","OpInstGenerics","OperatorInstance","WriteConfig"]};

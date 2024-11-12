@@ -63,9 +63,9 @@
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
-<span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
-<span class="kw">use </span>hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
+</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow::tokio::sync::mpsc::UnboundedSender;
+<span class="kw">use </span>hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
+<span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 
 <span class="attr">#[stageleft::entry]
@@ -100,14 +100,14 @@
 <span class="attr">#[stageleft::runtime]
 #[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>hydroflow_plus::assert_graphvis_snapshots;
-    <span class="kw">use </span>hydroflow_plus::util::collect_ready;
+    <span class="kw">use </span>hydroflow::assert_graphvis_snapshots;
+    <span class="kw">use </span>hydroflow::util::collect_ready;
 
     <span class="attr">#[test]
     </span><span class="kw">pub fn </span>test_reachability() {
-        <span class="kw">let </span>(roots_send, roots) = hydroflow_plus::util::unbounded_channel();
-        <span class="kw">let </span>(edges_send, edges) = hydroflow_plus::util::unbounded_channel();
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
+        <span class="kw">let </span>(roots_send, roots) = hydroflow::util::unbounded_channel();
+        <span class="kw">let </span>(edges_send, edges) = hydroflow::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>reachability = <span class="macro">super::graph_reachability!</span>(roots, edges, <span class="kw-2">&amp;</span>out);
         <span class="macro">assert_graphvis_snapshots!</span>(reachability);

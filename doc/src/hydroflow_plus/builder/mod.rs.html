@@ -211,11 +211,11 @@
 <span class="kw">use </span>deploy::{DeployFlow, DeployResult};
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-<span class="kw">use </span><span class="kw">crate</span>::deploy::{ExternalSpec, IntoProcessSpec, LocalDeploy};
+<span class="kw">use </span><span class="kw">crate</span>::deploy::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDeploy};
 <span class="kw">use </span><span class="kw">crate</span>::ir::HfPlusLeaf;
 <span class="kw">use </span><span class="kw">crate</span>::location::{Cluster, ExternalProcess, Process};
 <span class="kw">use </span><span class="kw">crate</span>::staging_util::Invariant;
-<span class="kw">use crate</span>::{ClusterSpec, Deploy, RuntimeContext};
+<span class="kw">use </span><span class="kw">crate</span>::RuntimeContext;
 
 <span class="kw">pub mod </span>built;
 <span class="kw">pub mod </span>compiled;

@@ -199,11 +199,9 @@
 <a href="#199" id="199">199</a>
 <a href="#200" id="200">200</a>
 <a href="#201" id="201">201</a>
-<a href="#202" id="202">202</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
-<span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
+</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow::tokio::sync::mpsc::UnboundedSender;
+<span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
-<span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>test_difference&lt;<span class="lifetime">'a</span>&gt;(
@@ -265,12 +263,12 @@
 <span class="attr">#[stageleft::runtime]
 #[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>hydroflow_plus::assert_graphvis_snapshots;
-    <span class="kw">use </span>hydroflow_plus::util::collect_ready;
+    <span class="kw">use </span>hydroflow::assert_graphvis_snapshots;
+    <span class="kw">use </span>hydroflow::util::collect_ready;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_difference_tick_tick() {
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>flow = <span class="macro">super::test_difference!</span>(<span class="kw-2">&amp;</span>out, <span class="bool-val">false</span>, <span class="bool-val">false</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(flow);
@@ -286,7 +284,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_difference_tick_static() {
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>flow = <span class="macro">super::test_difference!</span>(<span class="kw-2">&amp;</span>out, <span class="bool-val">false</span>, <span class="bool-val">true</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(flow);
@@ -302,7 +300,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_difference_static_tick() {
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>flow = <span class="macro">super::test_difference!</span>(<span class="kw-2">&amp;</span>out, <span class="bool-val">true</span>, <span class="bool-val">false</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(flow);
@@ -321,7 +319,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_difference_static_static() {
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>flow = <span class="macro">super::test_difference!</span>(<span class="kw-2">&amp;</span>out, <span class="bool-val">true</span>, <span class="bool-val">true</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(flow);
@@ -337,7 +335,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_anti_join_tick_tick() {
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>flow = <span class="macro">super::test_anti_join!</span>(<span class="kw-2">&amp;</span>out, <span class="bool-val">false</span>, <span class="bool-val">false</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(flow);
@@ -353,7 +351,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_anti_join_tick_static() {
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>flow = <span class="macro">super::test_anti_join!</span>(<span class="kw-2">&amp;</span>out, <span class="bool-val">false</span>, <span class="bool-val">true</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(flow);
@@ -369,7 +367,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_anti_join_static_tick() {
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>flow = <span class="macro">super::test_anti_join!</span>(<span class="kw-2">&amp;</span>out, <span class="bool-val">true</span>, <span class="bool-val">false</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(flow);
@@ -388,7 +386,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_anti_join_static_static() {
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>flow = <span class="macro">super::test_anti_join!</span>(<span class="kw-2">&amp;</span>out, <span class="bool-val">true</span>, <span class="bool-val">true</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(flow);

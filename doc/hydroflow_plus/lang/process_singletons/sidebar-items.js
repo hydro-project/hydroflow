@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["postprocess_singletons","postprocess_singletons_handles","preprocess_singletons"]};

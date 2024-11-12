@@ -312,20 +312,19 @@
 <a href="#312" id="312">312</a>
 <a href="#313" id="313">313</a>
 <a href="#314" id="314">314</a>
-<a href="#315" id="315">315</a>
-<a href="#316" id="316">316</a>
-<a href="#317" id="317">317</a>
-<a href="#318" id="318">318</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
+<span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::pin::Pin;
 <span class="kw">use </span>std::rc::Rc;
 
+<span class="kw">use </span>hydroflow::bytes::Bytes;
+<span class="kw">use </span>hydroflow::futures::{Sink, Stream};
 <span class="kw">use </span>hydroflow::util::deploy::DeployPorts;
+<span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
 <span class="kw">use </span>stageleft::{Quoted, RuntimeData};
 
 <span class="kw">use </span><span class="kw">super</span>::HydroflowPlusMeta;
 <span class="kw">use </span><span class="kw">crate</span>::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
-<span class="kw">use </span><span class="kw">crate</span>::lang::graph::HydroflowGraph;
 
 <span class="kw">pub struct </span>DeployRuntime {}
 
@@ -515,9 +514,7 @@
     </span><span class="kw">fn </span>as_bytes_sink(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         _key: usize,
-    ) -&gt; <span class="kw">impl </span>std::future::Future&lt;
-        Output = Pin&lt;Box&lt;<span class="kw">dyn </span><span class="kw">crate</span>::futures::Sink&lt;<span class="kw">crate</span>::bytes::Bytes, Error = std::io::Error&gt;&gt;&gt;,
-    &gt; + <span class="lifetime">'a </span>{
+    ) -&gt; <span class="kw">impl </span>Future&lt;Output = Pin&lt;Box&lt;<span class="kw">dyn </span>Sink&lt;Bytes, Error = std::io::Error&gt;&gt;&gt;&gt; + <span class="lifetime">'a </span>{
         <span class="kw">async </span>{ <span class="macro">panic!</span>() }
     }
 
@@ -528,9 +525,7 @@
     </span><span class="kw">fn </span>as_bincode_sink&lt;T: serde::Serialize + <span class="lifetime">'static</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         _key: usize,
-    ) -&gt; <span class="kw">impl </span>std::future::Future&lt;
-        Output = Pin&lt;Box&lt;<span class="kw">dyn </span><span class="kw">crate</span>::futures::Sink&lt;T, Error = std::io::Error&gt;&gt;&gt;,
-    &gt; + <span class="lifetime">'a </span>{
+    ) -&gt; <span class="kw">impl </span>Future&lt;Output = Pin&lt;Box&lt;<span class="kw">dyn </span>Sink&lt;T, Error = std::io::Error&gt;&gt;&gt;&gt; + <span class="lifetime">'a </span>{
         <span class="kw">async </span>{ <span class="macro">panic!</span>() }
     }
 
@@ -541,9 +536,7 @@
     </span><span class="kw">fn </span>as_bytes_source(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         _key: usize,
-    ) -&gt; <span class="kw">impl </span>std::future::Future&lt;
-        Output = Pin&lt;Box&lt;<span class="kw">dyn </span>hydroflow::futures::Stream&lt;Item = hydroflow::bytes::Bytes&gt;&gt;&gt;,
-    &gt; + <span class="lifetime">'a </span>{
+    ) -&gt; <span class="kw">impl </span>Future&lt;Output = Pin&lt;Box&lt;<span class="kw">dyn </span>Stream&lt;Item = Bytes&gt;&gt;&gt;&gt; + <span class="lifetime">'a </span>{
         <span class="kw">async </span>{ <span class="macro">panic!</span>() }
     }
 
@@ -554,8 +547,7 @@
     </span><span class="kw">fn </span>as_bincode_source&lt;T: serde::de::DeserializeOwned + <span class="lifetime">'static</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         _key: usize,
-    ) -&gt; <span class="kw">impl </span>std::future::Future&lt;Output = Pin&lt;Box&lt;<span class="kw">dyn </span>hydroflow::futures::Stream&lt;Item = T&gt;&gt;&gt;&gt; + <span class="lifetime">'a
-    </span>{
+    ) -&gt; <span class="kw">impl </span>Future&lt;Output = Pin&lt;Box&lt;<span class="kw">dyn </span>Stream&lt;Item = T&gt;&gt;&gt;&gt; + <span class="lifetime">'a </span>{
         <span class="kw">async </span>{ <span class="macro">panic!</span>() }
     }
 }

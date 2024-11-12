@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["AllowTrailing","BigEndian","Bounded","Config","DefaultOptions","FixintEncoding","Infinite","LittleEndian","NativeEndian","RejectTrailing","VarintEncoding","WithOtherEndian","WithOtherIntEncoding","WithOtherLimit","WithOtherTrailing"],"trait":["Options"]};

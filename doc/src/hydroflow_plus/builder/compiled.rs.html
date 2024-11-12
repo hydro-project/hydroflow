@@ -156,10 +156,10 @@
         <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">"hydroflow_plus"</span>)
             .expect(<span class="string">"hydroflow_plus should be present in `Cargo.toml`"</span>);
         <span class="kw">let </span>root = <span class="kw">match </span>hydroflow_crate {
-            proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote!</span> { hydroflow_plus },
+            proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote!</span> { hydroflow_plus::hydroflow },
             proc_macro_crate::FoundCrate::Name(name) =&gt; {
                 <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span>name, proc_macro2::Span::call_site());
-                <span class="macro">quote!</span> { #ident }
+                <span class="macro">quote!</span> { #ident::hydroflow }
             }
         };
 
@@ -214,10 +214,10 @@
         <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">"hydroflow_plus"</span>)
             .expect(<span class="string">"hydroflow_plus should be present in `Cargo.toml`"</span>);
         <span class="kw">let </span>root = <span class="kw">match </span>hydroflow_crate {
-            proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote!</span> { hydroflow_plus },
+            proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote!</span> { hydroflow_plus::hydroflow },
             proc_macro_crate::FoundCrate::Name(name) =&gt; {
                 <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span>name, proc_macro2::Span::call_site());
-                <span class="macro">quote!</span> { #ident }
+                <span class="macro">quote!</span> { #ident::hydroflow }
             }
         };
 
