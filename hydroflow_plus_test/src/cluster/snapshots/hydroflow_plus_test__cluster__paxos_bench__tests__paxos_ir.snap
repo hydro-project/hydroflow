@@ -40,12 +40,12 @@ expression: built.ir()
                 f: stageleft :: runtime_support :: fn1_type_hint :: < (hydroflow_plus_test :: cluster :: paxos :: Ballot , u32) , u32 > ({ use crate :: __staged :: cluster :: paxos :: * ; let p_id = hydroflow_plus :: ClusterId :: < hydroflow_plus_test :: cluster :: paxos :: Proposer > :: from_raw (__hydroflow_plus_cluster_self_id_0) ; move | (received_max_ballot , ballot_num) | { if received_max_ballot > (Ballot { num : ballot_num , proposer_id : p_id , }) { received_max_ballot . num + 1 } else { ballot_num } } }),
                 input: CrossSingleton(
                     Tee {
-                        inner: <tee 0>: Union(
+                        inner: <tee 0>: Chain(
                             Reduce {
                                 f: stageleft :: runtime_support :: fn2_borrow_mut_type_hint :: < hydroflow_plus_test :: cluster :: paxos :: Ballot , hydroflow_plus_test :: cluster :: paxos :: Ballot , () > ({ use hydroflow_plus :: __staged :: stream :: * ; | curr , new | { if new > * curr { * curr = new ; } } }),
                                 input: Persist(
-                                    Union(
-                                        Union(
+                                    Chain(
+                                        Chain(
                                             Map {
                                                 f: stageleft :: runtime_support :: fn1_type_hint :: < hydroflow_plus_test :: cluster :: paxos :: P1b < std :: collections :: hash_map :: HashMap < usize , hydroflow_plus_test :: cluster :: paxos :: LogValue < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > > > , hydroflow_plus_test :: cluster :: paxos :: Ballot > ({ use crate :: __staged :: cluster :: paxos :: * ; | p1a | p1a . max_ballot }),
                                                 input: CycleSource {
@@ -93,7 +93,7 @@ expression: built.ir()
                         ),
                     },
                     Tee {
-                        inner: <tee 1>: Union(
+                        inner: <tee 1>: Chain(
                             CycleSource {
                                 ident: Ident {
                                     sym: cycle_4,
@@ -358,7 +358,7 @@ expression: built.ir()
                                     },
                                 },
                                 Tee {
-                                    inner: <tee 6>: Union(
+                                    inner: <tee 6>: Chain(
                                         Reduce {
                                             f: stageleft :: runtime_support :: fn2_borrow_mut_type_hint :: < hydroflow_plus_test :: cluster :: paxos :: Ballot , hydroflow_plus_test :: cluster :: paxos :: Ballot , () > ({ use hydroflow_plus :: __staged :: stream :: * ; | curr , new | { if new > * curr { * curr = new ; } } }),
                                             input: Persist(
@@ -482,11 +482,11 @@ expression: built.ir()
             Map {
                 f: stageleft :: runtime_support :: fn1_type_hint :: < (usize , ()) , usize > ({ use hydroflow_plus :: __staged :: optional :: * ; | (d , _signal) | d }),
                 input: CrossSingleton(
-                    Union(
+                    Chain(
                         Map {
                             f: stageleft :: runtime_support :: fn1_type_hint :: < (usize , ()) , usize > ({ use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d }),
                             input: CrossSingleton(
-                                Union(
+                                Chain(
                                     Map {
                                         f: stageleft :: runtime_support :: fn1_type_hint :: < usize , usize > ({ use crate :: __staged :: cluster :: paxos :: * ; | max_slot | max_slot + 1 }),
                                         input: Tee {
@@ -656,7 +656,7 @@ expression: built.ir()
                                         input: FilterMap {
                                             f: stageleft :: runtime_support :: fn1_type_hint :: < hydroflow_plus_test :: cluster :: paxos :: P2b < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > , core :: option :: Option < ((usize , hydroflow_plus_test :: cluster :: paxos :: Ballot) , core :: option :: Option < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > >) > > ({ use crate :: __staged :: cluster :: paxos :: * ; | p2b | if p2b . ballot == p2b . max_ballot { Some (((p2b . slot , p2b . ballot) , p2b . value)) } else { None } }),
                                             input: Tee {
-                                                inner: <tee 17>: Union(
+                                                inner: <tee 17>: Chain(
                                                     Tee {
                                                         inner: <tee 18>: Map {
                                                             f: stageleft :: runtime_support :: fn1_type_hint :: < (hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos :: Acceptor > , hydroflow_plus_test :: cluster :: paxos :: P2b < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > >) , hydroflow_plus_test :: cluster :: paxos :: P2b < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > > ({ use hydroflow_plus :: __staged :: stream :: * ; | (_ , b) | b }),
@@ -731,11 +731,11 @@ expression: built.ir()
                                                                                         input: Map {
                                                                                             f: stageleft :: runtime_support :: fn1_type_hint :: < (hydroflow_plus_test :: cluster :: paxos :: P2a < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > , ()) , hydroflow_plus_test :: cluster :: paxos :: P2a < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > > ({ use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d }),
                                                                                             input: CrossSingleton(
-                                                                                                Union(
+                                                                                                Chain(
                                                                                                     Map {
                                                                                                         f: stageleft :: runtime_support :: fn1_type_hint :: < (hydroflow_plus_test :: cluster :: paxos :: P2a < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > , ()) , hydroflow_plus_test :: cluster :: paxos :: P2a < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > > ({ use hydroflow_plus :: __staged :: stream :: * ; | (d , _signal) | d }),
                                                                                                         input: CrossSingleton(
-                                                                                                            Union(
+                                                                                                            Chain(
                                                                                                                 FilterMap {
                                                                                                                     f: stageleft :: runtime_support :: fn1_type_hint :: < ((usize , (usize , core :: option :: Option < hydroflow_plus_test :: cluster :: paxos :: LogValue < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > >)) , u32) , core :: option :: Option < hydroflow_plus_test :: cluster :: paxos :: P2a < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > > > ({ use crate :: __staged :: cluster :: paxos :: * ; let f = 1usize ; let p_id = hydroflow_plus :: ClusterId :: < hydroflow_plus_test :: cluster :: paxos :: Proposer > :: from_raw (__hydroflow_plus_cluster_self_id_0) ; move | ((slot , (count , entry)) , ballot_num) | { let entry = entry . unwrap () ; if count <= f { Some (P2a { ballot : Ballot { num : ballot_num , proposer_id : p_id , } , slot , value : entry . value , }) } else { None } } }),
                                                                                                                     input: CrossSingleton(
@@ -896,7 +896,7 @@ expression: built.ir()
             init: stageleft :: runtime_support :: fn0_type_hint :: < (core :: option :: Option < usize > , std :: collections :: hash_map :: HashMap < usize , hydroflow_plus_test :: cluster :: paxos :: LogValue < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > >) > ({ use crate :: __staged :: cluster :: paxos :: * ; | | (None , HashMap :: new ()) }),
             acc: stageleft :: runtime_support :: fn2_borrow_mut_type_hint :: < (core :: option :: Option < usize > , std :: collections :: hash_map :: HashMap < usize , hydroflow_plus_test :: cluster :: paxos :: LogValue < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > >) , hydroflow_plus_test :: cluster :: paxos :: CheckpointOrP2a < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > , () > ({ use crate :: __staged :: cluster :: paxos :: * ; | (prev_checkpoint , log) , checkpoint_or_p2a | { match checkpoint_or_p2a { CheckpointOrP2a :: Checkpoint (new_checkpoint) => { for slot in (prev_checkpoint . unwrap_or (0)) .. new_checkpoint { log . remove (& slot) ; } * prev_checkpoint = Some (new_checkpoint) ; } CheckpointOrP2a :: P2a (p2a) => { if prev_checkpoint . map (| prev | p2a . slot > prev) . unwrap_or (true) && log . get (& p2a . slot) . map (| prev_p2a : & LogValue < _ > | p2a . ballot > prev_p2a . ballot) . unwrap_or (true) { log . insert (p2a . slot , LogValue { ballot : p2a . ballot , value : p2a . value , } ,) ; } } } } }),
             input: Persist(
-                Union(
+                Chain(
                     FilterMap {
                         f: stageleft :: runtime_support :: fn1_type_hint :: < (hydroflow_plus_test :: cluster :: paxos :: P2a < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > , hydroflow_plus_test :: cluster :: paxos :: Ballot) , core :: option :: Option < hydroflow_plus_test :: cluster :: paxos :: CheckpointOrP2a < hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > > > ({ use crate :: __staged :: cluster :: paxos :: * ; | (p2a , max_ballot) | if p2a . ballot >= max_ballot { Some (CheckpointOrP2a :: P2a (p2a)) } else { None } }),
                         input: CrossSingleton(
@@ -1006,7 +1006,7 @@ expression: built.ir()
             sym: cycle_1,
         },
         location_kind: Tick(
-            4,
+            5,
             Cluster(
                 3,
             ),
@@ -1019,7 +1019,7 @@ expression: built.ir()
                     input: CrossSingleton(
                         Tee {
                             inner: <tee 23>: Sort(
-                                Union(
+                                Chain(
                                     Map {
                                         f: stageleft :: runtime_support :: fn1_type_hint :: < (hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos :: Proposer > , hydroflow_plus_test :: cluster :: paxos_kv :: SequencedKv < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > >) , hydroflow_plus_test :: cluster :: paxos_kv :: SequencedKv < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > > > ({ use hydroflow_plus :: __staged :: stream :: * ; | (_ , b) | b }),
                                         input: Network {
@@ -1081,7 +1081,7 @@ expression: built.ir()
                                             sym: cycle_1,
                                         },
                                         location_kind: Tick(
-                                            4,
+                                            5,
                                             Cluster(
                                                 3,
                                             ),
@@ -1100,7 +1100,7 @@ expression: built.ir()
                                         Tee {
                                             inner: <tee 23>,
                                         },
-                                        Union(
+                                        Chain(
                                             Map {
                                                 f: stageleft :: runtime_support :: fn1_type_hint :: < usize , core :: option :: Option < usize > > ({ use hydroflow_plus :: __staged :: optional :: * ; | v | Some (v) }),
                                                 input: CycleSource {
@@ -1108,7 +1108,7 @@ expression: built.ir()
                                                         sym: cycle_2,
                                                     },
                                                     location_kind: Tick(
-                                                        4,
+                                                        5,
                                                         Cluster(
                                                             3,
                                                         ),
@@ -1140,7 +1140,7 @@ expression: built.ir()
             sym: cycle_2,
         },
         location_kind: Tick(
-            4,
+            5,
             Cluster(
                 3,
             ),
@@ -1180,7 +1180,7 @@ expression: built.ir()
             sym: cycle_3,
         },
         location_kind: Tick(
-            4,
+            5,
             Cluster(
                 3,
             ),
@@ -1190,7 +1190,7 @@ expression: built.ir()
                 inner: <tee 27>: FilterMap {
                     f: stageleft :: runtime_support :: fn1_type_hint :: < (core :: option :: Option < usize > , usize) , core :: option :: Option < usize > > ({ use crate :: __staged :: cluster :: paxos_kv :: * ; let checkpoint_frequency = 1usize ; move | (max_checkpointed_seq , new_highest_seq) | if max_checkpointed_seq . map (| m | new_highest_seq - m >= checkpoint_frequency) . unwrap_or (true) { Some (new_highest_seq) } else { None } }),
                     input: CrossSingleton(
-                        Union(
+                        Chain(
                             Map {
                                 f: stageleft :: runtime_support :: fn1_type_hint :: < usize , core :: option :: Option < usize > > ({ use hydroflow_plus :: __staged :: optional :: * ; | v | Some (v) }),
                                 input: Reduce {
@@ -1201,7 +1201,7 @@ expression: built.ir()
                                                 sym: cycle_3,
                                             },
                                             location_kind: Tick(
-                                                4,
+                                                5,
                                                 Cluster(
                                                     3,
                                                 ),
@@ -1304,7 +1304,7 @@ expression: built.ir()
         input: DeferTick(
             AntiJoin(
                 Tee {
-                    inner: <tee 28>: Union(
+                    inner: <tee 28>: Chain(
                         Map {
                             f: stageleft :: runtime_support :: fn1_type_hint :: < (hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_kv :: Replica > , hydroflow_plus_test :: cluster :: paxos_kv :: KvPayload < u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_bench :: Client > >) , (u32 , hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos_kv :: Replica >) > ({ use crate :: __staged :: cluster :: paxos_bench :: * ; | (sender , replica_payload) | (replica_payload . key , sender) }),
                             input: Network {
@@ -1383,7 +1383,7 @@ expression: built.ir()
         location_kind: Cluster(
             2,
         ),
-        input: Union(
+        input: Chain(
             FlatMap {
                 f: stageleft :: runtime_support :: fn1_type_hint :: < hydroflow_plus :: location :: cluster :: ClusterId < hydroflow_plus_test :: cluster :: paxos :: Proposer > , std :: iter :: Map < std :: ops :: Range < usize > , _ > > ({ use crate :: __staged :: cluster :: paxos_bench :: * ; let c_id = hydroflow_plus :: ClusterId :: < hydroflow_plus_test :: cluster :: paxos_bench :: Client > :: from_raw (__hydroflow_plus_cluster_self_id_2) ; let num_clients_per_node = 1usize ; move | leader_ballot | (0 .. num_clients_per_node) . map (move | i | (leader_ballot , KvPayload { key : i as u32 , value : c_id })) }),
                 input: Tee {
@@ -1435,8 +1435,8 @@ expression: built.ir()
         input: DeferTick(
             ReduceKeyed {
                 f: stageleft :: runtime_support :: fn2_borrow_mut_type_hint :: < std :: time :: SystemTime , std :: time :: SystemTime , () > ({ use crate :: __staged :: cluster :: paxos_bench :: * ; | curr_time , new_time | { if new_time > * curr_time { * curr_time = new_time ; } } }),
-                input: Union(
-                    Union(
+                input: Chain(
+                    Chain(
                         Tee {
                             inner: <tee 32>: CycleSource {
                                 ident: Ident {
@@ -1486,7 +1486,7 @@ expression: built.ir()
                             input: Persist(
                                 FlatMap {
                                     f: stageleft :: runtime_support :: fn1_type_hint :: < core :: option :: Option < u128 > , core :: option :: Option < u128 > > ({ use hydroflow_plus :: __staged :: stream :: * ; | d | d }),
-                                    input: Union(
+                                    input: Chain(
                                         Map {
                                             f: stageleft :: runtime_support :: fn1_type_hint :: < (usize , (std :: time :: SystemTime , std :: time :: SystemTime)) , core :: option :: Option < u128 > > ({ use crate :: __staged :: cluster :: paxos_bench :: * ; | (_virtual_id , (prev_time , curr_time)) | Some (curr_time . duration_since (prev_time) . unwrap () . as_micros ()) }),
                                             input: Join(
@@ -1522,7 +1522,7 @@ expression: built.ir()
                         init: stageleft :: runtime_support :: fn0_type_hint :: < usize > ({ use crate :: __staged :: cluster :: paxos_bench :: * ; | | 0 }),
                         acc: stageleft :: runtime_support :: fn2_borrow_mut_type_hint :: < usize , (usize , bool) , () > ({ use crate :: __staged :: cluster :: paxos_bench :: * ; | total , (batch_size , reset) | { if reset { * total = 0 ; } else { * total += batch_size ; } } }),
                         input: Persist(
-                            Union(
+                            Chain(
                                 Map {
                                     f: stageleft :: runtime_support :: fn1_type_hint :: < usize , (usize , bool) > ({ use crate :: __staged :: cluster :: paxos_bench :: * ; | batch_size | (batch_size , false) }),
                                     input: Map {

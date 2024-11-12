@@ -15,17 +15,18 @@ pub fn graph_reachability<'a>(
     let roots = process.source_stream(roots);
     let edges = process.source_stream(edges);
 
-    let (set_reached_cycle, reached_cycle) = process.forward_ref();
+    let reachability_tick = process.tick();
+    let (set_reached_cycle, reached_cycle) = reachability_tick.cycle();
 
-    let reached = roots.union(reached_cycle);
+    let reached = roots.tick_batch(&reachability_tick).chain(reached_cycle);
     let reachable = reached
         .clone()
         .map(q!(|r| (r, ())))
-        .join(edges)
+        .join(edges.tick_batch(&reachability_tick).persist())
         .map(q!(|(_from, (_, to))| to));
-    set_reached_cycle.complete(reachable);
+    set_reached_cycle.complete_next_tick(reached.clone().chain(reachable));
 
-    reached.unique().for_each(q!(|v| {
+    reached.all_ticks().unique().for_each(q!(|v| {
         reached_out.send(v).unwrap();
     }));
 
@@ -55,6 +56,9 @@ mod tests {
         edges_send.send((3, 4)).unwrap();
         edges_send.send((4, 5)).unwrap();
 
+        reachability.run_tick();
+        reachability.run_tick();
+        reachability.run_tick();
         reachability.run_tick();
 
         assert_eq!(

@@ -115,7 +115,7 @@ pub fn paxos_core<'a, P: PaxosPayload, R>(
         recommit_after_leader_election(proposers, p_relevant_p1bs, p_ballot_num.clone(), f);
 
     let p_log_to_recommit = p_log_to_try_commit
-        .union(p_log_holes)
+        .chain(p_log_holes)
         .continue_if(just_became_leader); // Only resend p1b stuff once the moment we become leader.
 
     let (p_to_replicas, a_log, a_to_proposers_p2b) = sequence_payload(
@@ -226,9 +226,12 @@ fn p_max_ballot<'a>(
     p_received_p2b_ballots: Stream<Ballot, Cluster<'a, Proposer>, Unbounded>,
     p_to_proposers_i_am_leader: Stream<Ballot, Cluster<'a, Proposer>, Unbounded>,
 ) -> Singleton<Ballot, Cluster<'a, Proposer>, Unbounded> {
+    let ballot_batcher = proposers.tick();
     p_received_p1b_ballots
-        .union(p_received_p2b_ballots)
-        .union(p_to_proposers_i_am_leader)
+        .tick_batch(&ballot_batcher)
+        .chain(p_received_p2b_ballots.tick_batch(&ballot_batcher))
+        .chain(p_to_proposers_i_am_leader.tick_batch(&ballot_batcher))
+        .all_ticks()
         .max()
         .unwrap_or(proposers.singleton(q!(Ballot {
             num: 0,
@@ -624,7 +627,7 @@ fn p_p2a<'a, P: PaxosPayload>(
         }));
     // .inspect(q!(|p2a: &P2a| println!("{} p_indexed_payloads P2a: {:?}", context.current_tick(), p2a)));
     let p_to_acceptors_p2a = p_log_to_recommit
-        .union(p_indexed_payloads.clone())
+        .chain(p_indexed_payloads.clone())
         .continue_if(p_is_leader.clone())
         .all_ticks()
         .broadcast_bincode_interleaved(acceptors);
@@ -694,7 +697,7 @@ fn acceptor_p2<'a, P: PaxosPayload, R>(
             }
         ));
     let a_log = a_p2as_to_place_in_log
-        .union(a_new_checkpoint.into_stream())
+        .chain(a_new_checkpoint.into_stream())
         .persist()
         .fold(
             q!(|| (None, HashMap::new())),
@@ -753,7 +756,7 @@ fn p_p2b<'a, P: PaxosPayload>(
     let (p_persisted_p2bs_complete_cycle, p_persisted_p2bs) = proposer_tick.cycle();
     let p_p2b = a_to_proposers_p2b
         .tick_batch(proposer_tick)
-        .union(p_persisted_p2bs);
+        .chain(p_persisted_p2bs);
     let p_count_matching_p2bs = p_p2b
         .clone()
         .filter_map(q!(|p2b| if p2b.ballot == p2b.max_ballot {
