@@ -311,7 +311,10 @@ pub enum HfPlusNode {
     },
 
     DeferTick(Box<HfPlusNode>),
-    Enumerate(Box<HfPlusNode>),
+    Enumerate {
+        is_static: bool,
+        input: Box<HfPlusNode>,
+    },
     Inspect {
         f: DebugExpr,
         input: Box<HfPlusNode>,
@@ -500,7 +503,7 @@ impl<'a> HfPlusNode {
             HfPlusNode::DeferTick(input) => {
                 transform(input.as_mut(), seen_tees);
             }
-            HfPlusNode::Enumerate(input) => {
+            HfPlusNode::Enumerate { input, .. } => {
                 transform(input.as_mut(), seen_tees);
             }
             HfPlusNode::Inspect { input, .. } => {
@@ -987,7 +990,7 @@ impl<'a> HfPlusNode {
                 (defer_tick_ident, input_location_id)
             }
 
-            HfPlusNode::Enumerate(input) => {
+            HfPlusNode::Enumerate { is_static, input } => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -998,9 +1001,16 @@ impl<'a> HfPlusNode {
                     syn::Ident::new(&format!("stream_{}", enumerate_id), Span::call_site());
 
                 let builder = graph_builders.entry(input_location_id).or_default();
-                builder.add_statement(parse_quote! {
-                    #enumerate_ident = #input_ident -> enumerate();
-                });
+
+                if *is_static {
+                    builder.add_statement(parse_quote! {
+                        #enumerate_ident = #input_ident -> enumerate::<'static>();
+                    });
+                } else {
+                    builder.add_statement(parse_quote! {
+                        #enumerate_ident = #input_ident -> enumerate::<'tick>();
+                    });
+                }
 
                 (enumerate_ident, input_location_id)
             }

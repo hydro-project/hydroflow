@@ -11,18 +11,8 @@ pub fn map_reduce<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, Leader>, Cluster<'
         .source_iter(q!(vec!["abc", "abc", "xyz", "abc"]))
         .map(q!(|s| s.to_string()));
 
-    let all_ids_vec = cluster.members();
-    let words_partitioned = words
-        .tick_batch(&process.tick())
-        .enumerate()
-        .map(q!(|(i, w)| (
-            ClusterId::from_raw((i % all_ids_vec.len()) as u32),
-            w
-        )))
-        .all_ticks();
-
-    words_partitioned
-        .send_bincode(&cluster)
+    words
+        .round_robin_bincode(&cluster)
         .map(q!(|string| (string, ())))
         .tick_batch(&cluster.tick())
         .fold_keyed(q!(|| 0), q!(|count, _| *count += 1))
