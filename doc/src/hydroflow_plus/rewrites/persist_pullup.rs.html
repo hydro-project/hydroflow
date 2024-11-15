@@ -287,8 +287,8 @@
             input: behind_persist,
         })),
 
-        HfPlusNode::Union(<span class="kw">box </span>HfPlusNode::Persist(left), <span class="kw">box </span>HfPlusNode::Persist(right)) =&gt; {
-            HfPlusNode::Persist(Box::new(HfPlusNode::Union(left, right)))
+        HfPlusNode::Chain(<span class="kw">box </span>HfPlusNode::Persist(left), <span class="kw">box </span>HfPlusNode::Persist(right)) =&gt; {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Chain(left, right)))
         }
 
         HfPlusNode::CrossProduct(<span class="kw">box </span>HfPlusNode::Persist(left), <span class="kw">box </span>HfPlusNode::Persist(right)) =&gt; {

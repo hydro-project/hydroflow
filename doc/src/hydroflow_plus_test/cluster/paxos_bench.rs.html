@@ -401,7 +401,7 @@
             replica_payload.key,
             sender
         )))
-        .union(c_pending_quorum_payloads);
+        .chain(c_pending_quorum_payloads);
     <span class="kw">let </span>c_received_quorum_payloads = c_received_payloads
         .clone()
         .fold_keyed(
@@ -430,7 +430,7 @@
         )));
     c_to_proposers_complete_cycle.complete(
         c_new_payloads_when_leader_elected
-            .union(c_new_payloads_when_committed)
+            .chain(c_new_payloads_when_committed)
             .all_ticks(),
     );
 
@@ -447,8 +447,8 @@
         .map(<span class="macro">q!</span>(|key| (key <span class="kw">as </span>usize, SystemTime::now())));
     <span class="kw">let </span>c_new_timers = c_timers
         .clone() <span class="comment">// Update c_timers in tick+1 so we can record differences during this tick (to track latency)
-        </span>.union(c_new_timers_when_leader_elected)
-        .union(c_updated_timers.clone())
+        </span>.chain(c_new_timers_when_leader_elected)
+        .chain(c_updated_timers.clone())
         .reduce_keyed(<span class="macro">q!</span>(|curr_time, new_time| {
             <span class="kw">if </span>new_time &gt; <span class="kw-2">*</span>curr_time {
                 <span class="kw-2">*</span>curr_time = new_time;
@@ -468,7 +468,7 @@
         .map(<span class="macro">q!</span>(|(_virtual_id, (prev_time, curr_time))| <span class="prelude-val">Some</span>(
             curr_time.duration_since(prev_time).unwrap().as_micros()
         )))
-        .union(c_latency_reset.into_stream())
+        .chain(c_latency_reset.into_stream())
         .all_ticks()
         .flatten()
         .fold(

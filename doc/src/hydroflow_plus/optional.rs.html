@@ -645,7 +645,7 @@
         <span class="kw">if </span>L::is_top_level() {
             Optional::new(
                 <span class="self">self</span>.location,
-                HfPlusNode::Persist(Box::new(HfPlusNode::Union(
+                HfPlusNode::Persist(Box::new(HfPlusNode::Chain(
                     Box::new(HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner()))),
                     Box::new(HfPlusNode::Unpersist(Box::new(other.ir_node.into_inner()))),
                 ))),
@@ -653,7 +653,7 @@
         } <span class="kw">else </span>{
             Optional::new(
                 <span class="self">self</span>.location,
-                HfPlusNode::Union(
+                HfPlusNode::Chain(
                     Box::new(<span class="self">self</span>.ir_node.into_inner()),
                     Box::new(other.ir_node.into_inner()),
                 ),
@@ -693,7 +693,7 @@
         <span class="kw">if </span>L::is_top_level() {
             Singleton::new(
                 <span class="self">self</span>.location,
-                HfPlusNode::Persist(Box::new(HfPlusNode::Union(
+                HfPlusNode::Persist(Box::new(HfPlusNode::Chain(
                     Box::new(HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner()))),
                     Box::new(HfPlusNode::Unpersist(Box::new(other.ir_node.into_inner()))),
                 ))),
@@ -701,7 +701,7 @@
         } <span class="kw">else </span>{
             Singleton::new(
                 <span class="self">self</span>.location,
-                HfPlusNode::Union(
+                HfPlusNode::Chain(
                     Box::new(<span class="self">self</span>.ir_node.into_inner()),
                     Box::new(other.ir_node.into_inner()),
                 ),

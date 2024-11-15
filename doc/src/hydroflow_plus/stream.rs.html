@@ -1142,18 +1142,6 @@
         )
     }
 
-    <span class="kw">pub fn </span>union(<span class="self">self</span>, other: Stream&lt;T, L, B&gt;) -&gt; Stream&lt;T, L, B&gt; {
-        check_matching_location(<span class="kw-2">&amp;</span><span class="self">self</span>.location, <span class="kw-2">&amp;</span>other.location);
-
-        Stream::new(
-            <span class="self">self</span>.location,
-            HfPlusNode::Union(
-                Box::new(<span class="self">self</span>.ir_node.into_inner()),
-                Box::new(other.ir_node.into_inner()),
-            ),
-        )
-    }
-
     <span class="kw">pub fn </span>enumerate(<span class="self">self</span>) -&gt; Stream&lt;(usize, T), L, B&gt; {
         Stream::new(
             <span class="self">self</span>.location,
@@ -1282,6 +1270,18 @@
         Stream::new(
             <span class="self">self</span>.location,
             HfPlusNode::Sort(Box::new(<span class="self">self</span>.ir_node.into_inner())),
+        )
+    }
+
+    <span class="kw">pub fn </span>chain&lt;B2&gt;(<span class="self">self</span>, other: Stream&lt;T, L, B2&gt;) -&gt; Stream&lt;T, L, B2&gt; {
+        check_matching_location(<span class="kw-2">&amp;</span><span class="self">self</span>.location, <span class="kw-2">&amp;</span>other.location);
+
+        Stream::new(
+            <span class="self">self</span>.location,
+            HfPlusNode::Chain(
+                Box::new(<span class="self">self</span>.ir_node.into_inner()),
+                Box::new(other.ir_node.into_inner()),
+            ),
         )
     }
 }

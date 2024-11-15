@@ -1652,7 +1652,7 @@
     Unpersist(Box&lt;HfPlusNode&gt;),
     Delta(Box&lt;HfPlusNode&gt;),
 
-    Union(Box&lt;HfPlusNode&gt;, Box&lt;HfPlusNode&gt;),
+    Chain(Box&lt;HfPlusNode&gt;, Box&lt;HfPlusNode&gt;),
     CrossProduct(Box&lt;HfPlusNode&gt;, Box&lt;HfPlusNode&gt;),
     CrossSingleton(Box&lt;HfPlusNode&gt;, Box&lt;HfPlusNode&gt;),
     Join(Box&lt;HfPlusNode&gt;, Box&lt;HfPlusNode&gt;),
@@ -1823,7 +1823,7 @@
             HfPlusNode::Unpersist(inner) =&gt; transform(inner.as_mut(), seen_tees),
             HfPlusNode::Delta(inner) =&gt; transform(inner.as_mut(), seen_tees),
 
-            HfPlusNode::Union(left, right) =&gt; {
+            HfPlusNode::Chain(left, right) =&gt; {
                 transform(left.as_mut(), seen_tees);
                 transform(right.as_mut(), seen_tees);
             }
@@ -2044,7 +2044,7 @@
                 }
             }
 
-            HfPlusNode::Union(left, right) =&gt; {
+            HfPlusNode::Chain(left, right) =&gt; {
                 <span class="kw">let </span>(left_ident, left_location_id) =
                     left.emit(graph_builders, built_tees, next_stmt_id);
                 <span class="kw">let </span>(right_ident, right_location_id) =
@@ -2052,29 +2052,29 @@
 
                 <span class="macro">assert_eq!</span>(
                     left_location_id, right_location_id,
-                    <span class="string">"union inputs must be in the same location"
+                    <span class="string">"chain inputs must be in the same location"
                 </span>);
 
                 <span class="kw">let </span>union_id = <span class="kw-2">*</span>next_stmt_id;
                 <span class="kw-2">*</span>next_stmt_id += <span class="number">1</span>;
 
-                <span class="kw">let </span>union_ident =
+                <span class="kw">let </span>chain_ident =
                     syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, union_id), Span::call_site());
 
                 <span class="kw">let </span>builder = graph_builders.entry(left_location_id).or_default();
                 builder.add_statement(<span class="macro">parse_quote!</span> {
-                    #union_ident = union();
+                    #chain_ident = chain();
                 });
 
                 builder.add_statement(<span class="macro">parse_quote!</span> {
-                    #left_ident -&gt; [<span class="number">0</span>]#union_ident;
+                    #left_ident -&gt; [<span class="number">0</span>]#chain_ident;
                 });
 
                 builder.add_statement(<span class="macro">parse_quote!</span> {
-                    #right_ident -&gt; [<span class="number">1</span>]#union_ident;
+                    #right_ident -&gt; [<span class="number">1</span>]#chain_ident;
                 });
 
-                (union_ident, left_location_id)
+                (chain_ident, left_location_id)
             }
 
             HfPlusNode::CrossSingleton(left, right) =&gt; {

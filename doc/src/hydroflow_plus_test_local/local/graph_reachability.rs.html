@@ -63,6 +63,10 @@
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 <span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
@@ -80,17 +84,18 @@
     <span class="kw">let </span>roots = process.source_stream(roots);
     <span class="kw">let </span>edges = process.source_stream(edges);
 
-    <span class="kw">let </span>(set_reached_cycle, reached_cycle) = process.forward_ref();
+    <span class="kw">let </span>reachability_tick = process.tick();
+    <span class="kw">let </span>(set_reached_cycle, reached_cycle) = reachability_tick.cycle();
 
-    <span class="kw">let </span>reached = roots.union(reached_cycle);
+    <span class="kw">let </span>reached = roots.tick_batch(<span class="kw-2">&amp;</span>reachability_tick).chain(reached_cycle);
     <span class="kw">let </span>reachable = reached
         .clone()
         .map(<span class="macro">q!</span>(|r| (r, ())))
-        .join(edges)
+        .join(edges.tick_batch(<span class="kw-2">&amp;</span>reachability_tick).persist())
         .map(<span class="macro">q!</span>(|(_from, (<span class="kw">_</span>, to))| to));
-    set_reached_cycle.complete(reachable);
+    set_reached_cycle.complete_next_tick(reached.clone().chain(reachable));
 
-    reached.unique().for_each(<span class="macro">q!</span>(|v| {
+    reached.all_ticks().unique().for_each(<span class="macro">q!</span>(|v| {
         reached_out.send(v).unwrap();
     }));
 
@@ -120,6 +125,9 @@
         edges_send.send((<span class="number">3</span>, <span class="number">4</span>)).unwrap();
         edges_send.send((<span class="number">4</span>, <span class="number">5</span>)).unwrap();
 
+        reachability.run_tick();
+        reachability.run_tick();
+        reachability.run_tick();
         reachability.run_tick();
 
         <span class="macro">assert_eq!</span>(
