@@ -1364,6 +1364,16 @@
 <a href="#1364" id="1364">1364</a>
 <a href="#1365" id="1365">1365</a>
 <a href="#1366" id="1366">1366</a>
+<a href="#1367" id="1367">1367</a>
+<a href="#1368" id="1368">1368</a>
+<a href="#1369" id="1369">1369</a>
+<a href="#1370" id="1370">1370</a>
+<a href="#1371" id="1371">1371</a>
+<a href="#1372" id="1372">1372</a>
+<a href="#1373" id="1373">1373</a>
+<a href="#1374" id="1374">1374</a>
+<a href="#1375" id="1375">1375</a>
+<a href="#1376" id="1376">1376</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::panic;
 <span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap};
@@ -1677,7 +1687,10 @@
     },
 
     DeferTick(Box&lt;HfPlusNode&gt;),
-    Enumerate(Box&lt;HfPlusNode&gt;),
+    Enumerate {
+        is_static: bool,
+        input: Box&lt;HfPlusNode&gt;,
+    },
     Inspect {
         f: DebugExpr,
         input: Box&lt;HfPlusNode&gt;,
@@ -1866,7 +1879,7 @@
             HfPlusNode::DeferTick(input) =&gt; {
                 transform(input.as_mut(), seen_tees);
             }
-            HfPlusNode::Enumerate(input) =&gt; {
+            HfPlusNode::Enumerate { input, .. } =&gt; {
                 transform(input.as_mut(), seen_tees);
             }
             HfPlusNode::Inspect { input, .. } =&gt; {
@@ -2353,7 +2366,7 @@
                 (defer_tick_ident, input_location_id)
             }
 
-            HfPlusNode::Enumerate(input) =&gt; {
+            HfPlusNode::Enumerate { is_static, input } =&gt; {
                 <span class="kw">let </span>(input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -2364,9 +2377,16 @@
                     syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, enumerate_id), Span::call_site());
 
                 <span class="kw">let </span>builder = graph_builders.entry(input_location_id).or_default();
-                builder.add_statement(<span class="macro">parse_quote!</span> {
-                    #enumerate_ident = #input_ident -&gt; enumerate();
-                });
+
+                <span class="kw">if </span><span class="kw-2">*</span>is_static {
+                    builder.add_statement(<span class="macro">parse_quote!</span> {
+                        #enumerate_ident = #input_ident -&gt; enumerate::&lt;<span class="lifetime">'static</span>&gt;();
+                    });
+                } <span class="kw">else </span>{
+                    builder.add_statement(<span class="macro">parse_quote!</span> {
+                        #enumerate_ident = #input_ident -&gt; enumerate::&lt;<span class="lifetime">'tick</span>&gt;();
+                    });
+                }
 
                 (enumerate_ident, input_location_id)
             }

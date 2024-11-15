@@ -51,16 +51,6 @@
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
-<a href="#54" id="54">54</a>
-<a href="#55" id="55">55</a>
-<a href="#56" id="56">56</a>
-<a href="#57" id="57">57</a>
-<a href="#58" id="58">58</a>
-<a href="#59" id="59">59</a>
-<a href="#60" id="60">60</a>
-<a href="#61" id="61">61</a>
-<a href="#62" id="62">62</a>
-<a href="#63" id="63">63</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 
 <span class="kw">pub struct </span>Leader {}
@@ -74,18 +64,8 @@
         .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>[<span class="string">"abc"</span>, <span class="string">"abc"</span>, <span class="string">"xyz"</span>, <span class="string">"abc"</span>]))
         .map(<span class="macro">q!</span>(|s| s.to_string()));
 
-    <span class="kw">let </span>all_ids_vec = cluster.members();
-    <span class="kw">let </span>words_partitioned = words
-        .tick_batch(<span class="kw-2">&amp;</span>process.tick())
-        .enumerate()
-        .map(<span class="macro">q!</span>(|(i, w)| (
-            ClusterId::from_raw((i % all_ids_vec.len()) <span class="kw">as </span>u32),
-            w
-        )))
-        .all_ticks();
-
-    words_partitioned
-        .send_bincode(<span class="kw-2">&amp;</span>cluster)
+    words
+        .round_robin_bincode(<span class="kw-2">&amp;</span>cluster)
         .map(<span class="macro">q!</span>(|string| (string, ())))
         .tick_batch(<span class="kw-2">&amp;</span>cluster.tick())
         .fold_keyed(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|count, <span class="kw">_</span>| <span class="kw-2">*</span>count += <span class="number">1</span>))
