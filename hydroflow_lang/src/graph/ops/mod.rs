@@ -244,6 +244,7 @@ declare_ops![
     anti_join_multiset::ANTI_JOIN_MULTISET,
     assert::ASSERT,
     assert_eq::ASSERT_EQ,
+    chain::CHAIN,
     cross_join::CROSS_JOIN,
     cross_join_multiset::CROSS_JOIN_MULTISET,
     cross_singleton::CROSS_SINGLETON,

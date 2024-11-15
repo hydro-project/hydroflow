@@ -240,7 +240,7 @@ impl<'a, T, L: Location<'a>, B> Optional<T, L, B> {
         if L::is_top_level() {
             Optional::new(
                 self.location,
-                HfPlusNode::Persist(Box::new(HfPlusNode::Union(
+                HfPlusNode::Persist(Box::new(HfPlusNode::Chain(
                     Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
                     Box::new(HfPlusNode::Unpersist(Box::new(other.ir_node.into_inner()))),
                 ))),
@@ -248,7 +248,7 @@ impl<'a, T, L: Location<'a>, B> Optional<T, L, B> {
         } else {
             Optional::new(
                 self.location,
-                HfPlusNode::Union(
+                HfPlusNode::Chain(
                     Box::new(self.ir_node.into_inner()),
                     Box::new(other.ir_node.into_inner()),
                 ),
@@ -288,7 +288,7 @@ impl<'a, T, L: Location<'a>, B> Optional<T, L, B> {
         if L::is_top_level() {
             Singleton::new(
                 self.location,
-                HfPlusNode::Persist(Box::new(HfPlusNode::Union(
+                HfPlusNode::Persist(Box::new(HfPlusNode::Chain(
                     Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
                     Box::new(HfPlusNode::Unpersist(Box::new(other.ir_node.into_inner()))),
                 ))),
@@ -296,7 +296,7 @@ impl<'a, T, L: Location<'a>, B> Optional<T, L, B> {
         } else {
             Singleton::new(
                 self.location,
-                HfPlusNode::Union(
+                HfPlusNode::Chain(
                     Box::new(self.ir_node.into_inner()),
                     Box::new(other.ir_node.into_inner()),
                 ),

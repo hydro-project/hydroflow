@@ -88,8 +88,8 @@ fn persist_pullup_node(
             input: behind_persist,
         })),
 
-        HfPlusNode::Union(box HfPlusNode::Persist(left), box HfPlusNode::Persist(right)) => {
-            HfPlusNode::Persist(Box::new(HfPlusNode::Union(left, right)))
+        HfPlusNode::Chain(box HfPlusNode::Persist(left), box HfPlusNode::Persist(right)) => {
+            HfPlusNode::Persist(Box::new(HfPlusNode::Chain(left, right)))
         }
 
         HfPlusNode::CrossProduct(box HfPlusNode::Persist(left), box HfPlusNode::Persist(right)) => {

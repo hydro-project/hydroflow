@@ -286,7 +286,7 @@ pub enum HfPlusNode {
     Unpersist(Box<HfPlusNode>),
     Delta(Box<HfPlusNode>),
 
-    Union(Box<HfPlusNode>, Box<HfPlusNode>),
+    Chain(Box<HfPlusNode>, Box<HfPlusNode>),
     CrossProduct(Box<HfPlusNode>, Box<HfPlusNode>),
     CrossSingleton(Box<HfPlusNode>, Box<HfPlusNode>),
     Join(Box<HfPlusNode>, Box<HfPlusNode>),
@@ -457,7 +457,7 @@ impl<'a> HfPlusNode {
             HfPlusNode::Unpersist(inner) => transform(inner.as_mut(), seen_tees),
             HfPlusNode::Delta(inner) => transform(inner.as_mut(), seen_tees),
 
-            HfPlusNode::Union(left, right) => {
+            HfPlusNode::Chain(left, right) => {
                 transform(left.as_mut(), seen_tees);
                 transform(right.as_mut(), seen_tees);
             }
@@ -678,7 +678,7 @@ impl<'a> HfPlusNode {
                 }
             }
 
-            HfPlusNode::Union(left, right) => {
+            HfPlusNode::Chain(left, right) => {
                 let (left_ident, left_location_id) =
                     left.emit(graph_builders, built_tees, next_stmt_id);
                 let (right_ident, right_location_id) =
@@ -686,29 +686,29 @@ impl<'a> HfPlusNode {
 
                 assert_eq!(
                     left_location_id, right_location_id,
-                    "union inputs must be in the same location"
+                    "chain inputs must be in the same location"
                 );
 
                 let union_id = *next_stmt_id;
                 *next_stmt_id += 1;
 
-                let union_ident =
+                let chain_ident =
                     syn::Ident::new(&format!("stream_{}", union_id), Span::call_site());
 
                 let builder = graph_builders.entry(left_location_id).or_default();
                 builder.add_statement(parse_quote! {
-                    #union_ident = union();
+                    #chain_ident = chain();
                 });
 
                 builder.add_statement(parse_quote! {
-                    #left_ident -> [0]#union_ident;
+                    #left_ident -> [0]#chain_ident;
                 });
 
                 builder.add_statement(parse_quote! {
-                    #right_ident -> [1]#union_ident;
+                    #right_ident -> [1]#chain_ident;
                 });
 
-                (union_ident, left_location_id)
+                (chain_ident, left_location_id)
             }
 
             HfPlusNode::CrossSingleton(left, right) => {
