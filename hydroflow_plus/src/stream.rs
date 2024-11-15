@@ -261,10 +261,23 @@ impl<'a, T, L: Location<'a>, B> Stream<T, L, B> {
     }
 
     pub fn enumerate(self) -> Stream<(usize, T), L, B> {
-        Stream::new(
-            self.location,
-            HfPlusNode::Enumerate(Box::new(self.ir_node.into_inner())),
-        )
+        if L::is_top_level() {
+            Stream::new(
+                self.location,
+                HfPlusNode::Persist(Box::new(HfPlusNode::Enumerate {
+                    is_static: true,
+                    input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
+                })),
+            )
+        } else {
+            Stream::new(
+                self.location,
+                HfPlusNode::Enumerate {
+                    is_static: false,
+                    input: Box::new(self.ir_node.into_inner()),
+                },
+            )
+        }
     }
 
     pub fn unique(self) -> Stream<T, L, B>
@@ -789,6 +802,21 @@ impl<'a, T, L: Location<'a> + NoTick, B> Stream<T, L, B> {
         .send_bincode(other)
     }
 
+    pub fn round_robin_bincode<C2: 'a>(
+        self,
+        other: &Cluster<'a, C2>,
+    ) -> Stream<L::Out<T>, Cluster<'a, C2>, Unbounded>
+    where
+        L: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T)>,
+        T: Clone + Serialize + DeserializeOwned,
+    {
+        let ids = other.members();
+
+        self.enumerate()
+            .map(q!(|(i, w)| (ids[i % ids.len()], w)))
+            .send_bincode(other)
+    }
+
     pub fn broadcast_bincode_interleaved<C2: 'a, Tag>(
         self,
         other: &Cluster<'a, C2>,
@@ -798,6 +826,17 @@ impl<'a, T, L: Location<'a> + NoTick, B> Stream<T, L, B> {
         T: Clone + Serialize + DeserializeOwned,
     {
         self.broadcast_bincode(other).map(q!(|(_, b)| b))
+    }
+
+    pub fn round_robin_bincode_interleaved<C2: 'a, Tag>(
+        self,
+        other: &Cluster<'a, C2>,
+    ) -> Stream<T, Cluster<'a, C2>, Unbounded>
+    where
+        L: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T), Out<T> = (Tag, T)> + 'a,
+        T: Clone + Serialize + DeserializeOwned,
+    {
+        self.round_robin_bincode(other).map(q!(|(_, b)| b))
     }
 
     pub fn broadcast_bytes<C2: 'a>(
@@ -817,6 +856,21 @@ impl<'a, T, L: Location<'a> + NoTick, B> Stream<T, L, B> {
         .send_bytes(other)
     }
 
+    pub fn round_robin_bytes<C2: 'a>(
+        self,
+        other: &Cluster<'a, C2>,
+    ) -> Stream<L::Out<Bytes>, Cluster<'a, C2>, Unbounded>
+    where
+        L: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (ClusterId<C2>, T)> + 'a,
+        T: Clone,
+    {
+        let ids = other.members();
+
+        self.enumerate()
+            .map(q!(|(i, w)| (ids[i % ids.len()], w)))
+            .send_bytes(other)
+    }
+
     pub fn broadcast_bytes_interleaved<C2: 'a, Tag>(
         self,
         other: &Cluster<'a, C2>,
@@ -827,6 +881,18 @@ impl<'a, T, L: Location<'a> + NoTick, B> Stream<T, L, B> {
         T: Clone,
     {
         self.broadcast_bytes(other).map(q!(|(_, b)| b))
+    }
+
+    pub fn round_robin_bytes_interleaved<C2: 'a, Tag>(
+        self,
+        other: &Cluster<'a, C2>,
+    ) -> Stream<Bytes, Cluster<'a, C2>, Unbounded>
+    where
+        L: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (ClusterId<C2>, T), Out<Bytes> = (Tag, Bytes)>
+            + 'a,
+        T: Clone,
+    {
+        self.round_robin_bytes(other).map(q!(|(_, b)| b))
     }
 }
 
