@@ -125,7 +125,7 @@ jobs:
   test:
     name: Test Suite
     if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
-    timeout-minutes: 35
+    timeout-minutes: 50
     needs: pre_job
     runs-on: ${{ matrix.os }}
     strategy:
@@ -199,7 +199,7 @@ jobs:
           source .venv/bin/activate
           pip install maturin
           maturin develop
-      
+
       - name: Build CLI (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         run: |

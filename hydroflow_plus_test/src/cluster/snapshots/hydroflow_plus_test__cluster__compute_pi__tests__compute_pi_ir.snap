@@ -51,9 +51,9 @@ expression: built.ir()
                                         input: Map {
                                             f: stageleft :: runtime_support :: fn1_type_hint :: < () , (f64 , f64) > ({ use crate :: __staged :: cluster :: compute_pi :: * ; | _ | rand :: random :: < (f64 , f64) > () }),
                                             input: Map {
-                                                f: stageleft :: runtime_support :: fn1_type_hint :: < usize , () > ({ use hydroflow_plus :: __staged :: location :: * ; | _ | () }),
+                                                f: stageleft :: runtime_support :: fn1_type_hint :: < usize , () > ({ use hydroflow_plus :: __staged :: location :: tick :: * ; | _ | () }),
                                                 input: FlatMap {
-                                                    f: stageleft :: runtime_support :: fn1_type_hint :: < () , std :: ops :: Range < usize > > ({ use hydroflow_plus :: __staged :: location :: * ; let batch_size = { use crate :: __staged :: cluster :: compute_pi :: * ; let batch_size = 8192usize ; batch_size } ; move | _ | 0 .. batch_size }),
+                                                    f: stageleft :: runtime_support :: fn1_type_hint :: < () , std :: ops :: Range < usize > > ({ use hydroflow_plus :: __staged :: location :: tick :: * ; let batch_size = { use crate :: __staged :: cluster :: compute_pi :: * ; let batch_size = 8192usize ; batch_size } ; move | _ | 0 .. batch_size }),
                                                     input: Source {
                                                         source: Spin,
                                                         location_kind: Cluster(

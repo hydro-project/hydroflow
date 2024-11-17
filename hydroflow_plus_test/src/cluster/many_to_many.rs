@@ -1,5 +1,4 @@
 use hydroflow_plus::*;
-use stageleft::*;
 
 pub fn many_to_many<'a>(flow: &FlowBuilder<'a>) -> Cluster<'a, ()> {
     let cluster = flow.cluster();
@@ -14,7 +13,7 @@ pub fn many_to_many<'a>(flow: &FlowBuilder<'a>) -> Cluster<'a, ()> {
 #[cfg(test)]
 mod tests {
     use hydro_deploy::Deployment;
-    use hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
+    use hydroflow_plus::deploy::DeployCrateWrapper;
 
     #[tokio::test]
     async fn many_to_many() {
@@ -27,12 +26,7 @@ mod tests {
         insta::assert_debug_snapshot!(built.ir());
 
         let nodes = built
-            .with_cluster(
-                &cluster,
-                (0..2)
-                    .map(|_| TrybuildHost::new(deployment.Localhost()))
-                    .collect::<Vec<_>>(),
-            )
+            .with_cluster(&cluster, (0..2).map(|_| deployment.Localhost()))
             .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();

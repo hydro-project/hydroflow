@@ -1,5 +1,4 @@
 use hydroflow_plus::*;
-use stageleft::*;
 
 pub struct Leader {}
 pub struct Worker {}
@@ -12,20 +11,10 @@ pub fn map_reduce<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, Leader>, Cluster<'
         .source_iter(q!(vec!["abc", "abc", "xyz", "abc"]))
         .map(q!(|s| s.to_string()));
 
-    let all_ids_vec = cluster.members();
-    let words_partitioned = words
-        .tick_batch()
-        .enumerate()
-        .map(q!(|(i, w)| (
-            ClusterId::from_raw((i % all_ids_vec.len()) as u32),
-            w
-        )))
-        .all_ticks();
-
-    words_partitioned
-        .send_bincode(&cluster)
+    words
+        .round_robin_bincode(&cluster)
         .map(q!(|string| (string, ())))
-        .tick_batch()
+        .tick_batch(&cluster.tick())
         .fold_keyed(q!(|| 0), q!(|count, _| *count += 1))
         .inspect(q!(|(string, count)| println!(
             "partition count: {} - {}",
@@ -33,7 +22,7 @@ pub fn map_reduce<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, Leader>, Cluster<'
         )))
         .all_ticks()
         .send_bincode_interleaved(&process)
-        .tick_batch()
+        .tick_batch(&process.tick())
         .persist()
         .reduce_keyed(q!(|total, count| *total += count))
         .all_ticks()
@@ -51,14 +40,11 @@ mod tests {
     fn map_reduce_ir() {
         let builder = hydroflow_plus::FlowBuilder::new();
         let _ = super::map_reduce(&builder);
-        let built = builder.with_default_optimize();
+        let built = builder.with_default_optimize::<DeployRuntime>();
 
         insta::assert_debug_snapshot!(built.ir());
 
-        for (id, ir) in built
-            .compile::<DeployRuntime>(&RuntimeData::new("FAKE"))
-            .hydroflow_ir()
-        {
+        for (id, ir) in built.compile(&RuntimeData::new("FAKE")).hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_snapshot!(ir.surface_syntax_string());
             });

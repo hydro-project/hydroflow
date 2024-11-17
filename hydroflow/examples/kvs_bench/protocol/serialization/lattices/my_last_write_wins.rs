@@ -11,7 +11,7 @@ use crate::protocol::MyLastWriteWins;
 #[repr(transparent)]
 pub struct MyLastWriteWinsWrapper<'a, const SIZE: usize>(pub &'a MyLastWriteWins<SIZE>);
 
-impl<'a, const SIZE: usize> Serialize for MyLastWriteWinsWrapper<'a, SIZE> {
+impl<const SIZE: usize> Serialize for MyLastWriteWinsWrapper<'_, SIZE> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

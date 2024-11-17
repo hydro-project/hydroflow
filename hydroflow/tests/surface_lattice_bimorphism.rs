@@ -27,7 +27,6 @@ pub fn test_cartesian_product() {
         rhs -> [1]my_join;
 
         my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default(), #lhs, #rhs)
-            -> lattice_reduce()
             -> for_each(|x| out_send.send(x).unwrap());
     };
 
@@ -43,6 +42,33 @@ pub fn test_cartesian_product() {
             (2, 3),
             (2, 4),
         ]))],
+        &*collect_ready::<Vec<_>, _>(out_recv)
+    );
+}
+
+#[multiplatform_test(test, wasm, env_tracing)]
+pub fn test_cartesian_product_1401() {
+    let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
+
+    let mut df = hydroflow_syntax! {
+        lhs = source_iter(0..1)
+            -> map(SetUnionSingletonSet::new_from)
+            -> state::<'static, SetUnionHashSet<u32>>();
+        rhs = source_iter(1..2)
+            -> map(SetUnionSingletonSet::new_from)
+            -> state::<'static, SetUnionHashSet<u32>>();
+
+        lhs -> [0]my_join;
+        rhs -> [1]my_join;
+
+        my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default(), #lhs, #rhs)
+            -> for_each(|x| out_send.send(x).unwrap());
+    };
+    assert_graphvis_snapshots!(df);
+    df.run_available();
+
+    assert_eq!(
+        &[SetUnionHashSet::new(HashSet::from_iter([(0, 1)]))],
         &*collect_ready::<Vec<_>, _>(out_recv)
     );
 }
@@ -63,7 +89,6 @@ pub fn test_join() {
         rhs -> [1]my_join;
 
         my_join = lattice_bimorphism(KeyedBimorphism::<HashMap<_, _>, _>::new(CartesianProductBimorphism::<HashSet<_>>::default()), #lhs, #rhs)
-            -> lattice_reduce()
             -> for_each(|x| out_send.send(x).unwrap());
     };
 
@@ -105,7 +130,6 @@ pub fn test_cartesian_product_tick_state() {
         rhs[items] -> [1]my_join;
 
         my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default(), #lhs, #rhs)
-            -> lattice_reduce()
             -> inspect(|x| println!("{:?}: {:?}", context.current_tick(), x))
             -> for_each(|x| out_send.send(x).unwrap());
     };
@@ -140,7 +164,7 @@ pub fn test_cartesian_product_tick_state() {
     );
 }
 
-#[test]
+#[multiplatform_test]
 fn test_ght_join_bimorphism() {
     type MyGhtATrie = GhtType!(u32, u64, u16 => &'static str: VariadicHashSet);
     type MyGhtBTrie = GhtType!(u32, u64, u16 => &'static str: VariadicHashSet);
@@ -176,13 +200,10 @@ fn test_ght_join_bimorphism() {
 
 
         my_join = lattice_bimorphism(MyBim::default(), #lhs, #rhs)
-            -> lattice_reduce()
             -> enumerate()
             -> inspect(|x| println!("{:?} {:#?}", context.current_tick(), x))
             -> flat_map(|(_num, ght)| ght.recursive_iter().map(<JoinSchema as CloneVariadic>::clone_ref_var).collect::<Vec<_>>())
             -> null();
-            // -> for_each(|x| println!("{:#?}\n", x));
     };
-    // hf.meta_graph().unwrap().open_mermaid(&Default::default());
     hf.run_available();
 }

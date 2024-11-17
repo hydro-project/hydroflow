@@ -7,6 +7,7 @@ use serde::Serialize;
 use super::{Location, LocationId, NoTick};
 use crate::builder::FlowState;
 use crate::ir::{HfPlusNode, HfPlusSource};
+use crate::staging_util::Invariant;
 use crate::{Stream, Unbounded};
 
 pub struct ExternalBytesPort {
@@ -31,7 +32,7 @@ pub struct ExternalProcess<'a, P> {
 
     pub(crate) flow_state: FlowState,
 
-    pub(crate) _phantom: PhantomData<&'a &'a mut P>,
+    pub(crate) _phantom: Invariant<'a, P>,
 }
 
 impl<P> Clone for ExternalProcess<'_, P> {
@@ -62,7 +63,7 @@ impl<'a, P> ExternalProcess<'a, P> {
     pub fn source_external_bytes<L: Location<'a> + NoTick>(
         &self,
         to: &L,
-    ) -> (ExternalBytesPort, Stream<Bytes, Unbounded, L>) {
+    ) -> (ExternalBytesPort, Stream<Bytes, L, Unbounded>) {
         let next_external_port_id = {
             let mut flow_state = self.flow_state.borrow_mut();
             let id = flow_state.next_external_out;
@@ -97,7 +98,7 @@ impl<'a, P> ExternalProcess<'a, P> {
     pub fn source_external_bincode<L: Location<'a> + NoTick, T: Serialize + DeserializeOwned>(
         &self,
         to: &L,
-    ) -> (ExternalBincodeSink<T>, Stream<T, Unbounded, L>) {
+    ) -> (ExternalBincodeSink<T>, Stream<T, L, Unbounded>) {
         let next_external_port_id = {
             let mut flow_state = self.flow_state.borrow_mut();
             let id = flow_state.next_external_out;

@@ -99,7 +99,7 @@ pub trait QuotedContext {
 }
 
 pub struct BorrowBounds<'a> {
-    _marker: PhantomData<&'a &'a mut ()>,
+    _marker: PhantomData<fn(&'a ()) -> &'a ()>,
 }
 
 impl QuotedContext for BorrowBounds<'_> {

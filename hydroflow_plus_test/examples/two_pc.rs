@@ -15,13 +15,10 @@ async fn main() {
     let _rustflags = "-C opt-level=3 -C codegen-units=1 -C strip=none -C debuginfo=2 -C lto=off";
 
     let _nodes = builder
-        .with_default_optimize()
         .with_process(&coordinator, TrybuildHost::new(deployment.Localhost()))
         .with_cluster(
             &participants,
-            (0..num_participants)
-                .map(|_| TrybuildHost::new(deployment.Localhost()))
-                .collect::<Vec<_>>(),
+            (0..num_participants).map(|_| TrybuildHost::new(deployment.Localhost())),
         )
         .with_process(&client, TrybuildHost::new(deployment.Localhost()))
         .deploy(&mut deployment);

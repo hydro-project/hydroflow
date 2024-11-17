@@ -5,7 +5,6 @@ use std::hash::Hash;
 use hydroflow_plus::*;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use stageleft::*;
 
 use super::paxos::{paxos_core, Acceptor, Proposer};
 
@@ -51,15 +50,15 @@ pub fn paxos_kv<'a, K: KvKey, V: KvValue>(
     proposers: &Cluster<'a, Proposer>,
     acceptors: &Cluster<'a, Acceptor>,
     replicas: &Cluster<'a, Replica>,
-    c_to_proposers: Stream<KvPayload<K, V>, Unbounded, Cluster<'a, Proposer>>,
+    c_to_proposers: Stream<KvPayload<K, V>, Cluster<'a, Proposer>, Unbounded>,
     f: usize,
     i_am_leader_send_timeout: u64,
     i_am_leader_check_timeout: u64,
     i_am_leader_check_timeout_delay_multiplier: usize,
     checkpoint_frequency: usize,
 ) -> (
-    Stream<(), Unbounded, Cluster<'a, Proposer>>,
-    Stream<KvPayload<K, V>, Unbounded, Cluster<'a, Replica>>,
+    Stream<(), Cluster<'a, Proposer>, Unbounded>,
+    Stream<KvPayload<K, V>, Cluster<'a, Replica>, Unbounded>,
 ) {
     let (r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
         replicas.forward_ref::<Stream<_, _, _>>();
@@ -92,21 +91,23 @@ pub fn paxos_kv<'a, K: KvKey, V: KvValue>(
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 pub fn replica<'a, K: KvKey, V: KvValue>(
     replicas: &Cluster<'a, Replica>,
-    p_to_replicas: Stream<SequencedKv<K, V>, Unbounded, Cluster<'a, Replica>>,
+    p_to_replicas: Stream<SequencedKv<K, V>, Cluster<'a, Replica>, Unbounded>,
     checkpoint_frequency: usize,
 ) -> (
-    Stream<usize, Unbounded, Cluster<'a, Replica>>,
-    Stream<KvPayload<K, V>, Unbounded, Cluster<'a, Replica>>,
+    Stream<usize, Cluster<'a, Replica>, Unbounded>,
+    Stream<KvPayload<K, V>, Cluster<'a, Replica>, Unbounded>,
 ) {
-    let (r_buffered_payloads_complete_cycle, r_buffered_payloads) = replicas.tick_cycle();
+    let replica_tick = replicas.tick();
+
+    let (r_buffered_payloads_complete_cycle, r_buffered_payloads) = replica_tick.cycle();
     // p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
     let r_sorted_payloads = p_to_replicas
-        .tick_batch()
-        .union(r_buffered_payloads) // Combine with all payloads that we've received and not processed yet
+        .tick_batch(&replica_tick)
+        .chain(r_buffered_payloads) // Combine with all payloads that we've received and not processed yet
         .sort();
     // Create a cycle since we'll use this seq before we define it
     let (r_highest_seq_complete_cycle, r_highest_seq) =
-        replicas.tick_cycle::<Optional<usize, _, _>>();
+        replica_tick.cycle::<Optional<usize, _, _>>();
     // Find highest the sequence number of any payload that can be processed in this tick. This is the payload right before a hole.
     let r_highest_seq_processable_payload = r_sorted_payloads
         .clone()
@@ -160,7 +161,7 @@ pub fn replica<'a, K: KvKey, V: KvValue>(
 
     // Send checkpoints to the acceptors when we've processed enough payloads
     let (r_checkpointed_seqs_complete_cycle, r_checkpointed_seqs) =
-        replicas.tick_cycle::<Optional<usize, _, _>>();
+        replica_tick.cycle::<Optional<usize, _, _>>();
     let r_max_checkpointed_seq = r_checkpointed_seqs.persist().max().into_singleton();
     let r_checkpoint_seq_new =
         r_max_checkpointed_seq

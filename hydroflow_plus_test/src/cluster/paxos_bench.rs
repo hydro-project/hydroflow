@@ -3,7 +3,6 @@ use std::rc::Rc;
 use std::time::{Duration, SystemTime};
 
 use hydroflow_plus::*;
-use stageleft::*;
 
 use super::paxos::{Acceptor, Proposer};
 use super::paxos_kv::{paxos_kv, KvPayload, Replica};
@@ -72,22 +71,23 @@ pub fn paxos_bench<'a>(
 // Clients. All relations for clients will be prefixed with c. All ClientPayloads will contain the virtual client number as key and the client's machine ID (to string) as value. Expects p_to_clients_leader_elected containing Ballots whenever the leader is elected, and r_to_clients_payload_applied containing ReplicaPayloads whenever a payload is committed. Outputs (leader address, ClientPayload) when a new leader is elected or when the previous payload is committed.
 fn bench_client<'a>(
     clients: &Cluster<'a, Client>,
-    p_to_clients_leader_elected: Stream<ClusterId<Proposer>, Unbounded, Cluster<'a, Client>>,
+    p_to_clients_leader_elected: Stream<ClusterId<Proposer>, Cluster<'a, Client>, Unbounded>,
     transaction_cycle: impl FnOnce(
         Stream<
             (ClusterId<Proposer>, KvPayload<u32, ClusterId<Client>>),
-            Unbounded,
             Cluster<'a, Client>,
+            Unbounded,
         >,
     ) -> Stream<
         (ClusterId<Replica>, KvPayload<u32, ClusterId<Client>>),
-        Unbounded,
         Cluster<'a, Client>,
+        Unbounded,
     >,
     num_clients_per_node: usize,
     median_latency_window_size: usize,
     f: usize,
 ) {
+    let client_tick = clients.tick();
     let c_id = clients.self_id();
     // r_to_clients_payload_applied.clone().inspect(q!(|payload: &(u32, ReplicaPayload)| println!("Client received payload: {:?}", payload)));
     // Only keep the latest leader
@@ -97,7 +97,7 @@ fn bench_client<'a>(
             ballot
         )))
         .max();
-    let c_new_leader_ballot = current_leader.clone().latest_tick().delta();
+    let c_new_leader_ballot = current_leader.clone().latest_tick(&client_tick).delta();
     // Whenever the leader changes, make all clients send a message
     let c_new_payloads_when_leader_elected =
         c_new_leader_ballot
@@ -116,15 +116,14 @@ fn bench_client<'a>(
     let transaction_results = transaction_cycle(c_to_proposers);
 
     // Whenever replicas confirm that a payload was committed, collected it and wait for a quorum
-    let (c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) =
-        clients.tick_cycle();
+    let (c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) = client_tick.cycle();
     let c_received_payloads = transaction_results
-        .tick_batch()
+        .tick_batch(&client_tick)
         .map(q!(|(sender, replica_payload)| (
             replica_payload.key,
             sender
         )))
-        .union(c_pending_quorum_payloads);
+        .chain(c_pending_quorum_payloads);
     let c_received_quorum_payloads = c_received_payloads
         .clone()
         .fold_keyed(
@@ -146,20 +145,20 @@ fn bench_client<'a>(
     // Whenever all replicas confirm that a payload was committed, send another payload
     let c_new_payloads_when_committed = c_received_quorum_payloads
         .clone()
-        .cross_singleton(current_leader.clone().latest_tick())
+        .cross_singleton(current_leader.clone().latest_tick(&client_tick))
         .map(q!(move |(key, cur_leader)| (
             cur_leader,
             KvPayload { key, value: c_id }
         )));
     c_to_proposers_complete_cycle.complete(
         c_new_payloads_when_leader_elected
-            .union(c_new_payloads_when_committed)
+            .chain(c_new_payloads_when_committed)
             .all_ticks(),
     );
 
     // Track statistics
     let (c_timers_complete_cycle, c_timers) =
-        clients.tick_cycle::<Stream<(usize, SystemTime), _, _>>();
+        client_tick.cycle::<Stream<(usize, SystemTime), _, _>>();
     let c_new_timers_when_leader_elected = c_new_leader_ballot
         .map(q!(|_| SystemTime::now()))
         .flat_map(q!(
@@ -170,8 +169,8 @@ fn bench_client<'a>(
         .map(q!(|key| (key as usize, SystemTime::now())));
     let c_new_timers = c_timers
         .clone() // Update c_timers in tick+1 so we can record differences during this tick (to track latency)
-        .union(c_new_timers_when_leader_elected)
-        .union(c_updated_timers.clone())
+        .chain(c_new_timers_when_leader_elected)
+        .chain(c_updated_timers.clone())
         .reduce_keyed(q!(|curr_time, new_time| {
             if new_time > *curr_time {
                 *curr_time = new_time;
@@ -181,7 +180,7 @@ fn bench_client<'a>(
 
     let c_stats_output_timer = clients
         .source_interval(q!(Duration::from_secs(1)))
-        .tick_batch()
+        .tick_batch(&client_tick)
         .first();
 
     let c_latency_reset = c_stats_output_timer.clone().map(q!(|_| None)).defer_tick();
@@ -191,7 +190,7 @@ fn bench_client<'a>(
         .map(q!(|(_virtual_id, (prev_time, curr_time))| Some(
             curr_time.duration_since(prev_time).unwrap().as_micros()
         )))
-        .union(c_latency_reset.into_stream())
+        .chain(c_latency_reset.into_stream())
         .all_ticks()
         .flatten()
         .fold(
@@ -243,7 +242,7 @@ fn bench_client<'a>(
 
     c_latencies
         .zip(c_throughput)
-        .latest_tick()
+        .latest_tick(&client_tick)
         .continue_if(c_stats_output_timer)
         .all_ticks()
         .for_each(q!(move |(latencies, throughput)| {
@@ -268,12 +267,12 @@ mod tests {
     fn paxos_ir() {
         let builder = hydroflow_plus::FlowBuilder::new();
         let _ = super::paxos_bench(&builder, 1, 1, 1, 1, 1, 1, 1);
-        let built = builder.with_default_optimize();
+        let built = builder.with_default_optimize::<DeployRuntime>();
 
         hydroflow_plus::ir::dbg_dedup_tee(|| {
             insta::assert_debug_snapshot!(built.ir());
         });
 
-        let _ = built.compile::<DeployRuntime>(&RuntimeData::new("FAKE"));
+        let _ = built.compile(&RuntimeData::new("FAKE"));
     }
 }

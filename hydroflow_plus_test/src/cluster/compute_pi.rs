@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use hydroflow_plus::*;
-use stageleft::*;
 
 pub struct Worker {}
 pub struct Leader {}
@@ -14,6 +13,7 @@ pub fn compute_pi<'a>(
     let process = flow.process();
 
     let trials = cluster
+        .tick()
         .spin_batch(q!(batch_size))
         .map(q!(|_| rand::random::<(f64, f64)>()))
         .map(q!(|(x, y)| x * x + y * y < 1.0))
@@ -56,14 +56,11 @@ mod tests {
     fn compute_pi_ir() {
         let builder = hydroflow_plus::FlowBuilder::new();
         let _ = super::compute_pi(&builder, 8192);
-        let built = builder.with_default_optimize();
+        let built = builder.with_default_optimize::<DeployRuntime>();
 
         insta::assert_debug_snapshot!(built.ir());
 
-        for (id, ir) in built
-            .compile::<DeployRuntime>(&RuntimeData::new("FAKE"))
-            .hydroflow_ir()
-        {
+        for (id, ir) in built.compile(&RuntimeData::new("FAKE")).hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_snapshot!(ir.surface_syntax_string());
             });
