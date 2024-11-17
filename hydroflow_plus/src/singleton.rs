@@ -12,8 +12,7 @@ use crate::cycle::{
 };
 use crate::ir::{HfPlusLeaf, HfPlusNode, TeeNode};
 use crate::location::{check_matching_location, Location, LocationId, NoTick, Tick};
-use crate::stream::{Bounded, Unbounded};
-use crate::{Optional, Stream};
+use crate::{Bounded, Optional, Stream, Unbounded};
 
 pub struct Singleton<T, L, B> {
     pub(crate) location: L,

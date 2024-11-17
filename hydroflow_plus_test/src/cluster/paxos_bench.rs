@@ -3,6 +3,7 @@ use std::rc::Rc;
 use std::time::{Duration, SystemTime};
 
 use hydroflow_plus::*;
+use stream::NoOrder;
 
 use super::paxos::{Acceptor, Proposer};
 use super::paxos_kv::{paxos_kv, KvPayload, Replica};
@@ -43,7 +44,9 @@ pub fn paxos_bench<'a>(
                 &proposers,
                 &acceptors,
                 &replicas,
-                c_to_proposers.send_bincode_interleaved(&proposers),
+                c_to_proposers
+                    .send_bincode_interleaved(&proposers)
+                    .assume_ordering(),
                 f,
                 i_am_leader_send_timeout,
                 i_am_leader_check_timeout,
@@ -54,7 +57,8 @@ pub fn paxos_bench<'a>(
             new_leader_elected_complete.complete(
                 new_leader_elected
                     .broadcast_bincode(&clients)
-                    .map(q!(|(leader_id, _)| leader_id)),
+                    .map(q!(|(leader_id, _)| leader_id))
+                    .assume_ordering(), // TODO(shadaj): this is a bug, if we switch leaders rapidly, message reordering could cause a client to have the wrong one
             );
             processed_payloads
                 .map(q!(|payload| (payload.value, payload)))
@@ -82,6 +86,7 @@ fn bench_client<'a>(
         (ClusterId<Replica>, KvPayload<u32, ClusterId<Client>>),
         Cluster<'a, Client>,
         Unbounded,
+        NoOrder,
     >,
     num_clients_per_node: usize,
     median_latency_window_size: usize,
@@ -112,11 +117,13 @@ fn bench_client<'a>(
                 )
             )));
 
-    let (c_to_proposers_complete_cycle, c_to_proposers) = clients.forward_ref();
-    let transaction_results = transaction_cycle(c_to_proposers);
+    let (c_to_proposers_complete_cycle, c_to_proposers) =
+        clients.forward_ref::<Stream<_, _, _, NoOrder>>();
+    let transaction_results = transaction_cycle(c_to_proposers.assume_ordering());
 
     // Whenever replicas confirm that a payload was committed, collected it and wait for a quorum
-    let (c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) = client_tick.cycle();
+    let (c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) =
+        client_tick.cycle::<Stream<_, _, _, NoOrder>>();
     let c_received_payloads = transaction_results
         .tick_batch(&client_tick)
         .map(q!(|(sender, replica_payload)| (
@@ -126,7 +133,7 @@ fn bench_client<'a>(
         .chain(c_pending_quorum_payloads);
     let c_received_quorum_payloads = c_received_payloads
         .clone()
-        .fold_keyed(
+        .fold_keyed_commutative(
             q!(|| 0),
             q!(|curr_count, _sender| {
                 *curr_count += 1; // Assumes the same replica will only send commit once
@@ -158,7 +165,7 @@ fn bench_client<'a>(
 
     // Track statistics
     let (c_timers_complete_cycle, c_timers) =
-        client_tick.cycle::<Stream<(usize, SystemTime), _, _>>();
+        client_tick.cycle::<Stream<(usize, SystemTime), _, _, NoOrder>>();
     let c_new_timers_when_leader_elected = c_new_leader_ballot
         .map(q!(|_| SystemTime::now()))
         .flat_map(q!(
@@ -171,7 +178,7 @@ fn bench_client<'a>(
         .clone() // Update c_timers in tick+1 so we can record differences during this tick (to track latency)
         .chain(c_new_timers_when_leader_elected)
         .chain(c_updated_timers.clone())
-        .reduce_keyed(q!(|curr_time, new_time| {
+        .reduce_keyed_commutative(q!(|curr_time, new_time| {
             if new_time > *curr_time {
                 *curr_time = new_time;
             }
@@ -193,7 +200,7 @@ fn bench_client<'a>(
         .chain(c_latency_reset.into_stream())
         .all_ticks()
         .flatten()
-        .fold(
+        .fold_commutative(
             // Create window with ring buffer using vec + wraparound index
             // TODO: Would be nice if I could use vec![] instead, but that doesn't work in HF+ with RuntimeData *median_latency_window_size
             q!(move || (

@@ -2,6 +2,7 @@ use hydroflow::tokio::sync::mpsc::UnboundedSender;
 use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::deploy::SingleProcessGraph;
 use hydroflow_plus::*;
+use stream::NoOrder;
 
 #[stageleft::entry]
 pub fn graph_reachability<'a>(
@@ -16,7 +17,7 @@ pub fn graph_reachability<'a>(
     let edges = process.source_stream(edges);
 
     let reachability_tick = process.tick();
-    let (set_reached_cycle, reached_cycle) = reachability_tick.cycle();
+    let (set_reached_cycle, reached_cycle) = reachability_tick.cycle::<Stream<_, _, _, NoOrder>>();
 
     let reached = roots.tick_batch(&reachability_tick).chain(reached_cycle);
     let reachable = reached
