@@ -13,8 +13,11 @@ pub mod runtime_support {
 pub mod runtime_context;
 pub use runtime_context::RuntimeContext;
 
+pub mod boundedness;
+pub use boundedness::{Bounded, Unbounded};
+
 pub mod stream;
-pub use stream::{Bounded, Stream, Unbounded};
+pub use stream::Stream;
 
 pub mod singleton;
 pub use singleton::Singleton;

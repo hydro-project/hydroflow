@@ -5,6 +5,7 @@ use std::hash::Hash;
 use hydroflow_plus::*;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use stream::NoOrder;
 
 use super::paxos::{paxos_core, Acceptor, Proposer};
 
@@ -91,7 +92,7 @@ pub fn paxos_kv<'a, K: KvKey, V: KvValue>(
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 pub fn replica<'a, K: KvKey, V: KvValue>(
     replicas: &Cluster<'a, Replica>,
-    p_to_replicas: Stream<SequencedKv<K, V>, Cluster<'a, Replica>, Unbounded>,
+    p_to_replicas: Stream<SequencedKv<K, V>, Cluster<'a, Replica>, Unbounded, NoOrder>,
     checkpoint_frequency: usize,
 ) -> (
     Stream<usize, Cluster<'a, Replica>, Unbounded>,
