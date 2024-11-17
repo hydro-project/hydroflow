@@ -31,7 +31,7 @@ pub fn compute_pi<'a>(
 
     trials
         .send_bincode_interleaved(&process)
-        .reduce(q!(|(inside, total), (inside_batch, total_batch)| {
+        .reduce_commutative(q!(|(inside, total), (inside_batch, total_batch)| {
             *inside += inside_batch;
             *total += total_batch;
         }))
