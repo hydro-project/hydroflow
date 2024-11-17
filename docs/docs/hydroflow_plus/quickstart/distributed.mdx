@@ -17,7 +17,7 @@ use hydroflow_plus::*;
 pub fn first_ten_distributed<'a>(p1: &Process<'a>, p2: &Process<'a>)
 ```
 
-Now, we'll use a new API, `send_bincode` to establish a network between our processes. Given a stream on process `p1`, we can send the data to `p2` by calling `.send_bincode(p2)`, which returns a stream on `p2`. So to make our program distributed, it only takes a single line change.
+Now, we'll use a new API, `send_bincode` to establish a network between our processes (`bincode` is the serialization format we are using). Given a stream on process `p1`, we can send the data to `p2` by calling `.send_bincode(p2)`, which returns a stream on `p2`. So to make our program distributed, it only takes a single line change.
 
 ```rust title="src/first_ten_distributed.rs"
 pub fn first_ten_distributed<'a>(p1: &Process<'a>, p2: &Process<'a>) {
@@ -45,7 +45,7 @@ cargo run --example first_ten_distributed
 [() (process 1)] 6
 [() (process 1)] 7
 [() (process 1)] 8
-[() (process 1)] 9     
+[() (process 1)] 9
 ```
 
 You'll notice that our logs are not particularly descriptive, just showing `()` as an identifier. Furthermore, our processes have the same Rust type, which could lead to accidentally mixing up streams across the machines (this will throw an exception, but it would be nice to have a compile error).
