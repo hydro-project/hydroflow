@@ -50,9 +50,9 @@ What's wanted, we believe, is a proper language stack addressing distributed con
 # Learning More
 The Hydro project's main website is at [https://hydro.run](https://hydro.run).
 
-- **Docs**: There are docs for the [high-level Hydroflow+ language]((https://hydro.run/docs/hydroflow_plus/)) and the [low-level Hydroflow IR](https://hydro.run/docs/hydroflow), as well as the [HydroDeploy](https://hydro.run/docs/deploy) framework for launching Hydroflow+ programs.
+- **Docs**: There are docs for the [high-level Hydroflow+ language](https://hydro.run/docs/hydroflow_plus/) and the [low-level Hydroflow IR](https://hydro.run/docs/hydroflow), as well as the [HydroDeploy](https://hydro.run/docs/deploy) framework for launching Hydroflow+ programs.
 
 - **Research Papers**: Our [research publications](https://hydro.run/research) are available on the project website. Some notable selections:
     - The original Hydro vision paper from CIDR 2021: [New Directions in Cloud Programming](https://hydro.run/papers/new-directions.pdf)
     - The first paper on optimizations from SIGMOD 2024: [Optimizing Distributed Protocols with Query Rewrites](https://hydro.run/papers/david-sigmod-2024.pdf)
-    - The first paper on Hydro's formal semantics to appear in POPL 2025: [Flo: a Semantic Foundation for Progressive Stream Processing]()
+    - The first paper on Hydro's formal semantics to appear in POPL 2025: [Flo: a Semantic Foundation for Progressive Stream Processing](https://arxiv.org/abs/2411.08274)
