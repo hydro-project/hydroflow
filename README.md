@@ -8,10 +8,13 @@
 
 Hydro is a novel distributed programming library for standard Rust. Hydro allows developers to build distributed systems that are efficient, scalable, and correct. 
 
-|                                       |                                       |
-|---------------------------------------|---------------------------------------|
-Hydro integrates naturally into standard Rust constructs and IDEs, providing types and programming constructs for ensuring distributed correctness. Under the covers it provides a metaprogrammed compiler that optimizes for cross-node issues of scaling and data movement while leveraging Rust and LLVM for per-node performance. <br><br> We often describe Hydro via a metaphor:*LLVM for the cloud*. Like LLVM, Hydro is a staged compilation framework with a low-level Internal Representation language. In contrast to LLVM, Hydro focuses on distributed aspects of modern software. |![Image](docs/static/img/hydro-stack.png) ||
+Hydro integrates naturally into standard Rust constructs and IDEs, providing types and programming constructs for ensuring distributed correctness. Under the covers it provides a metaprogrammed compiler that optimizes for cross-node issues of scaling and data movement while leveraging Rust and LLVM for per-node performance. 
+
+We often describe Hydro via a metaphor:*LLVM for the cloud*. Like LLVM, Hydro is a staged compilation framework with a low-level Internal Representation language. In contrast to LLVM, Hydro focuses on distributed aspects of modern software. 
   
+<div align="center">
+  <img src="docs/static/img/hydro-stack.png" alt="Image description" width="200">
+</div>
 
 
 ## The Language (and the Low-Level IR)
