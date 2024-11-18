@@ -8,13 +8,18 @@
 
 Hydro is a novel distributed programming library for standard Rust. Hydro allows developers to build distributed systems that are efficient, scalable, and correct. 
 
-<div style="text-align: center">
+
+<div style="display: flex;">
+  <div style="flex: 1">
+<p>Hydro integrates naturally into standard Rust constructs and IDEs, providing types and programming constructs for ensuring distributed correctness. Under the covers it provides a metaprogrammed compiler that optimizes for cross-node issues of scaling and data movement while leveraging Rust and LLVM for per-node performance. </p>
+
+<p>We often describe Hydro via a metaphor: <i>LLVM for the cloud</i>. Like LLVM, Hydro is a staged compilation framework with a low-level Internal Representation language. In contrast to LLVM, Hydro focuses on distributed aspects of modern software.</p>
+  </div>
+  <div style="flex: 0.5">
   <img src="docs/static/img/hydro-stack.png" alt="Architecture of Hydro" width="150">
+  </div>
 </div>
 
-Hydro integrates naturally into standard Rust constructs and IDEs, providing types and programming constructs for ensuring distributed correctness. Under the covers it provides a metaprogrammed compiler that optimizes for cross-node issues of scaling and data movement while leveraging Rust and LLVM for per-node performance. 
-
-We often describe Hydro via a metaphor: *LLVM for the cloud*. Like LLVM, Hydro is a staged compilation framework with a low-level Internal Representation language; in contrast  to LLVM, Hydro focuses on distributed aspects of modern software.
 
 ## The Language (and the Low-Level IR)
 Hydro provides a high-level language for the majority of developers called [Hydroflow+](https://hydro.run/docs/hydroflow_plus). Hydroflow+ allows you to program an entire fleet of processes from a single program, and then launch your fleet locally or in the cloud via [HydroDeploy](https://hydro.run/docs/deploy). Get started with Hydroflow+ via the Hydroflow+ [documentation](https://hydro.run/docs/hydroflow_plus) and [examples](https://github.com/hydro-project/hydroflow/tree/main/hydroflow_plus_test/examples).
