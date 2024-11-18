@@ -8,7 +8,7 @@
 
 Hydro is a novel distributed programming library for standard Rust. Hydro allows developers to build distributed systems that are efficient, scalable, and correct. 
 
-<div style="float: right; margin-left: 10px;">
+<div style="text-align: center">
   <img src="docs/static/img/hydro-stack.png" alt="Architecture of Hydro" width="150">
 </div>
 
