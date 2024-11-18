@@ -1,93 +1,58 @@
 <h1 align="center">
-    <img src="https://raw.githubusercontent.com/hydro-project/hydroflow/main/docs/static/img/hydroflow_100.png" width="50" height="50" alt='"hf"'>
-    Hydroflow<br>
+    <img src="https://raw.githubusercontent.com/hydro-project/hydroflow/main/docs/static/img/hydro-logo.svg" width="200" alt='"hf"'>
 </h1>
 <p align="center">
     <a href="https://crates.io/crates/hydroflow"><img src="https://img.shields.io/crates/v/hydroflow?style=flat-square&logo=rust" alt="Crates.io"></a>
     <a href="https://docs.rs/hydroflow/"><img src="https://img.shields.io/badge/docs.rs-Hydroflow-blue?style=flat-square&logo=read-the-docs&logoColor=white" alt="Docs.rs"></a>
 </p>
 
-Hydroflow is a low-latency dataflow runtime written in Rust. The goal of the [Hydro Project](https://hydro.run)
-is to empower developers to harness the full potential of the cloud by making distributed programs easy to specify and automatic to scale. Hydroflow is the lowest level in the [Hydro stack](https://hydro.run/docs/hydroflow/ecosystem/),
-serving as a single-node low-latency runtime with explicit networking. This allows us to support
-not just data processing pipelines, but distributed protocols (e.g. Paxos) and real-world
-long-running applications as well.
+Hydro is a novel distributed programming library for standard Rust. Hydro allows developers to build distributed systems that are efficient, scalable, and correct. 
 
-Take a look at the [Hydroflow Book](https://hydro.run/docs/hydroflow/).
+Hydro integrates naturally into standard Rust constructs and IDEs, providing types and programming constructs for ensuring distributed correctness. Under the covers it provides a metaprogrammed compiler that optimizes for cross-node issues of scaling and data movement while leveraging Rust and LLVM for per-node performance. 
 
-## The Hydroflow Surface Syntax
+We often describe Hydro via a metaphor: *LLVM for the cloud*. Like LLVM, Hydro is a layered compilation framework with a low-level Internal Representation language. In contrast to LLVM, Hydro focuses on distributed aspects of modern software. 
+  
+<div align="center">
+  <img src="docs/static/img/hydro-stack.png" alt="Image description" width="200">
+</div>
 
-Hydroflow comes with a custom "surface syntax"—a domain-specific language which serves as a very
-simple, readable IR for specifying single-node Hydroflow programs. These programs are intended to be stitched together
-by the Hydro stack to create larger autoscaling distributed systems.
 
-Here's a simple example of the surface syntax. Check out the [Hydroflow Playground](https://hydro.run/playground)
-for an interactive demo.
-```rust
-source_iter(0..10)
-  -> map(|n| n * n)
-  -> filter(|n| *n > 10)
-  -> foo;
+## The Language (and the Low-Level IR)
+Hydro provides a high-level language for the majority of developers called [Hydroflow+](https://hydro.run/docs/hydroflow_plus). Hydroflow+ allows you to program an entire fleet of processes from a single program, and then launch your fleet locally or in the cloud via [Hydro Deploy](https://hydro.run/docs/deploy). Get started with Hydroflow+ via the Hydroflow+ [documentation](https://hydro.run/docs/hydroflow_plus) and [examples](https://github.com/hydro-project/hydroflow/tree/main/hydroflow_plus_test/examples).
 
-foo = map(|n| (n..=n+1))
-  -> flatten()
-  -> for_each(|n| println!("Howdy {}", n));
-```
+> Internally, the Hydro stack compiles Hydroflow+ programs into a low-level Internal Representation (IR) language called [Hydroflow](https://hydro.run/docs/hydroflow); each process corresponds to a separate Hydroflow program. In rare cases you may want to compose one or more processes in Hydroflow by hand; see the Hydroflow [documentation](https://hydro.run/docs/hydroflow) or [examples](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples) for details.
 
-For more, check out the [surface syntax section of the Hydroflow book](https://hydro.run/docs/hydroflow/syntax/).
+## Development Setup
 
-## Start with a Template Program
-We provide a `cargo-generate` template for you to get started from a simple working example.
+See the [quickstart section of the Hydroflow+ book](https://hydro.run/docs/hydroflow_plus/quickstart/) for instructions on installing Rust and getting started with the Hydroflow+ template.
 
-To install `cargo-generate`, run the following:
-```bash,ignore
-cargo install cargo-generate
-```
+# A New Approach to Distributed Programming
+There have been many frameworks and platforms for distributed programming over the years, with significant tradeoffs. These include:
 
-Then run:
-```bash,ignore
-cargo generate gh:hydro-project/hydroflow template/hydroflow
-```
+**Higher level frameworks** have been designed to serve specialized distributed use cases. These including *Client-Server (Monolith)* frameworks  (e.g. Ruby on Rails + DBMS), parallel *Bulk Dataflow* frameworks (e.g. Spark, Flink, etc.), and step-wise *Workflows / Pipelines / Serverless / μservice Orchestration* frameworks (e.g. Kafka, Airflow). All of these frameworks offer limited expressibility and are inefficient outside their sweet spot. Each one ties developers' hands in different ways.
 
-`cd` into the generated folder, ensure the correct nightly version of rust is installed, and test the generated project:
-```bash
-#shell-command-next-line
-cd <my-project>
-#shell-command-next-line
-rustup update
-#shell-command-next-line
-cargo test
-```
+**Lower level asynchronous APIs** provide general-purpose distributed interfaces for sequential programming, including
+    *RPCs*, *Async/Await* frameworks and *Actor* frameworks (e.g. Akka, Ray, Unison, Orleans, gRPC). These interfaces allow developers to build distributed systems *one async sequential process* at a time. While they offer low-level control of individual processes, they provide minimal help for global correctness of the fleet.
 
-And you will get a well-formed Hydroflow/Rust project to use as a starting point. It provides a simple Echo Server and Client, and advice
-for adapting it to other uses.
+## Towards a more comprehensive approach
+What's wanted, we believe, is a proper language stack addressing distributed concerns:
 
-### Enable IDE Support for Ligatures
-Since flow edges `->` appear frequently in flows described using the Hydroflow surface syntax, enabling ligature support
-in your IDE may improve your code reading experience. This has no impact on code functionality or performance.
+- **Broad Expressivity**: The stack should support a spectrum of performance regimes from lightweight, low-latency async event handling to high-throughput dataflow. It should also support a full range of architectural configurations, from SIMD to more heterogeneous architectures.
+- **Familiarity**: The distributed aspects of the language should be integrated into a familiar mature programming language and environment, including libraries, IDEs and other tooling. A mature compiler should optimize local code to be fast and lean. (Hydro embraces Rust and LLVM for these attributes.)
+- **Performance control**: The ability to program a fleet of machines "globally" should not prevent software engineers from optimizing the code that executes locally at each node.
+- **Distributed Typechecking**: The type system of the language should enforce distributed correctness in the compiler, in ways that are visible in an IDE at time of authoring. For example, the types of data items should include their abstract locations, so that two items materialized at different nodes cannot be referenced together without an intervening construct for (async) communication.
+- **Distributed Optimizations**: The compiler should be able to correctly optimize (transform) programs for distributed concerns: removing bottlenecks by flexibly assigning compute and data to different processes or clusters, while preserving program semantics.
+- **Modularity**: The standard modularity of traditional programming—e.g. function calling abstractions—should work for distriuted logic. For example, it should be possible to wrap a common cross-node construct like "heartbeats and timeouts", and invoke it as simply as one invokes a sequential function.
+- **Native Testing Tools** for correctness. In today's standard practice, formal specification languages for testing (e.g. TLA+) are separate from languages of implementation. We believe it should be possible to perform many kinds of formal testing (e.g. model checking) on the same code that is used in deployment. 
 
-Instructions to enable this for the `Fira Code` font:
-- [VSCode](https://github.com/tonsky/FiraCode/wiki/VS-Code-Instructions)
-- [IntelliJ](https://github.com/tonsky/FiraCode/wiki/IntelliJ-products-instructions)
+[Hydro](https://hydro.run) is a Rust library for distributed programming that is designed to address these goals. 
 
-More font options are available [here](https://github.com/tonsky/FiraCode?tab=readme-ov-file#alternatives).
+# Learning More
+The Hydro project's main website is at [https://hydro.run](https://hydro.run).
 
-## Dev Setup
+- **Docs**: There are docs for the [high-level Hydroflow+ language](https://hydro.run/docs/hydroflow_plus/) and the [low-level Hydroflow IR](https://hydro.run/docs/hydroflow), as well as the [HydroDeploy](https://hydro.run/docs/deploy) framework for launching Hydroflow+ programs.
 
-See the [setup section of the book](https://hydro.run/docs/hydroflow/quickstart/setup).
-
-### The Examples Container
-
-The `hydroflow/examples` subdirectory of this repository includes a number of examples.
-To make running these examples in the cloud easier, we've created a Docker image that contains compiled versions of those examples. The image is defined in the `Dockerfile` in the same directory as this README.
-
-If you want to build the examples container locally, you can run
-```
-docker build -t hydroflow-examples .
-```
-
-This will build an image suitable for your architecture.
-
-The `scripts/multiplatform-docker-build.sh <image name>` script will build both `arm64` and `amd64` versions of the image and push them to the image name specified. By default, this will push the image to DockerHub; if you want to push the image to another repository, you can pass an image URL as the argument to `multiplatform-docker-build.sh` instead.
-
-Example binaries are located in `/usr/src/myapp`.
+- **Research Papers**: Our [research publications](https://hydro.run/research) are available on the project website. Some notable selections:
+    - The original Hydro vision paper from CIDR 2021: [New Directions in Cloud Programming](https://hydro.run/papers/new-directions.pdf)
+    - The first paper on optimizations from SIGMOD 2024: [Optimizing Distributed Protocols with Query Rewrites](https://hydro.run/papers/david-sigmod-2024.pdf)
+    - The first paper on Hydro's formal semantics to appear in POPL 2025: [Flo: a Semantic Foundation for Progressive Stream Processing](https://arxiv.org/abs/2411.08274)

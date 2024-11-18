@@ -7,12 +7,25 @@ import styles from './research.module.css';
 
 const papers = [
   {
+    title: "Flo: a Semantic Foundation for Progressive Stream Processing",
+    pdf: "pathname:///papers/flo.pdf",
+    thumb: require("./img/papers/flo.png"),
+    authors: <>Shadaj Laddad, Alvin Cheung, Joseph M. Hellerstein, Mae Milano</>,
+    description: [
+      <>Existing streaming languages have a variety of semantic models and guarantees that are often incompatible. In this paper, we identify two general yet precise semantic properties: streaming progress and eager execution. We formally define these properties in the context of Flo, a parameterized streaming language that abstracts over dataflow operators and the underlying structure of streams.</>,
+      <>To demonstrate the generality of our properties, we show how key ideas from representative streaming and incremental computation systems—Flink, LVars, and DBSP—have semantics that can be modeled in Flo and guarantees that map to our properties.</>
+    ],
+    conf: "POPL 2025",
+    links: <><Link href="pathname:///papers/flo.pdf">PDF</Link> / <Link href="https://arxiv.org/abs/2411.08274">arXiv</Link></>
+  },
+  {
     title: "Optimizing Distributed Protocols with Query Rewrites",
     pdf: "pathname:///papers/david-sigmod-2024.pdf",
     thumb: require("./img/papers/david-sigmod-2024.png"),
     authors: <>David Chu, Rithvik Panchapakesan, Shadaj Laddad, Lucky Katahanas, Chris Liu, Kaushik Shivakumar, Natacha Crooks, Joseph M. Hellerstein, & Heidi Howard</>,
     description: [
-      <>Distributed protocols such as 2PC and Paxos lie at the core of many systems in the cloud, but standard implementations do not scale. New scalable distributed protocols are developed through careful analysis and rewrites, but this process is ad hoc and error-prone. This paper presents an approach for scaling any distributed protocol by applying rule-driven rewrites, borrowing from query optimization. Distributed protocol rewrites entail a new burden: reasoning about spatiotemporal correctness. We leverage order-insensitivity and data dependency analysis to systematically identify correct coordination-free scaling opportunities. We apply this analysis to create preconditions and mechanisms for coordination-free decoupling and partitioning, two fundamental vertical and horizontal scaling techniques. Manual rule-driven applications of decoupling and partitioning improve the throughput of 2PC by 5x and Paxos by 3x, and match state-of-the-art throughput in recent work. These results point the way toward automated optimizers for distributed protocols based on correct-by-construction rewrite rules.</>
+      <>Distributed protocols such as 2PC and Paxos lie at the core of many systems in the cloud, but standard implementations do not scale. New scalable distributed protocols are developed through careful analysis and rewrites, but this process is ad hoc and error-prone. This paper presents an approach for scaling any distributed protocol by applying rule-driven rewrites, borrowing from query optimization.</>,
+      <>Distributed protocol rewrites entail a new burden: reasoning about spatiotemporal correctness. We leverage order-insensitivity and data dependency analysis to systematically identify correct coordination-free scaling opportunities. We apply this analysis to create preconditions and mechanisms for coordination-free decoupling and partitioning, two fundamental vertical and horizontal scaling techniques. Manual rule-driven applications of decoupling and partitioning improve the throughput of 2PC by 5x and Paxos by 3x, and match state-of-the-art throughput in recent work. These results point the way toward automated optimizers for distributed protocols based on correct-by-construction rewrite rules.</>
     ],
     conf: "SIGMOD 2024",
     links: <><Link href="pathname:///papers/david-sigmod-2024.pdf">PDF</Link> / <Link href="https://arxiv.org/abs/2404.01593">Tech Report</Link> / <Link href="https://github.com/rithvikp/autocomp">GitHub</Link></>
@@ -23,10 +36,23 @@ const papers = [
     thumb: require("./img/papers/tiemo-sigmod-2024.png"),
     authors: <>Tiemo Bang, Chris Douglas, Natacha Crooks and Joseph M. Hellerstein</>,
     description: [
-      <>Cloud object stores offer vastly different price points for object storage as a function of workload and geography. Poor object placement can thus lead to significant cost overheads. Prior cost-saving techniques attempt to optimize placement policies on the fly, deciding object placements for each object individually. In practice, these techniques do not scale to the size of the modern cloud. In this work, we leverage the static nature and pay-per-use pricing model of cloud environments to explore a different approach. Rather than computing object placements on the fly, we precompute a SkyPIE oracle---a lookup structure representing all possible placement policies and the workloads for which they are optimal. Internally, SkyPIE represents placement policies as a matrix of cost-hyperplanes, which we effectively precompute through pruning and convex optimization. By leveraging a fast geometric algorithm, online queries then are 1 to 8 orders of magnitude faster but as accurate as Integer-Linear-Programming. This makes exact optimization tractable for real workloads and we show >10x cost savings compared to state-of-the-art heuristic approaches.</>
+      <>Cloud object stores offer vastly different price points for object storage as a function of workload and geography. Poor object placement can thus lead to significant cost overheads. Prior cost-saving techniques attempt to optimize placement policies on the fly, deciding object placements for each object individually. In practice, these techniques do not scale to the size of the modern cloud. In this work, we leverage the static nature and pay-per-use pricing model of cloud environments to explore a different approach. Rather than computing object placements on the fly, we precompute a SkyPIE oracle---a lookup structure representing all possible placement policies and the workloads for which they are optimal.</>,
+      <>Internally, SkyPIE represents placement policies as a matrix of cost-hyperplanes, which we effectively precompute through pruning and convex optimization. By leveraging a fast geometric algorithm, online queries then are 1 to 8 orders of magnitude faster but as accurate as Integer-Linear-Programming. This makes exact optimization tractable for real workloads and we show {">"}10x cost savings compared to state-of-the-art heuristic approaches.</>
     ],
     conf: "SIGMOD 2024",
     links: <><Link href="pathname:///papers/tiemo-sigmod-2024.pdf">PDF</Link> / <Link href="https://github.com/hydro-project/cloud_oracle_skypie">GitHub</Link></>
+  },
+  {
+    title: "Suki: Choreographed Distributed Dataflow in Rust",
+    pdf: "pathname:///papers/suki.pdf",
+    thumb: require("./img/papers/suki.png"),
+    authors: <>Shadaj Laddad, Alvin Cheung, Joseph M. Hellerstein</>,
+    description: [
+      <>Programming models for distributed dataflow have long focused on analytical workloads that allow the runtime to dynamically place and schedule compute logic. Meanwhile, models that enable fine-grained control over placement, such as actors, make global optimization difficult. In this extended abstract, we present Suki, an embedded Rust DSL that lets developers implement streaming dataflow with explicit placement of computation.</>,
+      <>Key to this choreographic programming approach is our use of staged programming, which lets us expose a high-level Rust API while compiling local compute units into individual binaries with zero-overhead.</>
+    ],
+    conf: "CP 2024",
+    links: <><Link href="pathname:///papers/suki.pdf">PDF</Link> / <Link href="https://arxiv.org/abs/2406.14733">arXiv</Link></>
   },
   {
     title: "Bigger, not Badder: Safely Scaling BFT Protocols",
@@ -191,14 +217,20 @@ export default function Home() {
                   <b style={{
                     fontFamily: "'Inter', sans-serif"
                   }}>{paper.conf}</b>
-                  <p style={{ margin: 0, fontSize: "26px", fontWeight: "600" }}>
+                  <p style={{
+                    margin: 0,
+                    fontSize: "26px",
+                    fontWeight: "600",
+                    lineHeight: "125%",
+                    marginBottom: "5px"
+                  }}>
                     <Link href={paper.pdf} style={{
                       color: "inherit",
                       textDecoration: "none"
                     }}>{paper["title"]}</Link>
                   </p>
                   <p style={{ margin: 0, fontSize: "20px", fontWeight: 300, lineHeight: "130%" }}>{paper["authors"]}</p>
-                  <p style={{ margin: 0, marginTop: "5px", fontSize: "16px", fontWeight: 300, lineHeight: "1.4" }}>{paper.description[0]} <span className="paper-desc-extended">{paper.description[1]}</span></p>
+                  <p style={{ margin: 0, marginTop: "5px", fontSize: "16px", fontWeight: 300, lineHeight: "1.4" }}>{paper.description[0]} <span className={styles["paper-desc-extended"]}>{paper.description[1]}</span></p>
                   <p style={{ margin: 0, marginTop: "5px", fontSize: "20px" }}>{paper.links}</p>
                 </div>
               </div>
