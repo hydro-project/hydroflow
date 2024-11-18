@@ -10,7 +10,7 @@ Hydro is a novel distributed programming library for standard Rust. Hydro allows
 
 Hydro integrates naturally into standard Rust constructs and IDEs, providing types and programming constructs for ensuring distributed correctness. Under the covers it provides a metaprogrammed compiler that optimizes for cross-node issues of scaling and data movement while leveraging Rust and LLVM for per-node performance. 
 
-We often describe Hydro via a metaphor:*LLVM for the cloud*. Like LLVM, Hydro is a staged compilation framework with a low-level Internal Representation language. In contrast to LLVM, Hydro focuses on distributed aspects of modern software. 
+We often describe Hydro via a metaphor: *LLVM for the cloud*. Like LLVM, Hydro is a layered compilation framework with a low-level Internal Representation language. In contrast to LLVM, Hydro focuses on distributed aspects of modern software. 
   
 <div align="center">
   <img src="docs/static/img/hydro-stack.png" alt="Image description" width="200">
@@ -18,7 +18,7 @@ We often describe Hydro via a metaphor:*LLVM for the cloud*. Like LLVM, Hydro is
 
 
 ## The Language (and the Low-Level IR)
-Hydro provides a high-level language for the majority of developers called [Hydroflow+](https://hydro.run/docs/hydroflow_plus). Hydroflow+ allows you to program an entire fleet of processes from a single program, and then launch your fleet locally or in the cloud via [HydroDeploy](https://hydro.run/docs/deploy). Get started with Hydroflow+ via the Hydroflow+ [documentation](https://hydro.run/docs/hydroflow_plus) and [examples](https://github.com/hydro-project/hydroflow/tree/main/hydroflow_plus_test/examples).
+Hydro provides a high-level language for the majority of developers called [Hydroflow+](https://hydro.run/docs/hydroflow_plus). Hydroflow+ allows you to program an entire fleet of processes from a single program, and then launch your fleet locally or in the cloud via [Hydro Deploy](https://hydro.run/docs/deploy). Get started with Hydroflow+ via the Hydroflow+ [documentation](https://hydro.run/docs/hydroflow_plus) and [examples](https://github.com/hydro-project/hydroflow/tree/main/hydroflow_plus_test/examples).
 
 > Internally, the Hydro stack compiles Hydroflow+ programs into a low-level Internal Representation (IR) language called [Hydroflow](https://hydro.run/docs/hydroflow); each process corresponds to a separate Hydroflow program. In rare cases you may want to compose one or more processes in Hydroflow by hand; see the Hydroflow [documentation](https://hydro.run/docs/hydroflow) or [examples](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples) for details.
 
