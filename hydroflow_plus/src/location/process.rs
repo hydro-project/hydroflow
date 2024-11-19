@@ -21,6 +21,12 @@ impl<P> Clone for Process<'_, P> {
 }
 
 impl<'a, P> Location<'a> for Process<'a, P> {
+    type Root = Self;
+
+    fn root(&self) -> Self::Root {
+        self.clone()
+    }
+
     fn id(&self) -> LocationId {
         LocationId::Process(self.id)
     }

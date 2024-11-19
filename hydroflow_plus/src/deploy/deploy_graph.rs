@@ -20,14 +20,11 @@ use hydroflow::util::deploy::{ConnectedSink, ConnectedSource};
 use nameof::name_of;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use sha2::{Digest, Sha256};
-use stageleft::{Quoted, RuntimeData};
-use syn::visit_mut::VisitMut;
+use stageleft::{QuotedWithContext, RuntimeData};
 use tokio::sync::RwLock;
-use trybuild_internals_api::path;
 
 use super::deploy_runtime::*;
-use super::trybuild::{compile_graph_trybuild, create_trybuild};
+use super::trybuild::create_graph_trybuild;
 use super::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, Node, ProcessSpec, RegisterPort};
 
 pub struct HydroDeploy {}
@@ -373,14 +370,14 @@ impl<'a> Deploy<'a> for HydroDeploy {
     fn cluster_ids(
         _env: &Self::CompileEnv,
         of_cluster: usize,
-    ) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
+    ) -> impl QuotedWithContext<'a, &'a Vec<u32>, ()> + Copy + 'a {
         cluster_members(
             RuntimeData::new("__hydroflow_plus_trybuild_cli"),
             of_cluster,
         )
     }
 
-    fn cluster_self_id(_env: &Self::CompileEnv) -> impl Quoted<'a, u32> + Copy + 'a {
+    fn cluster_self_id(_env: &Self::CompileEnv) -> impl QuotedWithContext<'a, u32, ()> + Copy + 'a {
         cluster_self_id(RuntimeData::new("__hydroflow_plus_trybuild_cli"))
     }
 }
@@ -870,119 +867,6 @@ impl<T: Into<TrybuildHost>, I: IntoIterator<Item = T>> ClusterSpec<'_, HydroDepl
             name_hint: Some(name_hint),
         }
     }
-}
-
-fn clean_name_hint(name_hint: &str) -> String {
-    name_hint
-        .replace("::", "__")
-        .replace(" ", "_")
-        .replace(",", "_")
-        .replace("<", "_")
-        .replace(">", "")
-        .replace("(", "")
-        .replace(")", "")
-}
-
-// TODO(shadaj): has to be public due to stageleft limitations
-#[doc(hidden)]
-pub struct ReplaceCrateNameWithStaged {
-    pub crate_name: String,
-}
-
-impl VisitMut for ReplaceCrateNameWithStaged {
-    fn visit_type_path_mut(&mut self, i: &mut syn::TypePath) {
-        if let Some(first) = i.path.segments.first() {
-            if first.ident == self.crate_name {
-                let tail = i.path.segments.iter().skip(1).collect::<Vec<_>>();
-                *i = syn::parse_quote!(crate::__staged #(::#tail)*);
-            }
-        }
-
-        syn::visit_mut::visit_type_path_mut(self, i);
-    }
-}
-
-// TODO(shadaj): has to be public due to stageleft limitations
-#[doc(hidden)]
-pub struct ReplaceCrateWithOrig {
-    pub crate_name: String,
-}
-
-impl VisitMut for ReplaceCrateWithOrig {
-    fn visit_item_use_mut(&mut self, i: &mut syn::ItemUse) {
-        if let syn::UseTree::Path(p) = &mut i.tree {
-            if p.ident == "crate" {
-                p.ident = syn::Ident::new(&self.crate_name, p.ident.span());
-                i.leading_colon = Some(Default::default());
-            }
-        }
-
-        syn::visit_mut::visit_item_use_mut(self, i);
-    }
-}
-
-fn create_graph_trybuild(
-    graph: HydroflowGraph,
-    extra_stmts: Vec<syn::Stmt>,
-    name_hint: &Option<String>,
-) -> (
-    String,
-    (std::path::PathBuf, std::path::PathBuf, Option<Vec<String>>),
-) {
-    let source_dir = trybuild_internals_api::cargo::manifest_dir().unwrap();
-    let source_manifest = trybuild_internals_api::dependencies::get_manifest(&source_dir).unwrap();
-    let crate_name = &source_manifest.package.name.to_string().replace("-", "_");
-
-    let is_test = super::trybuild::IS_TEST.load(std::sync::atomic::Ordering::Relaxed);
-
-    let mut generated_code = compile_graph_trybuild(graph, extra_stmts);
-
-    ReplaceCrateNameWithStaged {
-        crate_name: crate_name.clone(),
-    }
-    .visit_file_mut(&mut generated_code);
-
-    let mut inlined_staged = stageleft_tool::gen_staged_trybuild(
-        &path!(source_dir / "src" / "lib.rs"),
-        crate_name.clone(),
-        is_test,
-    );
-
-    ReplaceCrateWithOrig {
-        crate_name: crate_name.clone(),
-    }
-    .visit_file_mut(&mut inlined_staged);
-
-    let source = prettyplease::unparse(&syn::parse_quote! {
-        #generated_code
-
-        #[allow(
-            unused,
-            ambiguous_glob_reexports,
-            clippy::suspicious_else_formatting,
-            unexpected_cfgs,
-            reason = "generated code"
-        )]
-        pub mod __staged {
-            #inlined_staged
-        }
-    });
-
-    let mut hasher = Sha256::new();
-    hasher.update(&source);
-    let hash = format!("{:X}", hasher.finalize())
-        .chars()
-        .take(8)
-        .collect::<String>();
-
-    let bin_name = if let Some(name_hint) = &name_hint {
-        format!("{}_{}", clean_name_hint(name_hint), &hash)
-    } else {
-        hash
-    };
-
-    let trybuild_created = create_trybuild(&source, &bin_name, is_test).unwrap();
-    (bin_name, trybuild_created)
 }
 
 fn create_trybuild_service(
