@@ -24,7 +24,7 @@ pub fn map_reduce<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, Leader>, Cluster<'
         .send_bincode_interleaved(&process)
         .tick_batch(&process.tick())
         .persist()
-        .reduce_keyed(q!(|total, count| *total += count))
+        .reduce_keyed_commutative(q!(|total, count| *total += count))
         .all_ticks()
         .for_each(q!(|(string, count)| println!("{}: {}", string, count)));
 
