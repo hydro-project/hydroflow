@@ -11,7 +11,6 @@ use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDep
 use crate::ir::HfPlusLeaf;
 use crate::location::{Cluster, ExternalProcess, Process};
 use crate::staging_util::Invariant;
-use crate::RuntimeContext;
 
 pub mod built;
 pub mod compiled;
@@ -157,10 +156,6 @@ impl<'a> FlowBuilder<'a> {
             flow_state: self.flow_state().clone(),
             _phantom: PhantomData,
         }
-    }
-
-    pub fn runtime_context(&self) -> RuntimeContext<'a> {
-        RuntimeContext::new()
     }
 
     pub fn with_process<P, D: LocalDeploy<'a>>(
