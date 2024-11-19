@@ -8,7 +8,7 @@ use hydroflow::futures::{Sink, Stream};
 use proc_macro2::Span;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use stageleft::Quoted;
+use stageleft::QuotedWithContext;
 
 use super::built::build_inner;
 use super::compiled::CompiledFlow;

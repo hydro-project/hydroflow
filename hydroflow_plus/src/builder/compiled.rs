@@ -5,8 +5,8 @@ use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow_lang::graph::{partition_graph, HydroflowGraph};
 use proc_macro2::TokenStream;
 use quote::quote;
-use stageleft::runtime_support::FreeVariable;
-use stageleft::Quoted;
+use stageleft::runtime_support::FreeVariableWithContext;
+use stageleft::QuotedWithContext;
 
 use crate::staging_util::Invariant;
 
@@ -27,7 +27,10 @@ impl<ID> CompiledFlow<'_, ID> {
 }
 
 impl<'a> CompiledFlow<'a, usize> {
-    pub fn with_dynamic_id(self, id: impl Quoted<'a, usize>) -> CompiledFlowWithId<'a> {
+    pub fn with_dynamic_id(
+        self,
+        id: impl QuotedWithContext<'a, usize, ()>,
+    ) -> CompiledFlowWithId<'a> {
         let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
             .expect("hydroflow_plus should be present in `Cargo.toml`");
         let root = match hydroflow_crate {
@@ -82,10 +85,12 @@ impl<'a> CompiledFlow<'a, usize> {
     }
 }
 
-impl<'a> Quoted<'a, Hydroflow<'a>> for CompiledFlow<'a, ()> {}
+impl<'a, Ctx> QuotedWithContext<'a, Hydroflow<'a>, Ctx> for CompiledFlow<'a, ()> {}
 
-impl<'a> FreeVariable<Hydroflow<'a>> for CompiledFlow<'a, ()> {
-    fn to_tokens(mut self) -> (Option<TokenStream>, Option<TokenStream>) {
+impl<'a, Ctx> FreeVariableWithContext<Ctx> for CompiledFlow<'a, ()> {
+    type O = Hydroflow<'a>;
+
+    fn to_tokens(mut self, _ctx: &Ctx) -> (Option<TokenStream>, Option<TokenStream>) {
         let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
             .expect("hydroflow_plus should be present in `Cargo.toml`");
         let root = match hydroflow_crate {
@@ -116,10 +121,12 @@ pub struct CompiledFlowWithId<'a> {
     _phantom: Invariant<'a>,
 }
 
-impl<'a> Quoted<'a, Hydroflow<'a>> for CompiledFlowWithId<'a> {}
+impl<'a, Ctx> QuotedWithContext<'a, Hydroflow<'a>, Ctx> for CompiledFlowWithId<'a> {}
 
-impl<'a> FreeVariable<Hydroflow<'a>> for CompiledFlowWithId<'a> {
-    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
+impl<'a, Ctx> FreeVariableWithContext<Ctx> for CompiledFlowWithId<'a> {
+    type O = Hydroflow<'a>;
+
+    fn to_tokens(self, _ctx: &Ctx) -> (Option<TokenStream>, Option<TokenStream>) {
         (None, Some(self.tokens))
     }
 }
