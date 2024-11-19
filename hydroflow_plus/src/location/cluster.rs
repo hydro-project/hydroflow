@@ -5,8 +5,8 @@ use std::marker::PhantomData;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use serde::{Deserialize, Serialize};
-use stageleft::runtime_support::FreeVariable;
-use stageleft::{quote_type, Quoted};
+use stageleft::runtime_support::FreeVariableWithContext;
+use stageleft::{quote_type, QuotedWithContext};
 
 use super::{Location, LocationId};
 use crate::builder::FlowState;
@@ -19,14 +19,7 @@ pub struct Cluster<'a, C> {
 }
 
 impl<'a, C> Cluster<'a, C> {
-    pub fn self_id(&self) -> impl Quoted<'a, ClusterId<C>> + Copy {
-        ClusterSelfId {
-            id: self.id,
-            _phantom: PhantomData,
-        }
-    }
-
-    pub fn members(&self) -> impl Quoted<'a, &'a Vec<ClusterId<C>>> + Copy {
+    pub fn members(&self) -> ClusterIds<'a, C> {
         ClusterIds {
             id: self.id,
             _phantom: PhantomData,
@@ -45,6 +38,12 @@ impl<C> Clone for Cluster<'_, C> {
 }
 
 impl<'a, C> Location<'a> for Cluster<'a, C> {
+    type Root = Cluster<'a, C>;
+
+    fn root(&self) -> Self::Root {
+        self.clone()
+    }
+
     fn id(&self) -> LocationId {
         LocationId::Cluster(self.id)
     }
@@ -151,8 +150,10 @@ impl<C> Clone for ClusterIds<'_, C> {
 
 impl<C> Copy for ClusterIds<'_, C> {}
 
-impl<'a, C> FreeVariable<&'a Vec<ClusterId<C>>> for ClusterIds<'a, C> {
-    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>)
+impl<'a, C: 'a, Ctx> FreeVariableWithContext<Ctx> for ClusterIds<'a, C> {
+    type O = &'a Vec<ClusterId<C>>;
+
+    fn to_tokens(self, _ctx: &Ctx) -> (Option<TokenStream>, Option<TokenStream>)
     where
         Self: Sized,
     {
@@ -171,28 +172,22 @@ impl<'a, C> FreeVariable<&'a Vec<ClusterId<C>>> for ClusterIds<'a, C> {
     }
 }
 
-impl<'a, C> Quoted<'a, &'a Vec<ClusterId<C>>> for ClusterIds<'a, C> {}
+impl<'a, C, Ctx> QuotedWithContext<'a, &'a Vec<ClusterId<C>>, Ctx> for ClusterIds<'a, C> {}
 
-pub struct ClusterSelfId<'a, C> {
-    pub(crate) id: usize,
-    pub(crate) _phantom: Invariant<'a, C>,
-}
+pub static CLUSTER_SELF_ID: ClusterSelfId = ClusterSelfId {};
 
-impl<C> Clone for ClusterSelfId<'_, C> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
+#[derive(Clone, Copy)]
+pub struct ClusterSelfId {}
 
-impl<C> Copy for ClusterSelfId<'_, C> {}
+impl<'a, C> FreeVariableWithContext<Cluster<'a, C>> for ClusterSelfId {
+    type O = ClusterId<C>;
 
-impl<C> FreeVariable<ClusterId<C>> for ClusterSelfId<'_, C> {
-    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>)
+    fn to_tokens(self, ctx: &Cluster<'a, C>) -> (Option<TokenStream>, Option<TokenStream>)
     where
         Self: Sized,
     {
         let ident = syn::Ident::new(
-            &format!("__hydroflow_plus_cluster_self_id_{}", self.id),
+            &format!("__hydroflow_plus_cluster_self_id_{}", ctx.id),
             Span::call_site(),
         );
         let root = get_this_crate();
@@ -204,4 +199,4 @@ impl<C> FreeVariable<ClusterId<C>> for ClusterSelfId<'_, C> {
     }
 }
 
-impl<'a, C> Quoted<'a, ClusterId<C>> for ClusterSelfId<'a, C> {}
+impl<'a, C> QuotedWithContext<'a, ClusterId<C>, Cluster<'a, C>> for ClusterSelfId {}
