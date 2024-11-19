@@ -4,7 +4,7 @@ sidebar_position: 3
 import CodeBlock from '@theme/CodeBlock';
 import firstTenClusterSrc from '!!raw-loader!../../../../template/hydroflow_plus/src/first_ten_cluster.rs';
 import firstTenClusterExample from '!!raw-loader!../../../../template/hydroflow_plus/examples/first_ten_cluster.rs';
-import { getLines, extractOutput } from '../../../src/util';
+import { getLines, highlightLines, extractOutput } from '../../../src/util';
 
 # Scaling with Clusters
 So far, we have looked at distributed systems where each process is running a different piece of the compute graph -- **compute parallelism**. However, we can also use Hydroflow+ to run the same computation on multiple processes -- achieving **data parallelism** (e.g. partitioning). This is done by creating a **cluster** of processes that all run the same subgraph of code.
@@ -39,7 +39,7 @@ Finally, we will send the data back to the leader. We achieve this using a varia
 ## Deploying Clusters
 Deployment scripts are similar to before, except that when provisioning a cluster we provide a list of deployment hosts rather than a single one. In our example, we'll launch 4 nodes for the cluster by creating a `Vec` of 4 localhost instances.
 
-<CodeBlock language="rust" title="examples/first_ten_cluster.rs">{firstTenClusterExample}</CodeBlock>
+<CodeBlock language="rust" title="examples/first_ten_cluster.rs">{highlightLines(firstTenClusterExample, [14])}</CodeBlock>
 
 We can then launch the program:
 ```bash
