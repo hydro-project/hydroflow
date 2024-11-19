@@ -1,33 +1,20 @@
 # Quickstart
 In this tutorial, we'll walk through the basics of Hydroflow+ by building a simple dataflow that prints out the first 10 natural numbers. We'll start with a single process, then pipeline the computation, and finally distribute it across a cluster.
 
-## Installing Rust
+:::tip
 
 First you will need to install Rust. We recommend the conventional installation
-method, `rustup`, which allows you to easily manage and update Rust versions.
-
-[**Install Rust**](https://www.rust-lang.org/tools/install)
+method, `rustup`, which allows you to easily manage and update Rust versions: [**Install Rust**](https://www.rust-lang.org/tools/install)
 
 The link in the previous line will take you to the Rust website that shows you how to
 install `rustup` and the Rust package manager `cargo` (and the
 internally-used `rustc` compiler). `cargo` is Rust's main development tool,
 used for building, running, and testing Rust code.
 
-The following `cargo` commands will come in handy:
-* `cargo check --all-targets` - Checks the workspace for any compile-time
-  errors.
-* `cargo build --all-targets` - Builds all projects/tests/benchmarks/examples
-  in the workspace.
-* `cargo clean` - Cleans the build cache, sometimes needed if the build is
-  acting up.
-* `cargo test` - Runs tests in the workspace.
-* `cargo run -p hydroflow --example <example name>` - Run an example program in
-  `hydroflow/examples`.
-
-## VS Code Setup
-
 We recommend using VS Code with the `rust-analyzer` extension (and NOT the
 `Rust` extension).
+
+:::
 
 ## Getting Started with Hydroflow+
 To get started with a new project, we'll use the Hydroflow+ template. The template comes with a simple distributed program.

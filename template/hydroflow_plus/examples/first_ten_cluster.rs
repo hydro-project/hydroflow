@@ -11,6 +11,7 @@ async fn main() {
 
     let _nodes = flow
         .with_process(&leader, deployment.Localhost())
+        // highlight-next-line
         .with_cluster(&workers, vec![deployment.Localhost(); 4])
         .deploy(&mut deployment);
 
