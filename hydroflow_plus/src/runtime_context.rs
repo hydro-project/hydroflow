@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use hydroflow::scheduled::context::Context;
 use proc_macro2::TokenStream;
 use quote::quote;
-use stageleft::runtime_support::FreeVariable;
+use stageleft::runtime_support::FreeVariableWithContext;
 
 use crate::staging_util::Invariant;
 
@@ -28,8 +28,10 @@ impl Default for RuntimeContext<'_> {
     }
 }
 
-impl<'a> FreeVariable<&'a Context> for RuntimeContext<'a> {
-    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
+impl<'a, Ctx> FreeVariableWithContext<Ctx> for RuntimeContext<'a> {
+    type O = &'a Context;
+
+    fn to_tokens(self, _ctx: &Ctx) -> (Option<TokenStream>, Option<TokenStream>) {
         (None, Some(quote!(&context)))
     }
 }
