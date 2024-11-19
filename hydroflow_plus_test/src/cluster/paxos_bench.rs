@@ -103,7 +103,6 @@ fn bench_client<'a>(
     f: usize,
 ) {
     let client_tick = clients.tick();
-    let c_id = clients.self_id();
     // r_to_clients_payload_applied.clone().inspect(q!(|payload: &(u32, ReplicaPayload)| println!("Client received payload: {:?}", payload)));
     // Whenever the leader changes, make all clients send a message
 
@@ -113,7 +112,7 @@ fn bench_client<'a>(
         ..num_clients_per_node)
         .map(move |i| KvPayload {
             key: i as u32,
-            value: c_id
+            value: CLUSTER_SELF_ID
         })));
 
     let (c_to_proposers_complete_cycle, c_to_proposers) =
@@ -152,9 +151,13 @@ fn bench_client<'a>(
         c_received_payloads.anti_join(c_received_quorum_payloads.clone());
     c_pending_quorum_payloads_complete_cycle.complete_next_tick(c_new_pending_quorum_payloads);
     // Whenever all replicas confirm that a payload was committed, send another payload
-    let c_new_payloads_when_committed = c_received_quorum_payloads
-        .clone()
-        .map(q!(move |key| KvPayload { key, value: c_id }));
+    let c_new_payloads_when_committed =
+        c_received_quorum_payloads
+            .clone()
+            .map(q!(move |key| KvPayload {
+                key,
+                value: CLUSTER_SELF_ID
+            }));
     c_to_proposers_complete_cycle.complete(
         c_new_payloads_when_restart
             .chain(c_new_payloads_when_committed)

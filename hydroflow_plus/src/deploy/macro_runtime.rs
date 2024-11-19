@@ -7,7 +7,7 @@ use hydroflow::bytes::Bytes;
 use hydroflow::futures::{Sink, Stream};
 use hydroflow::util::deploy::DeployPorts;
 use hydroflow_lang::graph::HydroflowGraph;
-use stageleft::{Quoted, RuntimeData};
+use stageleft::{QuotedWithContext, RuntimeData};
 
 use super::HydroflowPlusMeta;
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
@@ -170,11 +170,11 @@ impl<'a> Deploy<'a> for DeployRuntime {
     fn cluster_ids(
         env: &Self::CompileEnv,
         of_cluster: usize,
-    ) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
+    ) -> impl QuotedWithContext<'a, &'a Vec<u32>, ()> + Copy + 'a {
         super::deploy_runtime::cluster_members(*env, of_cluster)
     }
 
-    fn cluster_self_id(env: &Self::CompileEnv) -> impl Quoted<'a, u32> + Copy + 'a {
+    fn cluster_self_id(env: &Self::CompileEnv) -> impl QuotedWithContext<'a, u32, ()> + Copy + 'a {
         super::deploy_runtime::cluster_self_id(*env)
     }
 }

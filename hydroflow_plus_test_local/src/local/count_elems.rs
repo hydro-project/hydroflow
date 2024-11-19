@@ -7,7 +7,7 @@ pub fn count_elems_generic<'a, T: 'a>(
     flow: FlowBuilder<'a>,
     input_stream: RuntimeData<UnboundedReceiverStream<T>>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
+) -> impl QuotedWithContext<'a, Hydroflow<'a>, ()> {
     let process = flow.process::<()>();
     let tick = process.tick();
 
