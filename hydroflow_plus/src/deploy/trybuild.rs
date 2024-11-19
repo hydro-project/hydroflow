@@ -27,7 +27,7 @@ pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>
 
     let source_ast: syn::File = syn::parse_quote! {
         #![feature(box_patterns)]
-        #![allow(unused_imports, unused_crate_dependencies, missing_docs)]
+        #![allow(unused_imports, unused_crate_dependencies, missing_docs, non_snake_case)]
         use hydroflow_plus::*;
 
         #[allow(unused)]

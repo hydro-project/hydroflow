@@ -21,7 +21,7 @@ use nameof::name_of;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use stageleft::{Quoted, RuntimeData};
+use stageleft::{QuotedWithContext, RuntimeData};
 use syn::visit_mut::VisitMut;
 use tokio::sync::RwLock;
 use trybuild_internals_api::path;
@@ -373,14 +373,14 @@ impl<'a> Deploy<'a> for HydroDeploy {
     fn cluster_ids(
         _env: &Self::CompileEnv,
         of_cluster: usize,
-    ) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
+    ) -> impl QuotedWithContext<'a, &'a Vec<u32>, ()> + Copy + 'a {
         cluster_members(
             RuntimeData::new("__hydroflow_plus_trybuild_cli"),
             of_cluster,
         )
     }
 
-    fn cluster_self_id(_env: &Self::CompileEnv) -> impl Quoted<'a, u32> + Copy + 'a {
+    fn cluster_self_id(_env: &Self::CompileEnv) -> impl QuotedWithContext<'a, u32, ()> + Copy + 'a {
         cluster_self_id(RuntimeData::new("__hydroflow_plus_trybuild_cli"))
     }
 }
