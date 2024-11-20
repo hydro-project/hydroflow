@@ -5,8 +5,9 @@ use std::hash::Hash;
 use hydroflow_plus::*;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use stream::NoOrder;
 
-use super::paxos::{paxos_core, Acceptor, Proposer};
+use super::paxos::{paxos_core, Acceptor, Ballot, Proposer};
 
 pub struct Replica {}
 
@@ -57,7 +58,7 @@ pub fn paxos_kv<'a, K: KvKey, V: KvValue>(
     i_am_leader_check_timeout_delay_multiplier: usize,
     checkpoint_frequency: usize,
 ) -> (
-    Stream<(), Cluster<'a, Proposer>, Unbounded>,
+    Stream<Ballot, Cluster<'a, Proposer>, Unbounded>,
     Stream<KvPayload<K, V>, Cluster<'a, Replica>, Unbounded>,
 ) {
     let (r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
@@ -91,7 +92,7 @@ pub fn paxos_kv<'a, K: KvKey, V: KvValue>(
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 pub fn replica<'a, K: KvKey, V: KvValue>(
     replicas: &Cluster<'a, Replica>,
-    p_to_replicas: Stream<SequencedKv<K, V>, Cluster<'a, Replica>, Unbounded>,
+    p_to_replicas: Stream<SequencedKv<K, V>, Cluster<'a, Replica>, Unbounded, NoOrder>,
     checkpoint_frequency: usize,
 ) -> (
     Stream<usize, Cluster<'a, Replica>, Unbounded>,
