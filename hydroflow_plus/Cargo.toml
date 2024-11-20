@@ -39,6 +39,7 @@ hydro_deploy = { path = "../hydro_deploy/core", version = "^0.10.0", optional = 
 prettyplease = { version = "0.2.0", features = [ "verbatim" ], optional = true }
 toml = { version = "0.8.0", optional = true }
 trybuild-internals-api = { version = "1.0.99", optional = true }
+sealed = "0.6.0"
 
 [build-dependencies]
 stageleft_tool = { path = "../stageleft_tool", version = "^0.4.0" }
