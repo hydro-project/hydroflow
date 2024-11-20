@@ -1,37 +1,60 @@
-use std::marker::PhantomData;
-
 use hydroflow::scheduled::context::Context;
 use proc_macro2::TokenStream;
 use quote::quote;
 use stageleft::runtime_support::FreeVariableWithContext;
 
-use crate::staging_util::Invariant;
+use crate::Location;
 
-#[derive(Clone)]
+pub static RUNTIME_CONTEXT: RuntimeContext = RuntimeContext { _private: &() };
+
+#[derive(Clone, Copy)]
 pub struct RuntimeContext<'a> {
-    _phantom: Invariant<'a>,
+    _private: &'a (),
 }
 
-impl RuntimeContext<'_> {
-    pub fn new() -> Self {
-        Self {
-            _phantom: PhantomData,
-        }
-    }
-}
-
-impl Copy for RuntimeContext<'_> {}
-
-impl Default for RuntimeContext<'_> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<'a, Ctx> FreeVariableWithContext<Ctx> for RuntimeContext<'a> {
+impl<'a, L: Location<'a>> FreeVariableWithContext<L> for RuntimeContext<'a> {
     type O = &'a Context;
 
-    fn to_tokens(self, _ctx: &Ctx) -> (Option<TokenStream>, Option<TokenStream>) {
+    fn to_tokens(self, _ctx: &L) -> (Option<TokenStream>, Option<TokenStream>) {
         (None, Some(quote!(&context)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use hydro_deploy::Deployment;
+    use hydroflow::futures::StreamExt;
+
+    use crate::*;
+
+    struct P1 {}
+
+    #[tokio::test]
+    async fn runtime_context() {
+        let mut deployment = Deployment::new();
+
+        let flow = FlowBuilder::new();
+        let node = flow.process::<P1>();
+        let external = flow.external_process::<()>();
+
+        let out_port = node
+            .source_iter(q!(0..5))
+            .map(q!(|v| (v, RUNTIME_CONTEXT.current_tick().0)))
+            .send_bincode_external(&external);
+
+        let nodes = flow
+            .with_process(&node, deployment.Localhost())
+            .with_external(&external, deployment.Localhost())
+            .deploy(&mut deployment);
+
+        deployment.deploy().await.unwrap();
+
+        let mut external_out = nodes.connect_source_bincode(out_port).await;
+
+        deployment.start().await.unwrap();
+
+        for i in 0..5 {
+            assert_eq!(external_out.next().await.unwrap(), (i, 0));
+        }
     }
 }
