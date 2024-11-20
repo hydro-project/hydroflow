@@ -1,32 +1,34 @@
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
-use syn::visit::Visit;
+use syn::visit_mut::VisitMut;
 
 use self::free_variable::FreeVariableVisitor;
 
 mod free_variable;
 
-pub fn q_impl(root: TokenStream, expr: syn::Expr) -> TokenStream {
+pub fn q_impl(root: TokenStream, mut expr: syn::Expr) -> TokenStream {
     let mut visitor = FreeVariableVisitor::default();
-    visitor.visit_expr(&expr);
+    visitor.visit_expr_mut(&mut expr);
 
     let unitialized_free_variables = visitor.free_variables.iter().map(|i| {
-        let mut i_without_span = i.clone();
-        i_without_span.set_span(Span::call_site());
-        let ident_str = i.to_string();
+        let ident_str = format!("{}__free", i);
+
+        let i_renamed = syn::Ident::new(&ident_str, i.span());
+        let mut i_outer = i.clone();
+        i_outer.set_span(Span::call_site());
+
         quote!(
             #[allow(unused, non_upper_case_globals, non_snake_case)]
-            let #i = {
-                let _out = ::#root::runtime_support::FreeVariable::uninitialized(&#i_without_span);
-                _vec_to_set.push((#ident_str.to_string(), ::#root::runtime_support::FreeVariable::to_tokens(#i_without_span)));
+            let #i_renamed = {
+                let _out = ::#root::runtime_support::FreeVariableWithContext::uninitialized(&#i_outer, __stageleft_ctx);
+                _vec_to_set.push((#ident_str.to_string(), ::#root::runtime_support::FreeVariableWithContext::to_tokens(#i_outer, __stageleft_ctx)));
                 _out
             };
         )
     });
 
     let uninit_forgets = visitor.free_variables.iter().map(|i| {
-        let mut i_without_span = i.clone();
-        i_without_span.set_span(Span::call_site());
+        let i_without_span = syn::Ident::new(&format!("{}__free", i), Span::call_site());
         quote!(
             #[allow(unused, non_upper_case_globals, non_snake_case)]
             ::std::mem::forget(#i_without_span);
@@ -38,7 +40,7 @@ pub fn q_impl(root: TokenStream, expr: syn::Expr) -> TokenStream {
         syn::parse_str(&expr.clone().into_token_stream().to_string()).unwrap();
 
     quote!({
-        move |set_mod: &mut String, set_crate_name: &mut &'static str, set_tokens: &mut #root::internal::TokenStream, _vec_to_set: &mut #root::internal::CaptureVec, run: bool| {
+        move |__stageleft_ctx: &_, set_mod: &mut String, set_crate_name: &mut &'static str, set_tokens: &mut #root::internal::TokenStream, _vec_to_set: &mut #root::internal::CaptureVec, run: bool| {
             #(#unitialized_free_variables;)*
 
             *set_mod = module_path!().to_string();
