@@ -5,7 +5,6 @@ use stageleft::*;
 
 use super::profiler as myself; // TODO(shadaj): stageleft does not support `self::...`
 use crate::ir::*;
-use crate::RuntimeContext;
 
 pub fn increment_counter(count: &mut u64) {
     *count += 1;
@@ -18,7 +17,6 @@ fn quoted_any_fn<'a, F: Fn(&usize) + 'a, Q: IntoQuotedMut<'a, F, ()>>(q: Q) -> Q
 /// Add a profiling node before each node to count the cardinality of its input
 fn add_profiling_node<'a>(
     node: &mut HfPlusNode,
-    _context: RuntimeContext<'a>,
     counters: RuntimeData<&'a RefCell<Vec<u64>>>,
     counter_queue: RuntimeData<&'a RefCell<UnboundedSender<(usize, u64)>>>,
     id: &mut u32,
@@ -28,9 +26,7 @@ fn add_profiling_node<'a>(
     *id += 1;
 
     node.transform_children(
-        |node, seen_tees| {
-            add_profiling_node(node, _context, counters, counter_queue, id, seen_tees)
-        },
+        |node, seen_tees| add_profiling_node(node, counters, counter_queue, id, seen_tees),
         seen_tees,
     );
     let orig_node = std::mem::replace(node, HfPlusNode::Placeholder);
@@ -55,7 +51,6 @@ fn add_profiling_node<'a>(
 /// Count the cardinality of each input and periodically output to a file
 pub fn profiling<'a>(
     ir: Vec<HfPlusLeaf>,
-    context: RuntimeContext<'a>,
     counters: RuntimeData<&'a RefCell<Vec<u64>>>,
     counter_queue: RuntimeData<&'a RefCell<UnboundedSender<(usize, u64)>>>,
 ) -> Vec<HfPlusLeaf> {
@@ -65,7 +60,7 @@ pub fn profiling<'a>(
         .map(|l| {
             l.transform_children(
                 |node, seen_tees| {
-                    add_profiling_node(node, context, counters, counter_queue, &mut id, seen_tees)
+                    add_profiling_node(node, counters, counter_queue, &mut id, seen_tees)
                 },
                 &mut seen_tees,
             )
@@ -90,7 +85,6 @@ mod tests {
             .map(q!(|v| v + 1))
             .for_each(q!(|n| println!("{}", n)));
 
-        let runtime_context = flow.runtime_context();
         let built = flow.finalize();
 
         insta::assert_debug_snapshot!(&built.ir());
@@ -106,7 +100,7 @@ mod tests {
 
         let pushed_down = built
             .optimize_with(crate::rewrites::persist_pullup::persist_pullup)
-            .optimize_with(|ir| super::profiling(ir, runtime_context, counters, counter_queue));
+            .optimize_with(|ir| super::profiling(ir, counters, counter_queue));
 
         insta::assert_debug_snapshot!(&pushed_down.ir());
 
