@@ -45,9 +45,8 @@ async fn main() {
     let (cluster, leader) = hydroflow_plus_test::cluster::compute_pi::compute_pi(&builder, 8192);
 
     // Uncomment below, change .bin("counter_compute_pi") in order to track cardinality per operation
-    // let runtime_context = builder.runtime_context();
     // dbg!(builder.with_default_optimize()
-    //     .optimize_with(|ir| profiling(ir, runtime_context, RuntimeData::new("FAKE"), RuntimeData::new("FAKE")))
+    //     .optimize_with(|ir| profiling(ir, RuntimeData::new("FAKE"), RuntimeData::new("FAKE")))
     //     .ir());
 
     let _nodes = builder
