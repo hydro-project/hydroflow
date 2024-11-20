@@ -26,6 +26,7 @@ pub mod optional;
 pub use optional::Optional;
 
 pub mod location;
+pub use location::cluster::CLUSTER_SELF_ID;
 pub use location::{Cluster, ClusterId, Location, Process, Tick};
 
 pub mod deploy;

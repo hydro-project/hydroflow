@@ -244,6 +244,18 @@ impl VisitMut for GenFinalPubVistor {
                     #[cfg(stageleft_macro)]
                     #e
                 );
+            } else if let syn::Item::Static(e) = i {
+                if matches!(e.vis, syn::Visibility::Public(_)) {
+                    let e_name = &e.ident;
+                    *i = parse_quote!(pub use #cur_path::#e_name;);
+                    return;
+                }
+            } else if let syn::Item::Const(e) = i {
+                if matches!(e.vis, syn::Visibility::Public(_)) {
+                    let e_name = &e.ident;
+                    *i = parse_quote!(pub use #cur_path::#e_name;);
+                    return;
+                }
             }
         }
 

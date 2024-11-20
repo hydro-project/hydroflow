@@ -17,7 +17,7 @@ pub mod internal {
 pub use stageleft_macro::{entry, q, quse_fn, runtime, top_level_mod};
 
 pub mod runtime_support;
-use runtime_support::FreeVariable;
+use runtime_support::FreeVariableWithContext;
 
 use crate::runtime_support::get_final_crate_name;
 
@@ -110,12 +110,12 @@ impl QuotedContext for BorrowBounds<'_> {
     }
 }
 
-pub trait Quoted<'a, T>: FreeVariable<T> {
-    fn splice_untyped(self) -> syn::Expr
+pub trait QuotedWithContext<'a, T, Ctx>: FreeVariableWithContext<Ctx, O = T> {
+    fn splice_untyped_ctx(self, ctx: &Ctx) -> syn::Expr
     where
         Self: Sized,
     {
-        let (prelude, value) = self.to_tokens();
+        let (prelude, value) = self.to_tokens(ctx);
         if prelude.is_some() {
             panic!("Quoted value should not have prelude");
         }
@@ -123,9 +123,96 @@ pub trait Quoted<'a, T>: FreeVariable<T> {
         syn::parse2(value.unwrap()).unwrap()
     }
 
+    fn splice_typed_ctx(self, ctx: &Ctx) -> syn::Expr
+    where
+        Self: Sized,
+    {
+        let inner_expr = self.splice_untyped_ctx(ctx);
+        let stageleft_root = stageleft_root();
+
+        let out_type = quote_type::<T>();
+
+        syn::parse_quote! {
+            #stageleft_root::runtime_support::type_hint::<#out_type>(#inner_expr)
+        }
+    }
+
+    fn splice_fn0_ctx<O>(self, ctx: &Ctx) -> syn::Expr
+    where
+        Self: Sized,
+        T: Fn() -> O,
+    {
+        let inner_expr = self.splice_untyped_ctx(ctx);
+        let stageleft_root = stageleft_root();
+
+        let out_type = quote_type::<O>();
+
+        syn::parse_quote! {
+            #stageleft_root::runtime_support::fn0_type_hint::<#out_type>(#inner_expr)
+        }
+    }
+
+    fn splice_fn1_ctx<I, O>(self, ctx: &Ctx) -> syn::Expr
+    where
+        Self: Sized,
+        T: Fn(I) -> O,
+    {
+        let inner_expr = self.splice_untyped_ctx(ctx);
+        let stageleft_root = stageleft_root();
+
+        let in_type = quote_type::<I>();
+        let out_type = quote_type::<O>();
+
+        syn::parse_quote! {
+            #stageleft_root::runtime_support::fn1_type_hint::<#in_type, #out_type>(#inner_expr)
+        }
+    }
+
+    fn splice_fn1_borrow_ctx<I, O>(self, ctx: &Ctx) -> syn::Expr
+    where
+        Self: Sized,
+        T: Fn(&I) -> O,
+    {
+        let inner_expr = self.splice_untyped_ctx(ctx);
+        let stageleft_root = stageleft_root();
+
+        let in_type = quote_type::<I>();
+        let out_type = quote_type::<O>();
+
+        syn::parse_quote! {
+            #stageleft_root::runtime_support::fn1_borrow_type_hint::<#in_type, #out_type>(#inner_expr)
+        }
+    }
+
+    fn splice_fn2_borrow_mut_ctx<I1, I2, O>(self, ctx: &Ctx) -> syn::Expr
+    where
+        Self: Sized,
+        T: Fn(&mut I1, I2) -> O,
+    {
+        let inner_expr = self.splice_untyped_ctx(ctx);
+        let stageleft_root = stageleft_root();
+
+        let in1_type = quote_type::<I1>();
+        let in2_type = quote_type::<I2>();
+        let out_type = quote_type::<O>();
+
+        syn::parse_quote! {
+            #stageleft_root::runtime_support::fn2_borrow_mut_type_hint::<#in1_type, #in2_type, #out_type>(#inner_expr)
+        }
+    }
+
+    fn splice_untyped(self) -> syn::Expr
+    where
+        Self: Sized,
+        Ctx: Default,
+    {
+        self.splice_untyped_ctx(&Default::default())
+    }
+
     fn splice_typed(self) -> syn::Expr
     where
         Self: Sized,
+        Ctx: Default,
     {
         let inner_expr = self.splice_untyped();
         let stageleft_root = stageleft_root();
@@ -140,6 +227,7 @@ pub trait Quoted<'a, T>: FreeVariable<T> {
     fn splice_fn0<O>(self) -> syn::Expr
     where
         Self: Sized,
+        Ctx: Default,
         T: Fn() -> O,
     {
         let inner_expr = self.splice_untyped();
@@ -155,6 +243,7 @@ pub trait Quoted<'a, T>: FreeVariable<T> {
     fn splice_fn1<I, O>(self) -> syn::Expr
     where
         Self: Sized,
+        Ctx: Default,
         T: Fn(I) -> O,
     {
         let inner_expr = self.splice_untyped();
@@ -171,6 +260,7 @@ pub trait Quoted<'a, T>: FreeVariable<T> {
     fn splice_fn1_borrow<I, O>(self) -> syn::Expr
     where
         Self: Sized,
+        Ctx: Default,
         T: Fn(&I) -> O,
     {
         let inner_expr = self.splice_untyped();
@@ -187,6 +277,7 @@ pub trait Quoted<'a, T>: FreeVariable<T> {
     fn splice_fn2_borrow_mut<I1, I2, O>(self) -> syn::Expr
     where
         Self: Sized,
+        Ctx: Default,
         T: Fn(&mut I1, I2) -> O,
     {
         let inner_expr = self.splice_untyped();
@@ -202,6 +293,9 @@ pub trait Quoted<'a, T>: FreeVariable<T> {
     }
 }
 
+pub trait Quoted<'a, T>: QuotedWithContext<'a, T, ()> {}
+impl<'a, T, F: QuotedWithContext<'a, T, ()>> Quoted<'a, T> for F {}
+
 fn stageleft_root() -> syn::Ident {
     let stageleft_crate = proc_macro_crate::crate_name("stageleft")
         .unwrap_or_else(|_| panic!("stageleft should be present in `Cargo.toml`"));
@@ -212,12 +306,19 @@ fn stageleft_root() -> syn::Ident {
     }
 }
 
-pub trait IntoQuotedOnce<'a, T>:
-    FnOnce(&mut String, &mut &'static str, &mut TokenStream, &mut CaptureVec, bool) -> T
+pub trait IntoQuotedOnce<'a, T, Ctx>:
+    for<'b> FnOnce(
+        &'b Ctx,
+        &mut String,
+        &mut &'static str,
+        &mut TokenStream,
+        &mut CaptureVec,
+        bool,
+    ) -> T
     + 'a
-    + Quoted<'a, T>
+    + QuotedWithContext<'a, T, Ctx>
 {
-    fn boxed(self) -> Box<dyn IntoQuotedOnce<'a, T>>
+    fn boxed(self) -> Box<dyn IntoQuotedOnce<'a, T, Ctx>>
     where
         Self: Sized,
     {
@@ -228,31 +329,60 @@ pub trait IntoQuotedOnce<'a, T>:
 impl<
         'a,
         T,
-        F: FnOnce(&mut String, &mut &'static str, &mut TokenStream, &mut CaptureVec, bool) -> T + 'a,
-    > Quoted<'a, T> for F
+        Ctx,
+        F: for<'b> FnOnce(
+                &'b Ctx,
+                &mut String,
+                &mut &'static str,
+                &mut TokenStream,
+                &mut CaptureVec,
+                bool,
+            ) -> T
+            + 'a,
+    > QuotedWithContext<'a, T, Ctx> for F
 {
 }
 
 impl<
         'a,
         T,
-        F: FnOnce(&mut String, &mut &'static str, &mut TokenStream, &mut CaptureVec, bool) -> T + 'a,
-    > IntoQuotedOnce<'a, T> for F
+        Ctx,
+        F: for<'b> FnOnce(
+                &'b Ctx,
+                &mut String,
+                &mut &'static str,
+                &mut TokenStream,
+                &mut CaptureVec,
+                bool,
+            ) -> T
+            + 'a,
+    > IntoQuotedOnce<'a, T, Ctx> for F
 {
 }
 
 impl<
         T,
-        F: FnOnce(&mut String, &mut &'static str, &mut TokenStream, &mut CaptureVec, bool) -> T,
-    > FreeVariable<T> for F
+        Ctx,
+        F: for<'b> FnOnce(
+            &'b Ctx,
+            &mut String,
+            &mut &'static str,
+            &mut TokenStream,
+            &mut CaptureVec,
+            bool,
+        ) -> T,
+    > FreeVariableWithContext<Ctx> for F
 {
-    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
+    type O = T;
+
+    fn to_tokens(self, ctx: &Ctx) -> (Option<TokenStream>, Option<TokenStream>) {
         let mut module_path = String::new();
         let mut crate_name = "";
         let mut expr_tokens = TokenStream::new();
         let mut free_variables = Vec::new();
         // this is an uninit value so we can't drop it
         std::mem::forget(self(
+            ctx,
             &mut module_path,
             &mut crate_name,
             &mut expr_tokens,
@@ -307,16 +437,25 @@ impl<
     }
 }
 
-pub trait IntoQuotedMut<'a, T>:
-    FnMut(&mut String, &mut &'static str, &mut TokenStream, &mut CaptureVec, bool) -> T + 'a
+pub trait IntoQuotedMut<'a, T, Ctx>:
+    FnMut(&Ctx, &mut String, &mut &'static str, &mut TokenStream, &mut CaptureVec, bool) -> T + 'a
 {
 }
 
 impl<
         'a,
         T,
-        F: FnMut(&mut String, &mut &'static str, &mut TokenStream, &mut CaptureVec, bool) -> T + 'a,
-    > IntoQuotedMut<'a, T> for F
+        Ctx,
+        F: FnMut(
+                &Ctx,
+                &mut String,
+                &mut &'static str,
+                &mut TokenStream,
+                &mut CaptureVec,
+                bool,
+            ) -> T
+            + 'a,
+    > IntoQuotedMut<'a, T, Ctx> for F
 {
 }
 
@@ -326,7 +465,7 @@ pub struct RuntimeData<T> {
     _phantom: PhantomData<T>,
 }
 
-impl<'a, T: 'a> Quoted<'a, T> for RuntimeData<T> {}
+impl<'a, T: 'a, Ctx> QuotedWithContext<'a, T, Ctx> for RuntimeData<T> {}
 
 impl<T: Copy> Copy for RuntimeData<T> {}
 
@@ -346,8 +485,10 @@ impl<T> RuntimeData<T> {
     }
 }
 
-impl<T> FreeVariable<T> for RuntimeData<T> {
-    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
+impl<T, Ctx> FreeVariableWithContext<Ctx> for RuntimeData<T> {
+    type O = T;
+
+    fn to_tokens(self, _ctx: &Ctx) -> (Option<TokenStream>, Option<TokenStream>) {
         let ident = syn::Ident::new(self.ident, Span::call_site());
         (None, Some(quote!(#ident)))
     }

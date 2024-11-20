@@ -5,7 +5,7 @@ use std::time::Duration;
 use hydroflow::futures::stream::Stream as FuturesStream;
 use hydroflow::{tokio, tokio_stream};
 use proc_macro2::Span;
-use stageleft::{q, Quoted};
+use stageleft::{q, QuotedWithContext};
 
 use super::builder::FlowState;
 use crate::cycle::{CycleCollection, ForwardRef, ForwardRefMarker};
@@ -60,6 +60,10 @@ pub fn check_matching_location<'a, L: Location<'a>>(l1: &L, l2: &L) {
 }
 
 pub trait Location<'a>: Clone {
+    type Root;
+
+    fn root(&self) -> Self::Root;
+
     fn id(&self) -> LocationId;
 
     fn flow_state(&self) -> &FlowState;
@@ -93,12 +97,12 @@ pub trait Location<'a>: Clone {
 
     fn source_stream<T, E: FuturesStream<Item = T> + Unpin>(
         &self,
-        e: impl Quoted<'a, E>,
+        e: impl QuotedWithContext<'a, E, Self>,
     ) -> Stream<T, Self, Unbounded>
     where
         Self: Sized + NoTick,
     {
-        let e = e.splice_untyped();
+        let e = e.splice_untyped_ctx(self);
 
         Stream::new(
             self.clone(),
@@ -111,14 +115,14 @@ pub trait Location<'a>: Clone {
 
     fn source_iter<T, E: IntoIterator<Item = T>>(
         &self,
-        e: impl Quoted<'a, E>,
+        e: impl QuotedWithContext<'a, E, Self>,
     ) -> Stream<T, Self, Unbounded>
     where
         Self: Sized + NoTick,
     {
         // TODO(shadaj): we mark this as unbounded because we do not yet have a representation
         // for bounded top-level streams, and this is the only way to generate one
-        let e = e.splice_untyped();
+        let e = e.splice_untyped_ctx(self);
 
         Stream::new(
             self.clone(),
@@ -129,7 +133,10 @@ pub trait Location<'a>: Clone {
         )
     }
 
-    fn singleton<T: Clone>(&self, e: impl Quoted<'a, T>) -> Singleton<T, Self, Unbounded>
+    fn singleton<T: Clone>(
+        &self,
+        e: impl QuotedWithContext<'a, T, Self>,
+    ) -> Singleton<T, Self, Unbounded>
     where
         Self: Sized + NoTick,
     {
@@ -137,7 +144,7 @@ pub trait Location<'a>: Clone {
         // for bounded top-level singletons, and this is the only way to generate one
 
         let e_arr = q!([e]);
-        let e = e_arr.splice_untyped();
+        let e = e_arr.splice_untyped_ctx(self);
 
         // we do a double persist here because if the singleton shows up on every tick,
         // we first persist the source so that we store that value and then persist again
@@ -155,7 +162,7 @@ pub trait Location<'a>: Clone {
 
     fn source_interval(
         &self,
-        interval: impl Quoted<'a, Duration> + Copy + 'a,
+        interval: impl QuotedWithContext<'a, Duration, Self> + Copy + 'a,
     ) -> Stream<tokio::time::Instant, Self, Unbounded>
     where
         Self: Sized + NoTick,
@@ -167,8 +174,8 @@ pub trait Location<'a>: Clone {
 
     fn source_interval_delayed(
         &self,
-        delay: impl Quoted<'a, Duration> + Copy + 'a,
-        interval: impl Quoted<'a, Duration> + Copy + 'a,
+        delay: impl QuotedWithContext<'a, Duration, Self> + Copy + 'a,
+        interval: impl QuotedWithContext<'a, Duration, Self> + Copy + 'a,
     ) -> Stream<tokio::time::Instant, Self, Unbounded>
     where
         Self: Sized + NoTick,

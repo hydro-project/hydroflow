@@ -17,7 +17,7 @@ digraph {
     n10v1 [label="(n10v1) persist::<'static>()", shape=house, fillcolor="#ffff88"]
     n11v1 [label="(n11v1) unique::<'tick>()", shape=house, fillcolor="#ffff88"]
     n12v1 [label="(n12v1) multiset_delta()", shape=house, fillcolor="#ffff88"]
-    n13v1 [label="(n13v1) for_each(\l    stageleft::runtime_support::fn1_type_hint::<\l        u32,\l        (),\l    >({\l        use crate::__staged::local::graph_reachability::*;\l        let reached_out = reached_out;\l        |v| {\l            reached_out.send(v).unwrap();\l        }\l    }),\l)\l", shape=house, fillcolor="#ffff88"]
+    n13v1 [label="(n13v1) for_each(\l    stageleft::runtime_support::fn1_type_hint::<\l        u32,\l        (),\l    >({\l        use crate::__staged::local::graph_reachability::*;\l        let reached_out__free = reached_out;\l        |v| {\l            reached_out__free.send(v).unwrap();\l        }\l    }),\l)\l", shape=house, fillcolor="#ffff88"]
     n14v1 [label="(n14v1) handoff", shape=parallelogram, fillcolor="#ddddff"]
     n15v1 [label="(n15v1) handoff", shape=parallelogram, fillcolor="#ddddff"]
     n16v1 [label="(n16v1) handoff", shape=parallelogram, fillcolor="#ddddff"]
