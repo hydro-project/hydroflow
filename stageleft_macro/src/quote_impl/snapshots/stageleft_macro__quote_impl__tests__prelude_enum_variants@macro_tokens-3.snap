@@ -5,6 +5,7 @@ expression: "prettyplease :: unparse(& wrapped)"
 fn main() {
     {
         move |
+            __stageleft_ctx: &_,
             set_mod: &mut String,
             set_crate_name: &mut &'static str,
             set_tokens: &mut stageleft::internal::TokenStream,

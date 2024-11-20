@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 use std::rc::Rc;
 
-use stageleft::{q, IntoQuotedMut, Quoted};
+use stageleft::{q, IntoQuotedMut, QuotedWithContext};
 
 use crate::builder::FLOW_USED_MESSAGE;
 use crate::cycle::{
@@ -12,8 +12,7 @@ use crate::cycle::{
 };
 use crate::ir::{HfPlusLeaf, HfPlusNode, TeeNode};
 use crate::location::{check_matching_location, Location, LocationId, NoTick, Tick};
-use crate::stream::{Bounded, Unbounded};
-use crate::{Optional, Stream};
+use crate::{Bounded, Optional, Stream, Unbounded};
 
 pub struct Singleton<T, L, B> {
     pub(crate) location: L,
@@ -149,11 +148,15 @@ impl<'a, T, L: Location<'a>, B> Singleton<T, L, B> {
         Stream::new(self.location, self.ir_node.into_inner())
     }
 
-    pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Singleton<U, L, B> {
+    pub fn map<U, F: Fn(T) -> U + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F, L::Root>,
+    ) -> Singleton<U, L, B> {
+        let f = f.splice_fn1_ctx(&self.location.root()).into();
         Singleton::new(
             self.location,
             HfPlusNode::Map {
-                f: f.splice_fn1().into(),
+                f,
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -161,22 +164,27 @@ impl<'a, T, L: Location<'a>, B> Singleton<T, L, B> {
 
     pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
         self,
-        f: impl IntoQuotedMut<'a, F>,
+        f: impl IntoQuotedMut<'a, F, L::Root>,
     ) -> Stream<U, L, B> {
+        let f = f.splice_fn1_ctx(&self.location.root()).into();
         Stream::new(
             self.location,
             HfPlusNode::FlatMap {
-                f: f.splice_fn1().into(),
+                f,
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
     }
 
-    pub fn filter<F: Fn(&T) -> bool + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Optional<T, L, B> {
+    pub fn filter<F: Fn(&T) -> bool + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F, L::Root>,
+    ) -> Optional<T, L, B> {
+        let f = f.splice_fn1_ctx(&self.location.root()).into();
         Optional::new(
             self.location,
             HfPlusNode::Filter {
-                f: f.splice_fn1_borrow().into(),
+                f,
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -184,12 +192,13 @@ impl<'a, T, L: Location<'a>, B> Singleton<T, L, B> {
 
     pub fn filter_map<U, F: Fn(T) -> Option<U> + 'a>(
         self,
-        f: impl IntoQuotedMut<'a, F>,
+        f: impl IntoQuotedMut<'a, F, L::Root>,
     ) -> Optional<U, L, B> {
+        let f = f.splice_fn1_ctx(&self.location.root()).into();
         Optional::new(
             self.location,
             HfPlusNode::FilterMap {
-                f: f.splice_fn1().into(),
+                f,
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -246,7 +255,7 @@ impl<'a, T, L: Location<'a> + NoTick, B> Singleton<T, L, B> {
 
     pub fn sample_every(
         self,
-        interval: impl Quoted<'a, std::time::Duration> + Copy + 'a,
+        interval: impl QuotedWithContext<'a, std::time::Duration, L::Root> + Copy + 'a,
     ) -> Stream<T, L, Unbounded> {
         let samples = self.location.source_interval(interval);
         let tick = self.location.tick();

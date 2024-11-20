@@ -46,6 +46,12 @@ impl<P> Clone for ExternalProcess<'_, P> {
 }
 
 impl<'a, P> Location<'a> for ExternalProcess<'a, P> {
+    type Root = Self;
+
+    fn root(&self) -> Self::Root {
+        self.clone()
+    }
+
     fn id(&self) -> LocationId {
         LocationId::ExternalProcess(self.id)
     }
