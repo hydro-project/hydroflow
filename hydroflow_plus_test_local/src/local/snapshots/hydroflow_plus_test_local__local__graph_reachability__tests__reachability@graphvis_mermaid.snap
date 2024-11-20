@@ -20,7 +20,7 @@ linkStyle default stroke:#aaa
 10v1[/"(10v1) <code>persist::&lt;'static&gt;()</code>"\]:::pushClass
 11v1[/"(11v1) <code>unique::&lt;'tick&gt;()</code>"\]:::pushClass
 12v1[/"(12v1) <code>multiset_delta()</code>"\]:::pushClass
-13v1[/"<div style=text-align:center>(13v1)</div> <code>for_each(<br>    stageleft::runtime_support::fn1_type_hint::&lt;<br>        u32,<br>        (),<br>    &gt;({<br>        use crate::__staged::local::graph_reachability::*;<br>        let reached_out = reached_out;<br>        |v| {<br>            reached_out.send(v).unwrap();<br>        }<br>    }),<br>)</code>"\]:::pushClass
+13v1[/"<div style=text-align:center>(13v1)</div> <code>for_each(<br>    stageleft::runtime_support::fn1_type_hint::&lt;<br>        u32,<br>        (),<br>    &gt;({<br>        use crate::__staged::local::graph_reachability::*;<br>        let reached_out__free = reached_out;<br>        |v| {<br>            reached_out__free.send(v).unwrap();<br>        }<br>    }),<br>)</code>"\]:::pushClass
 14v1["(14v1) <code>handoff</code>"]:::otherClass
 15v1["(15v1) <code>handoff</code>"]:::otherClass
 16v1["(16v1) <code>handoff</code>"]:::otherClass

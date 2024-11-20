@@ -2,16 +2,92 @@ use std::fs;
 use std::path::PathBuf;
 
 use hydroflow_lang::graph::{partition_graph, HydroflowGraph};
+use sha2::{Digest, Sha256};
 use stageleft::internal::quote;
+use syn::visit_mut::VisitMut;
 use trybuild_internals_api::cargo::{self, Metadata};
 use trybuild_internals_api::env::Update;
 use trybuild_internals_api::run::{PathDependency, Project};
 use trybuild_internals_api::{dependencies, features, path, Runner};
 
-pub static IS_TEST: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+use super::trybuild_rewriters::{ReplaceCrateNameWithStaged, ReplaceCrateWithOrig};
+
+static IS_TEST: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 pub fn init_test() {
     IS_TEST.store(true, std::sync::atomic::Ordering::Relaxed);
+}
+
+fn clean_name_hint(name_hint: &str) -> String {
+    name_hint
+        .replace("::", "__")
+        .replace(" ", "_")
+        .replace(",", "_")
+        .replace("<", "_")
+        .replace(">", "")
+        .replace("(", "")
+        .replace(")", "")
+}
+
+pub fn create_graph_trybuild(
+    graph: HydroflowGraph,
+    extra_stmts: Vec<syn::Stmt>,
+    name_hint: &Option<String>,
+) -> (String, (PathBuf, PathBuf, Option<Vec<String>>)) {
+    let source_dir = cargo::manifest_dir().unwrap();
+    let source_manifest = dependencies::get_manifest(&source_dir).unwrap();
+    let crate_name = &source_manifest.package.name.to_string().replace("-", "_");
+
+    let is_test = IS_TEST.load(std::sync::atomic::Ordering::Relaxed);
+
+    let mut generated_code = compile_graph_trybuild(graph, extra_stmts);
+
+    ReplaceCrateNameWithStaged {
+        crate_name: crate_name.clone(),
+    }
+    .visit_file_mut(&mut generated_code);
+
+    let mut inlined_staged = stageleft_tool::gen_staged_trybuild(
+        &path!(source_dir / "src" / "lib.rs"),
+        crate_name.clone(),
+        is_test,
+    );
+
+    ReplaceCrateWithOrig {
+        crate_name: crate_name.clone(),
+    }
+    .visit_file_mut(&mut inlined_staged);
+
+    let source = prettyplease::unparse(&syn::parse_quote! {
+        #generated_code
+
+        #[allow(
+            unused,
+            ambiguous_glob_reexports,
+            clippy::suspicious_else_formatting,
+            unexpected_cfgs,
+            reason = "generated code"
+        )]
+        pub mod __staged {
+            #inlined_staged
+        }
+    });
+
+    let mut hasher = Sha256::new();
+    hasher.update(&source);
+    let hash = format!("{:X}", hasher.finalize())
+        .chars()
+        .take(8)
+        .collect::<String>();
+
+    let bin_name = if let Some(name_hint) = &name_hint {
+        format!("{}_{}", clean_name_hint(name_hint), &hash)
+    } else {
+        hash
+    };
+
+    let trybuild_created = create_trybuild(&source, &bin_name, is_test).unwrap();
+    (bin_name, trybuild_created)
 }
 
 pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>) -> syn::File {
@@ -27,7 +103,7 @@ pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>
 
     let source_ast: syn::File = syn::parse_quote! {
         #![feature(box_patterns)]
-        #![allow(unused_imports, unused_crate_dependencies, missing_docs)]
+        #![allow(unused_imports, unused_crate_dependencies, missing_docs, non_snake_case)]
         use hydroflow_plus::*;
 
         #[allow(unused)]
