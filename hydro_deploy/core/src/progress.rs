@@ -370,7 +370,9 @@ impl ProgressTracker {
             .lock()
             .unwrap();
 
-        if progress_bar.multi_progress.println(msg.as_ref()).is_err() {
+        if progress_bar.current_count == 0 {
+            println!("{}", msg.as_ref());
+        } else if progress_bar.multi_progress.println(msg.as_ref()).is_err() {
             println!("{}", msg.as_ref());
         }
     }
