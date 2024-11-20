@@ -4,7 +4,7 @@ use hydroflow::util::deploy::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, DeployPorts,
 };
 use serde::{Deserialize, Serialize};
-use stageleft::{q, Quoted, RuntimeData};
+use stageleft::{q, QuotedWithContext, RuntimeData};
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct HydroflowPlusMeta {
@@ -16,13 +16,13 @@ pub struct HydroflowPlusMeta {
 pub fn cluster_members(
     cli: RuntimeData<&DeployPorts<HydroflowPlusMeta>>,
     of_cluster: usize,
-) -> impl Quoted<&Vec<u32>> + Copy {
+) -> impl QuotedWithContext<&Vec<u32>, ()> + Copy {
     q!(cli.meta.clusters.get(&of_cluster).unwrap())
 }
 
 pub fn cluster_self_id(
     cli: RuntimeData<&DeployPorts<HydroflowPlusMeta>>,
-) -> impl Quoted<u32> + Copy {
+) -> impl QuotedWithContext<u32, ()> + Copy {
     q!(cli
         .meta
         .cluster_id
@@ -41,7 +41,7 @@ pub fn deploy_o2o(
                     .connect_local_blocking::<ConnectedDirect>()
                     .into_sink()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(&())
         },
         {
             q!({
@@ -49,7 +49,7 @@ pub fn deploy_o2o(
                     .connect_local_blocking::<ConnectedDirect>()
                     .into_source()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(&())
         },
     )
 }
@@ -66,7 +66,7 @@ pub fn deploy_o2m(
                     .connect_local_blocking::<ConnectedDemux<ConnectedDirect>>()
                     .into_sink()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(&())
         },
         {
             q!({
@@ -74,7 +74,7 @@ pub fn deploy_o2m(
                     .connect_local_blocking::<ConnectedDirect>()
                     .into_source()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(&())
         },
     )
 }
@@ -91,7 +91,7 @@ pub fn deploy_m2o(
                     .connect_local_blocking::<ConnectedDirect>()
                     .into_sink()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(&())
         },
         {
             q!({
@@ -99,7 +99,7 @@ pub fn deploy_m2o(
                     .connect_local_blocking::<ConnectedTagged<ConnectedDirect>>()
                     .into_source()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(&())
         },
     )
 }
@@ -116,7 +116,7 @@ pub fn deploy_m2m(
                     .connect_local_blocking::<ConnectedDemux<ConnectedDirect>>()
                     .into_sink()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(&())
         },
         {
             q!({
@@ -124,7 +124,7 @@ pub fn deploy_m2m(
                     .connect_local_blocking::<ConnectedTagged<ConnectedDirect>>()
                     .into_source()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(&())
         },
     )
 }
@@ -139,7 +139,7 @@ pub fn deploy_e2o(
             .connect_local_blocking::<ConnectedDirect>()
             .into_source()
     })
-    .splice_untyped()
+    .splice_untyped_ctx(&())
 }
 
 pub fn deploy_o2e(
@@ -152,5 +152,5 @@ pub fn deploy_o2e(
             .connect_local_blocking::<ConnectedDirect>()
             .into_sink()
     })
-    .splice_untyped()
+    .splice_untyped_ctx(&())
 }

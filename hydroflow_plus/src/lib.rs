@@ -11,10 +11,13 @@ pub mod runtime_support {
 }
 
 pub mod runtime_context;
-pub use runtime_context::RuntimeContext;
+pub use runtime_context::RUNTIME_CONTEXT;
+
+pub mod boundedness;
+pub use boundedness::{Bounded, Unbounded};
 
 pub mod stream;
-pub use stream::{Bounded, Stream, Unbounded};
+pub use stream::Stream;
 
 pub mod singleton;
 pub use singleton::Singleton;
@@ -23,6 +26,7 @@ pub mod optional;
 pub use optional::Optional;
 
 pub mod location;
+pub use location::cluster::CLUSTER_SELF_ID;
 pub use location::{Cluster, ClusterId, Location, Process, Tick};
 
 pub mod deploy;
