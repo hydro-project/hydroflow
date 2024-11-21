@@ -197,7 +197,6 @@ fn leader_election<'a, L: Clone + Debug + Serialize + DeserializeOwned>(
         p_to_proposers_i_am_leader_forward_ref,
     );
     let (p_ballot, p_has_largest_ballot) = p_ballot_calc(
-        proposers,
         proposer_tick,
         p_received_max_ballot.latest_tick(proposer_tick),
     );
@@ -255,14 +254,12 @@ fn p_max_ballot<'a>(
 // Proposer logic to calculate the next ballot number. Expects p_received_max_ballot, the largest ballot received so far. Outputs streams: ballot_num, and has_largest_ballot, which only contains a value if we have the largest ballot.
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
 fn p_ballot_calc<'a>(
-    proposers: &Cluster<'a, Proposer>,
     proposer_tick: &Tick<Cluster<'a, Proposer>>,
     p_received_max_ballot: Singleton<Ballot, Tick<Cluster<'a, Proposer>>, Bounded>,
 ) -> (
     Singleton<Ballot, Tick<Cluster<'a, Proposer>>, Bounded>,
     Optional<(), Tick<Cluster<'a, Proposer>>, Bounded>,
 ) {
-    let p_id = proposers.self_id();
     let (p_ballot_num_complete_cycle, p_ballot_num) =
         proposer_tick.cycle_with_initial(proposer_tick.singleton(q!(0)));
 
@@ -273,7 +270,7 @@ fn p_ballot_calc<'a>(
             if received_max_ballot
                 > (Ballot {
                     num: ballot_num,
-                    proposer_id: p_id,
+                    proposer_id: CLUSTER_SELF_ID,
                 })
             {
                 received_max_ballot.num + 1
@@ -285,7 +282,7 @@ fn p_ballot_calc<'a>(
 
     let p_ballot = p_ballot_num.clone().map(q!(move |num| Ballot {
         num,
-        proposer_id: p_id
+        proposer_id: CLUSTER_SELF_ID
     }));
 
     let p_has_largest_ballot = p_received_max_ballot
@@ -340,7 +337,6 @@ fn p_leader_heartbeat<'a>(
     Stream<Ballot, Cluster<'a, Proposer>, Unbounded, NoOrder>,
     Optional<Option<Instant>, Tick<Cluster<'a, Proposer>>, Bounded>,
 ) {
-    let p_id = proposers.self_id();
     let p_to_proposers_i_am_leader = p_is_leader
         .clone()
         .then(p_ballot)
@@ -360,7 +356,8 @@ fn p_leader_heartbeat<'a>(
         proposers
             .source_interval_delayed(
                 q!(Duration::from_secs(
-                    (p_id.raw_id * i_am_leader_check_timeout_delay_multiplier as u32).into()
+                    (CLUSTER_SELF_ID.raw_id * i_am_leader_check_timeout_delay_multiplier as u32)
+                        .into()
                 )),
                 q!(Duration::from_secs(i_am_leader_check_timeout)),
             )

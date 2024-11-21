@@ -52,7 +52,6 @@ pub fn paxos_bench<'a>(
         &clients,
         leader_changed,
         |c_to_proposers| {
-            let client_self_id = clients.self_id();
             let (new_leader_elected, processed_payloads) = paxos_kv(
                 &proposers,
                 &acceptors,
@@ -64,7 +63,7 @@ pub fn paxos_bench<'a>(
                     .map(q!(move |(key, leader_id)| (leader_id, KvPayload {
                         key,
                         // we use our ID as the value and use that so the replica only notifies us
-                        value: client_self_id
+                        value: CLUSTER_SELF_ID
                     })))
                     .send_bincode_interleaved(&proposers)
                     // clients "own" certain keys, so interleaving elements from clients will not affect

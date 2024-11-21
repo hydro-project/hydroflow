@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use proc_macro2::Span;
-use stageleft::{q, Quoted};
+use stageleft::{q, QuotedWithContext};
 
 use super::{Cluster, Location, LocationId, Process};
 use crate::builder::FlowState;
@@ -24,6 +24,12 @@ pub struct Tick<L> {
 }
 
 impl<'a, L: Location<'a>> Location<'a> for Tick<L> {
+    type Root = L::Root;
+
+    fn root(&self) -> Self::Root {
+        self.l.root()
+    }
+
     fn id(&self) -> LocationId {
         LocationId::Tick(self.id, Box::new(self.l.id()))
     }
@@ -44,7 +50,7 @@ impl<'a, L: Location<'a>> Tick<L> {
 
     pub fn spin_batch(
         &self,
-        batch_size: impl Quoted<'a, usize> + Copy + 'a,
+        batch_size: impl QuotedWithContext<'a, usize, L> + Copy + 'a,
     ) -> Stream<(), Self, Bounded>
     where
         L: NoTick,
@@ -56,7 +62,10 @@ impl<'a, L: Location<'a>> Tick<L> {
             .tick_batch(self)
     }
 
-    pub fn singleton<T: Clone>(&self, e: impl Quoted<'a, T>) -> Singleton<T, Self, Bounded>
+    pub fn singleton<T: Clone>(
+        &self,
+        e: impl QuotedWithContext<'a, T, L>,
+    ) -> Singleton<T, Self, Bounded>
     where
         L: NoTick,
     {
@@ -65,13 +74,13 @@ impl<'a, L: Location<'a>> Tick<L> {
 
     pub fn singleton_first_tick<T: Clone>(
         &self,
-        e: impl Quoted<'a, T>,
+        e: impl QuotedWithContext<'a, T, Tick<L>>,
     ) -> Optional<T, Self, Bounded>
     where
         L: NoTick,
     {
         let e_arr = q!([e]);
-        let e = e_arr.splice_untyped();
+        let e = e_arr.splice_untyped_ctx(self);
 
         Optional::new(
             self.clone(),

@@ -11,7 +11,7 @@ pub fn increment_counter(count: &mut u64) {
     *count += 1;
 }
 
-fn quoted_any_fn<'a, F: Fn(&usize) + 'a, Q: IntoQuotedMut<'a, F>>(q: Q) -> Q {
+fn quoted_any_fn<'a, F: Fn(&usize) + 'a, Q: IntoQuotedMut<'a, F, ()>>(q: Q) -> Q {
     q
 }
 
