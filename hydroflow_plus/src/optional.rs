@@ -213,6 +213,13 @@ impl<'a, T, L: Location<'a>, B> Optional<T, L, B> {
         )
     }
 
+    pub fn flatten<U>(self) -> Stream<U, L, B>
+    where
+        T: IntoIterator<Item = U>,
+    {
+        self.flat_map(q!(|v| v))
+    }
+
     pub fn filter<F: Fn(&T) -> bool + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F, L>,
@@ -349,19 +356,19 @@ impl<'a, T, L: Location<'a>> Optional<T, L, Bounded> {
 }
 
 impl<'a, T, L: Location<'a> + NoTick, B> Optional<T, L, B> {
-    pub fn latest_tick(self, tick: &Tick<L>) -> Optional<T, Tick<L>, Bounded> {
+    pub unsafe fn latest_tick(self, tick: &Tick<L>) -> Optional<T, Tick<L>, Bounded> {
         Optional::new(
             tick.clone(),
             HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn tick_samples(self) -> Stream<T, L, Unbounded> {
+    pub unsafe fn tick_samples(self) -> Stream<T, L, Unbounded> {
         let tick = self.location.tick();
         self.latest_tick(&tick).all_ticks()
     }
 
-    pub fn sample_every(
+    pub unsafe fn sample_every(
         self,
         interval: impl QuotedWithContext<'a, std::time::Duration, L> + Copy + 'a,
     ) -> Stream<T, L, Unbounded> {
