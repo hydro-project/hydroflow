@@ -34,12 +34,20 @@ fn convert_hf_to_binary<I, A: Default, F: Fn(&mut A, I)>(f: F) -> impl Fn(I, I) 
 
 impl PropertyDatabase {
     /// Tags the expression as commutative.
-    pub fn add_commutative_tag<'a, I, A, F: Fn(&mut A, I), Q: Quoted<'a, F> + Clone>(
+    pub fn add_commutative_tag<
+        'a,
+        I,
+        A,
+        F: Fn(&mut A, I),
+        Ctx,
+        Q: QuotedWithContext<'a, F, Ctx> + Clone,
+    >(
         &mut self,
         expr: Q,
+        ctx: &Ctx,
     ) -> Q {
         let expr_clone = expr.clone();
-        self.commutative.insert(expr_clone.splice_untyped());
+        self.commutative.insert(expr_clone.splice_untyped_ctx(ctx));
         expr
     }
 
@@ -91,11 +99,15 @@ mod tests {
     fn test_property_database() {
         let mut db = PropertyDatabase::default();
 
-        assert!(!db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice_untyped())));
+        assert!(
+            !db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice_untyped_ctx(&())))
+        );
 
-        let _ = db.add_commutative_tag(q!(|a: &mut i32, b: i32| *a += b));
+        let _ = db.add_commutative_tag(q!(|a: &mut i32, b: i32| *a += b), &());
 
-        assert!(db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice_untyped())));
+        assert!(
+            db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice_untyped_ctx(&())))
+        );
     }
 
     #[test]
@@ -107,7 +119,7 @@ mod tests {
         let tick = process.tick();
 
         let counter_func = q!(|count: &mut i32, _| *count += 1);
-        let _ = database.add_commutative_tag(counter_func);
+        let _ = database.add_commutative_tag(counter_func, &tick);
 
         process
             .source_iter(q!(vec![]))

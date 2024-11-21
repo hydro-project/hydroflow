@@ -5,6 +5,7 @@ expression: "prettyplease :: unparse(& wrapped)"
 fn main() {
     {
         move |
+            __stageleft_ctx: &_,
             set_mod: &mut String,
             set_crate_name: &mut &'static str,
             set_tokens: &mut stageleft::internal::TokenStream,
@@ -12,12 +13,18 @@ fn main() {
             run: bool|
         {
             #[allow(unused, non_upper_case_globals, non_snake_case)]
-            let x = {
-                let _out = ::stageleft::runtime_support::FreeVariable::uninitialized(&x);
+            let x__free = {
+                let _out = ::stageleft::runtime_support::FreeVariableWithContext::uninitialized(
+                    &x,
+                    __stageleft_ctx,
+                );
                 _vec_to_set
                     .push((
-                        "x".to_string(),
-                        ::stageleft::runtime_support::FreeVariable::to_tokens(x),
+                        "x__free".to_string(),
+                        ::stageleft::runtime_support::FreeVariableWithContext::to_tokens(
+                            x,
+                            __stageleft_ctx,
+                        ),
                     ));
                 _out
             };
@@ -25,11 +32,11 @@ fn main() {
             *set_crate_name = option_env!("STAGELEFT_FINAL_CRATE_NAME")
                 .unwrap_or(env!("CARGO_PKG_NAME"));
             *set_tokens = stageleft::internal::quote! {
-                { let x = x + 2; let _ = x + 2; }
+                { let x = x__free + 2; let _ = x + 2; }
             };
             if !run {
                 #[allow(unused, non_upper_case_globals, non_snake_case)]
-                ::std::mem::forget(x);
+                ::std::mem::forget(x__free);
                 unsafe {
                     return ::std::mem::MaybeUninit::uninit().assume_init();
                 }
@@ -37,7 +44,7 @@ fn main() {
             #[allow(unreachable_code, unused_qualifications)]
             {
                 {
-                    let x = x + 2;
+                    let x = x__free + 2;
                     let _ = x + 2;
                 }
             }
