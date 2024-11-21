@@ -184,6 +184,7 @@
 <a href="#184" id="184">184</a>
 <a href="#185" id="185">185</a>
 <a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::hash::Hash;
@@ -191,8 +192,9 @@
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>serde::de::DeserializeOwned;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
+<span class="kw">use </span>stream::NoOrder;
 
-<span class="kw">use </span><span class="kw">super</span>::paxos::{paxos_core, Acceptor, Proposer};
+<span class="kw">use </span><span class="kw">super</span>::paxos::{paxos_core, Acceptor, Ballot, Proposer};
 
 <span class="kw">pub struct </span>Replica {}
 
@@ -243,7 +245,7 @@
     i_am_leader_check_timeout_delay_multiplier: usize,
     checkpoint_frequency: usize,
 ) -&gt; (
-    Stream&lt;(), Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;, Unbounded&gt;,
+    Stream&lt;Ballot, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;, Unbounded&gt;,
     Stream&lt;KvPayload&lt;K, V&gt;, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;, Unbounded&gt;,
 ) {
     <span class="kw">let </span>(r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
@@ -277,7 +279,7 @@
 </span><span class="attr">#[expect(clippy::type_complexity, reason = <span class="string">"internal paxos code // TODO"</span>)]
 </span><span class="kw">pub fn </span>replica&lt;<span class="lifetime">'a</span>, K: KvKey, V: KvValue&gt;(
     replicas: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;,
-    p_to_replicas: Stream&lt;SequencedKv&lt;K, V&gt;, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;, Unbounded&gt;,
+    p_to_replicas: Stream&lt;SequencedKv&lt;K, V&gt;, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;, Unbounded, NoOrder&gt;,
     checkpoint_frequency: usize,
 ) -&gt; (
     Stream&lt;usize, Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;, Unbounded&gt;,

@@ -77,7 +77,7 @@
         .send_bincode_interleaved(<span class="kw-2">&amp;</span>process)
         .tick_batch(<span class="kw-2">&amp;</span>process.tick())
         .persist()
-        .reduce_keyed(<span class="macro">q!</span>(|total, count| <span class="kw-2">*</span>total += count))
+        .reduce_keyed_commutative(<span class="macro">q!</span>(|total, count| <span class="kw-2">*</span>total += count))
         .all_ticks()
         .for_each(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(<span class="string">"{}: {}"</span>, string, count)));
 

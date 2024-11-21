@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Bounded","Unbounded"],"struct":["Stream"]};
+window.SIDEBAR_ITEMS = {"struct":["NoOrder","Stream","TotalOrder"],"trait":["MinOrder"]};

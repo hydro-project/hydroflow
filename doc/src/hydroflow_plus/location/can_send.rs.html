@@ -74,13 +74,28 @@
 <a href="#74" id="74">74</a>
 <a href="#75" id="75">75</a>
 <a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>stageleft::quote_type;
 
 <span class="kw">use super</span>::{Cluster, ClusterId, ExternalProcess, Location, Process};
+<span class="kw">use </span><span class="kw">crate</span>::stream::NoOrder;
 
 <span class="kw">pub trait </span>CanSend&lt;<span class="lifetime">'a</span>, To: Location&lt;<span class="lifetime">'a</span>&gt;&gt;: Location&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">type </span>In&lt;T&gt;;
     <span class="kw">type </span>Out&lt;T&gt;;
+
+    <span class="doccomment">/// Given the ordering guarantees of the input, determines the strongest possible
+    /// ordering guarantees of the output.
+    </span><span class="kw">type </span>OutStrongestOrder&lt;InOrder&gt;;
 
     <span class="kw">fn </span>is_demux() -&gt; bool;
     <span class="kw">fn </span>tagged_type() -&gt; <span class="prelude-ty">Option</span>&lt;syn::Type&gt;;
@@ -89,6 +104,7 @@
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P1, P2&gt; CanSend&lt;<span class="lifetime">'a</span>, Process&lt;<span class="lifetime">'a</span>, P2&gt;&gt; <span class="kw">for </span>Process&lt;<span class="lifetime">'a</span>, P1&gt; {
     <span class="kw">type </span>In&lt;T&gt; = T;
     <span class="kw">type </span>Out&lt;T&gt; = T;
+    <span class="kw">type </span>OutStrongestOrder&lt;InOrder&gt; = InOrder;
 
     <span class="kw">fn </span>is_demux() -&gt; bool {
         <span class="bool-val">false
@@ -102,6 +118,7 @@
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P1, C2&gt; CanSend&lt;<span class="lifetime">'a</span>, Cluster&lt;<span class="lifetime">'a</span>, C2&gt;&gt; <span class="kw">for </span>Process&lt;<span class="lifetime">'a</span>, P1&gt; {
     <span class="kw">type </span>In&lt;T&gt; = (ClusterId&lt;C2&gt;, T);
     <span class="kw">type </span>Out&lt;T&gt; = T;
+    <span class="kw">type </span>OutStrongestOrder&lt;InOrder&gt; = InOrder;
 
     <span class="kw">fn </span>is_demux() -&gt; bool {
         <span class="bool-val">true
@@ -115,6 +132,7 @@
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, C1, P2&gt; CanSend&lt;<span class="lifetime">'a</span>, Process&lt;<span class="lifetime">'a</span>, P2&gt;&gt; <span class="kw">for </span>Cluster&lt;<span class="lifetime">'a</span>, C1&gt; {
     <span class="kw">type </span>In&lt;T&gt; = T;
     <span class="kw">type </span>Out&lt;T&gt; = (ClusterId&lt;C1&gt;, T);
+    <span class="kw">type </span>OutStrongestOrder&lt;InOrder&gt; = NoOrder;
 
     <span class="kw">fn </span>is_demux() -&gt; bool {
         <span class="bool-val">false
@@ -128,6 +146,7 @@
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, C1, C2&gt; CanSend&lt;<span class="lifetime">'a</span>, Cluster&lt;<span class="lifetime">'a</span>, C2&gt;&gt; <span class="kw">for </span>Cluster&lt;<span class="lifetime">'a</span>, C1&gt; {
     <span class="kw">type </span>In&lt;T&gt; = (ClusterId&lt;C2&gt;, T);
     <span class="kw">type </span>Out&lt;T&gt; = (ClusterId&lt;C1&gt;, T);
+    <span class="kw">type </span>OutStrongestOrder&lt;InOrder&gt; = NoOrder;
 
     <span class="kw">fn </span>is_demux() -&gt; bool {
         <span class="bool-val">true
@@ -141,6 +160,7 @@
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, P1, E2&gt; CanSend&lt;<span class="lifetime">'a</span>, ExternalProcess&lt;<span class="lifetime">'a</span>, E2&gt;&gt; <span class="kw">for </span>Process&lt;<span class="lifetime">'a</span>, P1&gt; {
     <span class="kw">type </span>In&lt;T&gt; = T;
     <span class="kw">type </span>Out&lt;T&gt; = T;
+    <span class="kw">type </span>OutStrongestOrder&lt;InOrder&gt; = InOrder;
 
     <span class="kw">fn </span>is_demux() -&gt; bool {
         <span class="bool-val">false
