@@ -123,18 +123,6 @@ impl<C> PartialEq for ClusterId<C> {
 
 impl<C> Eq for ClusterId<C> {}
 
-impl<C> PartialOrd for ClusterId<C> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl<C> Ord for ClusterId<C> {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.raw_id.cmp(&other.raw_id)
-    }
-}
-
 impl<C> Hash for ClusterId<C> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.raw_id.hash(state)

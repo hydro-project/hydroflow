@@ -1493,7 +1493,7 @@ dependencies = [
  "ref-cast",
  "regex",
  "rustc-hash 1.1.0",
- "sealed",
+ "sealed 0.5.0",
  "serde",
  "serde_json",
  "slotmap",
@@ -1601,6 +1601,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
+ "sealed 0.6.0",
  "serde",
  "sha2",
  "stageleft",
@@ -1903,7 +1904,7 @@ dependencies = [
  "cc-traits",
  "lattices_macro",
  "ref-cast",
- "sealed",
+ "sealed 0.5.0",
  "serde",
  "trybuild",
  "variadics",
@@ -3099,6 +3100,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sealed"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22f968c5ea23d555e670b449c1c5e7b2fc399fdaec1d304a17cd48e288abc107"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.75",
+]
+
+[[package]]
 name = "semver"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4094,7 +4106,7 @@ name = "variadics"
 version = "0.0.7"
 dependencies = [
  "hashbrown 0.14.5",
- "sealed",
+ "sealed 0.5.0",
  "trybuild",
 ]
 
