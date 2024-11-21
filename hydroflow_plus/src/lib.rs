@@ -11,7 +11,7 @@ pub mod runtime_support {
 }
 
 pub mod runtime_context;
-pub use runtime_context::RuntimeContext;
+pub use runtime_context::RUNTIME_CONTEXT;
 
 pub mod boundedness;
 pub use boundedness::{Bounded, Unbounded};
