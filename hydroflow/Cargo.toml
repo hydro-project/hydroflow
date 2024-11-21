@@ -44,7 +44,7 @@ bytes = "1.1.0"
 futures = "0.3.0"
 hydroflow_deploy_integration = { optional = true, path = "../hydro_deploy/hydroflow_deploy_integration", version = "^0.10.0" }
 hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "^0.10.0" }
-hydroflow_lang = { path = "../hydroflow_lang", version = "^0.10.0", features = [ "clap-derive" ] }
+hydroflow_lang = { path = "../hydroflow_lang", version = "^0.10.0" }
 hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "^0.10.0" }
 itertools = "0.10.0"
 lattices = { path = "../lattices", version = "^0.5.8", features = [ "serde" ] }
@@ -81,6 +81,8 @@ tokio-util = { version = "0.7.5", features = [ "codec" ] }
 getrandom = { version = "0.2.6", features = [ "js" ] }
 
 [dev-dependencies]
+hydroflow_lang = { path = "../hydroflow_lang", version = "^0.10.0", features = [ "clap-derive" ] }
+
 chrono = { version = "0.4.20", features = [ "serde", "clock" ], default-features = false }
 clap = { version = "4.5.4", features = [ "derive" ] }
 colored = "2.0"
