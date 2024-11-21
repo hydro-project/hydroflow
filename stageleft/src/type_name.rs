@@ -95,6 +95,24 @@ impl VisitMut for RewriteAlloc {
             };
         } else if i.segments.iter().take(3).collect::<Vec<_>>()
             == vec![
+                &syn::PathSegment::from(syn::Ident::new("std", Span::call_site())),
+                &syn::PathSegment::from(syn::Ident::new("vec", Span::call_site())),
+                &syn::PathSegment::from(syn::Ident::new("into_iter", Span::call_site())),
+            ]
+        {
+            *i = syn::Path {
+                leading_colon: i.leading_colon,
+                segments: syn::punctuated::Punctuated::from_iter(
+                    vec![
+                        syn::PathSegment::from(syn::Ident::new("std", Span::call_site())),
+                        syn::PathSegment::from(syn::Ident::new("vec", Span::call_site())),
+                    ]
+                    .into_iter()
+                    .chain(i.segments.iter().skip(3).cloned()),
+                ),
+            };
+        } else if i.segments.iter().take(3).collect::<Vec<_>>()
+            == vec![
                 &syn::PathSegment::from(syn::Ident::new("tokio", Span::call_site())),
                 &syn::PathSegment::from(syn::Ident::new("time", Span::call_site())),
                 &syn::PathSegment::from(syn::Ident::new("instant", Span::call_site())),
@@ -134,10 +152,16 @@ impl VisitMut for RewriteAlloc {
                     syn::parse2(get_final_crate_name(final_name)).unwrap();
 
                 i.segments.insert(1, parse_quote!(__staged));
+            } else {
+                syn::visit_mut::visit_path_mut(self, i);
+                return;
             }
+        } else {
+            syn::visit_mut::visit_path_mut(self, i);
+            return;
         }
 
-        syn::visit_mut::visit_path_mut(self, i);
+        self.visit_path_mut(i);
     }
 }
 
