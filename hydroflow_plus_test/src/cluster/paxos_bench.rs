@@ -43,8 +43,12 @@ pub fn paxos_bench<'a>(
             ballot
         )))
         .max()
-        .map(q!(|ballot: Ballot| ballot.proposer_id))
-        .latest_tick(&client_tick);
+        .map(q!(|ballot: Ballot| ballot.proposer_id));
+
+    let cur_leader_id = unsafe {
+        // SAFETY: TODO
+        cur_leader_id.latest_tick(&client_tick)
+    };
 
     let leader_changed = cur_leader_id.clone().delta().map(q!(|_| ())).all_ticks();
 
@@ -56,10 +60,13 @@ pub fn paxos_bench<'a>(
                 &proposers,
                 &acceptors,
                 &replicas,
-                c_to_proposers
-                    .tick_batch(&client_tick)
-                    .cross_singleton(cur_leader_id)
-                    .all_ticks()
+                unsafe {
+                    // SAFETY: TODO
+                    c_to_proposers
+                        .tick_batch(&client_tick)
+                        .cross_singleton(cur_leader_id)
+                        .all_ticks()
+                }
                     .map(q!(move |((key, value), leader_id)| (leader_id, KvPayload {
                         key,
                         // we use our ID as part of the value and use that so the replica only notifies us
@@ -92,7 +99,10 @@ pub fn paxos_bench<'a>(
             // we only mark a transaction as committed when all replicas have applied it
             let (c_quorum_payloads, _) = collect_quorum::<_, _, _, ()>(
                 &client_tick,
-                c_received_payloads.tick_batch(&client_tick),
+                unsafe {
+                    // SAFETY: TODO
+                    c_received_payloads.tick_batch(&client_tick)
+                },
                 f + 1,
                 f + 1,
             );
@@ -119,7 +129,10 @@ fn bench_client<'a>(
     // r_to_clients_payload_applied.clone().inspect(q!(|payload: &(u32, ReplicaPayload)| println!("Client received payload: {:?}", payload)));
 
     // Whenever the leader changes, make all clients send a message
-    let restart_this_tick = trigger_restart.tick_batch(&client_tick).last();
+    let restart_this_tick = unsafe {
+        // SAFETY: TODO
+        trigger_restart.tick_batch(&client_tick).last()
+    };
 
     let c_new_payloads_when_restart = restart_this_tick.clone().flat_map(q!(move |_| (0
         ..num_clients_per_node)
@@ -127,11 +140,14 @@ fn bench_client<'a>(
 
     let (c_to_proposers_complete_cycle, c_to_proposers) =
         clients.forward_ref::<Stream<_, _, _, NoOrder>>();
-    let c_received_quorum_payloads = transaction_cycle(
-        c_to_proposers.assume_ordering(), /* we don't send a new write for the same key until the previous one is committed,
-                                           * so writes to the same key are ordered */
-    )
-    .tick_batch(&client_tick);
+    let c_received_quorum_payloads = unsafe {
+        // SAFETY: TODO
+        transaction_cycle(
+            c_to_proposers.assume_ordering(), /* we don't send a new write for the same key until the previous one is committed,
+                                               * so writes to the same key are ordered */
+        )
+        .tick_batch(&client_tick)
+    };
 
     // Whenever all replicas confirm that a payload was committed, send another payload
     let c_new_payloads_when_committed = c_received_quorum_payloads
@@ -165,10 +181,13 @@ fn bench_client<'a>(
         }));
     c_timers_complete_cycle.complete_next_tick(c_new_timers);
 
-    let c_stats_output_timer = clients
-        .source_interval(q!(Duration::from_secs(1)))
-        .tick_batch(&client_tick)
-        .first();
+    let c_stats_output_timer = unsafe {
+        // SAFETY: TODO
+        clients
+            .source_interval(q!(Duration::from_secs(1)))
+            .tick_batch(&client_tick)
+    }
+    .first();
 
     let c_latency_reset = c_stats_output_timer.clone().map(q!(|_| None)).defer_tick();
 
@@ -227,21 +246,22 @@ fn bench_client<'a>(
             }),
         );
 
-    c_latencies
-        .zip(c_throughput)
-        .latest_tick(&client_tick)
-        .continue_if(c_stats_output_timer)
-        .all_ticks()
-        .for_each(q!(move |(latencies, throughput)| {
-            let mut latencies_mut = latencies.borrow_mut();
-            if latencies_mut.len() > 0 {
-                let middle_idx = latencies_mut.len() / 2;
-                let (_, median, _) = latencies_mut.select_nth_unstable(middle_idx);
-                println!("Median latency: {}ms", (*median) as f64 / 1000.0);
-            }
+    unsafe {
+        // SAFETY: TODO
+        c_latencies.zip(c_throughput).latest_tick(&client_tick)
+    }
+    .continue_if(c_stats_output_timer)
+    .all_ticks()
+    .for_each(q!(move |(latencies, throughput)| {
+        let mut latencies_mut = latencies.borrow_mut();
+        if latencies_mut.len() > 0 {
+            let middle_idx = latencies_mut.len() / 2;
+            let (_, median, _) = latencies_mut.select_nth_unstable(middle_idx);
+            println!("Median latency: {}ms", (*median) as f64 / 1000.0);
+        }
 
-            println!("Throughput: {} requests/s", throughput);
-        }));
+        println!("Throughput: {} requests/s", throughput);
+    }));
     // End track statistics
 }
 
