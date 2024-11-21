@@ -19,13 +19,13 @@ pub fn graph_reachability<'a>(
     let reachability_tick = process.tick();
     let (set_reached_cycle, reached_cycle) = reachability_tick.cycle::<Stream<_, _, _, NoOrder>>();
 
-    let reached = roots.tick_batch(&reachability_tick).chain(reached_cycle);
+    let reached = roots.tick_batch(&reachability_tick).union(reached_cycle);
     let reachable = reached
         .clone()
         .map(q!(|r| (r, ())))
         .join(edges.tick_batch(&reachability_tick).persist())
         .map(q!(|(_from, (_, to))| to));
-    set_reached_cycle.complete_next_tick(reached.clone().chain(reachable));
+    set_reached_cycle.complete_next_tick(reached.clone().union(reachable));
 
     reached.all_ticks().unique().for_each(q!(|v| {
         reached_out.send(v).unwrap();
