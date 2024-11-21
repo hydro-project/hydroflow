@@ -213,6 +213,13 @@ impl<'a, T, L: Location<'a>, B> Optional<T, L, B> {
         )
     }
 
+    pub fn flatten<U>(self) -> Stream<U, L, B>
+    where
+        T: IntoIterator<Item = U>,
+    {
+        self.flat_map(q!(|v| v))
+    }
+
     pub fn filter<F: Fn(&T) -> bool + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F, L>,
