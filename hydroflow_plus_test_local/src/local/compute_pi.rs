@@ -23,19 +23,22 @@ pub fn compute_pi<'a>(flow: &FlowBuilder<'a>, batch_size: RuntimeData<usize>) ->
         )
         .all_ticks();
 
-    trials
-        .reduce(q!(|(inside, total), (inside_batch, total_batch)| {
-            *inside += inside_batch;
-            *total += total_batch;
-        }))
-        .sample_every(q!(Duration::from_secs(1)))
-        .for_each(q!(|(inside, total)| {
-            println!(
-                "pi: {} ({} trials)",
-                4.0 * inside as f64 / total as f64,
-                total
-            );
-        }));
+    let estimate = trials.reduce(q!(|(inside, total), (inside_batch, total_batch)| {
+        *inside += inside_batch;
+        *total += total_batch;
+    }));
+
+    unsafe {
+        // SAFETY: TODO
+        estimate.sample_every(q!(Duration::from_secs(1)))
+    }
+    .for_each(q!(|(inside, total)| {
+        println!(
+            "pi: {} ({} trials)",
+            4.0 * inside as f64 / total as f64,
+            total
+        );
+    }));
 
     process
 }
