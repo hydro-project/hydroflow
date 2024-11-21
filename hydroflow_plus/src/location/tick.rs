@@ -55,11 +55,15 @@ impl<'a, L: Location<'a>> Tick<L> {
     where
         L: NoTick,
     {
-        self.l
-            .spin()
-            .flat_map(q!(move |_| 0..batch_size))
-            .map(q!(|_| ()))
-            .tick_batch(self)
+        unsafe {
+            // SAFETY: at runtime, `spin` produces a single value per tick,
+            // so each batch is guaranteed to be the same size.
+            self.l
+                .spin()
+                .flat_map(q!(move |_| 0..batch_size))
+                .map(q!(|_| ()))
+                .tick_batch(self)
+        }
     }
 
     pub fn singleton<T: Clone>(
@@ -69,7 +73,10 @@ impl<'a, L: Location<'a>> Tick<L> {
     where
         L: NoTick,
     {
-        self.outer().singleton(e).latest_tick(self)
+        unsafe {
+            // SAFETY: a top-level singleton produces the same value each tick
+            self.outer().singleton(e).latest_tick(self)
+        }
     }
 
     pub fn singleton_first_tick<T: Clone>(
