@@ -67,7 +67,7 @@ impl MinOrder<TotalOrder> for NoOrder {
 /// - `Order`: the ordering of the stream, which is either [`TotalOrder`]
 ///   or [`NoOrder`] (default is [`TotalOrder`])
 pub struct Stream<T, L, B, Order = TotalOrder> {
-    location: L,
+    pub location: L,
     pub(crate) ir_node: RefCell<HfPlusNode>,
 
     _phantom: PhantomData<(T, L, B, Order)>,
@@ -221,7 +221,7 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
         self.map(q!(|d| d.clone()))
     }
 
-    pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+    pub fn flat_map_ordered<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F, L>,
     ) -> Stream<U, L, B, Order> {
@@ -235,11 +235,32 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
         )
     }
 
-    pub fn flatten<U>(self) -> Stream<U, L, B, Order>
+    pub fn flat_map_unordered<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F, L>,
+    ) -> Stream<U, L, B, NoOrder> {
+        let f = f.splice_fn1_ctx(&self.location).into();
+        Stream::new(
+            self.location,
+            HfPlusNode::FlatMap {
+                f,
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
+    }
+
+    pub fn flatten_ordered<U>(self) -> Stream<U, L, B, Order>
     where
         T: IntoIterator<Item = U>,
     {
-        self.flat_map(q!(|d| d))
+        self.flat_map_ordered(q!(|d| d))
+    }
+
+    pub fn flatten_unordered<U>(self) -> Stream<U, L, B, NoOrder>
+    where
+        T: IntoIterator<Item = U>,
+    {
+        self.flat_map_unordered(q!(|d| d))
     }
 
     pub fn filter<F: Fn(&T) -> bool + 'a>(
@@ -366,7 +387,7 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
         }
     }
 
-    pub fn assume_ordering<O>(self) -> Stream<T, L, B, O> {
+    pub unsafe fn assume_ordering<O>(self) -> Stream<T, L, B, O> {
         Stream::new(self.location, self.ir_node.into_inner())
     }
 }
@@ -564,9 +585,13 @@ impl<'a, T, L: Location<'a> + NoTick> Stream<T, L, Unbounded, NoOrder> {
         other: Stream<T, L, Unbounded, NoOrder>,
     ) -> Stream<T, L, Unbounded, NoOrder> {
         let tick = self.location.tick();
-        self.tick_batch(&tick)
-            .union(other.tick_batch(&tick))
-            .all_ticks()
+        unsafe {
+            // SAFETY: Because the inputs and outputs are unordered,
+            // we can interleave batches from both streams.
+            self.tick_batch(&tick)
+                .union(other.tick_batch(&tick))
+                .all_ticks()
+        }
     }
 }
 
@@ -703,21 +728,21 @@ where
 }
 
 impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
-    pub fn tick_batch(self, tick: &Tick<L>) -> Stream<T, Tick<L>, Bounded, Order> {
+    pub unsafe fn tick_batch(self, tick: &Tick<L>) -> Stream<T, Tick<L>, Bounded, Order> {
         Stream::new(
             tick.clone(),
             HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn tick_prefix(self, tick: &Tick<L>) -> Stream<T, Tick<L>, Bounded, Order>
+    pub unsafe fn tick_prefix(self, tick: &Tick<L>) -> Stream<T, Tick<L>, Bounded, Order>
     where
         T: Clone,
     {
         self.tick_batch(tick).persist()
     }
 
-    pub fn sample_every(
+    pub unsafe fn sample_every(
         self,
         interval: impl QuotedWithContext<'a, std::time::Duration, L> + Copy + 'a,
     ) -> Stream<T, L, Unbounded, Order> {
@@ -846,12 +871,17 @@ impl<'a, T, C1, B, Order> Stream<T, Cluster<'a, C1>, B, Order> {
         Order:
             MinOrder<<Cluster<'a, C1> as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<Order>>,
     {
-        self.map(q!(move |b| (
-            ClusterId::from_raw(CLUSTER_SELF_ID.raw_id),
-            b.clone()
-        )))
-        .send_bincode_interleaved(other)
-        .assume_ordering() // this is safe because we are mapping clusters 1:1
+        let sent = self
+            .map(q!(move |b| (
+                ClusterId::from_raw(CLUSTER_SELF_ID.raw_id),
+                b.clone()
+            )))
+            .send_bincode_interleaved(other);
+
+        unsafe {
+            // SAFETY: this is safe because we are mapping clusters 1:1
+            sent.assume_ordering()
+        }
     }
 }
 
@@ -1033,7 +1063,7 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
     {
         let ids = other.members();
 
-        self.flat_map(q!(|b| ids.iter().map(move |id| (
+        self.flat_map_ordered(q!(|b| ids.iter().map(move |id| (
             ::std::clone::Clone::clone(id),
             ::std::clone::Clone::clone(&b)
         ))))
@@ -1063,7 +1093,7 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
     {
         let ids = other.members();
 
-        self.flat_map(q!(|b| ids.iter().map(move |id| (
+        self.flat_map_ordered(q!(|b| ids.iter().map(move |id| (
             ::std::clone::Clone::clone(id),
             ::std::clone::Clone::clone(&b)
         ))))

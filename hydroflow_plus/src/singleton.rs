@@ -159,7 +159,21 @@ impl<'a, T, L: Location<'a>, B> Singleton<T, L, B> {
         )
     }
 
-    pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+    pub fn flat_map_ordered<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F, L>,
+    ) -> Stream<U, L, B> {
+        let f = f.splice_fn1_ctx(&self.location).into();
+        Stream::new(
+            self.location,
+            HfPlusNode::FlatMap {
+                f,
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
+    }
+
+    pub fn flat_map_unordered<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F, L>,
     ) -> Stream<U, L, B> {
@@ -238,19 +252,19 @@ impl<'a, T, L: Location<'a>> Singleton<T, L, Bounded> {
 }
 
 impl<'a, T, L: Location<'a> + NoTick, B> Singleton<T, L, B> {
-    pub fn latest_tick(self, tick: &Tick<L>) -> Singleton<T, Tick<L>, Bounded> {
+    pub unsafe fn latest_tick(self, tick: &Tick<L>) -> Singleton<T, Tick<L>, Bounded> {
         Singleton::new(
             tick.clone(),
             HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn tick_samples(self) -> Stream<T, L, Unbounded> {
+    pub unsafe fn tick_samples(self) -> Stream<T, L, Unbounded> {
         let tick = self.location.tick();
         self.latest_tick(&tick).all_ticks()
     }
 
-    pub fn sample_every(
+    pub unsafe fn sample_every(
         self,
         interval: impl QuotedWithContext<'a, std::time::Duration, L> + Copy + 'a,
     ) -> Stream<T, L, Unbounded> {
