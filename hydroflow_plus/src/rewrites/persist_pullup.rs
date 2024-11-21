@@ -168,7 +168,7 @@ mod tests {
         let process = flow.process::<()>();
 
         let tick = process.tick();
-        let before_tee = process.source_iter(q!(0..10)).tick_batch(&tick).persist();
+        let before_tee = unsafe { process.source_iter(q!(0..10)).tick_batch(&tick).persist() };
 
         before_tee
             .clone()
