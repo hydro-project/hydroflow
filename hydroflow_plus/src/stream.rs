@@ -564,9 +564,13 @@ impl<'a, T, L: Location<'a> + NoTick> Stream<T, L, Unbounded, NoOrder> {
         other: Stream<T, L, Unbounded, NoOrder>,
     ) -> Stream<T, L, Unbounded, NoOrder> {
         let tick = self.location.tick();
-        self.tick_batch(&tick)
-            .union(other.tick_batch(&tick))
-            .all_ticks()
+        unsafe {
+            // SAFETY: Because the inputs and outputs are unordered,
+            // we can interleave batches from both streams.
+            self.tick_batch(&tick)
+                .union(other.tick_batch(&tick))
+                .all_ticks()
+        }
     }
 }
 
@@ -703,21 +707,21 @@ where
 }
 
 impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
-    pub fn tick_batch(self, tick: &Tick<L>) -> Stream<T, Tick<L>, Bounded, Order> {
+    pub unsafe fn tick_batch(self, tick: &Tick<L>) -> Stream<T, Tick<L>, Bounded, Order> {
         Stream::new(
             tick.clone(),
             HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn tick_prefix(self, tick: &Tick<L>) -> Stream<T, Tick<L>, Bounded, Order>
+    pub unsafe fn tick_prefix(self, tick: &Tick<L>) -> Stream<T, Tick<L>, Bounded, Order>
     where
         T: Clone,
     {
         self.tick_batch(tick).persist()
     }
 
-    pub fn sample_every(
+    pub unsafe fn sample_every(
         self,
         interval: impl QuotedWithContext<'a, std::time::Duration, L> + Copy + 'a,
     ) -> Stream<T, L, Unbounded, Order> {
