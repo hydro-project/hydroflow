@@ -9,13 +9,13 @@ use hydroflow::futures;
 use hydroflow_lang::parse::Pipeline;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use stageleft::{q, IntoQuotedMut, Quoted};
+use stageleft::{q, IntoQuotedMut, QuotedWithContext};
 use syn::parse_quote;
 
 use crate::builder::FLOW_USED_MESSAGE;
 use crate::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRefMarker, TickCycleMarker};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, TeeNode};
-use crate::location::cluster::ClusterSelfId;
+use crate::location::cluster::CLUSTER_SELF_ID;
 use crate::location::external_process::{ExternalBincodeStream, ExternalBytesPort};
 use crate::location::{
     check_matching_location, CanSend, ExternalProcess, Location, LocationId, NoTick, Tick,
@@ -192,12 +192,13 @@ impl<'a, T: Clone, L: Location<'a>, B, Order> Clone for Stream<T, L, B, Order> {
 impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
     pub fn map<U, F: Fn(T) -> U + 'a>(
         self,
-        f: impl IntoQuotedMut<'a, F>,
+        f: impl IntoQuotedMut<'a, F, L>,
     ) -> Stream<U, L, B, Order> {
+        let f = f.splice_fn1_ctx(&self.location).into();
         Stream::new(
             self.location,
             HfPlusNode::Map {
-                f: f.splice_fn1().into(),
+                f,
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -212,12 +213,13 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
 
     pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
         self,
-        f: impl IntoQuotedMut<'a, F>,
+        f: impl IntoQuotedMut<'a, F, L>,
     ) -> Stream<U, L, B, Order> {
+        let f = f.splice_fn1_ctx(&self.location).into();
         Stream::new(
             self.location,
             HfPlusNode::FlatMap {
-                f: f.splice_fn1().into(),
+                f,
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -232,12 +234,13 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
 
     pub fn filter<F: Fn(&T) -> bool + 'a>(
         self,
-        f: impl IntoQuotedMut<'a, F>,
+        f: impl IntoQuotedMut<'a, F, L>,
     ) -> Stream<T, L, B, Order> {
+        let f = f.splice_fn1_borrow_ctx(&self.location).into();
         Stream::new(
             self.location,
             HfPlusNode::Filter {
-                f: f.splice_fn1_borrow().into(),
+                f,
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -245,12 +248,13 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
 
     pub fn filter_map<U, F: Fn(T) -> Option<U> + 'a>(
         self,
-        f: impl IntoQuotedMut<'a, F>,
+        f: impl IntoQuotedMut<'a, F, L>,
     ) -> Stream<U, L, B, Order> {
+        let f = f.splice_fn1_ctx(&self.location).into();
         Stream::new(
             self.location,
             HfPlusNode::FilterMap {
-                f: f.splice_fn1().into(),
+                f,
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -327,12 +331,17 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
         )
     }
 
-    pub fn inspect<F: Fn(&T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Stream<T, L, B, Order> {
+    pub fn inspect<F: Fn(&T) + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F, L>,
+    ) -> Stream<T, L, B, Order> {
+        let f = f.splice_fn1_borrow_ctx(&self.location).into();
+
         if L::is_top_level() {
             Stream::new(
                 self.location,
                 HfPlusNode::Persist(Box::new(HfPlusNode::Inspect {
-                    f: f.splice_fn1_borrow().into(),
+                    f,
                     input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
                 })),
             )
@@ -340,7 +349,7 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
             Stream::new(
                 self.location,
                 HfPlusNode::Inspect {
-                    f: f.splice_fn1_borrow().into(),
+                    f,
                     input: Box::new(self.ir_node.into_inner()),
                 },
             )
@@ -358,12 +367,15 @@ where
 {
     pub fn fold_commutative<A, I: Fn() -> A + 'a, F: Fn(&mut A, T)>(
         self,
-        init: impl IntoQuotedMut<'a, I>,
-        comb: impl IntoQuotedMut<'a, F>,
+        init: impl IntoQuotedMut<'a, I, L>,
+        comb: impl IntoQuotedMut<'a, F, L>,
     ) -> Singleton<A, L, B> {
+        let init = init.splice_fn0_ctx(&self.location).into();
+        let comb = comb.splice_fn2_borrow_mut_ctx(&self.location).into();
+
         let mut core = HfPlusNode::Fold {
-            init: init.splice_fn0().into(),
-            acc: comb.splice_fn2_borrow_mut().into(),
+            init,
+            acc: comb,
             input: Box::new(self.ir_node.into_inner()),
         };
 
@@ -379,10 +391,11 @@ where
 
     pub fn reduce_commutative<F: Fn(&mut T, T) + 'a>(
         self,
-        comb: impl IntoQuotedMut<'a, F>,
+        comb: impl IntoQuotedMut<'a, F, L>,
     ) -> Optional<T, L, B> {
+        let f = comb.splice_fn2_borrow_mut_ctx(&self.location).into();
         let mut core = HfPlusNode::Reduce {
-            f: comb.splice_fn2_borrow_mut().into(),
+            f,
             input: Box::new(self.ir_node.into_inner()),
         };
 
@@ -451,12 +464,15 @@ impl<'a, T, L: Location<'a>, B> Stream<T, L, B, TotalOrder> {
 
     pub fn fold<A, I: Fn() -> A + 'a, F: Fn(&mut A, T)>(
         self,
-        init: impl IntoQuotedMut<'a, I>,
-        comb: impl IntoQuotedMut<'a, F>,
+        init: impl IntoQuotedMut<'a, I, L>,
+        comb: impl IntoQuotedMut<'a, F, L>,
     ) -> Singleton<A, L, B> {
+        let init = init.splice_fn0_ctx(&self.location).into();
+        let comb = comb.splice_fn2_borrow_mut_ctx(&self.location).into();
+
         let mut core = HfPlusNode::Fold {
-            init: init.splice_fn0().into(),
-            acc: comb.splice_fn2_borrow_mut().into(),
+            init,
+            acc: comb,
             input: Box::new(self.ir_node.into_inner()),
         };
 
@@ -472,10 +488,11 @@ impl<'a, T, L: Location<'a>, B> Stream<T, L, B, TotalOrder> {
 
     pub fn reduce<F: Fn(&mut T, T) + 'a>(
         self,
-        comb: impl IntoQuotedMut<'a, F>,
+        comb: impl IntoQuotedMut<'a, F, L>,
     ) -> Optional<T, L, B> {
+        let f = comb.splice_fn2_borrow_mut_ctx(&self.location).into();
         let mut core = HfPlusNode::Reduce {
-            f: comb.splice_fn2_borrow_mut().into(),
+            f,
             input: Box::new(self.ir_node.into_inner()),
         };
 
@@ -549,14 +566,17 @@ impl<'a, K, V1, L: Location<'a>, B, Order> Stream<(K, V1), L, B, Order> {
 impl<'a, K: Eq + Hash, V, L: Location<'a>> Stream<(K, V), Tick<L>, Bounded> {
     pub fn fold_keyed<A, I: Fn() -> A + 'a, F: Fn(&mut A, V) + 'a>(
         self,
-        init: impl IntoQuotedMut<'a, I>,
-        comb: impl IntoQuotedMut<'a, F>,
+        init: impl IntoQuotedMut<'a, I, Tick<L>>,
+        comb: impl IntoQuotedMut<'a, F, Tick<L>>,
     ) -> Stream<(K, A), Tick<L>, Bounded> {
+        let init = init.splice_fn0_ctx(&self.location).into();
+        let comb = comb.splice_fn2_borrow_mut_ctx(&self.location).into();
+
         Stream::new(
             self.location,
             HfPlusNode::FoldKeyed {
-                init: init.splice_fn0().into(),
-                acc: comb.splice_fn2_borrow_mut().into(),
+                init,
+                acc: comb,
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -564,12 +584,14 @@ impl<'a, K: Eq + Hash, V, L: Location<'a>> Stream<(K, V), Tick<L>, Bounded> {
 
     pub fn reduce_keyed<F: Fn(&mut V, V) + 'a>(
         self,
-        comb: impl IntoQuotedMut<'a, F>,
+        comb: impl IntoQuotedMut<'a, F, Tick<L>>,
     ) -> Stream<(K, V), Tick<L>, Bounded> {
+        let f = comb.splice_fn2_borrow_mut_ctx(&self.location).into();
+
         Stream::new(
             self.location,
             HfPlusNode::ReduceKeyed {
-                f: comb.splice_fn2_borrow_mut().into(),
+                f,
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -582,14 +604,17 @@ where
 {
     pub fn fold_keyed_commutative<A, I: Fn() -> A + 'a, F: Fn(&mut A, V) + 'a>(
         self,
-        init: impl IntoQuotedMut<'a, I>,
-        comb: impl IntoQuotedMut<'a, F>,
+        init: impl IntoQuotedMut<'a, I, Tick<L>>,
+        comb: impl IntoQuotedMut<'a, F, Tick<L>>,
     ) -> Stream<(K, A), Tick<L>, Bounded, Order> {
+        let init = init.splice_fn0_ctx(&self.location).into();
+        let comb = comb.splice_fn2_borrow_mut_ctx(&self.location).into();
+
         Stream::new(
             self.location,
             HfPlusNode::FoldKeyed {
-                init: init.splice_fn0().into(),
-                acc: comb.splice_fn2_borrow_mut().into(),
+                init,
+                acc: comb,
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -597,12 +622,14 @@ where
 
     pub fn reduce_keyed_commutative<F: Fn(&mut V, V) + 'a>(
         self,
-        comb: impl IntoQuotedMut<'a, F>,
+        comb: impl IntoQuotedMut<'a, F, Tick<L>>,
     ) -> Stream<(K, V), Tick<L>, Bounded, Order> {
+        let f = comb.splice_fn2_borrow_mut_ctx(&self.location).into();
+
         Stream::new(
             self.location,
             HfPlusNode::ReduceKeyed {
-                f: comb.splice_fn2_borrow_mut().into(),
+                f,
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -626,7 +653,7 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
 
     pub fn sample_every(
         self,
-        interval: impl Quoted<'a, std::time::Duration> + Copy + 'a,
+        interval: impl QuotedWithContext<'a, std::time::Duration, L> + Copy + 'a,
     ) -> Stream<T, L, Unbounded, Order> {
         let samples = self.location.source_interval(interval);
         let tick = self.location.tick();
@@ -635,7 +662,8 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
             .all_ticks()
     }
 
-    pub fn for_each<F: Fn(T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) {
+    pub fn for_each<F: Fn(T) + 'a>(self, f: impl IntoQuotedMut<'a, F, L>) {
+        let f = f.splice_fn1_ctx(&self.location).into();
         self.location
             .flow_state()
             .borrow_mut()
@@ -644,11 +672,14 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
             .expect(FLOW_USED_MESSAGE)
             .push(HfPlusLeaf::ForEach {
                 input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
-                f: f.splice_fn1().into(),
+                f,
             });
     }
 
-    pub fn dest_sink<S: Unpin + futures::Sink<T> + 'a>(self, sink: impl Quoted<'a, S>) {
+    pub fn dest_sink<S: Unpin + futures::Sink<T> + 'a>(
+        self,
+        sink: impl QuotedWithContext<'a, S, L>,
+    ) {
         self.location
             .flow_state()
             .borrow_mut()
@@ -656,7 +687,7 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
             .as_mut()
             .expect(FLOW_USED_MESSAGE)
             .push(HfPlusLeaf::DestSink {
-                sink: sink.splice_typed().into(),
+                sink: sink.splice_typed_ctx(&self.location).into(),
                 input: Box::new(self.ir_node.into_inner()),
             });
     }
@@ -736,6 +767,28 @@ pub(super) fn deserialize_bincode<T: DeserializeOwned>(tagged: Option<syn::Type>
     }
 }
 
+impl<'a, T, C1, B, Order> Stream<T, Cluster<'a, C1>, B, Order> {
+    pub fn decouple_cluster<C2: 'a, Tag>(
+        self,
+        other: &Cluster<'a, C2>,
+    ) -> Stream<T, Cluster<'a, C2>, Unbounded, Order>
+    where
+        Cluster<'a, C1>: Location<'a, Root = Cluster<'a, C1>>,
+        Cluster<'a, C1>:
+            CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T), Out<T> = (Tag, T)>,
+        T: Clone + Serialize + DeserializeOwned,
+        Order:
+            MinOrder<<Cluster<'a, C1> as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<Order>>,
+    {
+        self.map(q!(move |b| (
+            ClusterId::from_raw(CLUSTER_SELF_ID.raw_id),
+            b.clone()
+        )))
+        .send_bincode_interleaved(other)
+        .assume_ordering() // this is safe because we are mapping clusters 1:1
+    }
+}
+
 impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
     pub fn decouple_process<P2>(
         self,
@@ -747,28 +800,6 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
         Order: MinOrder<L::OutStrongestOrder<Order>, Min = Order>,
     {
         self.send_bincode::<Process<'a, P2>, T>(other)
-    }
-
-    pub fn decouple_cluster<C2: 'a, Tag>(
-        self,
-        other: &Cluster<'a, C2>,
-    ) -> Stream<T, Cluster<'a, C2>, Unbounded, Order>
-    where
-        L: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T), Out<T> = (Tag, T)>,
-        T: Clone + Serialize + DeserializeOwned,
-        Order: MinOrder<L::OutStrongestOrder<Order>>,
-    {
-        let self_node_id = match self.location_kind() {
-            LocationId::Cluster(cluster_id) => ClusterSelfId {
-                id: cluster_id,
-                _phantom: PhantomData,
-            },
-            _ => panic!("decouple_cluster must be called on a cluster"),
-        };
-
-        self.map(q!(move |b| (self_node_id, b.clone())))
-            .send_bincode_interleaved(other)
-            .assume_ordering() // this is safe because we are mapping clusters 1:1
     }
 
     pub fn send_bincode<L2: Location<'a>, CoreType>(

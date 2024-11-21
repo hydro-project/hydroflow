@@ -3,16 +3,14 @@ use hydroflow_plus::*;
 pub fn decouple_cluster<'a>(flow: &FlowBuilder<'a>) -> (Cluster<'a, ()>, Cluster<'a, ()>) {
     let cluster1 = flow.cluster();
     let cluster2 = flow.cluster();
-    let cluster_self_id = cluster2.self_id();
-    let cluster1_self_id = cluster1.self_id();
     cluster1
-        .source_iter(q!(vec!(cluster1_self_id)))
+        .source_iter(q!(vec!(CLUSTER_SELF_ID)))
         // .for_each(q!(|message| println!("hey, {}", message)))
         .inspect(q!(|message| println!("Cluster1 node sending message: {}", message)))
         .decouple_cluster(&cluster2)
         .for_each(q!(move |message| println!(
             "My self id is {}, my message is {}",
-            cluster_self_id, message
+            CLUSTER_SELF_ID, message
         )));
     (cluster1, cluster2)
 }
@@ -34,15 +32,13 @@ pub fn simple_cluster<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, ()>, Cluster<'
     let numbers = process.source_iter(q!(0..5));
     let ids = process.source_iter(cluster.members()).map(q!(|&id| id));
 
-    let cluster_self_id = cluster.self_id();
-
     ids.cross_product(numbers)
         .map(q!(|(id, n)| (id, (id, n))))
         .send_bincode(&cluster)
         .tick_batch(&cluster.tick())
         .inspect(q!(move |n| println!(
             "cluster received: {:?} (self cluster id: {})",
-            n, cluster_self_id
+            n, CLUSTER_SELF_ID
         )))
         .all_ticks()
         .send_bincode(&process)
