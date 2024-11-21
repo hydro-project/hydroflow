@@ -160,7 +160,7 @@ pub trait Location<'a>: Clone {
         )
     }
 
-    fn source_interval(
+    unsafe fn source_interval(
         &self,
         interval: impl QuotedWithContext<'a, Duration, Self> + Copy + 'a,
     ) -> Stream<tokio::time::Instant, Self, Unbounded>
@@ -172,7 +172,7 @@ pub trait Location<'a>: Clone {
         )))
     }
 
-    fn source_interval_delayed(
+    unsafe fn source_interval_delayed(
         &self,
         delay: impl QuotedWithContext<'a, Duration, Self> + Copy + 'a,
         interval: impl QuotedWithContext<'a, Duration, Self> + Copy + 'a,
