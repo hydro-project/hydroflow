@@ -43,6 +43,16 @@ export function getLines(str: string, lineStartOrSectionName: number | string, l
     return lines.join('\n');
 }
 
+/// Adds `// highlight-next-line` annotations to the specified lines.
+export function highlightLines(code: string, lines: number[]): string {
+    return code.split('\n').map((line, i) => {
+        if (lines.includes(i + 1)) {
+            return `// highlight-next-line\n${line}`;
+        }
+        return line;
+    }).join('\n');
+}
+
 /// Extract the output from the stdout snapshots created by `surface_examples.rs`.
 ///
 /// This hides the graph output. Use `extractMermaid` to extract the graph output.
