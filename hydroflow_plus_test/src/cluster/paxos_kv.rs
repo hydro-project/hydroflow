@@ -102,8 +102,12 @@ pub fn replica<'a, K: KvKey, V: KvValue>(
 
     let (r_buffered_payloads_complete_cycle, r_buffered_payloads) = replica_tick.cycle();
     // p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
-    let r_sorted_payloads = p_to_replicas
+    let r_sorted_payloads = unsafe {
+        // SAFETY: because we fill slots one-by-one, we can safely batch
+        // because non-determinism is resolved when we sort by slots
+        p_to_replicas
         .tick_batch(&replica_tick)
+    }
         .union(r_buffered_payloads) // Combine with all payloads that we've received and not processed yet
         .sort();
     // Create a cycle since we'll use this seq before we define it

@@ -159,7 +159,21 @@ impl<'a, T, L: Location<'a>, B> Singleton<T, L, B> {
         )
     }
 
-    pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+    pub fn flat_map_ordered<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F, L>,
+    ) -> Stream<U, L, B> {
+        let f = f.splice_fn1_ctx(&self.location).into();
+        Stream::new(
+            self.location,
+            HfPlusNode::FlatMap {
+                f,
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
+    }
+
+    pub fn flat_map_unordered<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F, L>,
     ) -> Stream<U, L, B> {
@@ -238,19 +252,43 @@ impl<'a, T, L: Location<'a>> Singleton<T, L, Bounded> {
 }
 
 impl<'a, T, L: Location<'a> + NoTick, B> Singleton<T, L, B> {
-    pub fn latest_tick(self, tick: &Tick<L>) -> Singleton<T, Tick<L>, Bounded> {
+    /// Given a tick, returns a singleton value corresponding to a snapshot of the singleton
+    /// as of that tick. The snapshot at tick `t + 1` is guaranteed to include at least all
+    /// relevant data that contributed to the snapshot at tick `t`.
+    ///
+    /// # Safety
+    /// Because this picks a snapshot of a singleton whose value is continuously changing,
+    /// the output singleton has a non-deterministic value since the snapshot can be at an
+    /// arbitrary point in time.
+    pub unsafe fn latest_tick(self, tick: &Tick<L>) -> Singleton<T, Tick<L>, Bounded> {
         Singleton::new(
             tick.clone(),
             HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn tick_samples(self) -> Stream<T, L, Unbounded> {
+    /// Eagerly samples the singleton as fast as possible, returning a stream of snapshots
+    /// with order corresponding to increasing prefixes of data contributing to the singleton.
+    ///
+    /// # Safety
+    /// At runtime, the singleton will be arbitrarily sampled as fast as possible, but due
+    /// to non-deterministic batching and arrival of inputs, the output stream is
+    /// non-deterministic.
+    pub unsafe fn sample_eager(self) -> Stream<T, L, Unbounded> {
         let tick = self.location.tick();
         self.latest_tick(&tick).all_ticks()
     }
 
-    pub fn sample_every(
+    /// Given a time interval, returns a stream corresponding to snapshots of the singleton
+    /// value taken at various points in time. Because the input singleton may be
+    /// [`Unbounded`], there are no guarantees on what these snapshots are other than they
+    /// represent the value of the singleton given some prefix of the streams leading up to
+    /// it.
+    ///
+    /// # Safety
+    /// The output stream is non-deterministic in which elements are sampled, since this
+    /// is controlled by a clock.
+    pub unsafe fn sample_every(
         self,
         interval: impl QuotedWithContext<'a, std::time::Duration, L> + Copy + 'a,
     ) -> Stream<T, L, Unbounded> {

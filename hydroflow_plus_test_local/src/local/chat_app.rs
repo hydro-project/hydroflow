@@ -14,15 +14,24 @@ pub fn chat_app<'a>(
     let process = flow.process::<()>();
     let tick = process.tick();
 
-    let users = process
-        .source_stream(users_stream)
-        .tick_batch(&tick)
-        .persist();
+    let users = unsafe {
+        // SAFETY: intentionally non-deterministic to not send messaged
+        // to users that joined after the message was sent
+        process.source_stream(users_stream).tick_batch(&tick)
+    }
+    .persist();
     let messages = process.source_stream(messages);
     let messages = if replay_messages {
-        messages.tick_batch(&tick).persist()
+        unsafe {
+            // SAFETY: see above
+            messages.tick_batch(&tick)
+        }
+        .persist()
     } else {
-        messages.tick_batch(&tick)
+        unsafe {
+            // SAFETY: see above
+            messages.tick_batch(&tick)
+        }
     };
 
     // do this after the persist to test pullup
