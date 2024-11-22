@@ -10,6 +10,7 @@ use crate::builder::FLOW_USED_MESSAGE;
 use crate::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRefMarker, TickCycleMarker};
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource, TeeNode};
 use crate::location::{check_matching_location, LocationId, NoTick};
+use crate::stream::NoOrder;
 use crate::{Bounded, Location, Singleton, Stream, Tick, Unbounded};
 
 pub struct Optional<T, L, B> {
@@ -199,7 +200,7 @@ impl<'a, T, L: Location<'a>, B> Optional<T, L, B> {
         )
     }
 
-    pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+    pub fn flat_map_ordered<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F, L>,
     ) -> Stream<U, L, B> {
@@ -213,11 +214,32 @@ impl<'a, T, L: Location<'a>, B> Optional<T, L, B> {
         )
     }
 
-    pub fn flatten<U>(self) -> Stream<U, L, B>
+    pub fn flat_map_unordered<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F, L>,
+    ) -> Stream<U, L, B, NoOrder> {
+        let f = f.splice_fn1_ctx(&self.location).into();
+        Stream::new(
+            self.location,
+            HfPlusNode::FlatMap {
+                f,
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
+    }
+
+    pub fn flatten_ordered<U>(self) -> Stream<U, L, B>
     where
         T: IntoIterator<Item = U>,
     {
-        self.flat_map(q!(|v| v))
+        self.flat_map_ordered(q!(|v| v))
+    }
+
+    pub fn flatten_unordered<U>(self) -> Stream<U, L, B, NoOrder>
+    where
+        T: IntoIterator<Item = U>,
+    {
+        self.flat_map_unordered(q!(|v| v))
     }
 
     pub fn filter<F: Fn(&T) -> bool + 'a>(
@@ -356,19 +378,43 @@ impl<'a, T, L: Location<'a>> Optional<T, L, Bounded> {
 }
 
 impl<'a, T, L: Location<'a> + NoTick, B> Optional<T, L, B> {
-    pub fn latest_tick(self, tick: &Tick<L>) -> Optional<T, Tick<L>, Bounded> {
+    /// Given a tick, returns a optional value corresponding to a snapshot of the optional
+    /// as of that tick. The snapshot at tick `t + 1` is guaranteed to include at least all
+    /// relevant data that contributed to the snapshot at tick `t`.
+    ///
+    /// # Safety
+    /// Because this picks a snapshot of a optional whose value is continuously changing,
+    /// the output optional has a non-deterministic value since the snapshot can be at an
+    /// arbitrary point in time.
+    pub unsafe fn latest_tick(self, tick: &Tick<L>) -> Optional<T, Tick<L>, Bounded> {
         Optional::new(
             tick.clone(),
             HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn tick_samples(self) -> Stream<T, L, Unbounded> {
+    /// Eagerly samples the optional as fast as possible, returning a stream of snapshots
+    /// with order corresponding to increasing prefixes of data contributing to the optional.
+    ///
+    /// # Safety
+    /// At runtime, the optional will be arbitrarily sampled as fast as possible, but due
+    /// to non-deterministic batching and arrival of inputs, the output stream is
+    /// non-deterministic.
+    pub unsafe fn sample_eager(self) -> Stream<T, L, Unbounded> {
         let tick = self.location.tick();
         self.latest_tick(&tick).all_ticks()
     }
 
-    pub fn sample_every(
+    /// Given a time interval, returns a stream corresponding to snapshots of the optional
+    /// value taken at various points in time. Because the input optional may be
+    /// [`Unbounded`], there are no guarantees on what these snapshots are other than they
+    /// represent the value of the optional given some prefix of the streams leading up to
+    /// it.
+    ///
+    /// # Safety
+    /// The output stream is non-deterministic in which elements are sampled, since this
+    /// is controlled by a clock.
+    pub unsafe fn sample_every(
         self,
         interval: impl QuotedWithContext<'a, std::time::Duration, L> + Copy + 'a,
     ) -> Stream<T, L, Unbounded> {
