@@ -4,5 +4,7 @@ pub mod map_reduce;
 pub mod paxos;
 pub mod paxos_bench;
 pub mod paxos_kv;
+pub mod quorum;
+pub mod request_response;
 pub mod simple_cluster;
 pub mod two_pc;

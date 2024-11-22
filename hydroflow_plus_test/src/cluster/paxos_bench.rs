@@ -3,10 +3,11 @@ use std::rc::Rc;
 use std::time::{Duration, SystemTime};
 
 use hydroflow_plus::*;
-use stream::NoOrder;
+use stream::{NoOrder, TotalOrder};
 
 use super::paxos::{Acceptor, Ballot, Proposer};
 use super::paxos_kv::{paxos_kv, KvPayload, Replica};
+use super::quorum::collect_quorum;
 
 pub struct Client {}
 
@@ -60,10 +61,13 @@ pub fn paxos_bench<'a>(
                     .tick_batch(&client_tick)
                     .cross_singleton(cur_leader_id)
                     .all_ticks()
-                    .map(q!(move |(key, leader_id)| (leader_id, KvPayload {
+                    .map(q!(move |((key, value), leader_id)| (leader_id, KvPayload {
                         key,
-                        // we use our ID as the value and use that so the replica only notifies us
-                        value: CLUSTER_SELF_ID
+                        // we use our ID as part of the value and use that so the replica only notifies us
+                        value: (
+                            CLUSTER_SELF_ID,
+                            value
+                        )
                     })))
                     .send_bincode_interleaved(&proposers)
                     // clients "own" certain keys, so interleaving elements from clients will not affect
@@ -79,36 +83,22 @@ pub fn paxos_bench<'a>(
             new_leader_elected_complete
                 .complete(new_leader_elected.broadcast_bincode_interleaved(&clients));
 
-            // we only mark a transaction as committed when `f + 1` replicas have committed it
-            let (c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) =
-                client_tick.cycle::<Stream<_, _, _, NoOrder>>();
             let c_received_payloads = processed_payloads
-                .map(q!(|payload| (payload.value, payload)))
-                .send_bincode_interleaved(&clients)
-                .tick_batch(&client_tick)
-                .map(q!(|replica_payload| (replica_payload.key, ())))
-                .chain(c_pending_quorum_payloads);
-            let c_received_quorum_payloads = c_received_payloads
-                .clone()
-                .fold_keyed_commutative(
-                    q!(|| 0),
-                    q!(|curr_count, _sender| {
-                        *curr_count += 1; // Assumes the same replica will only send commit once
-                    }),
-                )
-                .filter_map(q!(move |(key, count)| {
-                    if count == f + 1 {
-                        Some(key)
-                    } else {
-                        None
-                    }
-                }));
-            let c_new_pending_quorum_payloads =
-                c_received_payloads.anti_join(c_received_quorum_payloads.clone());
-            c_pending_quorum_payloads_complete_cycle
-                .complete_next_tick(c_new_pending_quorum_payloads);
+                .map(q!(|payload| (
+                    payload.value.0,
+                    ((payload.key, payload.value.1), Ok(()))
+                )))
+                .send_bincode_interleaved(&clients);
 
-            c_received_quorum_payloads.all_ticks()
+            // we only mark a transaction as committed when all replicas have applied it
+            let (c_quorum_payloads, _) = collect_quorum::<_, _, _, _, ()>(
+                &client_tick,
+                c_received_payloads.tick_batch(&client_tick),
+                f + 1,
+                f + 1,
+            );
+
+            c_quorum_payloads.keys().all_ticks()
         },
         num_clients_per_node,
         median_latency_window_size,
@@ -121,8 +111,8 @@ fn bench_client<'a>(
     clients: &Cluster<'a, Client>,
     trigger_restart: Stream<(), Cluster<'a, Client>, Unbounded>,
     transaction_cycle: impl FnOnce(
-        Stream<u32, Cluster<'a, Client>, Unbounded>,
-    ) -> Stream<u32, Cluster<'a, Client>, Unbounded, NoOrder>,
+        Stream<(u32, u32), Cluster<'a, Client>, Unbounded>,
+    ) -> Stream<(u32, u32), Cluster<'a, Client>, Unbounded, NoOrder>,
     num_clients_per_node: usize,
     median_latency_window_size: usize,
 ) {
@@ -132,24 +122,28 @@ fn bench_client<'a>(
     // Whenever the leader changes, make all clients send a message
     let restart_this_tick = trigger_restart.tick_batch(&client_tick).last();
 
-    let c_new_payloads_when_restart = restart_this_tick
-        .clone()
-        .flat_map(q!(move |_| (0..num_clients_per_node).map(move |i| i as u32)));
+    let c_new_payloads_when_restart = restart_this_tick.clone().flat_map(q!(move |_| (0
+        ..num_clients_per_node)
+        .map(move |i| (
+            (CLUSTER_SELF_ID.raw_id * (num_clients_per_node as u32)) + i as u32,
+            0
+        ))));
 
     let (c_to_proposers_complete_cycle, c_to_proposers) =
-        clients.forward_ref::<Stream<_, _, _, NoOrder>>();
-    let c_received_quorum_payloads = transaction_cycle(
-        c_to_proposers.assume_ordering(), /* we don't send a new write for the same key until the previous one is committed,
-                                           * so writes to the same key are ordered */
-    )
-    .tick_batch(&client_tick);
+        clients.forward_ref::<Stream<_, _, _, TotalOrder>>();
+    let c_received_quorum_payloads = transaction_cycle(c_to_proposers).tick_batch(&client_tick);
 
     // Whenever all replicas confirm that a payload was committed, send another payload
-    let c_new_payloads_when_committed = c_received_quorum_payloads.clone();
+    let c_new_payloads_when_committed = c_received_quorum_payloads
+        .clone()
+        .map(q!(|payload| (payload.0, payload.1 + 1)));
     c_to_proposers_complete_cycle.complete(
+        // we don't send a new write for the same key until the previous one is committed,
+        // so writes to the same key are ordered
         c_new_payloads_when_restart
-            .chain(c_new_payloads_when_committed)
-            .all_ticks(),
+            .union(c_new_payloads_when_committed)
+            .all_ticks()
+            .assume_ordering(),
     );
 
     // Track statistics
@@ -162,11 +156,11 @@ fn bench_client<'a>(
         ));
     let c_updated_timers = c_received_quorum_payloads
         .clone()
-        .map(q!(|key| (key as usize, SystemTime::now())));
+        .map(q!(|(key, _prev_count)| (key as usize, SystemTime::now())));
     let c_new_timers = c_timers
         .clone() // Update c_timers in tick+1 so we can record differences during this tick (to track latency)
-        .chain(c_new_timers_when_leader_elected)
-        .chain(c_updated_timers.clone())
+        .union(c_new_timers_when_leader_elected)
+        .union(c_updated_timers.clone())
         .reduce_keyed_commutative(q!(|curr_time, new_time| {
             if new_time > *curr_time {
                 *curr_time = new_time;
@@ -186,7 +180,7 @@ fn bench_client<'a>(
         .map(q!(|(_virtual_id, (prev_time, curr_time))| Some(
             curr_time.duration_since(prev_time).unwrap().as_micros()
         )))
-        .chain(c_latency_reset.into_stream())
+        .union(c_latency_reset.into_stream())
         .all_ticks()
         .flatten()
         .fold_commutative(
