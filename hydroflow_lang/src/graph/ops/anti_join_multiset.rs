@@ -37,6 +37,7 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
     // to prevent reading uncleared data if this subgraph doesn't run.
     // https://github.com/hydro-project/hydroflow/issues/1298
     has_singleton_output: false,
+    flo_type: None,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { pos, neg })),
     ports_out: None,
     input_delaytype_fn: |idx| match idx {

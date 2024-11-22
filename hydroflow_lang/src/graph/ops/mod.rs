@@ -70,6 +70,8 @@ pub struct OperatorConstraints {
     /// If true, [`WriteContextArgs::singleton_output_ident`] will be set to a meaningful value in
     /// the [`Self::write_fn`] invocation.
     pub has_singleton_output: bool,
+    /// Flo semantics type.
+    pub flo_type: Option<FloType>,
 
     /// What named or numbered input ports to expect?
     pub ports_inn: Option<fn() -> PortListSpec>,
@@ -540,4 +542,15 @@ impl OperatorCategory {
             }
         }
     }
+}
+
+/// Operator type for Flo semantics.
+#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
+pub enum FloType {
+    /// A source operator, which must be at the top level.
+    Source,
+    /// A windowing operator, for moving data into a loop context.
+    Windowing,
+    /// An un-windowing operator, for moving data out of a loop context.
+    Unwindowing,
 }

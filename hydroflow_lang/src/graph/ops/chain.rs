@@ -30,6 +30,7 @@ pub const CHAIN: OperatorConstraints = OperatorConstraints {
     num_args: 0,
     is_external_input: false,
     has_singleton_output: false,
+    flo_type: None,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |idx| match idx {

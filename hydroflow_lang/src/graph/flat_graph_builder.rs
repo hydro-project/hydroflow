@@ -12,8 +12,7 @@ use syn::spanned::Spanned;
 use syn::{Error, Ident, ItemUse};
 
 use super::ops::defer_tick::DEFER_TICK;
-use super::ops::source_iter::SOURCE_ITER;
-use super::ops::source_stream::SOURCE_STREAM;
+use super::ops::FloType;
 use super::{GraphEdgeId, GraphLoopId, GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::graph_algorithms;
@@ -937,10 +936,9 @@ impl FlatGraphBuilder {
             let Some(_loop_id) = self.flat_graph.node_loop(node_id) else {
                 continue;
             };
-            // TODO(mingwei): don't hardcode source names, add prop to `op_constraints`.
-            if SOURCE_STREAM.name == op_inst.op_constraints.name
-                || SOURCE_ITER.name == op_inst.op_constraints.name
-            {
+
+            // Source operators must be at the top level.
+            if Some(FloType::Source) == op_inst.op_constraints.flo_type {
                 self.diagnostics.push(Diagnostic::spanned(
                     node.span(),
                     Level::Error,
