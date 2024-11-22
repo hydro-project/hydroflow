@@ -16,6 +16,38 @@ pub trait NoTick {}
 impl<T> NoTick for Process<'_, T> {}
 impl<T> NoTick for Cluster<'_, T> {}
 
+pub trait NoTimestamp {}
+impl<T> NoTimestamp for Process<'_, T> {}
+impl<T> NoTimestamp for Cluster<'_, T> {}
+impl<'a, L: Location<'a>> NoTimestamp for Tick<L> {}
+
+#[derive(Clone)]
+pub struct Timestamped<L> {
+    pub(crate) tick: Tick<L>,
+}
+
+impl<'a, L: Location<'a>> Location<'a> for Timestamped<L> {
+    type Root = L::Root;
+
+    fn root(&self) -> Self::Root {
+        self.tick.root()
+    }
+
+    fn id(&self) -> LocationId {
+        self.tick.id()
+    }
+
+    fn flow_state(&self) -> &FlowState {
+        self.tick.flow_state()
+    }
+
+    fn is_top_level() -> bool {
+        L::is_top_level()
+    }
+}
+
+impl<L> NoTick for Timestamped<L> {}
+
 /// Marks the stream as being inside the single global clock domain.
 #[derive(Clone)]
 pub struct Tick<L> {
@@ -53,13 +85,18 @@ impl<'a, L: Location<'a>> Tick<L> {
         batch_size: impl QuotedWithContext<'a, usize, L> + Copy + 'a,
     ) -> Stream<(), Self, Bounded>
     where
-        L: NoTick,
+        L: NoTick + NoTimestamp,
     {
-        self.l
-            .spin()
-            .flat_map(q!(move |_| 0..batch_size))
-            .map(q!(|_| ()))
-            .tick_batch(self)
+        unsafe {
+            // SAFETY: at runtime, `spin` produces a single value per tick,
+            // so each batch is guaranteed to be the same size.
+            self.l
+                .spin()
+                .flat_map_ordered(q!(move |_| 0..batch_size))
+                .map(q!(|_| ()))
+                .timestamped(self)
+                .tick_batch()
+        }
     }
 
     pub fn singleton<T: Clone>(
@@ -69,7 +106,10 @@ impl<'a, L: Location<'a>> Tick<L> {
     where
         L: NoTick,
     {
-        self.outer().singleton(e).latest_tick(self)
+        unsafe {
+            // SAFETY: a top-level singleton produces the same value each tick
+            self.outer().singleton(e).timestamped(self).latest_tick()
+        }
     }
 
     pub fn singleton_first_tick<T: Clone>(
@@ -118,9 +158,43 @@ impl<'a, L: Location<'a>> Tick<L> {
         (
             ForwardRef {
                 ident: ident.clone(),
+                expected_location: self.id(),
                 _phantom: PhantomData,
             },
             S::create_source(ident, self.clone()),
+        )
+    }
+
+    pub fn forward_ref_timestamped<
+        S: CycleCollection<'a, ForwardRefMarker, Location = Timestamped<L>>,
+    >(
+        &self,
+    ) -> (ForwardRef<'a, S>, S) {
+        let next_id = {
+            let on_id = match self.l.id() {
+                LocationId::Process(id) => id,
+                LocationId::Cluster(id) => id,
+                LocationId::Tick(_, _) => panic!(),
+                LocationId::ExternalProcess(_) => panic!(),
+            };
+
+            let mut flow_state = self.flow_state().borrow_mut();
+            let next_id_entry = flow_state.cycle_counts.entry(on_id).or_default();
+
+            let id = *next_id_entry;
+            *next_id_entry += 1;
+            id
+        };
+
+        let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
+
+        (
+            ForwardRef {
+                ident: ident.clone(),
+                expected_location: self.id(),
+                _phantom: PhantomData,
+            },
+            S::create_source(ident, Timestamped { tick: self.clone() }),
         )
     }
 
@@ -151,6 +225,7 @@ impl<'a, L: Location<'a>> Tick<L> {
         (
             TickCycle {
                 ident: ident.clone(),
+                expected_location: self.id(),
                 _phantom: PhantomData,
             },
             S::create_source(ident, self.clone()),
@@ -187,6 +262,7 @@ impl<'a, L: Location<'a>> Tick<L> {
         (
             TickCycle {
                 ident: ident.clone(),
+                expected_location: self.id(),
                 _phantom: PhantomData,
             },
             S::create_source(ident, initial, self.clone()),
