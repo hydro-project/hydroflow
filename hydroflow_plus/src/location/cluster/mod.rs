@@ -20,14 +20,10 @@ pub struct Cluster<'a, C> {
 
 pub trait IsCluster {
     type Tag;
-    fn id(&self) -> usize;
 }
 
 impl<C> IsCluster for Cluster<'_, C> {
     type Tag = C;
-    fn id(&self) -> usize {
-        self.id
-    }
 }
 
 impl<'a, C> Cluster<'a, C> {
@@ -125,8 +121,14 @@ where
     where
         Self: Sized,
     {
+        let cluster_id = if let LocationId::Cluster(id) = ctx.root().id() {
+            id
+        } else {
+            unreachable!()
+        };
+
         let ident = syn::Ident::new(
-            &format!("__hydroflow_plus_cluster_self_id_{}", ctx.root().id()),
+            &format!("__hydroflow_plus_cluster_self_id_{}", cluster_id),
             Span::call_site(),
         );
         let root = get_this_crate();
