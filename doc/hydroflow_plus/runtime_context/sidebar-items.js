@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["RuntimeContext"]};
+window.SIDEBAR_ITEMS = {"static":["RUNTIME_CONTEXT"],"struct":["RuntimeContext"]};

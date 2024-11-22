@@ -815,9 +815,6 @@
 <a href="#815" id="815">815</a>
 <a href="#816" id="816">816</a>
 <a href="#817" id="817">817</a>
-<a href="#818" id="818">818</a>
-<a href="#819" id="819">819</a>
-<a href="#820" id="820">820</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::time::Duration;
@@ -1017,7 +1014,6 @@
         p_to_proposers_i_am_leader_forward_ref,
     );
     <span class="kw">let </span>(p_ballot, p_has_largest_ballot) = p_ballot_calc(
-        proposers,
         proposer_tick,
         p_received_max_ballot.latest_tick(proposer_tick),
     );
@@ -1075,14 +1071,12 @@
 <span class="comment">// Proposer logic to calculate the next ballot number. Expects p_received_max_ballot, the largest ballot received so far. Outputs streams: ballot_num, and has_largest_ballot, which only contains a value if we have the largest ballot.
 </span><span class="attr">#[expect(clippy::type_complexity, reason = <span class="string">"internal paxos code // TODO"</span>)]
 </span><span class="kw">fn </span>p_ballot_calc&lt;<span class="lifetime">'a</span>&gt;(
-    proposers: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;,
     proposer_tick: <span class="kw-2">&amp;</span>Tick&lt;Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;,
     p_received_max_ballot: Singleton&lt;Ballot, Tick&lt;Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;, Bounded&gt;,
 ) -&gt; (
     Singleton&lt;Ballot, Tick&lt;Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;, Bounded&gt;,
     Optional&lt;(), Tick&lt;Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;, Bounded&gt;,
 ) {
-    <span class="kw">let </span>p_id = proposers.self_id();
     <span class="kw">let </span>(p_ballot_num_complete_cycle, p_ballot_num) =
         proposer_tick.cycle_with_initial(proposer_tick.singleton(<span class="macro">q!</span>(<span class="number">0</span>)));
 
@@ -1093,7 +1087,7 @@
             <span class="kw">if </span>received_max_ballot
                 &gt; (Ballot {
                     num: ballot_num,
-                    proposer_id: p_id,
+                    proposer_id: CLUSTER_SELF_ID,
                 })
             {
                 received_max_ballot.num + <span class="number">1
@@ -1105,7 +1099,7 @@
 
     <span class="kw">let </span>p_ballot = p_ballot_num.clone().map(<span class="macro">q!</span>(<span class="kw">move </span>|num| Ballot {
         num,
-        proposer_id: p_id
+        proposer_id: CLUSTER_SELF_ID
     }));
 
     <span class="kw">let </span>p_has_largest_ballot = p_received_max_ballot
@@ -1160,7 +1154,6 @@
     Stream&lt;Ballot, Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;, Unbounded, NoOrder&gt;,
     Optional&lt;<span class="prelude-ty">Option</span>&lt;Instant&gt;, Tick&lt;Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;&gt;, Bounded&gt;,
 ) {
-    <span class="kw">let </span>p_id = proposers.self_id();
     <span class="kw">let </span>p_to_proposers_i_am_leader = p_is_leader
         .clone()
         .then(p_ballot)
@@ -1180,7 +1173,8 @@
         proposers
             .source_interval_delayed(
                 <span class="macro">q!</span>(Duration::from_secs(
-                    (p_id.raw_id * i_am_leader_check_timeout_delay_multiplier <span class="kw">as </span>u32).into()
+                    (CLUSTER_SELF_ID.raw_id * i_am_leader_check_timeout_delay_multiplier <span class="kw">as </span>u32)
+                        .into()
                 )),
                 <span class="macro">q!</span>(Duration::from_secs(i_am_leader_check_timeout)),
             )

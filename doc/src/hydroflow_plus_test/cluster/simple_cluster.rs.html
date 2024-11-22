@@ -168,25 +168,19 @@
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-<a href="#174" id="174">174</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 
 <span class="kw">pub fn </span>decouple_cluster&lt;<span class="lifetime">'a</span>&gt;(flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>&gt;) -&gt; (Cluster&lt;<span class="lifetime">'a</span>, ()&gt;, Cluster&lt;<span class="lifetime">'a</span>, ()&gt;) {
     <span class="kw">let </span>cluster1 = flow.cluster();
     <span class="kw">let </span>cluster2 = flow.cluster();
-    <span class="kw">let </span>cluster_self_id = cluster2.self_id();
-    <span class="kw">let </span>cluster1_self_id = cluster1.self_id();
     cluster1
-        .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>(cluster1_self_id)))
+        .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>(CLUSTER_SELF_ID)))
         <span class="comment">// .for_each(q!(|message| println!("hey, {}", message)))
         </span>.inspect(<span class="macro">q!</span>(|message| <span class="macro">println!</span>(<span class="string">"Cluster1 node sending message: {}"</span>, message)))
         .decouple_cluster(<span class="kw-2">&amp;</span>cluster2)
         .for_each(<span class="macro">q!</span>(<span class="kw">move </span>|message| <span class="macro">println!</span>(
             <span class="string">"My self id is {}, my message is {}"</span>,
-            cluster_self_id, message
+            CLUSTER_SELF_ID, message
         )));
     (cluster1, cluster2)
 }
@@ -208,15 +202,13 @@
     <span class="kw">let </span>numbers = process.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>));
     <span class="kw">let </span>ids = process.source_iter(cluster.members()).map(<span class="macro">q!</span>(|<span class="kw-2">&amp;</span>id| id));
 
-    <span class="kw">let </span>cluster_self_id = cluster.self_id();
-
     ids.cross_product(numbers)
         .map(<span class="macro">q!</span>(|(id, n)| (id, (id, n))))
         .send_bincode(<span class="kw-2">&amp;</span>cluster)
         .tick_batch(<span class="kw-2">&amp;</span>cluster.tick())
         .inspect(<span class="macro">q!</span>(<span class="kw">move </span>|n| <span class="macro">println!</span>(
             <span class="string">"cluster received: {:?} (self cluster id: {})"</span>,
-            n, cluster_self_id
+            n, CLUSTER_SELF_ID
         )))
         .all_ticks()
         .send_bincode(<span class="kw-2">&amp;</span>process)

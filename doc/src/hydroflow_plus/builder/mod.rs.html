@@ -197,11 +197,6 @@
 <a href="#197" id="197">197</a>
 <a href="#198" id="198">198</a>
 <a href="#199" id="199">199</a>
-<a href="#200" id="200">200</a>
-<a href="#201" id="201">201</a>
-<a href="#202" id="202">202</a>
-<a href="#203" id="203">203</a>
-<a href="#204" id="204">204</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -215,7 +210,6 @@
 <span class="kw">use </span><span class="kw">crate</span>::ir::HfPlusLeaf;
 <span class="kw">use </span><span class="kw">crate</span>::location::{Cluster, ExternalProcess, Process};
 <span class="kw">use </span><span class="kw">crate</span>::staging_util::Invariant;
-<span class="kw">use </span><span class="kw">crate</span>::RuntimeContext;
 
 <span class="kw">pub mod </span>built;
 <span class="kw">pub mod </span>compiled;
@@ -361,10 +355,6 @@
             flow_state: <span class="self">self</span>.flow_state().clone(),
             _phantom: PhantomData,
         }
-    }
-
-    <span class="kw">pub fn </span>runtime_context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; RuntimeContext&lt;<span class="lifetime">'a</span>&gt; {
-        RuntimeContext::new()
     }
 
     <span class="kw">pub fn </span>with_process&lt;P, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt;(

@@ -270,6 +270,11 @@
 <a href="#270" id="270">270</a>
 <a href="#271" id="271">271</a>
 <a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::io::Error;
 <span class="kw">use </span>std::pin::Pin;
@@ -279,13 +284,18 @@
 <span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
 <span class="kw">use </span>serde::de::DeserializeOwned;
 <span class="kw">use </span>serde::Serialize;
-<span class="kw">use </span>stageleft::Quoted;
+<span class="kw">use </span>stageleft::QuotedWithContext;
 
 <span class="attr">#[cfg(feature = <span class="string">"deploy_runtime"</span>)]
 </span><span class="kw">pub mod </span>macro_runtime;
 
 <span class="attr">#[cfg(feature = <span class="string">"deploy"</span>)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>trybuild;
+
+<span class="comment">// TODO(shadaj): has to be public due to stageleft limitations
+</span><span class="attr">#[cfg(feature = <span class="string">"deploy"</span>)]
+#[doc(hidden)]
+</span><span class="kw">pub mod </span>trybuild_rewriters;
 
 <span class="kw">pub use </span>macro_runtime::<span class="kw-2">*</span>;
 <span class="attr">#[cfg(feature = <span class="string">"deploy"</span>)]
@@ -443,8 +453,8 @@
     <span class="kw">fn </span>cluster_ids(
         env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv,
         of_cluster: usize,
-    ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Vec&lt;u32&gt;&gt; + Copy + <span class="lifetime">'a</span>;
-    <span class="kw">fn </span>cluster_self_id(env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, u32&gt; + Copy + <span class="lifetime">'a</span>;
+    ) -&gt; <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Vec&lt;u32&gt;, ()&gt; + Copy + <span class="lifetime">'a</span>;
+    <span class="kw">fn </span>cluster_self_id(env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv) -&gt; <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, u32, ()&gt; + Copy + <span class="lifetime">'a</span>;
 }
 
 <span class="kw">impl</span>&lt;

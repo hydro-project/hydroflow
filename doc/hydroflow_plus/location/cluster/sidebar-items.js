@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Cluster","ClusterId","ClusterIds","ClusterSelfId"]};
+window.SIDEBAR_ITEMS = {"mod":["cluster_id"],"static":["CLUSTER_SELF_ID"],"struct":["Cluster","ClusterIds","ClusterSelfId"],"trait":["IsCluster"]};

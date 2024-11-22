@@ -160,7 +160,7 @@
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, DeployPorts,
 };
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
+<span class="kw">use </span>stageleft::{q, QuotedWithContext, RuntimeData};
 
 <span class="attr">#[derive(Default, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>HydroflowPlusMeta {
@@ -172,13 +172,13 @@
 <span class="kw">pub fn </span>cluster_members(
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span>DeployPorts&lt;HydroflowPlusMeta&gt;&gt;,
     of_cluster: usize,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="kw-2">&amp;</span>Vec&lt;u32&gt;&gt; + Copy {
+) -&gt; <span class="kw">impl </span>QuotedWithContext&lt;<span class="kw-2">&amp;</span>Vec&lt;u32&gt;, ()&gt; + Copy {
     <span class="macro">q!</span>(cli.meta.clusters.get(<span class="kw-2">&amp;</span>of_cluster).unwrap())
 }
 
 <span class="kw">pub fn </span>cluster_self_id(
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span>DeployPorts&lt;HydroflowPlusMeta&gt;&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;u32&gt; + Copy {
+) -&gt; <span class="kw">impl </span>QuotedWithContext&lt;u32, ()&gt; + Copy {
     <span class="macro">q!</span>(cli
         .meta
         .cluster_id
@@ -197,7 +197,7 @@
                     .connect_local_blocking::&lt;ConnectedDirect&gt;()
                     .into_sink()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(<span class="kw-2">&amp;</span>())
         },
         {
             <span class="macro">q!</span>({
@@ -205,7 +205,7 @@
                     .connect_local_blocking::&lt;ConnectedDirect&gt;()
                     .into_source()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(<span class="kw-2">&amp;</span>())
         },
     )
 }
@@ -222,7 +222,7 @@
                     .connect_local_blocking::&lt;ConnectedDemux&lt;ConnectedDirect&gt;&gt;()
                     .into_sink()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(<span class="kw-2">&amp;</span>())
         },
         {
             <span class="macro">q!</span>({
@@ -230,7 +230,7 @@
                     .connect_local_blocking::&lt;ConnectedDirect&gt;()
                     .into_source()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(<span class="kw-2">&amp;</span>())
         },
     )
 }
@@ -247,7 +247,7 @@
                     .connect_local_blocking::&lt;ConnectedDirect&gt;()
                     .into_sink()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(<span class="kw-2">&amp;</span>())
         },
         {
             <span class="macro">q!</span>({
@@ -255,7 +255,7 @@
                     .connect_local_blocking::&lt;ConnectedTagged&lt;ConnectedDirect&gt;&gt;()
                     .into_source()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(<span class="kw-2">&amp;</span>())
         },
     )
 }
@@ -272,7 +272,7 @@
                     .connect_local_blocking::&lt;ConnectedDemux&lt;ConnectedDirect&gt;&gt;()
                     .into_sink()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(<span class="kw-2">&amp;</span>())
         },
         {
             <span class="macro">q!</span>({
@@ -280,7 +280,7 @@
                     .connect_local_blocking::&lt;ConnectedTagged&lt;ConnectedDirect&gt;&gt;()
                     .into_source()
             })
-            .splice_untyped()
+            .splice_untyped_ctx(<span class="kw-2">&amp;</span>())
         },
     )
 }
@@ -295,7 +295,7 @@
             .connect_local_blocking::&lt;ConnectedDirect&gt;()
             .into_source()
     })
-    .splice_untyped()
+    .splice_untyped_ctx(<span class="kw-2">&amp;</span>())
 }
 
 <span class="kw">pub fn </span>deploy_o2e(
@@ -308,6 +308,6 @@
             .connect_local_blocking::&lt;ConnectedDirect&gt;()
             .into_sink()
     })
-    .splice_untyped()
+    .splice_untyped_ctx(<span class="kw-2">&amp;</span>())
 }
 </code></pre></div></section></main></body></html>

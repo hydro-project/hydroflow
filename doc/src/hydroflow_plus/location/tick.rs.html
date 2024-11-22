@@ -184,10 +184,19 @@
 <a href="#184" id="184">184</a>
 <a href="#185" id="185">185</a>
 <a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
 <span class="kw">use </span>proc_macro2::Span;
-<span class="kw">use </span>stageleft::{q, Quoted};
+<span class="kw">use </span>stageleft::{q, QuotedWithContext};
 
 <span class="kw">use super</span>::{Cluster, Location, LocationId, Process};
 <span class="kw">use </span><span class="kw">crate</span>::builder::FlowState;
@@ -210,6 +219,12 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Location&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>Tick&lt;L&gt; {
+    <span class="kw">type </span>Root = L::Root;
+
+    <span class="kw">fn </span>root(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Root {
+        <span class="self">self</span>.l.root()
+    }
+
     <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LocationId {
         LocationId::Tick(<span class="self">self</span>.id, Box::new(<span class="self">self</span>.l.id()))
     }
@@ -230,7 +245,7 @@
 
     <span class="kw">pub fn </span>spin_batch(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        batch_size: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, usize&gt; + Copy + <span class="lifetime">'a</span>,
+        batch_size: <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, usize, L&gt; + Copy + <span class="lifetime">'a</span>,
     ) -&gt; Stream&lt;(), <span class="self">Self</span>, Bounded&gt;
     <span class="kw">where
         </span>L: NoTick,
@@ -242,7 +257,10 @@
             .tick_batch(<span class="self">self</span>)
     }
 
-    <span class="kw">pub fn </span>singleton&lt;T: Clone&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, e: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, T&gt;) -&gt; Singleton&lt;T, <span class="self">Self</span>, Bounded&gt;
+    <span class="kw">pub fn </span>singleton&lt;T: Clone&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        e: <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, T, L&gt;,
+    ) -&gt; Singleton&lt;T, <span class="self">Self</span>, Bounded&gt;
     <span class="kw">where
         </span>L: NoTick,
     {
@@ -251,13 +269,13 @@
 
     <span class="kw">pub fn </span>singleton_first_tick&lt;T: Clone&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        e: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, T&gt;,
+        e: <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, T, Tick&lt;L&gt;&gt;,
     ) -&gt; Optional&lt;T, <span class="self">Self</span>, Bounded&gt;
     <span class="kw">where
         </span>L: NoTick,
     {
         <span class="kw">let </span>e_arr = <span class="macro">q!</span>([e]);
-        <span class="kw">let </span>e = e_arr.splice_untyped();
+        <span class="kw">let </span>e = e_arr.splice_untyped_ctx(<span class="self">self</span>);
 
         Optional::new(
             <span class="self">self</span>.clone(),

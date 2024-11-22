@@ -49,6 +49,7 @@
 <a href="#49" id="49">49</a>
 <a href="#50" id="50">50</a>
 <a href="#51" id="51">51</a>
+<a href="#52" id="52">52</a>
 </pre></div><pre class="rust"><code><span class="attr">#![feature(box_patterns)]
 
 </span><span class="macro">stageleft::stageleft_no_entry_crate!</span>();
@@ -62,7 +63,7 @@
 }
 
 <span class="kw">pub mod </span>runtime_context;
-<span class="kw">pub use </span>runtime_context::RuntimeContext;
+<span class="kw">pub use </span>runtime_context::RUNTIME_CONTEXT;
 
 <span class="kw">pub mod </span>boundedness;
 <span class="kw">pub use </span>boundedness::{Bounded, Unbounded};
@@ -77,6 +78,7 @@
 <span class="kw">pub use </span>optional::Optional;
 
 <span class="kw">pub mod </span>location;
+<span class="kw">pub use </span>location::cluster::CLUSTER_SELF_ID;
 <span class="kw">pub use </span>location::{Cluster, ClusterId, Location, Process, Tick};
 
 <span class="kw">pub mod </span>deploy;

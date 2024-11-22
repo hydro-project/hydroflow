@@ -321,7 +321,7 @@
 <span class="kw">use </span>hydroflow::futures::{Sink, Stream};
 <span class="kw">use </span>hydroflow::util::deploy::DeployPorts;
 <span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
-<span class="kw">use </span>stageleft::{Quoted, RuntimeData};
+<span class="kw">use </span>stageleft::{QuotedWithContext, RuntimeData};
 
 <span class="kw">use </span><span class="kw">super</span>::HydroflowPlusMeta;
 <span class="kw">use </span><span class="kw">crate</span>::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
@@ -484,11 +484,11 @@
     <span class="kw">fn </span>cluster_ids(
         env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv,
         of_cluster: usize,
-    ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Vec&lt;u32&gt;&gt; + Copy + <span class="lifetime">'a </span>{
+    ) -&gt; <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Vec&lt;u32&gt;, ()&gt; + Copy + <span class="lifetime">'a </span>{
         <span class="kw">super</span>::deploy_runtime::cluster_members(<span class="kw-2">*</span>env, of_cluster)
     }
 
-    <span class="kw">fn </span>cluster_self_id(env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, u32&gt; + Copy + <span class="lifetime">'a </span>{
+    <span class="kw">fn </span>cluster_self_id(env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv) -&gt; <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, u32, ()&gt; + Copy + <span class="lifetime">'a </span>{
         <span class="kw">super</span>::deploy_runtime::cluster_self_id(<span class="kw-2">*</span>env)
     }
 }

@@ -126,6 +126,18 @@
 <a href="#126" id="126">126</a>
 <a href="#127" id="127">127</a>
 <a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashSet;
 
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
@@ -162,12 +174,20 @@
 
 <span class="kw">impl </span>PropertyDatabase {
     <span class="doccomment">/// Tags the expression as commutative.
-    </span><span class="kw">pub fn </span>add_commutative_tag&lt;<span class="lifetime">'a</span>, I, A, F: Fn(<span class="kw-2">&amp;mut </span>A, I), Q: Quoted&lt;<span class="lifetime">'a</span>, F&gt; + Clone&gt;(
+    </span><span class="kw">pub fn </span>add_commutative_tag&lt;
+        <span class="lifetime">'a</span>,
+        I,
+        A,
+        F: Fn(<span class="kw-2">&amp;mut </span>A, I),
+        Ctx,
+        Q: QuotedWithContext&lt;<span class="lifetime">'a</span>, F, Ctx&gt; + Clone,
+    &gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         expr: Q,
+        ctx: <span class="kw-2">&amp;</span>Ctx,
     ) -&gt; Q {
         <span class="kw">let </span>expr_clone = expr.clone();
-        <span class="self">self</span>.commutative.insert(expr_clone.splice_untyped());
+        <span class="self">self</span>.commutative.insert(expr_clone.splice_untyped_ctx(ctx));
         expr
     }
 
@@ -219,11 +239,15 @@
     </span><span class="kw">fn </span>test_property_database() {
         <span class="kw">let </span><span class="kw-2">mut </span>db = PropertyDatabase::default();
 
-        <span class="macro">assert!</span>(!db.is_tagged_commutative(<span class="kw-2">&amp;</span>(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b).splice_untyped())));
+        <span class="macro">assert!</span>(
+            !db.is_tagged_commutative(<span class="kw-2">&amp;</span>(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b).splice_untyped_ctx(<span class="kw-2">&amp;</span>())))
+        );
 
-        <span class="kw">let _ </span>= db.add_commutative_tag(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b));
+        <span class="kw">let _ </span>= db.add_commutative_tag(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b), <span class="kw-2">&amp;</span>());
 
-        <span class="macro">assert!</span>(db.is_tagged_commutative(<span class="kw-2">&amp;</span>(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b).splice_untyped())));
+        <span class="macro">assert!</span>(
+            db.is_tagged_commutative(<span class="kw-2">&amp;</span>(<span class="macro">q!</span>(|a: <span class="kw-2">&amp;mut </span>i32, b: i32| <span class="kw-2">*</span>a += b).splice_untyped_ctx(<span class="kw-2">&amp;</span>())))
+        );
     }
 
     <span class="attr">#[test]
@@ -235,7 +259,7 @@
         <span class="kw">let </span>tick = process.tick();
 
         <span class="kw">let </span>counter_func = <span class="macro">q!</span>(|count: <span class="kw-2">&amp;mut </span>i32, <span class="kw">_</span>| <span class="kw-2">*</span>count += <span class="number">1</span>);
-        <span class="kw">let _ </span>= database.add_commutative_tag(counter_func);
+        <span class="kw">let _ </span>= database.add_commutative_tag(counter_func, <span class="kw-2">&amp;</span>tick);
 
         process
             .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>[]))

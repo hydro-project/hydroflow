@@ -1117,6 +1117,37 @@
 <a href="#1117" id="1117">1117</a>
 <a href="#1118" id="1118">1118</a>
 <a href="#1119" id="1119">1119</a>
+<a href="#1120" id="1120">1120</a>
+<a href="#1121" id="1121">1121</a>
+<a href="#1122" id="1122">1122</a>
+<a href="#1123" id="1123">1123</a>
+<a href="#1124" id="1124">1124</a>
+<a href="#1125" id="1125">1125</a>
+<a href="#1126" id="1126">1126</a>
+<a href="#1127" id="1127">1127</a>
+<a href="#1128" id="1128">1128</a>
+<a href="#1129" id="1129">1129</a>
+<a href="#1130" id="1130">1130</a>
+<a href="#1131" id="1131">1131</a>
+<a href="#1132" id="1132">1132</a>
+<a href="#1133" id="1133">1133</a>
+<a href="#1134" id="1134">1134</a>
+<a href="#1135" id="1135">1135</a>
+<a href="#1136" id="1136">1136</a>
+<a href="#1137" id="1137">1137</a>
+<a href="#1138" id="1138">1138</a>
+<a href="#1139" id="1139">1139</a>
+<a href="#1140" id="1140">1140</a>
+<a href="#1141" id="1141">1141</a>
+<a href="#1142" id="1142">1142</a>
+<a href="#1143" id="1143">1143</a>
+<a href="#1144" id="1144">1144</a>
+<a href="#1145" id="1145">1145</a>
+<a href="#1146" id="1146">1146</a>
+<a href="#1147" id="1147">1147</a>
+<a href="#1148" id="1148">1148</a>
+<a href="#1149" id="1149">1149</a>
+<a href="#1150" id="1150">1150</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -1128,13 +1159,13 @@
 <span class="kw">use </span>hydroflow_lang::parse::Pipeline;
 <span class="kw">use </span>serde::de::DeserializeOwned;
 <span class="kw">use </span>serde::Serialize;
-<span class="kw">use </span>stageleft::{q, IntoQuotedMut, Quoted};
+<span class="kw">use </span>stageleft::{q, IntoQuotedMut, QuotedWithContext};
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use </span><span class="kw">crate</span>::builder::FLOW_USED_MESSAGE;
 <span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRefMarker, TickCycleMarker};
 <span class="kw">use </span><span class="kw">crate</span>::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, TeeNode};
-<span class="kw">use </span><span class="kw">crate</span>::location::cluster::ClusterSelfId;
+<span class="kw">use </span><span class="kw">crate</span>::location::cluster::CLUSTER_SELF_ID;
 <span class="kw">use </span><span class="kw">crate</span>::location::external_process::{ExternalBincodeStream, ExternalBytesPort};
 <span class="kw">use </span><span class="kw">crate</span>::location::{
     check_matching_location, CanSend, ExternalProcess, Location, LocationId, NoTick, Tick,
@@ -1311,12 +1342,13 @@
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;, B, Order&gt; Stream&lt;T, L, B, Order&gt; {
     <span class="kw">pub fn </span>map&lt;U, F: Fn(T) -&gt; U + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
-        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;,
     ) -&gt; Stream&lt;U, L, B, Order&gt; {
+        <span class="kw">let </span>f = f.splice_fn1_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
         Stream::new(
             <span class="self">self</span>.location,
             HfPlusNode::Map {
-                f: f.splice_fn1().into(),
+                f,
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1331,12 +1363,13 @@
 
     <span class="kw">pub fn </span>flat_map&lt;U, I: IntoIterator&lt;Item = U&gt;, F: Fn(T) -&gt; I + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
-        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;,
     ) -&gt; Stream&lt;U, L, B, Order&gt; {
+        <span class="kw">let </span>f = f.splice_fn1_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
         Stream::new(
             <span class="self">self</span>.location,
             HfPlusNode::FlatMap {
-                f: f.splice_fn1().into(),
+                f,
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1351,12 +1384,13 @@
 
     <span class="kw">pub fn </span>filter&lt;F: Fn(<span class="kw-2">&amp;</span>T) -&gt; bool + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
-        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;,
     ) -&gt; Stream&lt;T, L, B, Order&gt; {
+        <span class="kw">let </span>f = f.splice_fn1_borrow_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
         Stream::new(
             <span class="self">self</span>.location,
             HfPlusNode::Filter {
-                f: f.splice_fn1_borrow().into(),
+                f,
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1364,12 +1398,13 @@
 
     <span class="kw">pub fn </span>filter_map&lt;U, F: Fn(T) -&gt; <span class="prelude-ty">Option</span>&lt;U&gt; + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
-        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;,
     ) -&gt; Stream&lt;U, L, B, Order&gt; {
+        <span class="kw">let </span>f = f.splice_fn1_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
         Stream::new(
             <span class="self">self</span>.location,
             HfPlusNode::FilterMap {
-                f: f.splice_fn1().into(),
+                f,
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1446,12 +1481,17 @@
         )
     }
 
-    <span class="kw">pub fn </span>inspect&lt;F: Fn(<span class="kw-2">&amp;</span>T) + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) -&gt; Stream&lt;T, L, B, Order&gt; {
+    <span class="kw">pub fn </span>inspect&lt;F: Fn(<span class="kw-2">&amp;</span>T) + <span class="lifetime">'a</span>&gt;(
+        <span class="self">self</span>,
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;,
+    ) -&gt; Stream&lt;T, L, B, Order&gt; {
+        <span class="kw">let </span>f = f.splice_fn1_borrow_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
+
         <span class="kw">if </span>L::is_top_level() {
             Stream::new(
                 <span class="self">self</span>.location,
                 HfPlusNode::Persist(Box::new(HfPlusNode::Inspect {
-                    f: f.splice_fn1_borrow().into(),
+                    f,
                     input: Box::new(HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner()))),
                 })),
             )
@@ -1459,7 +1499,7 @@
             Stream::new(
                 <span class="self">self</span>.location,
                 HfPlusNode::Inspect {
-                    f: f.splice_fn1_borrow().into(),
+                    f,
                     input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
                 },
             )
@@ -1477,12 +1517,15 @@
 {
     <span class="kw">pub fn </span>fold_commutative&lt;A, I: Fn() -&gt; A + <span class="lifetime">'a</span>, F: Fn(<span class="kw-2">&amp;mut </span>A, T)&gt;(
         <span class="self">self</span>,
-        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I&gt;,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I, L&gt;,
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;,
     ) -&gt; Singleton&lt;A, L, B&gt; {
+        <span class="kw">let </span>init = init.splice_fn0_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
+        <span class="kw">let </span>comb = comb.splice_fn2_borrow_mut_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
+
         <span class="kw">let </span><span class="kw-2">mut </span>core = HfPlusNode::Fold {
-            init: init.splice_fn0().into(),
-            acc: comb.splice_fn2_borrow_mut().into(),
+            init,
+            acc: comb,
             input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
         };
 
@@ -1498,10 +1541,11 @@
 
     <span class="kw">pub fn </span>reduce_commutative&lt;F: Fn(<span class="kw-2">&amp;mut </span>T, T) + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;,
     ) -&gt; Optional&lt;T, L, B&gt; {
+        <span class="kw">let </span>f = comb.splice_fn2_borrow_mut_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
         <span class="kw">let </span><span class="kw-2">mut </span>core = HfPlusNode::Reduce {
-            f: comb.splice_fn2_borrow_mut().into(),
+            f,
             input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
         };
 
@@ -1570,12 +1614,15 @@
 
     <span class="kw">pub fn </span>fold&lt;A, I: Fn() -&gt; A + <span class="lifetime">'a</span>, F: Fn(<span class="kw-2">&amp;mut </span>A, T)&gt;(
         <span class="self">self</span>,
-        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I&gt;,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I, L&gt;,
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;,
     ) -&gt; Singleton&lt;A, L, B&gt; {
+        <span class="kw">let </span>init = init.splice_fn0_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
+        <span class="kw">let </span>comb = comb.splice_fn2_borrow_mut_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
+
         <span class="kw">let </span><span class="kw-2">mut </span>core = HfPlusNode::Fold {
-            init: init.splice_fn0().into(),
-            acc: comb.splice_fn2_borrow_mut().into(),
+            init,
+            acc: comb,
             input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
         };
 
@@ -1591,10 +1638,11 @@
 
     <span class="kw">pub fn </span>reduce&lt;F: Fn(<span class="kw-2">&amp;mut </span>T, T) + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;,
     ) -&gt; Optional&lt;T, L, B&gt; {
+        <span class="kw">let </span>f = comb.splice_fn2_borrow_mut_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
         <span class="kw">let </span><span class="kw-2">mut </span>core = HfPlusNode::Reduce {
-            f: comb.splice_fn2_borrow_mut().into(),
+            f,
             input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
         };
 
@@ -1668,14 +1716,17 @@
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K: Eq + Hash, V, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;(K, V), Tick&lt;L&gt;, Bounded&gt; {
     <span class="kw">pub fn </span>fold_keyed&lt;A, I: Fn() -&gt; A + <span class="lifetime">'a</span>, F: Fn(<span class="kw-2">&amp;mut </span>A, V) + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
-        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I&gt;,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I, Tick&lt;L&gt;&gt;,
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, Tick&lt;L&gt;&gt;,
     ) -&gt; Stream&lt;(K, A), Tick&lt;L&gt;, Bounded&gt; {
+        <span class="kw">let </span>init = init.splice_fn0_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
+        <span class="kw">let </span>comb = comb.splice_fn2_borrow_mut_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
+
         Stream::new(
             <span class="self">self</span>.location,
             HfPlusNode::FoldKeyed {
-                init: init.splice_fn0().into(),
-                acc: comb.splice_fn2_borrow_mut().into(),
+                init,
+                acc: comb,
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1683,12 +1734,14 @@
 
     <span class="kw">pub fn </span>reduce_keyed&lt;F: Fn(<span class="kw-2">&amp;mut </span>V, V) + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, Tick&lt;L&gt;&gt;,
     ) -&gt; Stream&lt;(K, V), Tick&lt;L&gt;, Bounded&gt; {
+        <span class="kw">let </span>f = comb.splice_fn2_borrow_mut_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
+
         Stream::new(
             <span class="self">self</span>.location,
             HfPlusNode::ReduceKeyed {
-                f: comb.splice_fn2_borrow_mut().into(),
+                f,
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1701,14 +1754,17 @@
 {
     <span class="kw">pub fn </span>fold_keyed_commutative&lt;A, I: Fn() -&gt; A + <span class="lifetime">'a</span>, F: Fn(<span class="kw-2">&amp;mut </span>A, V) + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
-        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I&gt;,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I, Tick&lt;L&gt;&gt;,
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, Tick&lt;L&gt;&gt;,
     ) -&gt; Stream&lt;(K, A), Tick&lt;L&gt;, Bounded, Order&gt; {
+        <span class="kw">let </span>init = init.splice_fn0_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
+        <span class="kw">let </span>comb = comb.splice_fn2_borrow_mut_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
+
         Stream::new(
             <span class="self">self</span>.location,
             HfPlusNode::FoldKeyed {
-                init: init.splice_fn0().into(),
-                acc: comb.splice_fn2_borrow_mut().into(),
+                init,
+                acc: comb,
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1716,12 +1772,14 @@
 
     <span class="kw">pub fn </span>reduce_keyed_commutative&lt;F: Fn(<span class="kw-2">&amp;mut </span>V, V) + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, Tick&lt;L&gt;&gt;,
     ) -&gt; Stream&lt;(K, V), Tick&lt;L&gt;, Bounded, Order&gt; {
+        <span class="kw">let </span>f = comb.splice_fn2_borrow_mut_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
+
         Stream::new(
             <span class="self">self</span>.location,
             HfPlusNode::ReduceKeyed {
-                f: comb.splice_fn2_borrow_mut().into(),
+                f,
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -1745,7 +1803,7 @@
 
     <span class="kw">pub fn </span>sample_every(
         <span class="self">self</span>,
-        interval: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, std::time::Duration&gt; + Copy + <span class="lifetime">'a</span>,
+        interval: <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, std::time::Duration, L&gt; + Copy + <span class="lifetime">'a</span>,
     ) -&gt; Stream&lt;T, L, Unbounded, Order&gt; {
         <span class="kw">let </span>samples = <span class="self">self</span>.location.source_interval(interval);
         <span class="kw">let </span>tick = <span class="self">self</span>.location.tick();
@@ -1754,7 +1812,8 @@
             .all_ticks()
     }
 
-    <span class="kw">pub fn </span>for_each&lt;F: Fn(T) + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) {
+    <span class="kw">pub fn </span>for_each&lt;F: Fn(T) + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;) {
+        <span class="kw">let </span>f = f.splice_fn1_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
         <span class="self">self</span>.location
             .flow_state()
             .borrow_mut()
@@ -1763,11 +1822,14 @@
             .expect(FLOW_USED_MESSAGE)
             .push(HfPlusLeaf::ForEach {
                 input: Box::new(HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner()))),
-                f: f.splice_fn1().into(),
+                f,
             });
     }
 
-    <span class="kw">pub fn </span>dest_sink&lt;S: Unpin + futures::Sink&lt;T&gt; + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, sink: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, S&gt;) {
+    <span class="kw">pub fn </span>dest_sink&lt;S: Unpin + futures::Sink&lt;T&gt; + <span class="lifetime">'a</span>&gt;(
+        <span class="self">self</span>,
+        sink: <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, S, L&gt;,
+    ) {
         <span class="self">self</span>.location
             .flow_state()
             .borrow_mut()
@@ -1775,7 +1837,7 @@
             .as_mut()
             .expect(FLOW_USED_MESSAGE)
             .push(HfPlusLeaf::DestSink {
-                sink: sink.splice_typed().into(),
+                sink: sink.splice_typed_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into(),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             });
     }
@@ -1855,6 +1917,28 @@
     }
 }
 
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, C1, B, Order&gt; Stream&lt;T, Cluster&lt;<span class="lifetime">'a</span>, C1&gt;, B, Order&gt; {
+    <span class="kw">pub fn </span>decouple_cluster&lt;C2: <span class="lifetime">'a</span>, Tag&gt;(
+        <span class="self">self</span>,
+        other: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, C2&gt;,
+    ) -&gt; Stream&lt;T, Cluster&lt;<span class="lifetime">'a</span>, C2&gt;, Unbounded, Order&gt;
+    <span class="kw">where
+        </span>Cluster&lt;<span class="lifetime">'a</span>, C1&gt;: Location&lt;<span class="lifetime">'a</span>, Root = Cluster&lt;<span class="lifetime">'a</span>, C1&gt;&gt;,
+        Cluster&lt;<span class="lifetime">'a</span>, C1&gt;:
+            CanSend&lt;<span class="lifetime">'a</span>, Cluster&lt;<span class="lifetime">'a</span>, C2&gt;, In&lt;T&gt; = (ClusterId&lt;C2&gt;, T), Out&lt;T&gt; = (Tag, T)&gt;,
+        T: Clone + Serialize + DeserializeOwned,
+        Order:
+            MinOrder&lt;&lt;Cluster&lt;<span class="lifetime">'a</span>, C1&gt; <span class="kw">as </span>CanSend&lt;<span class="lifetime">'a</span>, Cluster&lt;<span class="lifetime">'a</span>, C2&gt;&gt;&gt;::OutStrongestOrder&lt;Order&gt;&gt;,
+    {
+        <span class="self">self</span>.map(<span class="macro">q!</span>(<span class="kw">move </span>|b| (
+            ClusterId::from_raw(CLUSTER_SELF_ID.raw_id),
+            b.clone()
+        )))
+        .send_bincode_interleaved(other)
+        .assume_ordering() <span class="comment">// this is safe because we are mapping clusters 1:1
+    </span>}
+}
+
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick, B, Order&gt; Stream&lt;T, L, B, Order&gt; {
     <span class="kw">pub fn </span>decouple_process&lt;P2&gt;(
         <span class="self">self</span>,
@@ -1867,28 +1951,6 @@
     {
         <span class="self">self</span>.send_bincode::&lt;Process&lt;<span class="lifetime">'a</span>, P2&gt;, T&gt;(other)
     }
-
-    <span class="kw">pub fn </span>decouple_cluster&lt;C2: <span class="lifetime">'a</span>, Tag&gt;(
-        <span class="self">self</span>,
-        other: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, C2&gt;,
-    ) -&gt; Stream&lt;T, Cluster&lt;<span class="lifetime">'a</span>, C2&gt;, Unbounded, Order&gt;
-    <span class="kw">where
-        </span>L: CanSend&lt;<span class="lifetime">'a</span>, Cluster&lt;<span class="lifetime">'a</span>, C2&gt;, In&lt;T&gt; = (ClusterId&lt;C2&gt;, T), Out&lt;T&gt; = (Tag, T)&gt;,
-        T: Clone + Serialize + DeserializeOwned,
-        Order: MinOrder&lt;L::OutStrongestOrder&lt;Order&gt;&gt;,
-    {
-        <span class="kw">let </span>self_node_id = <span class="kw">match </span><span class="self">self</span>.location_kind() {
-            LocationId::Cluster(cluster_id) =&gt; ClusterSelfId {
-                id: cluster_id,
-                _phantom: PhantomData,
-            },
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"decouple_cluster must be called on a cluster"</span>),
-        };
-
-        <span class="self">self</span>.map(<span class="macro">q!</span>(<span class="kw">move </span>|b| (self_node_id, b.clone())))
-            .send_bincode_interleaved(other)
-            .assume_ordering() <span class="comment">// this is safe because we are mapping clusters 1:1
-    </span>}
 
     <span class="kw">pub fn </span>send_bincode&lt;L2: Location&lt;<span class="lifetime">'a</span>&gt;, CoreType&gt;(
         <span class="self">self</span>,

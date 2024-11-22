@@ -336,12 +336,19 @@
 <a href="#336" id="336">336</a>
 <a href="#337" id="337">337</a>
 <a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::ops::Deref;
 <span class="kw">use </span>std::rc::Rc;
 
-<span class="kw">use </span>stageleft::{q, IntoQuotedMut, Quoted};
+<span class="kw">use </span>stageleft::{q, IntoQuotedMut, QuotedWithContext};
 
 <span class="kw">use </span><span class="kw">crate</span>::builder::FLOW_USED_MESSAGE;
 <span class="kw">use </span><span class="kw">crate</span>::cycle::{
@@ -486,11 +493,12 @@
         Stream::new(<span class="self">self</span>.location, <span class="self">self</span>.ir_node.into_inner())
     }
 
-    <span class="kw">pub fn </span>map&lt;U, F: Fn(T) -&gt; U + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) -&gt; Singleton&lt;U, L, B&gt; {
+    <span class="kw">pub fn </span>map&lt;U, F: Fn(T) -&gt; U + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;) -&gt; Singleton&lt;U, L, B&gt; {
+        <span class="kw">let </span>f = f.splice_fn1_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
         Singleton::new(
             <span class="self">self</span>.location,
             HfPlusNode::Map {
-                f: f.splice_fn1().into(),
+                f,
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -498,22 +506,27 @@
 
     <span class="kw">pub fn </span>flat_map&lt;U, I: IntoIterator&lt;Item = U&gt;, F: Fn(T) -&gt; I + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
-        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;,
     ) -&gt; Stream&lt;U, L, B&gt; {
+        <span class="kw">let </span>f = f.splice_fn1_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
         Stream::new(
             <span class="self">self</span>.location,
             HfPlusNode::FlatMap {
-                f: f.splice_fn1().into(),
+                f,
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
     }
 
-    <span class="kw">pub fn </span>filter&lt;F: Fn(<span class="kw-2">&amp;</span>T) -&gt; bool + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) -&gt; Optional&lt;T, L, B&gt; {
+    <span class="kw">pub fn </span>filter&lt;F: Fn(<span class="kw-2">&amp;</span>T) -&gt; bool + <span class="lifetime">'a</span>&gt;(
+        <span class="self">self</span>,
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;,
+    ) -&gt; Optional&lt;T, L, B&gt; {
+        <span class="kw">let </span>f = f.splice_fn1_borrow_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
         Optional::new(
             <span class="self">self</span>.location,
             HfPlusNode::Filter {
-                f: f.splice_fn1_borrow().into(),
+                f,
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -521,12 +534,13 @@
 
     <span class="kw">pub fn </span>filter_map&lt;U, F: Fn(T) -&gt; <span class="prelude-ty">Option</span>&lt;U&gt; + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
-        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;,
     ) -&gt; Optional&lt;U, L, B&gt; {
+        <span class="kw">let </span>f = f.splice_fn1_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
         Optional::new(
             <span class="self">self</span>.location,
             HfPlusNode::FilterMap {
-                f: f.splice_fn1().into(),
+                f,
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -583,7 +597,7 @@
 
     <span class="kw">pub fn </span>sample_every(
         <span class="self">self</span>,
-        interval: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, std::time::Duration&gt; + Copy + <span class="lifetime">'a</span>,
+        interval: <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, std::time::Duration, L&gt; + Copy + <span class="lifetime">'a</span>,
     ) -&gt; Stream&lt;T, L, Unbounded&gt; {
         <span class="kw">let </span>samples = <span class="self">self</span>.location.source_interval(interval);
         <span class="kw">let </span>tick = <span class="self">self</span>.location.tick();

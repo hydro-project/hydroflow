@@ -66,7 +66,7 @@
     flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
     input_stream: RuntimeData&lt;UnboundedReceiverStream&lt;T&gt;&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
+) -&gt; <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;, ()&gt; {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
     <span class="kw">let </span>tick = process.tick();
 

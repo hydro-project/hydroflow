@@ -234,10 +234,29 @@
 <a href="#234" id="234">234</a>
 <a href="#235" id="235">235</a>
 <a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeSet, HashSet};
 
 <span class="kw">mod </span>prelude;
 <span class="kw">use </span>prelude::is_prelude;
+<span class="kw">use </span>quote::ToTokens;
 
 <span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>ScopeStack {
@@ -300,25 +319,25 @@
     <span class="kw">pub </span>current_scope: ScopeStack,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'ast</span>&gt; syn::visit::Visit&lt;<span class="lifetime">'ast</span>&gt; <span class="kw">for </span>FreeVariableVisitor {
-    <span class="kw">fn </span>visit_expr_closure(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::ExprClosure) {
+<span class="kw">impl </span>syn::visit_mut::VisitMut <span class="kw">for </span>FreeVariableVisitor {
+    <span class="kw">fn </span>visit_expr_closure_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::ExprClosure) {
         <span class="self">self</span>.current_scope.push();
-        i.inputs.iter().for_each(|input| {
-            <span class="self">self</span>.visit_pat(input);
+        i.inputs.iter_mut().for_each(|input| {
+            <span class="self">self</span>.visit_pat_mut(input);
         });
 
-        syn::visit::visit_expr_closure(<span class="self">self</span>, i);
+        syn::visit_mut::visit_expr_closure_mut(<span class="self">self</span>, i);
 
         <span class="self">self</span>.current_scope.pop();
     }
 
-    <span class="kw">fn </span>visit_item_fn(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::ItemFn) {
+    <span class="kw">fn </span>visit_item_fn_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::ItemFn) {
         <span class="self">self</span>.current_scope.push();
-        syn::visit::visit_item_fn(<span class="self">self</span>, i);
+        syn::visit_mut::visit_item_fn_mut(<span class="self">self</span>, i);
         <span class="self">self</span>.current_scope.pop();
     }
 
-    <span class="kw">fn </span>visit_generic_param(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::GenericParam) {
+    <span class="kw">fn </span>visit_generic_param_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::GenericParam) {
         <span class="kw">match </span>i {
             syn::GenericParam::Type(type_param) =&gt; {
                 <span class="self">self</span>.current_scope.insert_type(type_param.ident.clone());
@@ -333,140 +352,157 @@
         }
     }
 
-    <span class="kw">fn </span>visit_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Block) {
+    <span class="kw">fn </span>visit_block_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::Block) {
         <span class="self">self</span>.current_scope.push();
-        syn::visit::visit_block(<span class="self">self</span>, i);
+        syn::visit_mut::visit_block_mut(<span class="self">self</span>, i);
         <span class="self">self</span>.current_scope.pop();
     }
 
-    <span class="kw">fn </span>visit_local(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Local) {
-        i.init.iter().for_each(|init| {
-            syn::visit::visit_local_init(<span class="self">self</span>, init);
+    <span class="kw">fn </span>visit_local_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::Local) {
+        i.init.iter_mut().for_each(|init| {
+            syn::visit_mut::visit_local_init_mut(<span class="self">self</span>, init);
         });
 
-        <span class="kw">match </span><span class="kw-2">&amp;</span>i.pat {
+        <span class="kw">match </span><span class="kw-2">&amp;mut </span>i.pat {
             syn::Pat::Ident(pat_ident) =&gt; {
                 <span class="self">self</span>.current_scope.insert_term(pat_ident.ident.clone());
             }
             syn::Pat::Type(pat_type) =&gt; {
-                <span class="self">self</span>.visit_pat(<span class="kw-2">&amp;</span>pat_type.pat);
+                <span class="self">self</span>.visit_pat_mut(<span class="kw-2">&amp;mut </span>pat_type.pat);
             }
             syn::Pat::Wild(<span class="kw">_</span>) =&gt; {
                 <span class="comment">// Do nothing
             </span>}
             syn::Pat::Tuple(pat_tuple) =&gt; {
-                <span class="kw">for </span>el <span class="kw">in </span><span class="kw-2">&amp;</span>pat_tuple.elems {
-                    <span class="self">self</span>.visit_pat(el);
+                <span class="kw">for </span>el <span class="kw">in </span><span class="kw-2">&amp;mut </span>pat_tuple.elems {
+                    <span class="self">self</span>.visit_pat_mut(el);
                 }
             }
             <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Local variables must be identifiers, got {:?}"</span>, i.pat),
         }
     }
 
-    <span class="kw">fn </span>visit_ident(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>proc_macro2::Ident) {
+    <span class="kw">fn </span>visit_ident_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>proc_macro2::Ident) {
         <span class="kw">if </span>!<span class="self">self</span>.current_scope.contains_term(i) {
             <span class="self">self</span>.free_variables.insert(i.clone());
+            <span class="kw-2">*</span>i = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}__free"</span>, i), i.span());
         }
     }
 
-    <span class="kw">fn </span>visit_lifetime(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Lifetime) {
+    <span class="kw">fn </span>visit_lifetime_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::Lifetime) {
         <span class="kw">if </span>!<span class="self">self</span>.current_scope.contains_type(<span class="kw-2">&amp;</span>i.ident) {
             <span class="self">self</span>.free_variables.insert(i.ident.clone());
+            i.ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}__free"</span>, i.ident), i.ident.span());
         }
     }
 
-    <span class="kw">fn </span>visit_path(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Path) {
+    <span class="kw">fn </span>visit_path_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::Path) {
         <span class="kw">if </span>i.leading_colon.is_none() &amp;&amp; !is_prelude(<span class="kw-2">&amp;</span>i.segments.first().unwrap().ident) {
-            <span class="kw">let </span>node = i.segments.first().unwrap();
-            <span class="kw">if </span>i.segments.len() == <span class="number">1 </span>&amp;&amp; !<span class="self">self</span>.current_scope.contains_term(<span class="kw-2">&amp;</span>node.ident) {
+            <span class="kw">let </span>one_segment = i.segments.len() == <span class="number">1</span>;
+            <span class="kw">let </span>node = i.segments.first_mut().unwrap();
+            <span class="kw">if </span>one_segment &amp;&amp; !<span class="self">self</span>.current_scope.contains_term(<span class="kw-2">&amp;</span>node.ident) {
                 <span class="self">self</span>.free_variables.insert(node.ident.clone());
+                node.ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}__free"</span>, node.ident), node.ident.span());
             }
         }
 
-        <span class="kw">for </span>node <span class="kw">in </span>i.segments.iter() {
-            <span class="self">self</span>.visit_path_arguments(<span class="kw-2">&amp;</span>node.arguments);
+        <span class="kw">for </span>node <span class="kw">in </span>i.segments.iter_mut() {
+            <span class="self">self</span>.visit_path_arguments_mut(<span class="kw-2">&amp;mut </span>node.arguments);
         }
     }
 
-    <span class="kw">fn </span>visit_arm(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Arm) {
+    <span class="kw">fn </span>visit_arm_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::Arm) {
         <span class="self">self</span>.current_scope.push();
-        syn::visit::visit_arm(<span class="self">self</span>, i);
+        syn::visit_mut::visit_arm_mut(<span class="self">self</span>, i);
         <span class="self">self</span>.current_scope.pop();
     }
 
-    <span class="kw">fn </span>visit_field_pat(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::FieldPat) {
-        <span class="kw">for </span>it <span class="kw">in </span><span class="kw-2">&amp;</span>i.attrs {
-            <span class="self">self</span>.visit_attribute(it);
+    <span class="kw">fn </span>visit_field_pat_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::FieldPat) {
+        <span class="kw">for </span>it <span class="kw">in </span><span class="kw-2">&amp;mut </span>i.attrs {
+            <span class="self">self</span>.visit_attribute_mut(it);
         }
-        <span class="self">self</span>.visit_pat(<span class="kw-2">&amp;</span>i.pat);
+        <span class="self">self</span>.visit_pat_mut(<span class="kw-2">&amp;mut </span>i.pat);
     }
 
-    <span class="kw">fn </span>visit_pat_ident(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::PatIdent) {
+    <span class="kw">fn </span>visit_pat_ident_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::PatIdent) {
         <span class="self">self</span>.current_scope.insert_term(i.ident.clone());
     }
 
-    <span class="kw">fn </span>visit_expr_method_call(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::ExprMethodCall) {
-        syn::visit::visit_expr(<span class="self">self</span>, <span class="kw-2">&amp;</span>i.receiver);
-        <span class="kw">for </span>arg <span class="kw">in </span><span class="kw-2">&amp;</span>i.args {
-            <span class="self">self</span>.visit_expr(arg);
+    <span class="kw">fn </span>visit_expr_method_call_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::ExprMethodCall) {
+        syn::visit_mut::visit_expr_mut(<span class="self">self</span>, <span class="kw-2">&amp;mut </span>i.receiver);
+        <span class="kw">for </span>arg <span class="kw">in </span><span class="kw-2">&amp;mut </span>i.args {
+            <span class="self">self</span>.visit_expr_mut(arg);
         }
     }
 
-    <span class="kw">fn </span>visit_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Type) {}
+    <span class="kw">fn </span>visit_type_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>syn::Type) {}
 
-    <span class="kw">fn </span>visit_expr_struct(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::ExprStruct) {
-        <span class="kw">for </span>it <span class="kw">in </span><span class="kw-2">&amp;</span>node.attrs {
-            <span class="self">self</span>.visit_attribute(it);
+    <span class="kw">fn </span>visit_expr_struct_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node: <span class="kw-2">&amp;mut </span>syn::ExprStruct) {
+        <span class="kw">for </span>it <span class="kw">in </span><span class="kw-2">&amp;mut </span>node.attrs {
+            <span class="self">self</span>.visit_attribute_mut(it);
         }
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(it) = <span class="kw-2">&amp;</span>node.qself {
-            <span class="self">self</span>.visit_qself(it);
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(it) = <span class="kw-2">&amp;mut </span>node.qself {
+            <span class="self">self</span>.visit_qself_mut(it);
         }
         <span class="comment">// No need to capture the struct path
         // self.visit_path(&amp;node.path);
-        </span><span class="kw">for </span>el <span class="kw">in </span>syn::punctuated::Punctuated::pairs(<span class="kw-2">&amp;</span>node.fields) {
-            <span class="kw">let </span>it = el.value();
-            <span class="self">self</span>.visit_expr(<span class="kw-2">&amp;</span>it.expr);
+        </span><span class="kw">for </span>el <span class="kw">in </span>syn::punctuated::Punctuated::pairs_mut(<span class="kw-2">&amp;mut </span>node.fields) {
+            <span class="kw">let </span>it = el.into_value();
+            <span class="self">self</span>.visit_expr_mut(<span class="kw-2">&amp;mut </span>it.expr);
         }
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(it) = <span class="kw-2">&amp;</span>node.rest {
-            <span class="self">self</span>.visit_expr(it);
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(it) = <span class="kw-2">&amp;mut </span>node.rest {
+            <span class="self">self</span>.visit_expr_mut(it);
         }
     }
 
-    <span class="kw">fn </span>visit_expr_field(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::ExprField) {
-        <span class="self">self</span>.visit_expr(<span class="kw-2">&amp;</span>i.base);
+    <span class="kw">fn </span>visit_expr_field_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::ExprField) {
+        <span class="self">self</span>.visit_expr_mut(<span class="kw-2">&amp;mut </span>i.base);
     }
 
-    <span class="kw">fn </span>visit_macro(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Macro) {
+    <span class="kw">fn </span>visit_macro_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::Macro) {
         <span class="comment">// TODO(shadaj): emit a warning if our guess at parsing fails
         </span><span class="kw">match </span>i.delimiter {
-            syn::MacroDelimiter::Paren(_binding_0) =&gt; i
-                .parse_body_with(
-                    syn::punctuated::Punctuated::&lt;syn::Expr, <span class="macro">syn::Token!</span>[,]&gt;::parse_terminated,
-                )
-                .ok()
-                .iter()
-                .flatten()
-                .for_each(|expr| {
-                    <span class="self">self</span>.visit_expr(expr);
-                }),
-            syn::MacroDelimiter::Brace(_binding_0) =&gt; i
-                .parse_body_with(syn::Block::parse_within)
-                .ok()
-                .iter()
-                .flatten()
-                .for_each(|stmt| {
-                    <span class="self">self</span>.visit_stmt(stmt);
-                }),
-            syn::MacroDelimiter::Bracket(_binding_0) =&gt; i
-                .parse_body_with(
-                    syn::punctuated::Punctuated::&lt;syn::Expr, <span class="macro">syn::Token!</span>[,]&gt;::parse_terminated,
-                )
-                .ok()
-                .iter()
-                .flatten()
-                .for_each(|expr| {
-                    <span class="self">self</span>.visit_expr(expr);
-                }),
+            syn::MacroDelimiter::Paren(_binding_0) =&gt; {
+                i.tokens = i
+                    .parse_body_with(
+                        syn::punctuated::Punctuated::&lt;syn::Expr, <span class="macro">syn::Token!</span>[,]&gt;::parse_terminated,
+                    )
+                    .ok()
+                    .map(|<span class="kw-2">mut </span>exprs| {
+                        <span class="kw">for </span>arg <span class="kw">in </span><span class="kw-2">&amp;mut </span>exprs {
+                            <span class="self">self</span>.visit_expr_mut(arg);
+                        }
+                        exprs.to_token_stream()
+                    })
+                    .unwrap_or(i.tokens.clone());
+            }
+            syn::MacroDelimiter::Brace(_binding_0) =&gt; {
+                i.tokens = i
+                    .parse_body_with(syn::Block::parse_within)
+                    .ok()
+                    .map(|<span class="kw-2">mut </span>stmts| {
+                        <span class="kw">for </span>stmt <span class="kw">in </span><span class="kw-2">&amp;mut </span>stmts {
+                            <span class="self">self</span>.visit_stmt_mut(stmt);
+                        }
+                        syn::punctuated::Punctuated::&lt;syn::Stmt, <span class="macro">syn::Token!</span>[;]&gt;::from_iter(stmts)
+                            .to_token_stream()
+                    })
+                    .unwrap_or(i.tokens.clone());
+            }
+            syn::MacroDelimiter::Bracket(_binding_0) =&gt; {
+                i.tokens = i
+                    .parse_body_with(
+                        syn::punctuated::Punctuated::&lt;syn::Expr, <span class="macro">syn::Token!</span>[,]&gt;::parse_terminated,
+                    )
+                    .ok()
+                    .map(|<span class="kw-2">mut </span>exprs| {
+                        <span class="kw">for </span>arg <span class="kw">in </span><span class="kw-2">&amp;mut </span>exprs {
+                            <span class="self">self</span>.visit_expr_mut(arg);
+                        }
+                        exprs.to_token_stream()
+                    })
+                    .unwrap_or(i.tokens.clone());
+            }
         }
     }
 }
