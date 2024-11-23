@@ -321,39 +321,39 @@ expression: built.ir()
                                                                                                 inner: <tee 3>,
                                                                                             },
                                                                                             Map {
-                                                                                                f: stageleft :: runtime_support :: fn1_type_hint :: < core :: option :: Option < tokio :: time :: Instant > , () > ({ use hydroflow_plus :: __staged :: singleton :: * ; | _u | () }),
+                                                                                                f: stageleft :: runtime_support :: fn1_type_hint :: < () , () > ({ use hydroflow_plus :: __staged :: singleton :: * ; | _u | () }),
                                                                                                 input: Map {
-                                                                                                    f: stageleft :: runtime_support :: fn1_type_hint :: < (core :: option :: Option < tokio :: time :: Instant > , ()) , core :: option :: Option < tokio :: time :: Instant > > ({ use hydroflow_plus :: __staged :: optional :: * ; | (d , _signal) | d }),
+                                                                                                    f: stageleft :: runtime_support :: fn1_type_hint :: < (() , ()) , () > ({ use hydroflow_plus :: __staged :: optional :: * ; | (d , _signal) | d }),
                                                                                                     input: CrossSingleton(
-                                                                                                        Filter {
-                                                                                                            f: stageleft :: runtime_support :: fn1_borrow_type_hint :: < core :: option :: Option < tokio :: time :: Instant > , bool > ({ use crate :: __staged :: cluster :: paxos :: * ; let i_am_leader_check_timeout__free = 1u64 ; move | latest_received_i_am_leader | { if let Some (latest_received_i_am_leader) = latest_received_i_am_leader { (Instant :: now () . duration_since (* latest_received_i_am_leader)) > Duration :: from_secs (i_am_leader_check_timeout__free) } else { true } } }),
-                                                                                                            input: Map {
-                                                                                                                f: stageleft :: runtime_support :: fn1_type_hint :: < (core :: option :: Option < tokio :: time :: Instant > , ()) , core :: option :: Option < tokio :: time :: Instant > > ({ use hydroflow_plus :: __staged :: singleton :: * ; | (d , _signal) | d }),
-                                                                                                                input: CrossSingleton(
-                                                                                                                    Fold {
-                                                                                                                        init: stageleft :: runtime_support :: fn0_type_hint :: < core :: option :: Option < tokio :: time :: Instant > > ({ use crate :: __staged :: cluster :: paxos :: * ; | | None }),
-                                                                                                                        acc: stageleft :: runtime_support :: fn2_borrow_mut_type_hint :: < core :: option :: Option < tokio :: time :: Instant > , hydroflow_plus_test :: cluster :: paxos :: Ballot , () > ({ use crate :: __staged :: cluster :: paxos :: * ; | latest , _ | { * latest = Some (Instant :: now ()) ; } }),
+                                                                                                        Map {
+                                                                                                            f: stageleft :: runtime_support :: fn1_type_hint :: < (() , ()) , () > ({ use hydroflow_plus :: __staged :: optional :: * ; | (d , _signal) | d }),
+                                                                                                            input: CrossSingleton(
+                                                                                                                FilterMap {
+                                                                                                                    f: stageleft :: runtime_support :: fn1_type_hint :: < core :: option :: Option < tokio :: time :: Instant > , core :: option :: Option < () > > ({ use hydroflow_plus :: __staged :: stream :: * ; let duration__free = { use crate :: __staged :: cluster :: paxos :: * ; let i_am_leader_check_timeout__free = 1u64 ; Duration :: from_secs (i_am_leader_check_timeout__free) } ; move | latest_received | { if let Some (latest_received) = latest_received { if Instant :: now () . duration_since (latest_received) > duration__free { Some (()) } else { None } } else { Some (()) } } }),
+                                                                                                                    input: Fold {
+                                                                                                                        init: stageleft :: runtime_support :: fn0_type_hint :: < core :: option :: Option < tokio :: time :: Instant > > ({ use hydroflow_plus :: __staged :: stream :: * ; | | None }),
+                                                                                                                        acc: stageleft :: runtime_support :: fn2_borrow_mut_type_hint :: < core :: option :: Option < tokio :: time :: Instant > , hydroflow_plus_test :: cluster :: paxos :: Ballot , () > ({ use hydroflow_plus :: __staged :: stream :: * ; | latest , _ | { * latest = Some (Instant :: now ()) ; } }),
                                                                                                                         input: Persist(
                                                                                                                             Tee {
                                                                                                                                 inner: <tee 2>,
                                                                                                                             },
                                                                                                                         ),
                                                                                                                     },
-                                                                                                                    Map {
-                                                                                                                        f: stageleft :: runtime_support :: fn1_type_hint :: < usize , () > ({ use hydroflow_plus :: __staged :: singleton :: * ; | _u | () }),
-                                                                                                                        input: Filter {
-                                                                                                                            f: stageleft :: runtime_support :: fn1_borrow_type_hint :: < usize , bool > ({ use hydroflow_plus :: __staged :: singleton :: * ; | c | * c == 0 }),
-                                                                                                                            input: Fold {
-                                                                                                                                init: stageleft :: runtime_support :: fn0_type_hint :: < usize > ({ use hydroflow_plus :: __staged :: stream :: * ; | | 0usize }),
-                                                                                                                                acc: stageleft :: runtime_support :: fn2_borrow_mut_type_hint :: < usize , () , () > ({ use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 }),
-                                                                                                                                input: Tee {
-                                                                                                                                    inner: <tee 4>,
-                                                                                                                                },
+                                                                                                                },
+                                                                                                                Map {
+                                                                                                                    f: stageleft :: runtime_support :: fn1_type_hint :: < usize , () > ({ use hydroflow_plus :: __staged :: optional :: * ; | _u | () }),
+                                                                                                                    input: Filter {
+                                                                                                                        f: stageleft :: runtime_support :: fn1_borrow_type_hint :: < usize , bool > ({ use hydroflow_plus :: __staged :: optional :: * ; | c | * c == 0 }),
+                                                                                                                        input: Fold {
+                                                                                                                            init: stageleft :: runtime_support :: fn0_type_hint :: < usize > ({ use hydroflow_plus :: __staged :: stream :: * ; | | 0usize }),
+                                                                                                                            acc: stageleft :: runtime_support :: fn2_borrow_mut_type_hint :: < usize , () , () > ({ use hydroflow_plus :: __staged :: stream :: * ; | count , _ | * count += 1 }),
+                                                                                                                            input: Tee {
+                                                                                                                                inner: <tee 4>,
                                                                                                                             },
                                                                                                                         },
                                                                                                                     },
-                                                                                                                ),
-                                                                                                            },
+                                                                                                                },
+                                                                                                            ),
                                                                                                         },
                                                                                                         Map {
                                                                                                             f: stageleft :: runtime_support :: fn1_type_hint :: < tokio :: time :: Instant , () > ({ use hydroflow_plus :: __staged :: optional :: * ; | _u | () }),
@@ -1141,7 +1141,7 @@ expression: built.ir()
             sym: cycle_1,
         },
         location_kind: Tick(
-            7,
+            8,
             Cluster(
                 3,
             ),
@@ -1214,7 +1214,7 @@ expression: built.ir()
                                             sym: cycle_1,
                                         },
                                         location_kind: Tick(
-                                            7,
+                                            8,
                                             Cluster(
                                                 3,
                                             ),
@@ -1241,7 +1241,7 @@ expression: built.ir()
                                                         sym: cycle_2,
                                                     },
                                                     location_kind: Tick(
-                                                        7,
+                                                        8,
                                                         Cluster(
                                                             3,
                                                         ),
@@ -1273,7 +1273,7 @@ expression: built.ir()
             sym: cycle_2,
         },
         location_kind: Tick(
-            7,
+            8,
             Cluster(
                 3,
             ),
@@ -1313,7 +1313,7 @@ expression: built.ir()
             sym: cycle_3,
         },
         location_kind: Tick(
-            7,
+            8,
             Cluster(
                 3,
             ),
@@ -1334,7 +1334,7 @@ expression: built.ir()
                                                 sym: cycle_3,
                                             },
                                             location_kind: Tick(
-                                                7,
+                                                8,
                                                 Cluster(
                                                     3,
                                                 ),
