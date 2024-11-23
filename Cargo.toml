@@ -57,6 +57,7 @@ opt-level = "s"
 
 [workspace.lints.rust]
 unused_qualifications = "warn"
+unsafe_op_in_unsafe_fn = "warn"
 
 [workspace.lints.clippy]
 allow_attributes = "warn"

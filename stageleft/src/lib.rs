@@ -469,7 +469,6 @@ impl<'a, T: 'a, Ctx> QuotedWithContext<'a, T, Ctx> for RuntimeData<T> {}
 
 impl<T: Copy> Copy for RuntimeData<T> {}
 
-// TODO(shadaj): relax this to allow for non-copy types
 impl<T: Copy> Clone for RuntimeData<T> {
     fn clone(&self) -> Self {
         *self

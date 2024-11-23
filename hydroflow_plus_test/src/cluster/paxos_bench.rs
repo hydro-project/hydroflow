@@ -44,41 +44,70 @@ pub fn paxos_bench<'a>(
             ballot
         )))
         .max()
-        .map(q!(|ballot: Ballot| ballot.proposer_id))
-        .latest_tick(&client_tick);
+        .map(q!(|ballot: Ballot| ballot.proposer_id));
 
-    let leader_changed = cur_leader_id.clone().delta().map(q!(|_| ())).all_ticks();
+    let leader_changed = unsafe {
+        // SAFETY: we are okay if we miss a transient leader ID, because we
+        // will eventually get the latest one and can restart requests then
+        cur_leader_id
+            .clone()
+            .timestamped(&client_tick)
+            .latest_tick()
+            .delta()
+            .map(q!(|_| ()))
+            .all_ticks()
+            .drop_timestamp()
+    };
 
     bench_client(
         &clients,
         leader_changed,
         |c_to_proposers| {
-            let (new_leader_elected, processed_payloads) = paxos_kv(
-                &proposers,
-                &acceptors,
-                &replicas,
+            let to_proposers = unsafe {
+                // SAFETY: the risk here is that we send a batch of requests
+                // with a stale leader ID, but because the leader ID comes from the
+                // network there is no way to guarantee that it is up to date
+
+                // TODO(shadaj): we should retry if we get an error due to sending
+                // to a stale leader
                 c_to_proposers
-                    .tick_batch(&client_tick)
-                    .cross_singleton(cur_leader_id)
+                    .timestamped(&client_tick)
+                    .tick_batch()
+                    .cross_singleton(cur_leader_id.timestamped(&client_tick).latest_tick())
                     .all_ticks()
-                    .map(q!(move |((key, value), leader_id)| (leader_id, KvPayload {
-                        key,
-                        // we use our ID as part of the value and use that so the replica only notifies us
-                        value: (
-                            CLUSTER_SELF_ID,
-                            value
-                        )
-                    })))
-                    .send_bincode_interleaved(&proposers)
-                    // clients "own" certain keys, so interleaving elements from clients will not affect
-                    // the order of writes to the same key
-                    .assume_ordering(),
-                f,
-                i_am_leader_send_timeout,
-                i_am_leader_check_timeout,
-                i_am_leader_check_timeout_delay_multiplier,
-                checkpoint_frequency,
-            );
+            }
+            .map(q!(move |((key, value), leader_id)| (
+                leader_id,
+                KvPayload {
+                    key,
+                    // we use our ID as part of the value and use that so the replica only notifies us
+                    value: (CLUSTER_SELF_ID, value)
+                }
+            )))
+            .send_bincode_interleaved(&proposers);
+
+            let to_proposers = unsafe {
+                // SAFETY: clients "own" certain keys, so interleaving elements from clients will not affect
+                // the order of writes to the same key
+                to_proposers.assume_ordering()
+            };
+
+            let (new_leader_elected, processed_payloads) = unsafe {
+                // SAFETY: Non-deterministic leader notifications are handled in `to_proposers`. We do not
+                // care about the order in which key writes are processed, which is the non-determinism in
+                // `processed_payloads`.
+                paxos_kv(
+                    &proposers,
+                    &acceptors,
+                    &replicas,
+                    to_proposers,
+                    f,
+                    i_am_leader_send_timeout,
+                    i_am_leader_check_timeout,
+                    i_am_leader_check_timeout_delay_multiplier,
+                    checkpoint_frequency,
+                )
+            };
 
             new_leader_elected_complete
                 .complete(new_leader_elected.broadcast_bincode_interleaved(&clients));
@@ -91,14 +120,13 @@ pub fn paxos_bench<'a>(
                 .send_bincode_interleaved(&clients);
 
             // we only mark a transaction as committed when all replicas have applied it
-            let (c_quorum_payloads, _) = collect_quorum::<_, _, _, _, ()>(
-                &client_tick,
-                c_received_payloads.tick_batch(&client_tick),
+            let (c_quorum_payloads, _) = collect_quorum::<_, _, _, ()>(
+                c_received_payloads.timestamped(&client_tick),
                 f + 1,
                 f + 1,
             );
 
-            c_quorum_payloads.keys().all_ticks()
+            c_quorum_payloads.drop_timestamp()
         },
         num_clients_per_node,
         median_latency_window_size,
@@ -120,9 +148,17 @@ fn bench_client<'a>(
     // r_to_clients_payload_applied.clone().inspect(q!(|payload: &(u32, ReplicaPayload)| println!("Client received payload: {:?}", payload)));
 
     // Whenever the leader changes, make all clients send a message
-    let restart_this_tick = trigger_restart.tick_batch(&client_tick).last();
+    let restart_this_tick = unsafe {
+        // SAFETY: non-deterministic delay in restarting requests
+        // is okay because once it is restarted statistics should reach
+        // steady state regardless of when the restart happes
+        trigger_restart
+            .timestamped(&client_tick)
+            .tick_batch()
+            .last()
+    };
 
-    let c_new_payloads_when_restart = restart_this_tick.clone().flat_map(q!(move |_| (0
+    let c_new_payloads_when_restart = restart_this_tick.clone().flat_map_ordered(q!(move |_| (0
         ..num_clients_per_node)
         .map(move |i| (
             (CLUSTER_SELF_ID.raw_id * (num_clients_per_node as u32)) + i as u32,
@@ -131,19 +167,30 @@ fn bench_client<'a>(
 
     let (c_to_proposers_complete_cycle, c_to_proposers) =
         clients.forward_ref::<Stream<_, _, _, TotalOrder>>();
-    let c_received_quorum_payloads = transaction_cycle(c_to_proposers).tick_batch(&client_tick);
+    let c_received_quorum_payloads = unsafe {
+        // SAFETY: because the transaction processor is required to handle arbitrary reordering
+        // across *different* keys, we are safe because delaying a transaction result for a key
+        // will only affect when the next request for that key is emitted with respect to other
+        // keys
+        transaction_cycle(c_to_proposers)
+            .timestamped(&client_tick)
+            .tick_batch()
+    };
 
     // Whenever all replicas confirm that a payload was committed, send another payload
     let c_new_payloads_when_committed = c_received_quorum_payloads
         .clone()
         .map(q!(|payload| (payload.0, payload.1 + 1)));
     c_to_proposers_complete_cycle.complete(
-        // we don't send a new write for the same key until the previous one is committed,
-        // so writes to the same key are ordered
         c_new_payloads_when_restart
-            .union(c_new_payloads_when_committed)
+            .chain(unsafe {
+                // SAFETY: we don't send a new write for the same key until the previous one is committed,
+                // so this contains only a single write per key, and we don't care about order
+                // across keys
+                c_new_payloads_when_committed.assume_ordering()
+            })
             .all_ticks()
-            .assume_ordering(),
+            .drop_timestamp(),
     );
 
     // Track statistics
@@ -151,7 +198,7 @@ fn bench_client<'a>(
         client_tick.cycle::<Stream<(usize, SystemTime), _, _, NoOrder>>();
     let c_new_timers_when_leader_elected = restart_this_tick
         .map(q!(|_| SystemTime::now()))
-        .flat_map(q!(
+        .flat_map_ordered(q!(
             move |now| (0..num_clients_per_node).map(move |virtual_id| (virtual_id, now))
         ));
     let c_updated_timers = c_received_quorum_payloads
@@ -168,10 +215,14 @@ fn bench_client<'a>(
         }));
     c_timers_complete_cycle.complete_next_tick(c_new_timers);
 
-    let c_stats_output_timer = clients
-        .source_interval(q!(Duration::from_secs(1)))
-        .tick_batch(&client_tick)
-        .first();
+    let c_stats_output_timer = unsafe {
+        // SAFETY: intentionally sampling statistics
+        clients
+            .source_interval(q!(Duration::from_secs(1)))
+            .timestamped(&client_tick)
+            .tick_batch()
+    }
+    .first();
 
     let c_latency_reset = c_stats_output_timer.clone().map(q!(|_| None)).defer_tick();
 
@@ -182,7 +233,7 @@ fn bench_client<'a>(
         )))
         .union(c_latency_reset.into_stream())
         .all_ticks()
-        .flatten()
+        .flatten_ordered()
         .fold_commutative(
             // Create window with ring buffer using vec + wraparound index
             // TODO: Would be nice if I could use vec![] instead, but that doesn't work in HF+ with RuntimeData *median_latency_window_size
@@ -230,21 +281,22 @@ fn bench_client<'a>(
             }),
         );
 
-    c_latencies
-        .zip(c_throughput)
-        .latest_tick(&client_tick)
-        .continue_if(c_stats_output_timer)
-        .all_ticks()
-        .for_each(q!(move |(latencies, throughput)| {
-            let mut latencies_mut = latencies.borrow_mut();
-            if latencies_mut.len() > 0 {
-                let middle_idx = latencies_mut.len() / 2;
-                let (_, median, _) = latencies_mut.select_nth_unstable(middle_idx);
-                println!("Median latency: {}ms", (*median) as f64 / 1000.0);
-            }
+    unsafe {
+        // SAFETY: intentionally sampling statistics
+        c_latencies.zip(c_throughput).latest_tick()
+    }
+    .continue_if(c_stats_output_timer)
+    .all_ticks()
+    .for_each(q!(move |(latencies, throughput)| {
+        let mut latencies_mut = latencies.borrow_mut();
+        if latencies_mut.len() > 0 {
+            let middle_idx = latencies_mut.len() / 2;
+            let (_, median, _) = latencies_mut.select_nth_unstable(middle_idx);
+            println!("Median latency: {}ms", (*median) as f64 / 1000.0);
+        }
 
-            println!("Throughput: {} requests/s", throughput);
-        }));
+        println!("Throughput: {} requests/s", throughput);
+    }));
     // End track statistics
 }
 
