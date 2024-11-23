@@ -1,5 +1,7 @@
 use hydroflow_plus::*;
 
+use super::quorum::collect_quorum;
+
 // if the variable start with p, that means current work is at the participant side. if start with c, at coordinator side.
 //
 
@@ -32,7 +34,7 @@ pub fn two_pc<'a>(
     let c_receive_client_transactions = client_transaction.send_bincode(&coordinator);
     c_receive_client_transactions
         .clone()
-        .inspect(q!(|t| println!(
+        .for_each(q!(|t| println!(
             "receive transaction {}, ready to broadcast",
             t
         )));
@@ -40,47 +42,46 @@ pub fn two_pc<'a>(
     // broadcast prepare message to participants.
     let p_receive_prepare = c_receive_client_transactions.broadcast_bincode(&participants);
 
-    // assume all participants reply commit
-    let p_ready_to_commit = p_receive_prepare.map(q!(|t| (t, String::from("commit"))));
+    // participant 1 aborts transaction 1
+    let p_ready_to_commit = p_receive_prepare.map(q!(move |t| (
+        t,
+        if t == 1 && CLUSTER_SELF_ID.raw_id == 1 {
+            "abort".to_string()
+        } else {
+            "commit".to_string()
+        }
+    )));
     let c_received_reply = p_ready_to_commit.send_bincode(&coordinator);
     // c_received_reply.clone().inspect(q!(|(id, (t, reply))| println!("participant {id} said {reply} for transaction {t}")));
 
     // collect votes from participant.
-    // aborted transactions.
-    let c_participant_voted_abort = c_received_reply
-        .clone()
-        .filter(q!(|(_id, (_t, reply))| reply == "abort"))
-        .map(q!(|(id, (t, _reply))| (t, id)));
-    let p_receive_abort = c_participant_voted_abort.broadcast_bincode(&participants);
-    p_receive_abort.clone().inspect(q!(|(t, id)| println!(
-        "{} vote abort for transaction {}",
-        id, t
-    )));
+    let coordinator_tick = coordinator.tick();
+    let (c_all_commit, c_participant_voted_abort) = collect_quorum(
+        c_received_reply
+            .map(q!(|(id, (t, reply))| (
+                t,
+                if reply == "commit" { Ok(()) } else { Err(id) }
+            )))
+            .timestamped(&coordinator_tick),
+        num_participants as usize,
+        num_participants as usize,
+    );
+
+    let p_receive_abort = c_participant_voted_abort
+        // TODO(shadaj): if multiple participants vote abort we should deduplicate
+        .inspect(q!(|(t, id)| println!(
+            "{} vote abort for transaction {}",
+            id, t
+        )))
+        .broadcast_bincode(&participants);
     let c_receive_ack = p_receive_abort.send_bincode(&coordinator);
     c_receive_ack.for_each(q!(|(id, (t, _))| println!(
         "Coordinator receive participant {} abort for transaction {}",
         id, t
     )));
 
-    // committed transactions
-    let c_participant_voted_commit = c_received_reply
-    .filter(q!(|(_id, (_t, reply))| reply == "commit"))
-    .map(q!(|(id, (t, _reply))| (t, id)))
-    // fold_keyed: 1 input stream of type (K, V1), 1 output stream of type (K, V2). 
-    // The output will have one tuple for each distinct K, with an accumulated value of type V2.
-    .tick_batch(&coordinator.tick()).fold_keyed_commutative(q!(|| 0), q!(|old: &mut u32, _| *old += 1)).filter_map(q!(move |(t, count)| {
-        // here I set the participant to 3. If want more or less participant, fix line 26 of examples/broadcast.rs
-        if count == num_participants {
-            Some(t)
-        } else {
-            None
-        }
-    }));
-
     // broadcast commit transactions to participants.
-    let p_receive_commit = c_participant_voted_commit
-        .all_ticks()
-        .broadcast_bincode(&participants);
+    let p_receive_commit = c_all_commit.broadcast_bincode(&participants);
     // p_receive_commit.clone().for_each(q!(|t| println!("commit for transaction {}", t)));
 
     let c_receive_ack = p_receive_commit.send_bincode(&coordinator);

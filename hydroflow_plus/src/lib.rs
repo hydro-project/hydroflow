@@ -1,4 +1,5 @@
 #![feature(box_patterns)]
+#![warn(unsafe_op_in_unsafe_fn)]
 
 stageleft::stageleft_no_entry_crate!();
 
