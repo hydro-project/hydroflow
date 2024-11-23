@@ -266,21 +266,16 @@
 <a href="#266" id="266">266</a>
 <a href="#267" id="267">267</a>
 <a href="#268" id="268">268</a>
-<a href="#269" id="269">269</a>
-<a href="#270" id="270">270</a>
-<a href="#271" id="271">271</a>
-<a href="#272" id="272">272</a>
-<a href="#273" id="273">273</a>
-<a href="#274" id="274">274</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::rc::Rc;
 <span class="kw">use </span>std::time::{Duration, SystemTime};
 
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
-<span class="kw">use </span>stream::NoOrder;
+<span class="kw">use </span>stream::{NoOrder, TotalOrder};
 
 <span class="kw">use </span><span class="kw">super</span>::paxos::{Acceptor, Ballot, Proposer};
 <span class="kw">use </span><span class="kw">super</span>::paxos_kv::{paxos_kv, KvPayload, Replica};
+<span class="kw">use </span><span class="kw">super</span>::quorum::collect_quorum;
 
 <span class="kw">pub struct </span>Client {}
 
@@ -334,10 +329,13 @@
                     .tick_batch(<span class="kw-2">&amp;</span>client_tick)
                     .cross_singleton(cur_leader_id)
                     .all_ticks()
-                    .map(<span class="macro">q!</span>(<span class="kw">move </span>|(key, leader_id)| (leader_id, KvPayload {
+                    .map(<span class="macro">q!</span>(<span class="kw">move </span>|((key, value), leader_id)| (leader_id, KvPayload {
                         key,
-                        <span class="comment">// we use our ID as the value and use that so the replica only notifies us
-                        </span>value: CLUSTER_SELF_ID
+                        <span class="comment">// we use our ID as part of the value and use that so the replica only notifies us
+                        </span>value: (
+                            CLUSTER_SELF_ID,
+                            value
+                        )
                     })))
                     .send_bincode_interleaved(<span class="kw-2">&amp;</span>proposers)
                     <span class="comment">// clients "own" certain keys, so interleaving elements from clients will not affect
@@ -353,36 +351,22 @@
             new_leader_elected_complete
                 .complete(new_leader_elected.broadcast_bincode_interleaved(<span class="kw-2">&amp;</span>clients));
 
-            <span class="comment">// we only mark a transaction as committed when `f + 1` replicas have committed it
-            </span><span class="kw">let </span>(c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) =
-                client_tick.cycle::&lt;Stream&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, NoOrder&gt;&gt;();
             <span class="kw">let </span>c_received_payloads = processed_payloads
-                .map(<span class="macro">q!</span>(|payload| (payload.value, payload)))
-                .send_bincode_interleaved(<span class="kw-2">&amp;</span>clients)
-                .tick_batch(<span class="kw-2">&amp;</span>client_tick)
-                .map(<span class="macro">q!</span>(|replica_payload| (replica_payload.key, ())))
-                .chain(c_pending_quorum_payloads);
-            <span class="kw">let </span>c_received_quorum_payloads = c_received_payloads
-                .clone()
-                .fold_keyed_commutative(
-                    <span class="macro">q!</span>(|| <span class="number">0</span>),
-                    <span class="macro">q!</span>(|curr_count, _sender| {
-                        <span class="kw-2">*</span>curr_count += <span class="number">1</span>; <span class="comment">// Assumes the same replica will only send commit once
-                    </span>}),
-                )
-                .filter_map(<span class="macro">q!</span>(<span class="kw">move </span>|(key, count)| {
-                    <span class="kw">if </span>count == f + <span class="number">1 </span>{
-                        <span class="prelude-val">Some</span>(key)
-                    } <span class="kw">else </span>{
-                        <span class="prelude-val">None
-                    </span>}
-                }));
-            <span class="kw">let </span>c_new_pending_quorum_payloads =
-                c_received_payloads.anti_join(c_received_quorum_payloads.clone());
-            c_pending_quorum_payloads_complete_cycle
-                .complete_next_tick(c_new_pending_quorum_payloads);
+                .map(<span class="macro">q!</span>(|payload| (
+                    payload.value.<span class="number">0</span>,
+                    ((payload.key, payload.value.<span class="number">1</span>), <span class="prelude-val">Ok</span>(()))
+                )))
+                .send_bincode_interleaved(<span class="kw-2">&amp;</span>clients);
 
-            c_received_quorum_payloads.all_ticks()
+            <span class="comment">// we only mark a transaction as committed when all replicas have applied it
+            </span><span class="kw">let </span>(c_quorum_payloads, <span class="kw">_</span>) = collect_quorum::&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, ()&gt;(
+                <span class="kw-2">&amp;</span>client_tick,
+                c_received_payloads.tick_batch(<span class="kw-2">&amp;</span>client_tick),
+                f + <span class="number">1</span>,
+                f + <span class="number">1</span>,
+            );
+
+            c_quorum_payloads.keys().all_ticks()
         },
         num_clients_per_node,
         median_latency_window_size,
@@ -395,8 +379,8 @@
     clients: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Client&gt;,
     trigger_restart: Stream&lt;(), Cluster&lt;<span class="lifetime">'a</span>, Client&gt;, Unbounded&gt;,
     transaction_cycle: <span class="kw">impl </span>FnOnce(
-        Stream&lt;u32, Cluster&lt;<span class="lifetime">'a</span>, Client&gt;, Unbounded&gt;,
-    ) -&gt; Stream&lt;u32, Cluster&lt;<span class="lifetime">'a</span>, Client&gt;, Unbounded, NoOrder&gt;,
+        Stream&lt;(u32, u32), Cluster&lt;<span class="lifetime">'a</span>, Client&gt;, Unbounded&gt;,
+    ) -&gt; Stream&lt;(u32, u32), Cluster&lt;<span class="lifetime">'a</span>, Client&gt;, Unbounded, NoOrder&gt;,
     num_clients_per_node: usize,
     median_latency_window_size: usize,
 ) {
@@ -406,24 +390,28 @@
     // Whenever the leader changes, make all clients send a message
     </span><span class="kw">let </span>restart_this_tick = trigger_restart.tick_batch(<span class="kw-2">&amp;</span>client_tick).last();
 
-    <span class="kw">let </span>c_new_payloads_when_restart = restart_this_tick
-        .clone()
-        .flat_map(<span class="macro">q!</span>(<span class="kw">move </span>|<span class="kw">_</span>| (<span class="number">0</span>..num_clients_per_node).map(<span class="kw">move </span>|i| i <span class="kw">as </span>u32)));
+    <span class="kw">let </span>c_new_payloads_when_restart = restart_this_tick.clone().flat_map(<span class="macro">q!</span>(<span class="kw">move </span>|<span class="kw">_</span>| (<span class="number">0
+        </span>..num_clients_per_node)
+        .map(<span class="kw">move </span>|i| (
+            (CLUSTER_SELF_ID.raw_id * (num_clients_per_node <span class="kw">as </span>u32)) + i <span class="kw">as </span>u32,
+            <span class="number">0
+        </span>))));
 
     <span class="kw">let </span>(c_to_proposers_complete_cycle, c_to_proposers) =
-        clients.forward_ref::&lt;Stream&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, NoOrder&gt;&gt;();
-    <span class="kw">let </span>c_received_quorum_payloads = transaction_cycle(
-        c_to_proposers.assume_ordering(), <span class="comment">/* we don't send a new write for the same key until the previous one is committed,
-                                           * so writes to the same key are ordered */
-    </span>)
-    .tick_batch(<span class="kw-2">&amp;</span>client_tick);
+        clients.forward_ref::&lt;Stream&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, TotalOrder&gt;&gt;();
+    <span class="kw">let </span>c_received_quorum_payloads = transaction_cycle(c_to_proposers).tick_batch(<span class="kw-2">&amp;</span>client_tick);
 
     <span class="comment">// Whenever all replicas confirm that a payload was committed, send another payload
-    </span><span class="kw">let </span>c_new_payloads_when_committed = c_received_quorum_payloads.clone();
+    </span><span class="kw">let </span>c_new_payloads_when_committed = c_received_quorum_payloads
+        .clone()
+        .map(<span class="macro">q!</span>(|payload| (payload.<span class="number">0</span>, payload.<span class="number">1 </span>+ <span class="number">1</span>)));
     c_to_proposers_complete_cycle.complete(
-        c_new_payloads_when_restart
-            .chain(c_new_payloads_when_committed)
-            .all_ticks(),
+        <span class="comment">// we don't send a new write for the same key until the previous one is committed,
+        // so writes to the same key are ordered
+        </span>c_new_payloads_when_restart
+            .union(c_new_payloads_when_committed)
+            .all_ticks()
+            .assume_ordering(),
     );
 
     <span class="comment">// Track statistics
@@ -436,11 +424,11 @@
         ));
     <span class="kw">let </span>c_updated_timers = c_received_quorum_payloads
         .clone()
-        .map(<span class="macro">q!</span>(|key| (key <span class="kw">as </span>usize, SystemTime::now())));
+        .map(<span class="macro">q!</span>(|(key, _prev_count)| (key <span class="kw">as </span>usize, SystemTime::now())));
     <span class="kw">let </span>c_new_timers = c_timers
         .clone() <span class="comment">// Update c_timers in tick+1 so we can record differences during this tick (to track latency)
-        </span>.chain(c_new_timers_when_leader_elected)
-        .chain(c_updated_timers.clone())
+        </span>.union(c_new_timers_when_leader_elected)
+        .union(c_updated_timers.clone())
         .reduce_keyed_commutative(<span class="macro">q!</span>(|curr_time, new_time| {
             <span class="kw">if </span>new_time &gt; <span class="kw-2">*</span>curr_time {
                 <span class="kw-2">*</span>curr_time = new_time;
@@ -460,7 +448,7 @@
         .map(<span class="macro">q!</span>(|(_virtual_id, (prev_time, curr_time))| <span class="prelude-val">Some</span>(
             curr_time.duration_since(prev_time).unwrap().as_micros()
         )))
-        .chain(c_latency_reset.into_stream())
+        .union(c_latency_reset.into_stream())
         .all_ticks()
         .flatten()
         .fold_commutative(

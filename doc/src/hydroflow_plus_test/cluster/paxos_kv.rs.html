@@ -291,7 +291,7 @@
     <span class="comment">// p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
     </span><span class="kw">let </span>r_sorted_payloads = p_to_replicas
         .tick_batch(<span class="kw-2">&amp;</span>replica_tick)
-        .chain(r_buffered_payloads) <span class="comment">// Combine with all payloads that we've received and not processed yet
+        .union(r_buffered_payloads) <span class="comment">// Combine with all payloads that we've received and not processed yet
         </span>.sort();
     <span class="comment">// Create a cycle since we'll use this seq before we define it
     </span><span class="kw">let </span>(r_highest_seq_complete_cycle, r_highest_seq) =
