@@ -1,9 +1,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 use hydroflow_plus::*;
 use stream::{NoOrder, TotalOrder};
+use tokio::time::Instant;
 
 use super::paxos::{Acceptor, Ballot, Proposer};
 use super::paxos_kv::{paxos_kv, KvPayload, Replica};
@@ -195,15 +196,15 @@ fn bench_client<'a>(
 
     // Track statistics
     let (c_timers_complete_cycle, c_timers) =
-        client_tick.cycle::<Stream<(usize, SystemTime), _, _, NoOrder>>();
+        client_tick.cycle::<Stream<(usize, Instant), _, _, NoOrder>>();
     let c_new_timers_when_leader_elected = restart_this_tick
-        .map(q!(|_| SystemTime::now()))
+        .map(q!(|_| Instant::now()))
         .flat_map_ordered(q!(
             move |now| (0..num_clients_per_node).map(move |virtual_id| (virtual_id, now))
         ));
     let c_updated_timers = c_received_quorum_payloads
         .clone()
-        .map(q!(|(key, _prev_count)| (key as usize, SystemTime::now())));
+        .map(q!(|(key, _prev_count)| (key as usize, Instant::now())));
     let c_new_timers = c_timers
         .clone() // Update c_timers in tick+1 so we can record differences during this tick (to track latency)
         .union(c_new_timers_when_leader_elected)
@@ -229,7 +230,7 @@ fn bench_client<'a>(
     let c_latencies = c_timers
         .join(c_updated_timers)
         .map(q!(|(_virtual_id, (prev_time, curr_time))| Some(
-            curr_time.duration_since(prev_time).unwrap().as_micros()
+            curr_time.duration_since(prev_time)
         )))
         .union(c_latency_reset.into_stream())
         .all_ticks()
@@ -238,7 +239,7 @@ fn bench_client<'a>(
             // Create window with ring buffer using vec + wraparound index
             // TODO: Would be nice if I could use vec![] instead, but that doesn't work in HF+ with RuntimeData *median_latency_window_size
             q!(move || (
-                Rc::new(RefCell::new(Vec::<u128>::with_capacity(
+                Rc::new(RefCell::new(Vec::<Duration>::with_capacity(
                     median_latency_window_size
                 ))),
                 0usize,
@@ -292,7 +293,7 @@ fn bench_client<'a>(
         if latencies_mut.len() > 0 {
             let middle_idx = latencies_mut.len() / 2;
             let (_, median, _) = latencies_mut.select_nth_unstable(middle_idx);
-            println!("Median latency: {}ms", (*median) as f64 / 1000.0);
+            println!("Median latency: {}ms", median.as_micros() as f64 / 1000.0);
         }
 
         println!("Throughput: {} requests/s", throughput);
