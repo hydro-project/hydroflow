@@ -42,12 +42,17 @@ impl<K: KvKey, V: KvValue> PartialOrd for SequencedKv<K, V> {
     }
 }
 
+/// Sets up a linearizable key-value store using Paxos.
+///
+/// # Safety
+/// Notifications for leader election are non-deterministic. When the leader is changing,
+/// writes may be dropped by the old leader.
 #[expect(
     clippy::type_complexity,
     clippy::too_many_arguments,
     reason = "internal paxos code // TODO"
 )]
-pub fn paxos_kv<'a, K: KvKey, V: KvValue>(
+pub unsafe fn paxos_kv<'a, K: KvKey, V: KvValue>(
     proposers: &Cluster<'a, Proposer>,
     acceptors: &Cluster<'a, Acceptor>,
     replicas: &Cluster<'a, Replica>,
@@ -64,16 +69,19 @@ pub fn paxos_kv<'a, K: KvKey, V: KvValue>(
     let (r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
         replicas.forward_ref::<Stream<_, _, _>>();
 
-    let (p_to_clients_new_leader_elected, p_to_replicas) = paxos_core(
-        proposers,
-        acceptors,
-        r_to_acceptors_checkpoint.broadcast_bincode(acceptors),
-        c_to_proposers,
-        f,
-        i_am_leader_send_timeout,
-        i_am_leader_check_timeout,
-        i_am_leader_check_timeout_delay_multiplier,
-    );
+    let (p_to_clients_new_leader_elected, p_to_replicas) = unsafe {
+        // SAFETY: Leader election non-determinism and non-deterministic dropping of writes is documented.
+        paxos_core(
+            proposers,
+            acceptors,
+            r_to_acceptors_checkpoint.broadcast_bincode(acceptors),
+            c_to_proposers,
+            f,
+            i_am_leader_send_timeout,
+            i_am_leader_check_timeout,
+            i_am_leader_check_timeout_delay_multiplier,
+        )
+    };
 
     let (r_to_acceptors_checkpoint_new, r_new_processed_payloads) = replica(
         replicas,
@@ -102,8 +110,13 @@ pub fn replica<'a, K: KvKey, V: KvValue>(
 
     let (r_buffered_payloads_complete_cycle, r_buffered_payloads) = replica_tick.cycle();
     // p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
-    let r_sorted_payloads = p_to_replicas
-        .tick_batch(&replica_tick)
+    let r_sorted_payloads = unsafe {
+        // SAFETY: because we fill slots one-by-one, we can safely batch
+        // because non-determinism is resolved when we sort by slots
+        p_to_replicas
+        .timestamped(&replica_tick)
+        .tick_batch()
+    }
         .union(r_buffered_payloads) // Combine with all payloads that we've received and not processed yet
         .sort();
     // Create a cycle since we'll use this seq before we define it
@@ -183,5 +196,8 @@ pub fn replica<'a, K: KvKey, V: KvValue>(
     let r_to_clients = r_processable_payloads
         .filter_map(q!(|payload| payload.kv))
         .all_ticks();
-    (r_checkpoint_seq_new.all_ticks(), r_to_clients)
+    (
+        r_checkpoint_seq_new.all_ticks().drop_timestamp(),
+        r_to_clients.drop_timestamp(),
+    )
 }
