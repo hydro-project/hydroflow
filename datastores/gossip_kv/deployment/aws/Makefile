@@ -25,7 +25,7 @@ kubectl_setup:
 	@echo "Setting up kubectl to work with AWS EKS Cluster"
 	aws eks update-kubeconfig --region $$(terraform -chdir=$(INFRA_PATH) output -raw region) --name $$(terraform -chdir=$(INFRA_PATH) output -raw cluster_name)
 
-docker_images: base_image server_image cli_image
+docker_images: base_image server_image cli_image load_test_image
 
 base_image:
 	docker build -t "$(BASE_IMAGE_TAG)" -f ../../../../datastores/gossip_kv/server/baseimage.Dockerfile ../../../..
@@ -35,6 +35,9 @@ server_image:
 
 cli_image:
 	docker build -t "$(CLI_IMAGE_TAG)" -f ../../../../datastores/gossip_kv/cli/Dockerfile ../../../..
+
+load_test_image:
+	docker build -t "$(LOAD_TEST_IMAGE_TAG)" -f ../../../../datastores/gossip_kv/load_test_server/Dockerfile ../../../..
 
 upload_docker_images: docker_images
 	$(eval SERVER_REPO_URL := $(shell terraform -chdir=$(INFRA_PATH) output -json repository_urls | jq -r '.["gossip_kv_server"]'))

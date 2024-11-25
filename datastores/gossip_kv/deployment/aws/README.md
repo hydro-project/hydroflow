@@ -31,7 +31,7 @@ aws configure
 ```
 
 ## Create Infrastructure
-Creates a local kubernetes cluster using minikube.
+Creates an EKS cluster.
 
 ```shell
 make infra

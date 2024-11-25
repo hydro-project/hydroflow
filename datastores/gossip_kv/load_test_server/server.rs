@@ -7,8 +7,9 @@ use clap::Parser;
 use gossip_kv::membership::{MemberDataBuilder, Protocol};
 use gossip_kv::{ClientRequest, GossipMessage};
 use governor::{Quota, RateLimiter};
+use lazy_static::lazy_static;
 use hydroflow::util::{unbounded_channel, unsync_channel};
-use prometheus::{gather, Encoder, TextEncoder};
+use prometheus::{gather, register_int_counter, Encoder, IntCounter, TextEncoder};
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::task;
 use tracing::{error, info, trace};
@@ -21,6 +22,7 @@ use hydroflow::futures::sink::drain;
 use hydroflow::futures::stream;
 use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow::tokio_stream::StreamExt;
+use hydroflow::util::unsync::mpsc::bounded;
 use lattices::cc_traits::Iter;
 
 const UNKNOWN_ADDRESS: LoadTestAddress = 9999999999;
@@ -38,6 +40,12 @@ struct Opts {
     /// Maximum number of SET requests to send per second.
     #[clap(short, long, default_value = "1")]
     max_set_throughput: u32,
+}
+
+
+lazy_static! {
+    pub static ref SETS_SENT: IntCounter =
+        register_int_counter!("sets_sent", "Counts the number of SET requests sent.").unwrap();
 }
 
 /// Parse duration from float string for clap args.
@@ -70,7 +78,7 @@ fn run_server(
         rt.block_on(async {
             let local = task::LocalSet::new();
 
-            let (client_input_tx, client_input_rx) = unbounded_channel();
+            let (client_input_tx, client_input_rx) = bounded(1000);
 
             let put_throughput = opts.max_set_throughput;
             local.spawn_local(async move {
@@ -84,7 +92,8 @@ fn run_server(
                         key,
                         value: "FOOBAR".to_string(),
                     };
-                    client_input_tx.send((request, UNKNOWN_ADDRESS)).unwrap();
+                    client_input_tx.send((request, UNKNOWN_ADDRESS)).await.unwrap();
+                    SETS_SENT.inc();
                 }
             });
 

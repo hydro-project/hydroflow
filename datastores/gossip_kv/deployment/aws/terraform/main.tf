@@ -250,6 +250,21 @@ resource "kubernetes_deployment" "gossip_kv_cli" {
       spec {
         termination_grace_period_seconds = 5
 
+        affinity {
+          pod_anti_affinity {
+            required_during_scheduling_ignored_during_execution {
+              topology_key = "kubernetes.io/hostname"
+              label_selector {
+                match_expressions {
+                  key      = "app"
+                  operator = "In"
+                  values = ["gossip-kv-seed-nodes"]
+                }
+              }
+            }
+          }
+        }
+
         container {
           name              = "gossip-kv-cli"
           image             = "${module.ecr.gossip_kv_cli.repository_url}:latest"
@@ -349,6 +364,21 @@ resource "kubernetes_deployment" "grafana" {
       }
 
       spec {
+        affinity {
+          pod_anti_affinity {
+            required_during_scheduling_ignored_during_execution {
+              topology_key = "kubernetes.io/hostname"
+              label_selector {
+                match_expressions {
+                  key      = "app"
+                  operator = "In"
+                  values = ["gossip-kv-seed-nodes"]
+                }
+              }
+            }
+          }
+        }
+
         container {
           name  = "grafana"
           image = "grafana/grafana:latest"
@@ -513,6 +543,21 @@ resource "kubernetes_deployment" "prometheus" {
 
       spec {
         service_account_name = kubernetes_service_account.prometheus_sa.metadata[0].name
+
+        affinity {
+          pod_anti_affinity {
+            required_during_scheduling_ignored_during_execution {
+              topology_key = "kubernetes.io/hostname"
+              label_selector {
+                match_expressions {
+                  key      = "app"
+                  operator = "In"
+                  values = ["gossip-kv-seed-nodes"]
+                }
+              }
+            }
+          }
+        }
 
         container {
           name  = "prometheus"

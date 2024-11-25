@@ -7,7 +7,7 @@ variable "region" {
 variable "instance_type" {
   description = "Instance type for the EKS nodes"
   type        = string
-  default     = "t3.small"
+  default     = "m4.16xlarge"
 }
 
 variable "ecr_repositories" {

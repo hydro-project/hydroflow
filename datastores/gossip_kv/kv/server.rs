@@ -222,7 +222,7 @@ where
             -> gossip_out;
 
         gossip_processing_pipeline
-            -> filter(|(_, _, writes)| writes.is_some())
+            -> filter(|(a, b, writes) : &(GossipMessage, Addr, Option<Namespaces<Max<u64>>>)| writes.is_some())
             -> map(|(_, _, writes)| writes.unwrap())
             -> writes;
 
@@ -276,13 +276,13 @@ where
         // Step 1: Put the new writes in a map, with the write as the key and a SetBoundedLattice as the value.
         infecting_writes = union() -> state::<'static, MapUnionHashMap<MessageId, InfectingWrite>>();
 
-        new_writes -> map(|write| {
-            // Ideally, the write itself is the key, but writes are a hashmap and hashmaps don't
-            // have a hash implementation. So we just generate a GUID identifier for the write
-            // for now.
-            let id = uuid::Uuid::new_v4().to_string();
-            MapUnionSingletonMap::new_from((id, InfectingWrite { write, members: BoundedSetLattice::new() }))
-        }) -> infecting_writes;
+        // new_writes -> map(|write| {
+        //     // Ideally, the write itself is the key, but writes are a hashmap and hashmaps don't
+        //     // have a hash implementation. So we just generate a GUID identifier for the write
+        //     // for now.
+        //     let id = uuid::Uuid::new_v4().to_string();
+        //     MapUnionSingletonMap::new_from((id, InfectingWrite { write, members: BoundedSetLattice::new() }))
+        // }) -> infecting_writes;
 
         gossip_trigger = source_stream(gossip_trigger);
 

@@ -68,18 +68,20 @@ resource "kubernetes_stateful_set" "gossip_kv_seed_nodes" {
 
         container {
           name              = "gossip-kv-server"
-          image             = "${data.terraform_remote_state.infra.outputs.repository_urls.gossip_kv_server}:latest"
+          image             = "${data.terraform_remote_state.infra.outputs.repository_urls.gossip_kv_load_test}:latest"
           image_pull_policy = "Always"
 
           env {
             name  = "RUST_LOG"
-            value = "trace"
+            value = "error"
           }
 
           env {
             name  = "RUST_BACKTRACE"
             value = "full"
           }
+
+          args = ["load_test_server", "--thread-count", "1", "--max-set-throughput", "1000000"]
 
           port {
             container_port = 3001
