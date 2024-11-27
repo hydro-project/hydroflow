@@ -5,9 +5,10 @@ use super::{
     RANGE_1,
 };
 
+/// TODO(mingwei): docs
 pub const BATCH: OperatorConstraints = OperatorConstraints {
     name: "batch",
-    categories: &[OperatorCategory::Fold],
+    categories: &[OperatorCategory::Fold, OperatorCategory::Windowing],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: &(0..=1),

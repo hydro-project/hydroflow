@@ -17,3 +17,22 @@ pub fn test_flo_syntax() {
     assert_graphvis_snapshots!(df);
     df.run_available();
 }
+
+#[multiplatform_test]
+pub fn test_flo_nested() {
+    let mut df = hydroflow_syntax! {
+        users = source_iter(["alice", "bob"]);
+        messages = source_stream(iter_batches_stream(0..12, 3));
+        loop {
+            // TODO(mingwei): cross_join type negotion should allow us to eliminate `flatten()`.
+            users -> batch() -> flatten() -> [0]cp;
+            messages -> batch() -> flatten() -> [1]cp;
+            cp = cross_join::<'static, 'tick>();
+            loop {
+                cp -> all_once() -> for_each(|all| println!("{}: {:?}", context.current_tick(), all));
+            }
+        }
+    };
+    assert_graphvis_snapshots!(df);
+    df.run_available();
+}

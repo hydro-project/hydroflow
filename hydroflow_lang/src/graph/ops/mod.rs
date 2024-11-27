@@ -242,6 +242,7 @@ macro_rules! declare_ops {
     };
 }
 declare_ops![
+    all_once::ALL_ONCE,
     anti_join::ANTI_JOIN,
     anti_join_multiset::ANTI_JOIN_MULTISET,
     assert::ASSERT,
@@ -499,6 +500,8 @@ pub enum OperatorCategory {
     Sink,
     Control,
     CompilerFusionOperator,
+    Windowing,
+    Unwindowing,
 }
 impl OperatorCategory {
     /// Human-readible heading name, for docs.
@@ -517,6 +520,8 @@ impl OperatorCategory {
             OperatorCategory::Sink => "Sinks",
             OperatorCategory::Control => "Control Flow Operators",
             OperatorCategory::CompilerFusionOperator => "Compiler Fusion Operators",
+            OperatorCategory::Windowing => "Windowing Operator",
+            OperatorCategory::Unwindowing => "Un-Windowing Operator",
         }
     }
     /// Human description, for docs.
@@ -541,6 +546,8 @@ impl OperatorCategory {
             OperatorCategory::CompilerFusionOperator => {
                 "Operators which are necessary to implement certain optimizations and rewrite rules"
             }
+            OperatorCategory::Windowing => "Operators for windowing `loop` inputs.",
+            OperatorCategory::Unwindowing => "Operators for collecting `loop` outputs.",
         }
     }
 }

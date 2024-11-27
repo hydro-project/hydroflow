@@ -190,13 +190,6 @@ impl FlatGraphBuilder {
                 Self::helper_check_unused_port(&mut self.diagnostics, &ends, false);
             }
             HfStatement::Loop(loop_statement) => {
-                // TODO(mingwei):
-                self.diagnostics.push(Diagnostic::spanned(
-                    loop_statement.loop_token.span(),
-                    Level::Warning,
-                    "`loop` blocks are not yet supported.",
-                ));
-
                 let inner_loop = self.flat_graph.insert_loop(current_loop);
                 for stmt in loop_statement.statements {
                     self.add_statement_with_loop(stmt, Some(inner_loop));
