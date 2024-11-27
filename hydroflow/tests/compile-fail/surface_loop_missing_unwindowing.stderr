@@ -1,0 +1,11 @@
+warning: `loop` blocks are not yet supported.
+ --> tests/compile-fail/surface_loop_missing_unwindowing.rs:4:9
+  |
+4 |         loop {
+  |         ^^^^
+
+error: Operator `null(...)` exiting a loop context must be an un-windowing operator, but is not.
+ --> tests/compile-fail/surface_loop_missing_unwindowing.rs:7:14
+  |
+7 |         b -> null();
+  |              ^^^^^^

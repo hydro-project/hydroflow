@@ -933,12 +933,10 @@ impl FlatGraphBuilder {
             let Some(op_inst) = self.flat_graph.node_op_inst(node_id) else {
                 continue;
             };
-            let Some(_loop_id) = self.flat_graph.node_loop(node_id) else {
-                continue;
-            };
+            let loop_id = self.flat_graph.node_loop(node_id);
 
             // Source operators must be at the top level.
-            if Some(FloType::Source) == op_inst.op_constraints.flo_type {
+            if Some(FloType::Source) == op_inst.op_constraints.flo_type && loop_id.is_some() {
                 self.diagnostics.push(Diagnostic::spanned(
                     node.span(),
                     Level::Error,
@@ -947,6 +945,89 @@ impl FlatGraphBuilder {
                         op_inst.op_constraints.name
                     )
                 ));
+            }
+        }
+
+        // Check windowing and un-windowing operators, for loop inputs and outputs respectively.
+        for (_edge_id, (pred_id, node_id)) in self.flat_graph.edges() {
+            let Some(op_inst) = self.flat_graph.node_op_inst(node_id) else {
+                continue;
+            };
+            let flo_type = &op_inst.op_constraints.flo_type;
+
+            let pred_loop_id = self.flat_graph.node_loop(pred_id);
+            let loop_id = self.flat_graph.node_loop(node_id);
+
+            let span = self.flat_graph.node(node_id).span();
+
+            let (is_input, is_output) = {
+                let parent_pred_loop_id =
+                    pred_loop_id.and_then(|lid| self.flat_graph.loop_parent(lid));
+                let parent_loop_id = loop_id.and_then(|lid| self.flat_graph.loop_parent(lid));
+                let is_same = pred_loop_id == loop_id;
+                let is_input = !is_same && parent_loop_id == pred_loop_id;
+                let is_output = !is_same && parent_pred_loop_id == loop_id;
+                if !(is_input || is_output || is_same) {
+                    self.diagnostics.push(Diagnostic::spanned(
+                        span,
+                        Level::Error,
+                        "Operator input edge may not cross multiple loop contexts.",
+                    ));
+                    continue;
+                }
+                (is_input, is_output)
+            };
+
+            match flo_type {
+                None => {
+                    if is_input {
+                        self.diagnostics.push(Diagnostic::spanned(
+                            span,
+                            Level::Error,
+                            format!(
+                                "Operator `{}(...)` entering a loop context must be a windowing operator, but is not.",
+                                op_inst.op_constraints.name
+                            )
+                        ));
+                    }
+                    if is_output {
+                        self.diagnostics.push(Diagnostic::spanned(
+                            span,
+                            Level::Error,
+                            format!(
+                                "Operator `{}(...)` exiting a loop context must be an un-windowing operator, but is not.",
+                                op_inst.op_constraints.name
+                            )
+                        ));
+                    }
+                }
+                Some(FloType::Windowing) => {
+                    if !is_input {
+                        self.diagnostics.push(Diagnostic::spanned(
+                            span,
+                            Level::Error,
+                            format!(
+                                "Windowing operator `{}(...)` must be the first input operator into a `loop {{ ... }} context.",
+                                op_inst.op_constraints.name
+                            )
+                        ));
+                    }
+                }
+                Some(FloType::Unwindowing) => {
+                    if !is_output {
+                        self.diagnostics.push(Diagnostic::spanned(
+                            span,
+                            Level::Error,
+                            format!(
+                                "Un-windowing operator `{}(...)` must be the first output operator after exiting a `loop {{ ... }} context.",
+                                op_inst.op_constraints.name
+                            )
+                        ));
+                    }
+                }
+                Some(FloType::Source) => {
+                    // Handled above.
+                }
             }
         }
 

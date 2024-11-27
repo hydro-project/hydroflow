@@ -1,0 +1,17 @@
+warning: `loop` blocks are not yet supported.
+ --> tests/compile-fail/surface_loop_multiple_window.rs:4:9
+  |
+4 |         loop {
+  |         ^^^^
+
+warning: `loop` blocks are not yet supported.
+ --> tests/compile-fail/surface_loop_multiple_window.rs:5:13
+  |
+5 |             loop {
+  |             ^^^^
+
+error: Operator input edge may not cross multiple loop contexts.
+ --> tests/compile-fail/surface_loop_multiple_window.rs:6:22
+  |
+6 |                 a -> batch() -> null();
+  |                      ^^^^^^^
