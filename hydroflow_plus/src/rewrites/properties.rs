@@ -121,13 +121,16 @@ mod tests {
         let counter_func = q!(|count: &mut i32, _| *count += 1);
         let _ = database.add_commutative_tag(counter_func, &tick);
 
-        process
-            .source_iter(q!(vec![]))
-            .map(q!(|string: String| (string, ())))
-            .tick_batch(&tick)
-            .fold_keyed(q!(|| 0), counter_func)
-            .all_ticks()
-            .for_each(q!(|(string, count)| println!("{}: {}", string, count)));
+        unsafe {
+            process
+                .source_iter(q!(vec![]))
+                .map(q!(|string: String| (string, ())))
+                .timestamped(&tick)
+                .tick_batch()
+        }
+        .fold_keyed(q!(|| 0), counter_func)
+        .all_ticks()
+        .for_each(q!(|(string, count)| println!("{}: {}", string, count)));
 
         let built = flow
             .optimize_with(|ir| properties_optimize(ir, &database))

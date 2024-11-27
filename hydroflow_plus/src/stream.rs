@@ -11,12 +11,14 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use stageleft::{q, IntoQuotedMut, QuotedWithContext};
 use syn::parse_quote;
+use tokio::time::Instant;
 
 use crate::builder::FLOW_USED_MESSAGE;
 use crate::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRefMarker, TickCycleMarker};
 use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, TeeNode};
 use crate::location::cluster::CLUSTER_SELF_ID;
 use crate::location::external_process::{ExternalBincodeStream, ExternalBytesPort};
+use crate::location::tick::{NoTimestamp, Timestamped};
 use crate::location::{
     check_matching_location, CanSend, ExternalProcess, Location, LocationId, NoTick, Tick,
 };
@@ -115,7 +117,12 @@ impl<'a, T, L: Location<'a>, Order> CycleCollection<'a, TickCycleMarker>
 impl<'a, T, L: Location<'a>, Order> CycleComplete<'a, TickCycleMarker>
     for Stream<T, Tick<L>, Bounded, Order>
 {
-    fn complete(self, ident: syn::Ident) {
+    fn complete(self, ident: syn::Ident, expected_location: LocationId) {
+        assert_eq!(
+            self.location.id(),
+            expected_location,
+            "locations do not match"
+        );
         self.location
             .flow_state()
             .borrow_mut()
@@ -150,7 +157,12 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> CycleCollection<'a, ForwardRefMa
 impl<'a, T, L: Location<'a> + NoTick, B, Order> CycleComplete<'a, ForwardRefMarker>
     for Stream<T, L, B, Order>
 {
-    fn complete(self, ident: syn::Ident) {
+    fn complete(self, ident: syn::Ident, expected_location: LocationId) {
+        assert_eq!(
+            self.location.id(),
+            expected_location,
+            "locations do not match"
+        );
         self.location
             .flow_state()
             .borrow_mut()
@@ -221,7 +233,7 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
         self.map(q!(|d| d.clone()))
     }
 
-    pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+    pub fn flat_map_ordered<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F, L>,
     ) -> Stream<U, L, B, Order> {
@@ -235,11 +247,32 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
         )
     }
 
-    pub fn flatten<U>(self) -> Stream<U, L, B, Order>
+    pub fn flat_map_unordered<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F, L>,
+    ) -> Stream<U, L, B, NoOrder> {
+        let f = f.splice_fn1_ctx(&self.location).into();
+        Stream::new(
+            self.location,
+            HfPlusNode::FlatMap {
+                f,
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
+    }
+
+    pub fn flatten_ordered<U>(self) -> Stream<U, L, B, Order>
     where
         T: IntoIterator<Item = U>,
     {
-        self.flat_map(q!(|d| d))
+        self.flat_map_ordered(q!(|d| d))
+    }
+
+    pub fn flatten_unordered<U>(self) -> Stream<U, L, B, NoOrder>
+    where
+        T: IntoIterator<Item = U>,
+    {
+        self.flat_map_unordered(q!(|d| d))
     }
 
     pub fn filter<F: Fn(&T) -> bool + 'a>(
@@ -366,7 +399,15 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
         }
     }
 
-    pub fn assume_ordering<O>(self) -> Stream<T, L, B, O> {
+    /// Explicitly "casts" the stream to a type with a different ordering
+    /// guarantee. Useful in unsafe code where the ordering cannot be proven
+    /// by the type-system.
+    ///
+    /// # Safety
+    /// This function is used as an escape hatch, and any mistakes in the
+    /// provided ordering guarantee will propogate into the guarantees
+    /// for the rest of the program.
+    pub unsafe fn assume_ordering<O>(self) -> Stream<T, L, B, O> {
         Stream::new(self.location, self.ir_node.into_inner())
     }
 }
@@ -558,15 +599,21 @@ impl<'a, T, L: Location<'a>> Stream<T, L, Bounded, TotalOrder> {
     }
 }
 
-impl<'a, T, L: Location<'a> + NoTick> Stream<T, L, Unbounded, NoOrder> {
+impl<'a, T, L: Location<'a> + NoTick + NoTimestamp> Stream<T, L, Unbounded, NoOrder> {
     pub fn union(
         self,
         other: Stream<T, L, Unbounded, NoOrder>,
     ) -> Stream<T, L, Unbounded, NoOrder> {
         let tick = self.location.tick();
-        self.tick_batch(&tick)
-            .union(other.tick_batch(&tick))
-            .all_ticks()
+        unsafe {
+            // SAFETY: Because the inputs and outputs are unordered,
+            // we can interleave batches from both streams.
+            self.timestamped(&tick)
+                .tick_batch()
+                .union(other.timestamped(&tick).tick_batch())
+                .all_ticks()
+                .drop_timestamp()
+        }
     }
 }
 
@@ -704,32 +751,112 @@ impl<'a, K: Eq + Hash, V, L: Location<'a>, Order> Stream<(K, V), Tick<L>, Bounde
     }
 }
 
-impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
-    pub fn tick_batch(self, tick: &Tick<L>) -> Stream<T, Tick<L>, Bounded, Order> {
+impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, Timestamped<L>, B, Order> {
+    /// Given a tick, returns a stream corresponding to a batch of elements for that tick.
+    /// These batches are guaranteed to be contiguous across ticks and preserve the order
+    /// of the input.
+    ///
+    /// # Safety
+    /// The batch boundaries are non-deterministic and may change across executions.
+    pub unsafe fn tick_batch(self) -> Stream<T, Tick<L>, Bounded, Order> {
         Stream::new(
-            tick.clone(),
+            self.location.tick,
             HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn tick_prefix(self, tick: &Tick<L>) -> Stream<T, Tick<L>, Bounded, Order>
-    where
-        T: Clone,
-    {
-        self.tick_batch(tick).persist()
+    pub fn drop_timestamp(self) -> Stream<T, L, B, Order> {
+        Stream::new(self.location.tick.l, self.ir_node.into_inner())
     }
 
-    pub fn sample_every(
+    pub fn timestamp_source(&self) -> Tick<L> {
+        self.location.tick.clone()
+    }
+}
+
+impl<'a, T, L: Location<'a> + NoTick + NoTimestamp, B, Order> Stream<T, L, B, Order> {
+    pub fn timestamped(self, tick: &Tick<L>) -> Stream<T, Timestamped<L>, B, Order> {
+        Stream::new(
+            Timestamped { tick: tick.clone() },
+            self.ir_node.into_inner(),
+        )
+    }
+
+    /// Given a time interval, returns a stream corresponding to samples taken from the
+    /// stream roughly at that interval. The output will have elements in the same order
+    /// as the input, but with arbitrary elements skipped between samples. There is also
+    /// no guarantee on the exact timing of the samples.
+    ///
+    /// # Safety
+    /// The output stream is non-deterministic in which elements are sampled, since this
+    /// is controlled by a clock.
+    pub unsafe fn sample_every(
         self,
         interval: impl QuotedWithContext<'a, std::time::Duration, L> + Copy + 'a,
     ) -> Stream<T, L, Unbounded, Order> {
-        let samples = self.location.source_interval(interval);
+        let samples = unsafe {
+            // SAFETY: source of intentional non-determinism
+            self.location.source_interval(interval)
+        };
+
         let tick = self.location.tick();
-        self.tick_batch(&tick)
-            .continue_if(samples.tick_batch(&tick).first())
-            .all_ticks()
+        unsafe {
+            // SAFETY: source of intentional non-determinism
+            self.timestamped(&tick)
+                .tick_batch()
+                .continue_if(samples.timestamped(&tick).tick_batch().first())
+                .all_ticks()
+                .drop_timestamp()
+        }
     }
 
+    /// Given a timeout duration, returns an [`Optional`]  which will have a value if the
+    /// stream has not emitted a value since that duration.
+    ///
+    /// # Safety
+    /// Timeout relies on non-deterministic sampling of the stream, so depending on when
+    /// samples take place, timeouts may be non-deterministically generated or missed,
+    /// and the notification of the timeout may be delayed as well. There is also no
+    /// guarantee on how long the [`Optional`] will have a value after the timeout is
+    /// detected based on when the next sample is taken.
+    pub unsafe fn timeout(
+        self,
+        duration: impl QuotedWithContext<'a, std::time::Duration, Tick<L>> + Copy + 'a,
+    ) -> Optional<(), L, Unbounded>
+    where
+        Order: MinOrder<NoOrder, Min = NoOrder>,
+    {
+        let tick = self.location.tick();
+
+        let latest_received = self.fold_commutative(
+            q!(|| None),
+            q!(|latest, _| {
+                // Note: May want to check received ballot against our own?
+                *latest = Some(Instant::now());
+            }),
+        );
+
+        unsafe {
+            // SAFETY: Non-deterministic delay in detecting a timeout is expected.
+            latest_received.timestamped(&tick).latest_tick()
+        }
+        .filter_map(q!(move |latest_received| {
+            if let Some(latest_received) = latest_received {
+                if Instant::now().duration_since(latest_received) > duration {
+                    Some(())
+                } else {
+                    None
+                }
+            } else {
+                Some(())
+            }
+        }))
+        .latest()
+        .drop_timestamp()
+    }
+}
+
+impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
     pub fn for_each<F: Fn(T) + 'a>(self, f: impl IntoQuotedMut<'a, F, L>) {
         let f = f.splice_fn1_ctx(&self.location).into();
         self.location
@@ -762,9 +889,11 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
 }
 
 impl<'a, T, L: Location<'a>, Order> Stream<T, Tick<L>, Bounded, Order> {
-    pub fn all_ticks(self) -> Stream<T, L, Unbounded, Order> {
+    pub fn all_ticks(self) -> Stream<T, Timestamped<L>, Unbounded, Order> {
         Stream::new(
-            self.location.outer().clone(),
+            Timestamped {
+                tick: self.location.clone(),
+            },
             HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
         )
     }
@@ -848,12 +977,17 @@ impl<'a, T, C1, B, Order> Stream<T, Cluster<'a, C1>, B, Order> {
         Order:
             MinOrder<<Cluster<'a, C1> as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<Order>>,
     {
-        self.map(q!(move |b| (
-            ClusterId::from_raw(CLUSTER_SELF_ID.raw_id),
-            b.clone()
-        )))
-        .send_bincode_interleaved(other)
-        .assume_ordering() // this is safe because we are mapping clusters 1:1
+        let sent = self
+            .map(q!(move |b| (
+                ClusterId::from_raw(CLUSTER_SELF_ID.raw_id),
+                b.clone()
+            )))
+            .send_bincode_interleaved(other);
+
+        unsafe {
+            // SAFETY: this is safe because we are mapping clusters 1:1
+            sent.assume_ordering()
+        }
     }
 }
 
@@ -863,9 +997,12 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
         other: &Process<'a, P2>,
     ) -> Stream<T, Process<'a, P2>, Unbounded, Order>
     where
-        L: CanSend<'a, Process<'a, P2>, In<T> = T, Out<T> = T>,
+        L::Root: CanSend<'a, Process<'a, P2>, In<T> = T, Out<T> = T>,
         T: Clone + Serialize + DeserializeOwned,
-        Order: MinOrder<L::OutStrongestOrder<Order>, Min = Order>,
+        Order: MinOrder<
+            <L::Root as CanSend<'a, Process<'a, P2>>>::OutStrongestOrder<Order>,
+            Min = Order,
+        >,
     {
         self.send_bincode::<Process<'a, P2>, T>(other)
     }
@@ -873,20 +1010,20 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
     pub fn send_bincode<L2: Location<'a>, CoreType>(
         self,
         other: &L2,
-    ) -> Stream<L::Out<CoreType>, L2, Unbounded, Order::Min>
+    ) -> Stream<<L::Root as CanSend<'a, L2>>::Out<CoreType>, L2, Unbounded, Order::Min>
     where
-        L: CanSend<'a, L2, In<CoreType> = T>,
+        L::Root: CanSend<'a, L2, In<CoreType> = T>,
         CoreType: Serialize + DeserializeOwned,
-        Order: MinOrder<L::OutStrongestOrder<Order>>,
+        Order: MinOrder<<L::Root as CanSend<'a, L2>>::OutStrongestOrder<Order>>,
     {
-        let serialize_pipeline = Some(serialize_bincode::<CoreType>(L::is_demux()));
+        let serialize_pipeline = Some(serialize_bincode::<CoreType>(L::Root::is_demux()));
 
-        let deserialize_pipeline = Some(deserialize_bincode::<CoreType>(L::tagged_type()));
+        let deserialize_pipeline = Some(deserialize_bincode::<CoreType>(L::Root::tagged_type()));
 
         Stream::new(
             other.clone(),
             HfPlusNode::Network {
-                from_location: self.location_kind(),
+                from_location: self.location.root().id(),
                 from_key: None,
                 to_location: other.id(),
                 to_key: None,
@@ -921,7 +1058,7 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
         leaves.push(HfPlusLeaf::ForEach {
             f: dummy_f.into(),
             input: Box::new(HfPlusNode::Network {
-                from_location: self.location_kind(),
+                from_location: self.location.root().id(),
                 from_key: None,
                 to_location: other.id(),
                 to_key: Some(external_key),
@@ -942,22 +1079,22 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
     pub fn send_bytes<L2: Location<'a>>(
         self,
         other: &L2,
-    ) -> Stream<L::Out<Bytes>, L2, Unbounded, Order::Min>
+    ) -> Stream<<L::Root as CanSend<'a, L2>>::Out<Bytes>, L2, Unbounded, Order::Min>
     where
-        L: CanSend<'a, L2, In<Bytes> = T>,
-        Order: MinOrder<L::OutStrongestOrder<Order>>,
+        L::Root: CanSend<'a, L2, In<Bytes> = T>,
+        Order: MinOrder<<L::Root as CanSend<'a, L2>>::OutStrongestOrder<Order>>,
     {
         let root = get_this_crate();
         Stream::new(
             other.clone(),
             HfPlusNode::Network {
-                from_location: self.location_kind(),
+                from_location: self.location.root().id(),
                 from_key: None,
                 to_location: other.id(),
                 to_key: None,
                 serialize_pipeline: None,
                 instantiate_fn: DebugInstantiate::Building(),
-                deserialize_pipeline: if let Some(c_type) = L::tagged_type() {
+                deserialize_pipeline: if let Some(c_type) = L::Root::tagged_type() {
                     Some(
                         parse_quote!(map(|(id, b)| (#root::ClusterId<#c_type>::from_raw(id), b.unwrap().freeze()))),
                     )
@@ -971,7 +1108,7 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
 
     pub fn send_bytes_external<L2: 'a>(self, other: &ExternalProcess<L2>) -> ExternalBytesPort
     where
-        L: CanSend<'a, ExternalProcess<'a, L2>, In<Bytes> = T, Out<Bytes> = Bytes>,
+        L::Root: CanSend<'a, ExternalProcess<'a, L2>, In<Bytes> = T, Out<Bytes> = Bytes>,
     {
         let mut flow_state_borrow = self.location.flow_state().borrow_mut();
         let external_key = flow_state_borrow.next_external_out;
@@ -984,7 +1121,7 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
         leaves.push(HfPlusLeaf::ForEach {
             f: dummy_f.into(),
             input: Box::new(HfPlusNode::Network {
-                from_location: self.location_kind(),
+                from_location: self.location.root().id(),
                 from_key: None,
                 to_location: other.id(),
                 to_key: Some(external_key),
@@ -1006,9 +1143,9 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
         other: &L2,
     ) -> Stream<CoreType, L2, Unbounded, Order::Min>
     where
-        L: CanSend<'a, L2, In<CoreType> = T, Out<CoreType> = (Tag, CoreType)>,
+        L::Root: CanSend<'a, L2, In<CoreType> = T, Out<CoreType> = (Tag, CoreType)>,
         CoreType: Serialize + DeserializeOwned,
-        Order: MinOrder<L::OutStrongestOrder<Order>>,
+        Order: MinOrder<<L::Root as CanSend<'a, L2>>::OutStrongestOrder<Order>>,
     {
         self.send_bincode::<L2, CoreType>(other).map(q!(|(_, b)| b))
     }
@@ -1018,24 +1155,30 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
         other: &L2,
     ) -> Stream<Bytes, L2, Unbounded, Order::Min>
     where
-        L: CanSend<'a, L2, In<Bytes> = T, Out<Bytes> = (Tag, Bytes)>,
-        Order: MinOrder<L::OutStrongestOrder<Order>>,
+        L::Root: CanSend<'a, L2, In<Bytes> = T, Out<Bytes> = (Tag, Bytes)>,
+        Order: MinOrder<<L::Root as CanSend<'a, L2>>::OutStrongestOrder<Order>>,
     {
         self.send_bytes::<L2>(other).map(q!(|(_, b)| b))
     }
 
+    #[expect(clippy::type_complexity, reason = "ordering semantics for broadcast")]
     pub fn broadcast_bincode<C2: 'a>(
         self,
         other: &Cluster<'a, C2>,
-    ) -> Stream<L::Out<T>, Cluster<'a, C2>, Unbounded, Order::Min>
+    ) -> Stream<
+        <L::Root as CanSend<'a, Cluster<'a, C2>>>::Out<T>,
+        Cluster<'a, C2>,
+        Unbounded,
+        Order::Min,
+    >
     where
-        L: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T)>,
+        L::Root: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T)>,
         T: Clone + Serialize + DeserializeOwned,
-        Order: MinOrder<L::OutStrongestOrder<Order>>,
+        Order: MinOrder<<L::Root as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<Order>>,
     {
         let ids = other.members();
 
-        self.flat_map(q!(|b| ids.iter().map(move |id| (
+        self.flat_map_ordered(q!(|b| ids.iter().map(move |id| (
             ::std::clone::Clone::clone(id),
             ::std::clone::Clone::clone(&b)
         ))))
@@ -1047,25 +1190,31 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
         other: &Cluster<'a, C2>,
     ) -> Stream<T, Cluster<'a, C2>, Unbounded, Order::Min>
     where
-        L: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T), Out<T> = (Tag, T)> + 'a,
+        L::Root: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T), Out<T> = (Tag, T)> + 'a,
         T: Clone + Serialize + DeserializeOwned,
-        Order: MinOrder<L::OutStrongestOrder<Order>>,
+        Order: MinOrder<<L::Root as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<Order>>,
     {
         self.broadcast_bincode(other).map(q!(|(_, b)| b))
     }
 
+    #[expect(clippy::type_complexity, reason = "ordering semantics for broadcast")]
     pub fn broadcast_bytes<C2: 'a>(
         self,
         other: &Cluster<'a, C2>,
-    ) -> Stream<L::Out<Bytes>, Cluster<'a, C2>, Unbounded, Order::Min>
+    ) -> Stream<
+        <L::Root as CanSend<'a, Cluster<'a, C2>>>::Out<Bytes>,
+        Cluster<'a, C2>,
+        Unbounded,
+        Order::Min,
+    >
     where
-        L: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (ClusterId<C2>, T)> + 'a,
+        L::Root: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (ClusterId<C2>, T)> + 'a,
         T: Clone,
-        Order: MinOrder<L::OutStrongestOrder<Order>>,
+        Order: MinOrder<<L::Root as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<Order>>,
     {
         let ids = other.members();
 
-        self.flat_map(q!(|b| ids.iter().map(move |id| (
+        self.flat_map_ordered(q!(|b| ids.iter().map(move |id| (
             ::std::clone::Clone::clone(id),
             ::std::clone::Clone::clone(&b)
         ))))
@@ -1077,10 +1226,10 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
         other: &Cluster<'a, C2>,
     ) -> Stream<Bytes, Cluster<'a, C2>, Unbounded, Order::Min>
     where
-        L: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (ClusterId<C2>, T), Out<Bytes> = (Tag, Bytes)>
+        L::Root: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (ClusterId<C2>, T), Out<Bytes> = (Tag, Bytes)>
             + 'a,
         T: Clone,
-        Order: MinOrder<L::OutStrongestOrder<Order>>,
+        Order: MinOrder<<L::Root as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<Order>>,
     {
         self.broadcast_bytes(other).map(q!(|(_, b)| b))
     }
@@ -1092,15 +1241,18 @@ impl<'a, T, L: Location<'a> + NoTick, B> Stream<T, L, B, TotalOrder> {
         self,
         other: &Cluster<'a, C2>,
     ) -> Stream<
-        L::Out<T>,
+        <L::Root as CanSend<'a, Cluster<'a, C2>>>::Out<T>,
         Cluster<'a, C2>,
         Unbounded,
-        <TotalOrder as MinOrder<L::OutStrongestOrder<TotalOrder>>>::Min,
+        <TotalOrder as MinOrder<
+            <L::Root as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<TotalOrder>,
+        >>::Min,
     >
     where
-        L: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T)>,
+        L::Root: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T)>,
         T: Clone + Serialize + DeserializeOwned,
-        TotalOrder: MinOrder<L::OutStrongestOrder<TotalOrder>>,
+        TotalOrder:
+            MinOrder<<L::Root as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<TotalOrder>>,
     {
         let ids = other.members();
 
@@ -1116,12 +1268,15 @@ impl<'a, T, L: Location<'a> + NoTick, B> Stream<T, L, B, TotalOrder> {
         T,
         Cluster<'a, C2>,
         Unbounded,
-        <TotalOrder as MinOrder<L::OutStrongestOrder<TotalOrder>>>::Min,
+        <TotalOrder as MinOrder<
+            <L::Root as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<TotalOrder>,
+        >>::Min,
     >
     where
-        L: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T), Out<T> = (Tag, T)> + 'a,
+        L::Root: CanSend<'a, Cluster<'a, C2>, In<T> = (ClusterId<C2>, T), Out<T> = (Tag, T)> + 'a,
         T: Clone + Serialize + DeserializeOwned,
-        TotalOrder: MinOrder<L::OutStrongestOrder<TotalOrder>>,
+        TotalOrder:
+            MinOrder<<L::Root as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<TotalOrder>>,
     {
         self.round_robin_bincode(other).map(q!(|(_, b)| b))
     }
@@ -1130,15 +1285,18 @@ impl<'a, T, L: Location<'a> + NoTick, B> Stream<T, L, B, TotalOrder> {
         self,
         other: &Cluster<'a, C2>,
     ) -> Stream<
-        L::Out<Bytes>,
+        <L::Root as CanSend<'a, Cluster<'a, C2>>>::Out<Bytes>,
         Cluster<'a, C2>,
         Unbounded,
-        <TotalOrder as MinOrder<L::OutStrongestOrder<TotalOrder>>>::Min,
+        <TotalOrder as MinOrder<
+            <L::Root as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<TotalOrder>,
+        >>::Min,
     >
     where
-        L: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (ClusterId<C2>, T)> + 'a,
+        L::Root: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (ClusterId<C2>, T)> + 'a,
         T: Clone,
-        TotalOrder: MinOrder<L::OutStrongestOrder<TotalOrder>>,
+        TotalOrder:
+            MinOrder<<L::Root as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<TotalOrder>>,
     {
         let ids = other.members();
 
@@ -1154,13 +1312,16 @@ impl<'a, T, L: Location<'a> + NoTick, B> Stream<T, L, B, TotalOrder> {
         Bytes,
         Cluster<'a, C2>,
         Unbounded,
-        <TotalOrder as MinOrder<L::OutStrongestOrder<TotalOrder>>>::Min,
+        <TotalOrder as MinOrder<
+            <L::Root as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<TotalOrder>,
+        >>::Min,
     >
     where
-        L: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (ClusterId<C2>, T), Out<Bytes> = (Tag, Bytes)>
+        L::Root: CanSend<'a, Cluster<'a, C2>, In<Bytes> = (ClusterId<C2>, T), Out<Bytes> = (Tag, Bytes)>
             + 'a,
         T: Clone,
-        TotalOrder: MinOrder<L::OutStrongestOrder<TotalOrder>>,
+        TotalOrder:
+            MinOrder<<L::Root as CanSend<'a, Cluster<'a, C2>>>::OutStrongestOrder<TotalOrder>>,
     {
         self.round_robin_bytes(other).map(q!(|(_, b)| b))
     }

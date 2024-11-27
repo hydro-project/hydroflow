@@ -13,6 +13,15 @@
             }
         }
     ],
+    "editor.semanticTokenColorCustomizations": {
+        "enabled": true,
+        "rules": {
+            "*.unsafe:rust": {
+                "foreground": "#ea1708",
+                "fontStyle": "bold"
+            }
+        }
+    },
     "files.watcherExclude": {
         "**/target": true
     },

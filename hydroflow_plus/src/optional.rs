@@ -9,7 +9,10 @@ use syn::parse_quote;
 use crate::builder::FLOW_USED_MESSAGE;
 use crate::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRefMarker, TickCycleMarker};
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource, TeeNode};
+use crate::location::tick::{NoTimestamp, Timestamped};
 use crate::location::{check_matching_location, LocationId, NoTick};
+use crate::singleton::ZipResult;
+use crate::stream::NoOrder;
 use crate::{Bounded, Location, Singleton, Stream, Tick, Unbounded};
 
 pub struct Optional<T, L, B> {
@@ -61,7 +64,12 @@ impl<'a, T, L: Location<'a>> CycleCollection<'a, TickCycleMarker>
 }
 
 impl<'a, T, L: Location<'a>> CycleComplete<'a, TickCycleMarker> for Optional<T, Tick<L>, Bounded> {
-    fn complete(self, ident: syn::Ident) {
+    fn complete(self, ident: syn::Ident, expected_location: LocationId) {
+        assert_eq!(
+            self.location.id(),
+            expected_location,
+            "locations do not match"
+        );
         self.location
             .flow_state()
             .borrow_mut()
@@ -94,7 +102,12 @@ impl<'a, T, L: Location<'a>> CycleCollection<'a, ForwardRefMarker>
 }
 
 impl<'a, T, L: Location<'a>> CycleComplete<'a, ForwardRefMarker> for Optional<T, Tick<L>, Bounded> {
-    fn complete(self, ident: syn::Ident) {
+    fn complete(self, ident: syn::Ident, expected_location: LocationId) {
+        assert_eq!(
+            self.location.id(),
+            expected_location,
+            "locations do not match"
+        );
         self.location
             .flow_state()
             .borrow_mut()
@@ -127,7 +140,12 @@ impl<'a, T, L: Location<'a> + NoTick, B> CycleCollection<'a, ForwardRefMarker>
 }
 
 impl<'a, T, L: Location<'a> + NoTick, B> CycleComplete<'a, ForwardRefMarker> for Optional<T, L, B> {
-    fn complete(self, ident: syn::Ident) {
+    fn complete(self, ident: syn::Ident, expected_location: LocationId) {
+        assert_eq!(
+            self.location.id(),
+            expected_location,
+            "locations do not match"
+        );
         self.location
             .flow_state()
             .borrow_mut()
@@ -179,15 +197,6 @@ impl<'a, T: Clone, L: Location<'a>, B> Clone for Optional<T, L, B> {
 }
 
 impl<'a, T, L: Location<'a>, B> Optional<T, L, B> {
-    // TODO(shadaj): this is technically incorrect; we should only return the first element of the stream
-    pub fn into_stream(self) -> Stream<T, L, B> {
-        if L::is_top_level() {
-            panic!("Converting an optional to a stream is not yet supported at the top level");
-        }
-
-        Stream::new(self.location, self.ir_node.into_inner())
-    }
-
     pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F, L>) -> Optional<U, L, B> {
         let f = f.splice_fn1_ctx(&self.location).into();
         Optional::new(
@@ -199,7 +208,7 @@ impl<'a, T, L: Location<'a>, B> Optional<T, L, B> {
         )
     }
 
-    pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+    pub fn flat_map_ordered<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F, L>,
     ) -> Stream<U, L, B> {
@@ -213,11 +222,32 @@ impl<'a, T, L: Location<'a>, B> Optional<T, L, B> {
         )
     }
 
-    pub fn flatten<U>(self) -> Stream<U, L, B>
+    pub fn flat_map_unordered<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+        self,
+        f: impl IntoQuotedMut<'a, F, L>,
+    ) -> Stream<U, L, B, NoOrder> {
+        let f = f.splice_fn1_ctx(&self.location).into();
+        Stream::new(
+            self.location,
+            HfPlusNode::FlatMap {
+                f,
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
+    }
+
+    pub fn flatten_ordered<U>(self) -> Stream<U, L, B>
     where
         T: IntoIterator<Item = U>,
     {
-        self.flat_map(q!(|v| v))
+        self.flat_map_ordered(q!(|v| v))
+    }
+
+    pub fn flatten_unordered<U>(self) -> Stream<U, L, B, NoOrder>
+    where
+        T: IntoIterator<Item = U>,
+    {
+        self.flat_map_unordered(q!(|v| v))
     }
 
     pub fn filter<F: Fn(&T) -> bool + 'a>(
@@ -350,48 +380,123 @@ impl<'a, T, L: Location<'a>> Optional<T, L, Bounded> {
         self.continue_if(other.into_stream().count().filter(q!(|c| *c == 0)))
     }
 
-    pub fn then<U>(self, value: Singleton<U, L, Bounded>) -> Optional<U, L, Bounded> {
+    pub fn then<U>(self, value: Singleton<U, L, Bounded>) -> Optional<U, L, Bounded>
+    where
+        Singleton<U, L, Bounded>: ZipResult<
+            'a,
+            Optional<(), L, Bounded>,
+            Location = L,
+            Out = Optional<(U, ()), L, Bounded>,
+        >,
+    {
         value.continue_if(self)
+    }
+
+    pub fn into_stream(self) -> Stream<T, L, Bounded> {
+        if L::is_top_level() {
+            panic!("Converting an optional to a stream is not yet supported at the top level");
+        }
+
+        Stream::new(self.location, self.ir_node.into_inner())
     }
 }
 
-impl<'a, T, L: Location<'a> + NoTick, B> Optional<T, L, B> {
-    pub fn latest_tick(self, tick: &Tick<L>) -> Optional<T, Tick<L>, Bounded> {
+impl<'a, T, L: Location<'a> + NoTick, B> Optional<T, Timestamped<L>, B> {
+    /// Given a tick, returns a optional value corresponding to a snapshot of the optional
+    /// as of that tick. The snapshot at tick `t + 1` is guaranteed to include at least all
+    /// relevant data that contributed to the snapshot at tick `t`.
+    ///
+    /// # Safety
+    /// Because this picks a snapshot of a optional whose value is continuously changing,
+    /// the output optional has a non-deterministic value since the snapshot can be at an
+    /// arbitrary point in time.
+    pub unsafe fn latest_tick(self) -> Optional<T, Tick<L>, Bounded> {
         Optional::new(
-            tick.clone(),
+            self.location.tick,
             HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn tick_samples(self) -> Stream<T, L, Unbounded> {
-        let tick = self.location.tick();
-        self.latest_tick(&tick).all_ticks()
+    pub fn drop_timestamp(self) -> Optional<T, L, B> {
+        Optional::new(self.location.tick.l, self.ir_node.into_inner())
+    }
+}
+
+impl<'a, T, L: Location<'a> + NoTick, B> Optional<T, L, B> {
+    pub fn timestamped(self, tick: &Tick<L>) -> Optional<T, Timestamped<L>, B> {
+        Optional::new(
+            Timestamped { tick: tick.clone() },
+            self.ir_node.into_inner(),
+        )
     }
 
-    pub fn sample_every(
-        self,
-        interval: impl QuotedWithContext<'a, std::time::Duration, L> + Copy + 'a,
-    ) -> Stream<T, L, Unbounded> {
-        let samples = self.location.source_interval(interval);
+    /// Eagerly samples the optional as fast as possible, returning a stream of snapshots
+    /// with order corresponding to increasing prefixes of data contributing to the optional.
+    ///
+    /// # Safety
+    /// At runtime, the optional will be arbitrarily sampled as fast as possible, but due
+    /// to non-deterministic batching and arrival of inputs, the output stream is
+    /// non-deterministic.
+    pub unsafe fn sample_eager(self) -> Stream<T, L, Unbounded> {
         let tick = self.location.tick();
 
-        self.latest_tick(&tick)
-            .continue_if(samples.tick_batch(&tick).first())
-            .all_ticks()
+        unsafe {
+            // SAFETY: source of intentional non-determinism
+            self.timestamped(&tick)
+                .latest_tick()
+                .all_ticks()
+                .drop_timestamp()
+        }
+    }
+
+    /// Given a time interval, returns a stream corresponding to snapshots of the optional
+    /// value taken at various points in time. Because the input optional may be
+    /// [`Unbounded`], there are no guarantees on what these snapshots are other than they
+    /// represent the value of the optional given some prefix of the streams leading up to
+    /// it.
+    ///
+    /// # Safety
+    /// The output stream is non-deterministic in which elements are sampled, since this
+    /// is controlled by a clock.
+    pub unsafe fn sample_every(
+        self,
+        interval: impl QuotedWithContext<'a, std::time::Duration, L> + Copy + 'a,
+    ) -> Stream<T, L, Unbounded>
+    where
+        L: NoTimestamp,
+    {
+        let samples = unsafe {
+            // SAFETY: source of intentional non-determinism
+            self.location.source_interval(interval)
+        };
+        let tick = self.location.tick();
+
+        unsafe {
+            // SAFETY: source of intentional non-determinism
+            self.timestamped(&tick)
+                .latest_tick()
+                .continue_if(samples.timestamped(&tick).tick_batch().first())
+                .all_ticks()
+                .drop_timestamp()
+        }
     }
 }
 
 impl<'a, T, L: Location<'a>> Optional<T, Tick<L>, Bounded> {
-    pub fn all_ticks(self) -> Stream<T, L, Unbounded> {
+    pub fn all_ticks(self) -> Stream<T, Timestamped<L>, Unbounded> {
         Stream::new(
-            self.location.outer().clone(),
+            Timestamped {
+                tick: self.location,
+            },
             HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
         )
     }
 
-    pub fn latest(self) -> Optional<T, L, Unbounded> {
+    pub fn latest(self) -> Optional<T, Timestamped<L>, Unbounded> {
         Optional::new(
-            self.location.outer().clone(),
+            Timestamped {
+                tick: self.location,
+            },
             HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
         )
     }
