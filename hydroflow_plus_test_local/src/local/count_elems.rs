@@ -1,13 +1,15 @@
 use hydroflow::tokio::sync::mpsc::UnboundedSender;
 use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::deploy::SingleProcessGraph;
+use hydroflow_plus::hydroflow::scheduled::graph::Hydroflow;
 use hydroflow_plus::*;
+use stageleft::{Quoted, RuntimeData};
 
 pub fn count_elems_generic<'a, T: 'a>(
     flow: FlowBuilder<'a>,
     input_stream: RuntimeData<UnboundedReceiverStream<T>>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
-) -> impl QuotedWithContext<'a, Hydroflow<'a>, ()> {
+) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process::<()>();
     let tick = process.tick();
 

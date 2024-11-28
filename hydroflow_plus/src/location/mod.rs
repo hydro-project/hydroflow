@@ -25,7 +25,7 @@ pub mod can_send;
 pub use can_send::CanSend;
 
 pub mod tick;
-pub use tick::{NoTick, Tick};
+pub use tick::{NoTick, Tick, Timestamped};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum LocationId {

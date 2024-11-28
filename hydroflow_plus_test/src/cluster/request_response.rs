@@ -1,9 +1,7 @@
 use std::hash::Hash;
 
 use hydroflow_plus::*;
-use location::tick::Timestamped;
 use location::NoTick;
-use stream::NoOrder;
 
 type JoinResponses<K, M, V, L> = Stream<(K, (M, V)), Timestamped<L>, Unbounded, NoOrder>;
 

@@ -3,7 +3,6 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use hydroflow_plus::*;
-use stream::{NoOrder, TotalOrder};
 use tokio::time::Instant;
 
 use super::paxos::{Acceptor, Ballot, Proposer};

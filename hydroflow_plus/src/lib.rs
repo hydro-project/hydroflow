@@ -3,9 +3,9 @@
 stageleft::stageleft_no_entry_crate!();
 
 pub use hydroflow;
-pub use hydroflow::scheduled::graph::Hydroflow;
-pub use stageleft::*;
+pub use stageleft::q;
 
+#[doc(hidden)]
 pub mod runtime_support {
     pub use bincode;
 }
@@ -17,7 +17,7 @@ pub mod boundedness;
 pub use boundedness::{Bounded, Unbounded};
 
 pub mod stream;
-pub use stream::Stream;
+pub use stream::{NoOrder, Stream, TotalOrder};
 
 pub mod singleton;
 pub use singleton::Singleton;
@@ -27,7 +27,7 @@ pub use optional::Optional;
 
 pub mod location;
 pub use location::cluster::CLUSTER_SELF_ID;
-pub use location::{Cluster, ClusterId, Location, Process, Tick};
+pub use location::{Cluster, ClusterId, ExternalProcess, Location, Process, Tick, Timestamped};
 
 pub mod deploy;
 
