@@ -73,9 +73,7 @@ pub fn create_graph_trybuild(
         }
     });
 
-    let mut hasher = Sha256::new();
-    hasher.update(&source);
-    let hash = format!("{:X}", hasher.finalize())
+    let hash = format!("{:X}", Sha256::digest(&source))
         .chars()
         .take(8)
         .collect::<String>();
