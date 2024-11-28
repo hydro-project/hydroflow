@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Tick"],"trait":["NoTick"]};
+window.SIDEBAR_ITEMS = {"struct":["Tick","Timestamped"],"trait":["NoTick","NoTimestamp"]};

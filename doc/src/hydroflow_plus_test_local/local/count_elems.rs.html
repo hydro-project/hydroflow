@@ -57,6 +57,7 @@
 <a href="#57" id="57">57</a>
 <a href="#58" id="58">58</a>
 <a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 <span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
@@ -71,11 +72,12 @@
     <span class="kw">let </span>tick = process.tick();
 
     <span class="kw">let </span>source = process.source_stream(input_stream);
-    <span class="kw">let </span>count = source
-        .map(<span class="macro">q!</span>(|<span class="kw">_</span>| <span class="number">1</span>))
-        .tick_batch(<span class="kw-2">&amp;</span>tick)
-        .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|a, b| <span class="kw-2">*</span>a += b))
-        .all_ticks();
+    <span class="kw">let </span>count = <span class="kw">unsafe </span>{
+        <span class="comment">// SAFETY: intentionally using ticks
+        </span>source.map(<span class="macro">q!</span>(|<span class="kw">_</span>| <span class="number">1</span>)).timestamped(<span class="kw-2">&amp;</span>tick).tick_batch()
+    }
+    .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|a, b| <span class="kw-2">*</span>a += b))
+    .all_ticks();
 
     count.for_each(<span class="macro">q!</span>(|v| {
         output.send(v).unwrap();

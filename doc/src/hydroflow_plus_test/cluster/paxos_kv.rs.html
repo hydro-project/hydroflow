@@ -185,6 +185,22 @@
 <a href="#185" id="185">185</a>
 <a href="#186" id="186">186</a>
 <a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::hash::Hash;
@@ -229,12 +245,17 @@
     }
 }
 
-<span class="attr">#[expect(
+<span class="doccomment">/// Sets up a linearizable key-value store using Paxos.
+///
+/// # Safety
+/// Notifications for leader election are non-deterministic. When the leader is changing,
+/// writes may be dropped by the old leader.
+</span><span class="attr">#[expect(
     clippy::type_complexity,
     clippy::too_many_arguments,
     reason = <span class="string">"internal paxos code // TODO"
 </span>)]
-</span><span class="kw">pub fn </span>paxos_kv&lt;<span class="lifetime">'a</span>, K: KvKey, V: KvValue&gt;(
+</span><span class="kw">pub unsafe fn </span>paxos_kv&lt;<span class="lifetime">'a</span>, K: KvKey, V: KvValue&gt;(
     proposers: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Proposer&gt;,
     acceptors: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Acceptor&gt;,
     replicas: <span class="kw-2">&amp;</span>Cluster&lt;<span class="lifetime">'a</span>, Replica&gt;,
@@ -251,16 +272,19 @@
     <span class="kw">let </span>(r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
         replicas.forward_ref::&lt;Stream&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
 
-    <span class="kw">let </span>(p_to_clients_new_leader_elected, p_to_replicas) = paxos_core(
-        proposers,
-        acceptors,
-        r_to_acceptors_checkpoint.broadcast_bincode(acceptors),
-        c_to_proposers,
-        f,
-        i_am_leader_send_timeout,
-        i_am_leader_check_timeout,
-        i_am_leader_check_timeout_delay_multiplier,
-    );
+    <span class="kw">let </span>(p_to_clients_new_leader_elected, p_to_replicas) = <span class="kw">unsafe </span>{
+        <span class="comment">// SAFETY: Leader election non-determinism and non-deterministic dropping of writes is documented.
+        </span>paxos_core(
+            proposers,
+            acceptors,
+            r_to_acceptors_checkpoint.broadcast_bincode(acceptors),
+            c_to_proposers,
+            f,
+            i_am_leader_send_timeout,
+            i_am_leader_check_timeout,
+            i_am_leader_check_timeout_delay_multiplier,
+        )
+    };
 
     <span class="kw">let </span>(r_to_acceptors_checkpoint_new, r_new_processed_payloads) = replica(
         replicas,
@@ -289,8 +313,13 @@
 
     <span class="kw">let </span>(r_buffered_payloads_complete_cycle, r_buffered_payloads) = replica_tick.cycle();
     <span class="comment">// p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
-    </span><span class="kw">let </span>r_sorted_payloads = p_to_replicas
-        .tick_batch(<span class="kw-2">&amp;</span>replica_tick)
+    </span><span class="kw">let </span>r_sorted_payloads = <span class="kw">unsafe </span>{
+        <span class="comment">// SAFETY: because we fill slots one-by-one, we can safely batch
+        // because non-determinism is resolved when we sort by slots
+        </span>p_to_replicas
+        .timestamped(<span class="kw-2">&amp;</span>replica_tick)
+        .tick_batch()
+    }
         .union(r_buffered_payloads) <span class="comment">// Combine with all payloads that we've received and not processed yet
         </span>.sort();
     <span class="comment">// Create a cycle since we'll use this seq before we define it
@@ -370,6 +399,9 @@
     </span><span class="kw">let </span>r_to_clients = r_processable_payloads
         .filter_map(<span class="macro">q!</span>(|payload| payload.kv))
         .all_ticks();
-    (r_checkpoint_seq_new.all_ticks(), r_to_clients)
+    (
+        r_checkpoint_seq_new.all_ticks().drop_timestamp(),
+        r_to_clients.drop_timestamp(),
+    )
 }
 </code></pre></div></section></main></body></html>

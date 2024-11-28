@@ -266,12 +266,66 @@
 <a href="#266" id="266">266</a>
 <a href="#267" id="267">267</a>
 <a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::rc::Rc;
-<span class="kw">use </span>std::time::{Duration, SystemTime};
+<span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stream::{NoOrder, TotalOrder};
+<span class="kw">use </span>tokio::time::Instant;
 
 <span class="kw">use </span><span class="kw">super</span>::paxos::{Acceptor, Ballot, Proposer};
 <span class="kw">use </span><span class="kw">super</span>::paxos_kv::{paxos_kv, KvPayload, Replica};
@@ -312,41 +366,70 @@
             ballot
         )))
         .max()
-        .map(<span class="macro">q!</span>(|ballot: Ballot| ballot.proposer_id))
-        .latest_tick(<span class="kw-2">&amp;</span>client_tick);
+        .map(<span class="macro">q!</span>(|ballot: Ballot| ballot.proposer_id));
 
-    <span class="kw">let </span>leader_changed = cur_leader_id.clone().delta().map(<span class="macro">q!</span>(|<span class="kw">_</span>| ())).all_ticks();
+    <span class="kw">let </span>leader_changed = <span class="kw">unsafe </span>{
+        <span class="comment">// SAFETY: we are okay if we miss a transient leader ID, because we
+        // will eventually get the latest one and can restart requests then
+        </span>cur_leader_id
+            .clone()
+            .timestamped(<span class="kw-2">&amp;</span>client_tick)
+            .latest_tick()
+            .delta()
+            .map(<span class="macro">q!</span>(|<span class="kw">_</span>| ()))
+            .all_ticks()
+            .drop_timestamp()
+    };
 
     bench_client(
         <span class="kw-2">&amp;</span>clients,
         leader_changed,
         |c_to_proposers| {
-            <span class="kw">let </span>(new_leader_elected, processed_payloads) = paxos_kv(
-                <span class="kw-2">&amp;</span>proposers,
-                <span class="kw-2">&amp;</span>acceptors,
-                <span class="kw-2">&amp;</span>replicas,
-                c_to_proposers
-                    .tick_batch(<span class="kw-2">&amp;</span>client_tick)
-                    .cross_singleton(cur_leader_id)
+            <span class="kw">let </span>to_proposers = <span class="kw">unsafe </span>{
+                <span class="comment">// SAFETY: the risk here is that we send a batch of requests
+                // with a stale leader ID, but because the leader ID comes from the
+                // network there is no way to guarantee that it is up to date
+
+                // TODO(shadaj): we should retry if we get an error due to sending
+                // to a stale leader
+                </span>c_to_proposers
+                    .timestamped(<span class="kw-2">&amp;</span>client_tick)
+                    .tick_batch()
+                    .cross_singleton(cur_leader_id.timestamped(<span class="kw-2">&amp;</span>client_tick).latest_tick())
                     .all_ticks()
-                    .map(<span class="macro">q!</span>(<span class="kw">move </span>|((key, value), leader_id)| (leader_id, KvPayload {
-                        key,
-                        <span class="comment">// we use our ID as part of the value and use that so the replica only notifies us
-                        </span>value: (
-                            CLUSTER_SELF_ID,
-                            value
-                        )
-                    })))
-                    .send_bincode_interleaved(<span class="kw-2">&amp;</span>proposers)
-                    <span class="comment">// clients "own" certain keys, so interleaving elements from clients will not affect
-                    // the order of writes to the same key
-                    </span>.assume_ordering(),
-                f,
-                i_am_leader_send_timeout,
-                i_am_leader_check_timeout,
-                i_am_leader_check_timeout_delay_multiplier,
-                checkpoint_frequency,
-            );
+            }
+            .map(<span class="macro">q!</span>(<span class="kw">move </span>|((key, value), leader_id)| (
+                leader_id,
+                KvPayload {
+                    key,
+                    <span class="comment">// we use our ID as part of the value and use that so the replica only notifies us
+                    </span>value: (CLUSTER_SELF_ID, value)
+                }
+            )))
+            .send_bincode_interleaved(<span class="kw-2">&amp;</span>proposers);
+
+            <span class="kw">let </span>to_proposers = <span class="kw">unsafe </span>{
+                <span class="comment">// SAFETY: clients "own" certain keys, so interleaving elements from clients will not affect
+                // the order of writes to the same key
+                </span>to_proposers.assume_ordering()
+            };
+
+            <span class="kw">let </span>(new_leader_elected, processed_payloads) = <span class="kw">unsafe </span>{
+                <span class="comment">// SAFETY: Non-deterministic leader notifications are handled in `to_proposers`. We do not
+                // care about the order in which key writes are processed, which is the non-determinism in
+                // `processed_payloads`.
+                </span>paxos_kv(
+                    <span class="kw-2">&amp;</span>proposers,
+                    <span class="kw-2">&amp;</span>acceptors,
+                    <span class="kw-2">&amp;</span>replicas,
+                    to_proposers,
+                    f,
+                    i_am_leader_send_timeout,
+                    i_am_leader_check_timeout,
+                    i_am_leader_check_timeout_delay_multiplier,
+                    checkpoint_frequency,
+                )
+            };
 
             new_leader_elected_complete
                 .complete(new_leader_elected.broadcast_bincode_interleaved(<span class="kw-2">&amp;</span>clients));
@@ -359,14 +442,13 @@
                 .send_bincode_interleaved(<span class="kw-2">&amp;</span>clients);
 
             <span class="comment">// we only mark a transaction as committed when all replicas have applied it
-            </span><span class="kw">let </span>(c_quorum_payloads, <span class="kw">_</span>) = collect_quorum::&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, ()&gt;(
-                <span class="kw-2">&amp;</span>client_tick,
-                c_received_payloads.tick_batch(<span class="kw-2">&amp;</span>client_tick),
+            </span><span class="kw">let </span>(c_quorum_payloads, <span class="kw">_</span>) = collect_quorum::&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, ()&gt;(
+                c_received_payloads.timestamped(<span class="kw-2">&amp;</span>client_tick),
                 f + <span class="number">1</span>,
                 f + <span class="number">1</span>,
             );
 
-            c_quorum_payloads.keys().all_ticks()
+            c_quorum_payloads.drop_timestamp()
         },
         num_clients_per_node,
         median_latency_window_size,
@@ -388,9 +470,17 @@
     <span class="comment">// r_to_clients_payload_applied.clone().inspect(q!(|payload: &amp;(u32, ReplicaPayload)| println!("Client received payload: {:?}", payload)));
 
     // Whenever the leader changes, make all clients send a message
-    </span><span class="kw">let </span>restart_this_tick = trigger_restart.tick_batch(<span class="kw-2">&amp;</span>client_tick).last();
+    </span><span class="kw">let </span>restart_this_tick = <span class="kw">unsafe </span>{
+        <span class="comment">// SAFETY: non-deterministic delay in restarting requests
+        // is okay because once it is restarted statistics should reach
+        // steady state regardless of when the restart happes
+        </span>trigger_restart
+            .timestamped(<span class="kw-2">&amp;</span>client_tick)
+            .tick_batch()
+            .last()
+    };
 
-    <span class="kw">let </span>c_new_payloads_when_restart = restart_this_tick.clone().flat_map(<span class="macro">q!</span>(<span class="kw">move </span>|<span class="kw">_</span>| (<span class="number">0
+    <span class="kw">let </span>c_new_payloads_when_restart = restart_this_tick.clone().flat_map_ordered(<span class="macro">q!</span>(<span class="kw">move </span>|<span class="kw">_</span>| (<span class="number">0
         </span>..num_clients_per_node)
         .map(<span class="kw">move </span>|i| (
             (CLUSTER_SELF_ID.raw_id * (num_clients_per_node <span class="kw">as </span>u32)) + i <span class="kw">as </span>u32,
@@ -399,32 +489,43 @@
 
     <span class="kw">let </span>(c_to_proposers_complete_cycle, c_to_proposers) =
         clients.forward_ref::&lt;Stream&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, TotalOrder&gt;&gt;();
-    <span class="kw">let </span>c_received_quorum_payloads = transaction_cycle(c_to_proposers).tick_batch(<span class="kw-2">&amp;</span>client_tick);
+    <span class="kw">let </span>c_received_quorum_payloads = <span class="kw">unsafe </span>{
+        <span class="comment">// SAFETY: because the transaction processor is required to handle arbitrary reordering
+        // across *different* keys, we are safe because delaying a transaction result for a key
+        // will only affect when the next request for that key is emitted with respect to other
+        // keys
+        </span>transaction_cycle(c_to_proposers)
+            .timestamped(<span class="kw-2">&amp;</span>client_tick)
+            .tick_batch()
+    };
 
     <span class="comment">// Whenever all replicas confirm that a payload was committed, send another payload
     </span><span class="kw">let </span>c_new_payloads_when_committed = c_received_quorum_payloads
         .clone()
         .map(<span class="macro">q!</span>(|payload| (payload.<span class="number">0</span>, payload.<span class="number">1 </span>+ <span class="number">1</span>)));
     c_to_proposers_complete_cycle.complete(
-        <span class="comment">// we don't send a new write for the same key until the previous one is committed,
-        // so writes to the same key are ordered
-        </span>c_new_payloads_when_restart
-            .union(c_new_payloads_when_committed)
+        c_new_payloads_when_restart
+            .chain(<span class="kw">unsafe </span>{
+                <span class="comment">// SAFETY: we don't send a new write for the same key until the previous one is committed,
+                // so this contains only a single write per key, and we don't care about order
+                // across keys
+                </span>c_new_payloads_when_committed.assume_ordering()
+            })
             .all_ticks()
-            .assume_ordering(),
+            .drop_timestamp(),
     );
 
     <span class="comment">// Track statistics
     </span><span class="kw">let </span>(c_timers_complete_cycle, c_timers) =
-        client_tick.cycle::&lt;Stream&lt;(usize, SystemTime), <span class="kw">_</span>, <span class="kw">_</span>, NoOrder&gt;&gt;();
+        client_tick.cycle::&lt;Stream&lt;(usize, Instant), <span class="kw">_</span>, <span class="kw">_</span>, NoOrder&gt;&gt;();
     <span class="kw">let </span>c_new_timers_when_leader_elected = restart_this_tick
-        .map(<span class="macro">q!</span>(|<span class="kw">_</span>| SystemTime::now()))
-        .flat_map(<span class="macro">q!</span>(
+        .map(<span class="macro">q!</span>(|<span class="kw">_</span>| Instant::now()))
+        .flat_map_ordered(<span class="macro">q!</span>(
             <span class="kw">move </span>|now| (<span class="number">0</span>..num_clients_per_node).map(<span class="kw">move </span>|virtual_id| (virtual_id, now))
         ));
     <span class="kw">let </span>c_updated_timers = c_received_quorum_payloads
         .clone()
-        .map(<span class="macro">q!</span>(|(key, _prev_count)| (key <span class="kw">as </span>usize, SystemTime::now())));
+        .map(<span class="macro">q!</span>(|(key, _prev_count)| (key <span class="kw">as </span>usize, Instant::now())));
     <span class="kw">let </span>c_new_timers = c_timers
         .clone() <span class="comment">// Update c_timers in tick+1 so we can record differences during this tick (to track latency)
         </span>.union(c_new_timers_when_leader_elected)
@@ -436,26 +537,30 @@
         }));
     c_timers_complete_cycle.complete_next_tick(c_new_timers);
 
-    <span class="kw">let </span>c_stats_output_timer = clients
-        .source_interval(<span class="macro">q!</span>(Duration::from_secs(<span class="number">1</span>)))
-        .tick_batch(<span class="kw-2">&amp;</span>client_tick)
-        .first();
+    <span class="kw">let </span>c_stats_output_timer = <span class="kw">unsafe </span>{
+        <span class="comment">// SAFETY: intentionally sampling statistics
+        </span>clients
+            .source_interval(<span class="macro">q!</span>(Duration::from_secs(<span class="number">1</span>)))
+            .timestamped(<span class="kw-2">&amp;</span>client_tick)
+            .tick_batch()
+    }
+    .first();
 
     <span class="kw">let </span>c_latency_reset = c_stats_output_timer.clone().map(<span class="macro">q!</span>(|<span class="kw">_</span>| <span class="prelude-val">None</span>)).defer_tick();
 
     <span class="kw">let </span>c_latencies = c_timers
         .join(c_updated_timers)
         .map(<span class="macro">q!</span>(|(_virtual_id, (prev_time, curr_time))| <span class="prelude-val">Some</span>(
-            curr_time.duration_since(prev_time).unwrap().as_micros()
+            curr_time.duration_since(prev_time)
         )))
         .union(c_latency_reset.into_stream())
         .all_ticks()
-        .flatten()
+        .flatten_ordered()
         .fold_commutative(
             <span class="comment">// Create window with ring buffer using vec + wraparound index
             // TODO: Would be nice if I could use vec![] instead, but that doesn't work in HF+ with RuntimeData *median_latency_window_size
             </span><span class="macro">q!</span>(<span class="kw">move </span>|| (
-                Rc::new(RefCell::new(Vec::&lt;u128&gt;::with_capacity(
+                Rc::new(RefCell::new(Vec::&lt;Duration&gt;::with_capacity(
                     median_latency_window_size
                 ))),
                 <span class="number">0usize</span>,
@@ -498,21 +603,22 @@
             }),
         );
 
-    c_latencies
-        .zip(c_throughput)
-        .latest_tick(<span class="kw-2">&amp;</span>client_tick)
-        .continue_if(c_stats_output_timer)
-        .all_ticks()
-        .for_each(<span class="macro">q!</span>(<span class="kw">move </span>|(latencies, throughput)| {
-            <span class="kw">let </span><span class="kw-2">mut </span>latencies_mut = latencies.borrow_mut();
-            <span class="kw">if </span>latencies_mut.len() &gt; <span class="number">0 </span>{
-                <span class="kw">let </span>middle_idx = latencies_mut.len() / <span class="number">2</span>;
-                <span class="kw">let </span>(<span class="kw">_</span>, median, <span class="kw">_</span>) = latencies_mut.select_nth_unstable(middle_idx);
-                <span class="macro">println!</span>(<span class="string">"Median latency: {}ms"</span>, (<span class="kw-2">*</span>median) <span class="kw">as </span>f64 / <span class="number">1000.0</span>);
-            }
+    <span class="kw">unsafe </span>{
+        <span class="comment">// SAFETY: intentionally sampling statistics
+        </span>c_latencies.zip(c_throughput).latest_tick()
+    }
+    .continue_if(c_stats_output_timer)
+    .all_ticks()
+    .for_each(<span class="macro">q!</span>(<span class="kw">move </span>|(latencies, throughput)| {
+        <span class="kw">let </span><span class="kw-2">mut </span>latencies_mut = latencies.borrow_mut();
+        <span class="kw">if </span>latencies_mut.len() &gt; <span class="number">0 </span>{
+            <span class="kw">let </span>middle_idx = latencies_mut.len() / <span class="number">2</span>;
+            <span class="kw">let </span>(<span class="kw">_</span>, median, <span class="kw">_</span>) = latencies_mut.select_nth_unstable(middle_idx);
+            <span class="macro">println!</span>(<span class="string">"Median latency: {}ms"</span>, median.as_micros() <span class="kw">as </span>f64 / <span class="number">1000.0</span>);
+        }
 
-            <span class="macro">println!</span>(<span class="string">"Throughput: {} requests/s"</span>, throughput);
-        }));
+        <span class="macro">println!</span>(<span class="string">"Throughput: {} requests/s"</span>, throughput);
+    }));
     <span class="comment">// End track statistics
 </span>}
 

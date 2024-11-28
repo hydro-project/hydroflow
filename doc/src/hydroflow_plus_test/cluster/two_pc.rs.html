@@ -90,7 +90,10 @@
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
 <a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
+
+<span class="kw">use </span><span class="kw">super</span>::quorum::collect_quorum;
 
 <span class="comment">// if the variable start with p, that means current work is at the participant side. if start with c, at coordinator side.
 //
@@ -124,7 +127,7 @@
     <span class="kw">let </span>c_receive_client_transactions = client_transaction.send_bincode(<span class="kw-2">&amp;</span>coordinator);
     c_receive_client_transactions
         .clone()
-        .inspect(<span class="macro">q!</span>(|t| <span class="macro">println!</span>(
+        .for_each(<span class="macro">q!</span>(|t| <span class="macro">println!</span>(
             <span class="string">"receive transaction {}, ready to broadcast"</span>,
             t
         )));
@@ -132,47 +135,46 @@
     <span class="comment">// broadcast prepare message to participants.
     </span><span class="kw">let </span>p_receive_prepare = c_receive_client_transactions.broadcast_bincode(<span class="kw-2">&amp;</span>participants);
 
-    <span class="comment">// assume all participants reply commit
-    </span><span class="kw">let </span>p_ready_to_commit = p_receive_prepare.map(<span class="macro">q!</span>(|t| (t, String::from(<span class="string">"commit"</span>))));
+    <span class="comment">// participant 1 aborts transaction 1
+    </span><span class="kw">let </span>p_ready_to_commit = p_receive_prepare.map(<span class="macro">q!</span>(<span class="kw">move </span>|t| (
+        t,
+        <span class="kw">if </span>t == <span class="number">1 </span>&amp;&amp; CLUSTER_SELF_ID.raw_id == <span class="number">1 </span>{
+            <span class="string">"abort"</span>.to_string()
+        } <span class="kw">else </span>{
+            <span class="string">"commit"</span>.to_string()
+        }
+    )));
     <span class="kw">let </span>c_received_reply = p_ready_to_commit.send_bincode(<span class="kw-2">&amp;</span>coordinator);
     <span class="comment">// c_received_reply.clone().inspect(q!(|(id, (t, reply))| println!("participant {id} said {reply} for transaction {t}")));
 
     // collect votes from participant.
-    // aborted transactions.
-    </span><span class="kw">let </span>c_participant_voted_abort = c_received_reply
-        .clone()
-        .filter(<span class="macro">q!</span>(|(_id, (_t, reply))| reply == <span class="string">"abort"</span>))
-        .map(<span class="macro">q!</span>(|(id, (t, _reply))| (t, id)));
-    <span class="kw">let </span>p_receive_abort = c_participant_voted_abort.broadcast_bincode(<span class="kw-2">&amp;</span>participants);
-    p_receive_abort.clone().inspect(<span class="macro">q!</span>(|(t, id)| <span class="macro">println!</span>(
-        <span class="string">"{} vote abort for transaction {}"</span>,
-        id, t
-    )));
+    </span><span class="kw">let </span>coordinator_tick = coordinator.tick();
+    <span class="kw">let </span>(c_all_commit, c_participant_voted_abort) = collect_quorum(
+        c_received_reply
+            .map(<span class="macro">q!</span>(|(id, (t, reply))| (
+                t,
+                <span class="kw">if </span>reply == <span class="string">"commit" </span>{ <span class="prelude-val">Ok</span>(()) } <span class="kw">else </span>{ <span class="prelude-val">Err</span>(id) }
+            )))
+            .timestamped(<span class="kw-2">&amp;</span>coordinator_tick),
+        num_participants <span class="kw">as </span>usize,
+        num_participants <span class="kw">as </span>usize,
+    );
+
+    <span class="kw">let </span>p_receive_abort = c_participant_voted_abort
+        <span class="comment">// TODO(shadaj): if multiple participants vote abort we should deduplicate
+        </span>.inspect(<span class="macro">q!</span>(|(t, id)| <span class="macro">println!</span>(
+            <span class="string">"{} vote abort for transaction {}"</span>,
+            id, t
+        )))
+        .broadcast_bincode(<span class="kw-2">&amp;</span>participants);
     <span class="kw">let </span>c_receive_ack = p_receive_abort.send_bincode(<span class="kw-2">&amp;</span>coordinator);
     c_receive_ack.for_each(<span class="macro">q!</span>(|(id, (t, <span class="kw">_</span>))| <span class="macro">println!</span>(
         <span class="string">"Coordinator receive participant {} abort for transaction {}"</span>,
         id, t
     )));
 
-    <span class="comment">// committed transactions
-    </span><span class="kw">let </span>c_participant_voted_commit = c_received_reply
-    .filter(<span class="macro">q!</span>(|(_id, (_t, reply))| reply == <span class="string">"commit"</span>))
-    .map(<span class="macro">q!</span>(|(id, (t, _reply))| (t, id)))
-    <span class="comment">// fold_keyed: 1 input stream of type (K, V1), 1 output stream of type (K, V2). 
-    // The output will have one tuple for each distinct K, with an accumulated value of type V2.
-    </span>.tick_batch(<span class="kw-2">&amp;</span>coordinator.tick()).fold_keyed_commutative(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|old: <span class="kw-2">&amp;mut </span>u32, <span class="kw">_</span>| <span class="kw-2">*</span>old += <span class="number">1</span>)).filter_map(<span class="macro">q!</span>(<span class="kw">move </span>|(t, count)| {
-        <span class="comment">// here I set the participant to 3. If want more or less participant, fix line 26 of examples/broadcast.rs
-        </span><span class="kw">if </span>count == num_participants {
-            <span class="prelude-val">Some</span>(t)
-        } <span class="kw">else </span>{
-            <span class="prelude-val">None
-        </span>}
-    }));
-
     <span class="comment">// broadcast commit transactions to participants.
-    </span><span class="kw">let </span>p_receive_commit = c_participant_voted_commit
-        .all_ticks()
-        .broadcast_bincode(<span class="kw-2">&amp;</span>participants);
+    </span><span class="kw">let </span>p_receive_commit = c_all_commit.broadcast_bincode(<span class="kw-2">&amp;</span>participants);
     <span class="comment">// p_receive_commit.clone().for_each(q!(|t| println!("commit for transaction {}", t)));
 
     </span><span class="kw">let </span>c_receive_ack = p_receive_commit.send_bincode(<span class="kw-2">&amp;</span>coordinator);

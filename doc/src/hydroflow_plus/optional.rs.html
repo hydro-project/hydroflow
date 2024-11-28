@@ -417,6 +417,111 @@
 <a href="#417" id="417">417</a>
 <a href="#418" id="418">418</a>
 <a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a>
+<a href="#440" id="440">440</a>
+<a href="#441" id="441">441</a>
+<a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a>
+<a href="#456" id="456">456</a>
+<a href="#457" id="457">457</a>
+<a href="#458" id="458">458</a>
+<a href="#459" id="459">459</a>
+<a href="#460" id="460">460</a>
+<a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a>
+<a href="#464" id="464">464</a>
+<a href="#465" id="465">465</a>
+<a href="#466" id="466">466</a>
+<a href="#467" id="467">467</a>
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
+<a href="#471" id="471">471</a>
+<a href="#472" id="472">472</a>
+<a href="#473" id="473">473</a>
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
+<a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a>
+<a href="#479" id="479">479</a>
+<a href="#480" id="480">480</a>
+<a href="#481" id="481">481</a>
+<a href="#482" id="482">482</a>
+<a href="#483" id="483">483</a>
+<a href="#484" id="484">484</a>
+<a href="#485" id="485">485</a>
+<a href="#486" id="486">486</a>
+<a href="#487" id="487">487</a>
+<a href="#488" id="488">488</a>
+<a href="#489" id="489">489</a>
+<a href="#490" id="490">490</a>
+<a href="#491" id="491">491</a>
+<a href="#492" id="492">492</a>
+<a href="#493" id="493">493</a>
+<a href="#494" id="494">494</a>
+<a href="#495" id="495">495</a>
+<a href="#496" id="496">496</a>
+<a href="#497" id="497">497</a>
+<a href="#498" id="498">498</a>
+<a href="#499" id="499">499</a>
+<a href="#500" id="500">500</a>
+<a href="#501" id="501">501</a>
+<a href="#502" id="502">502</a>
+<a href="#503" id="503">503</a>
+<a href="#504" id="504">504</a>
+<a href="#505" id="505">505</a>
+<a href="#506" id="506">506</a>
+<a href="#507" id="507">507</a>
+<a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
+<a href="#519" id="519">519</a>
+<a href="#520" id="520">520</a>
+<a href="#521" id="521">521</a>
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::ops::Deref;
@@ -428,7 +533,10 @@
 <span class="kw">use </span><span class="kw">crate</span>::builder::FLOW_USED_MESSAGE;
 <span class="kw">use </span><span class="kw">crate</span>::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRefMarker, TickCycleMarker};
 <span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource, TeeNode};
+<span class="kw">use </span><span class="kw">crate</span>::location::tick::{NoTimestamp, Timestamped};
 <span class="kw">use </span><span class="kw">crate</span>::location::{check_matching_location, LocationId, NoTick};
+<span class="kw">use </span><span class="kw">crate</span>::singleton::ZipResult;
+<span class="kw">use </span><span class="kw">crate</span>::stream::NoOrder;
 <span class="kw">use crate</span>::{Bounded, Location, Singleton, Stream, Tick, Unbounded};
 
 <span class="kw">pub struct </span>Optional&lt;T, L, B&gt; {
@@ -480,7 +588,12 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, TickCycleMarker&gt; <span class="kw">for </span>Optional&lt;T, Tick&lt;L&gt;, Bounded&gt; {
-    <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
+    <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident, expected_location: LocationId) {
+        <span class="macro">assert_eq!</span>(
+            <span class="self">self</span>.location.id(),
+            expected_location,
+            <span class="string">"locations do not match"
+        </span>);
         <span class="self">self</span>.location
             .flow_state()
             .borrow_mut()
@@ -513,7 +626,12 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRefMarker&gt; <span class="kw">for </span>Optional&lt;T, Tick&lt;L&gt;, Bounded&gt; {
-    <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
+    <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident, expected_location: LocationId) {
+        <span class="macro">assert_eq!</span>(
+            <span class="self">self</span>.location.id(),
+            expected_location,
+            <span class="string">"locations do not match"
+        </span>);
         <span class="self">self</span>.location
             .flow_state()
             .borrow_mut()
@@ -546,7 +664,12 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick, B&gt; CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRefMarker&gt; <span class="kw">for </span>Optional&lt;T, L, B&gt; {
-    <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident) {
+    <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident, expected_location: LocationId) {
+        <span class="macro">assert_eq!</span>(
+            <span class="self">self</span>.location.id(),
+            expected_location,
+            <span class="string">"locations do not match"
+        </span>);
         <span class="self">self</span>.location
             .flow_state()
             .borrow_mut()
@@ -598,15 +721,6 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;, B&gt; Optional&lt;T, L, B&gt; {
-    <span class="comment">// TODO(shadaj): this is technically incorrect; we should only return the first element of the stream
-    </span><span class="kw">pub fn </span>into_stream(<span class="self">self</span>) -&gt; Stream&lt;T, L, B&gt; {
-        <span class="kw">if </span>L::is_top_level() {
-            <span class="macro">panic!</span>(<span class="string">"Converting an optional to a stream is not yet supported at the top level"</span>);
-        }
-
-        Stream::new(<span class="self">self</span>.location, <span class="self">self</span>.ir_node.into_inner())
-    }
-
     <span class="kw">pub fn </span>map&lt;U, F: Fn(T) -&gt; U + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;) -&gt; Optional&lt;U, L, B&gt; {
         <span class="kw">let </span>f = f.splice_fn1_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
         Optional::new(
@@ -618,7 +732,7 @@
         )
     }
 
-    <span class="kw">pub fn </span>flat_map&lt;U, I: IntoIterator&lt;Item = U&gt;, F: Fn(T) -&gt; I + <span class="lifetime">'a</span>&gt;(
+    <span class="kw">pub fn </span>flat_map_ordered&lt;U, I: IntoIterator&lt;Item = U&gt;, F: Fn(T) -&gt; I + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;,
     ) -&gt; Stream&lt;U, L, B&gt; {
@@ -632,11 +746,32 @@
         )
     }
 
-    <span class="kw">pub fn </span>flatten&lt;U&gt;(<span class="self">self</span>) -&gt; Stream&lt;U, L, B&gt;
+    <span class="kw">pub fn </span>flat_map_unordered&lt;U, I: IntoIterator&lt;Item = U&gt;, F: Fn(T) -&gt; I + <span class="lifetime">'a</span>&gt;(
+        <span class="self">self</span>,
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F, L&gt;,
+    ) -&gt; Stream&lt;U, L, B, NoOrder&gt; {
+        <span class="kw">let </span>f = f.splice_fn1_ctx(<span class="kw-2">&amp;</span><span class="self">self</span>.location).into();
+        Stream::new(
+            <span class="self">self</span>.location,
+            HfPlusNode::FlatMap {
+                f,
+                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            },
+        )
+    }
+
+    <span class="kw">pub fn </span>flatten_ordered&lt;U&gt;(<span class="self">self</span>) -&gt; Stream&lt;U, L, B&gt;
     <span class="kw">where
         </span>T: IntoIterator&lt;Item = U&gt;,
     {
-        <span class="self">self</span>.flat_map(<span class="macro">q!</span>(|v| v))
+        <span class="self">self</span>.flat_map_ordered(<span class="macro">q!</span>(|v| v))
+    }
+
+    <span class="kw">pub fn </span>flatten_unordered&lt;U&gt;(<span class="self">self</span>) -&gt; Stream&lt;U, L, B, NoOrder&gt;
+    <span class="kw">where
+        </span>T: IntoIterator&lt;Item = U&gt;,
+    {
+        <span class="self">self</span>.flat_map_unordered(<span class="macro">q!</span>(|v| v))
     }
 
     <span class="kw">pub fn </span>filter&lt;F: Fn(<span class="kw-2">&amp;</span>T) -&gt; bool + <span class="lifetime">'a</span>&gt;(
@@ -769,48 +904,123 @@
         <span class="self">self</span>.continue_if(other.into_stream().count().filter(<span class="macro">q!</span>(|c| <span class="kw-2">*</span>c == <span class="number">0</span>)))
     }
 
-    <span class="kw">pub fn </span>then&lt;U&gt;(<span class="self">self</span>, value: Singleton&lt;U, L, Bounded&gt;) -&gt; Optional&lt;U, L, Bounded&gt; {
+    <span class="kw">pub fn </span>then&lt;U&gt;(<span class="self">self</span>, value: Singleton&lt;U, L, Bounded&gt;) -&gt; Optional&lt;U, L, Bounded&gt;
+    <span class="kw">where
+        </span>Singleton&lt;U, L, Bounded&gt;: ZipResult&lt;
+            <span class="lifetime">'a</span>,
+            Optional&lt;(), L, Bounded&gt;,
+            Location = L,
+            Out = Optional&lt;(U, ()), L, Bounded&gt;,
+        &gt;,
+    {
         value.continue_if(<span class="self">self</span>)
+    }
+
+    <span class="kw">pub fn </span>into_stream(<span class="self">self</span>) -&gt; Stream&lt;T, L, Bounded&gt; {
+        <span class="kw">if </span>L::is_top_level() {
+            <span class="macro">panic!</span>(<span class="string">"Converting an optional to a stream is not yet supported at the top level"</span>);
+        }
+
+        Stream::new(<span class="self">self</span>.location, <span class="self">self</span>.ir_node.into_inner())
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick, B&gt; Optional&lt;T, L, B&gt; {
-    <span class="kw">pub fn </span>latest_tick(<span class="self">self</span>, tick: <span class="kw-2">&amp;</span>Tick&lt;L&gt;) -&gt; Optional&lt;T, Tick&lt;L&gt;, Bounded&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick, B&gt; Optional&lt;T, Timestamped&lt;L&gt;, B&gt; {
+    <span class="doccomment">/// Given a tick, returns a optional value corresponding to a snapshot of the optional
+    /// as of that tick. The snapshot at tick `t + 1` is guaranteed to include at least all
+    /// relevant data that contributed to the snapshot at tick `t`.
+    ///
+    /// # Safety
+    /// Because this picks a snapshot of a optional whose value is continuously changing,
+    /// the output optional has a non-deterministic value since the snapshot can be at an
+    /// arbitrary point in time.
+    </span><span class="kw">pub unsafe fn </span>latest_tick(<span class="self">self</span>) -&gt; Optional&lt;T, Tick&lt;L&gt;, Bounded&gt; {
         Optional::new(
-            tick.clone(),
+            <span class="self">self</span>.location.tick,
             HfPlusNode::Unpersist(Box::new(<span class="self">self</span>.ir_node.into_inner())),
         )
     }
 
-    <span class="kw">pub fn </span>tick_samples(<span class="self">self</span>) -&gt; Stream&lt;T, L, Unbounded&gt; {
-        <span class="kw">let </span>tick = <span class="self">self</span>.location.tick();
-        <span class="self">self</span>.latest_tick(<span class="kw-2">&amp;</span>tick).all_ticks()
+    <span class="kw">pub fn </span>drop_timestamp(<span class="self">self</span>) -&gt; Optional&lt;T, L, B&gt; {
+        Optional::new(<span class="self">self</span>.location.tick.l, <span class="self">self</span>.ir_node.into_inner())
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt; + NoTick, B&gt; Optional&lt;T, L, B&gt; {
+    <span class="kw">pub fn </span>timestamped(<span class="self">self</span>, tick: <span class="kw-2">&amp;</span>Tick&lt;L&gt;) -&gt; Optional&lt;T, Timestamped&lt;L&gt;, B&gt; {
+        Optional::new(
+            Timestamped { tick: tick.clone() },
+            <span class="self">self</span>.ir_node.into_inner(),
+        )
     }
 
-    <span class="kw">pub fn </span>sample_every(
-        <span class="self">self</span>,
-        interval: <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, std::time::Duration, L&gt; + Copy + <span class="lifetime">'a</span>,
-    ) -&gt; Stream&lt;T, L, Unbounded&gt; {
-        <span class="kw">let </span>samples = <span class="self">self</span>.location.source_interval(interval);
+    <span class="doccomment">/// Eagerly samples the optional as fast as possible, returning a stream of snapshots
+    /// with order corresponding to increasing prefixes of data contributing to the optional.
+    ///
+    /// # Safety
+    /// At runtime, the optional will be arbitrarily sampled as fast as possible, but due
+    /// to non-deterministic batching and arrival of inputs, the output stream is
+    /// non-deterministic.
+    </span><span class="kw">pub unsafe fn </span>sample_eager(<span class="self">self</span>) -&gt; Stream&lt;T, L, Unbounded&gt; {
         <span class="kw">let </span>tick = <span class="self">self</span>.location.tick();
 
-        <span class="self">self</span>.latest_tick(<span class="kw-2">&amp;</span>tick)
-            .continue_if(samples.tick_batch(<span class="kw-2">&amp;</span>tick).first())
-            .all_ticks()
+        <span class="kw">unsafe </span>{
+            <span class="comment">// SAFETY: source of intentional non-determinism
+            </span><span class="self">self</span>.timestamped(<span class="kw-2">&amp;</span>tick)
+                .latest_tick()
+                .all_ticks()
+                .drop_timestamp()
+        }
+    }
+
+    <span class="doccomment">/// Given a time interval, returns a stream corresponding to snapshots of the optional
+    /// value taken at various points in time. Because the input optional may be
+    /// [`Unbounded`], there are no guarantees on what these snapshots are other than they
+    /// represent the value of the optional given some prefix of the streams leading up to
+    /// it.
+    ///
+    /// # Safety
+    /// The output stream is non-deterministic in which elements are sampled, since this
+    /// is controlled by a clock.
+    </span><span class="kw">pub unsafe fn </span>sample_every(
+        <span class="self">self</span>,
+        interval: <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, std::time::Duration, L&gt; + Copy + <span class="lifetime">'a</span>,
+    ) -&gt; Stream&lt;T, L, Unbounded&gt;
+    <span class="kw">where
+        </span>L: NoTimestamp,
+    {
+        <span class="kw">let </span>samples = <span class="kw">unsafe </span>{
+            <span class="comment">// SAFETY: source of intentional non-determinism
+            </span><span class="self">self</span>.location.source_interval(interval)
+        };
+        <span class="kw">let </span>tick = <span class="self">self</span>.location.tick();
+
+        <span class="kw">unsafe </span>{
+            <span class="comment">// SAFETY: source of intentional non-determinism
+            </span><span class="self">self</span>.timestamped(<span class="kw-2">&amp;</span>tick)
+                .latest_tick()
+                .continue_if(samples.timestamped(<span class="kw-2">&amp;</span>tick).tick_batch().first())
+                .all_ticks()
+                .drop_timestamp()
+        }
     }
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, L: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Optional&lt;T, Tick&lt;L&gt;, Bounded&gt; {
-    <span class="kw">pub fn </span>all_ticks(<span class="self">self</span>) -&gt; Stream&lt;T, L, Unbounded&gt; {
+    <span class="kw">pub fn </span>all_ticks(<span class="self">self</span>) -&gt; Stream&lt;T, Timestamped&lt;L&gt;, Unbounded&gt; {
         Stream::new(
-            <span class="self">self</span>.location.outer().clone(),
+            Timestamped {
+                tick: <span class="self">self</span>.location,
+            },
             HfPlusNode::Persist(Box::new(<span class="self">self</span>.ir_node.into_inner())),
         )
     }
 
-    <span class="kw">pub fn </span>latest(<span class="self">self</span>) -&gt; Optional&lt;T, L, Unbounded&gt; {
+    <span class="kw">pub fn </span>latest(<span class="self">self</span>) -&gt; Optional&lt;T, Timestamped&lt;L&gt;, Unbounded&gt; {
         Optional::new(
-            <span class="self">self</span>.location.outer().clone(),
+            Timestamped {
+                tick: <span class="self">self</span>.location,
+            },
             HfPlusNode::Persist(Box::new(<span class="self">self</span>.ir_node.into_inner())),
         )
     }

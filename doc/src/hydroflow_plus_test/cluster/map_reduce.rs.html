@@ -51,6 +51,16 @@
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 
 <span class="kw">pub struct </span>Leader {}
@@ -64,22 +74,32 @@
         .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>[<span class="string">"abc"</span>, <span class="string">"abc"</span>, <span class="string">"xyz"</span>, <span class="string">"abc"</span>]))
         .map(<span class="macro">q!</span>(|s| s.to_string()));
 
-    words
+    <span class="kw">let </span>partitioned_words = words
         .round_robin_bincode(<span class="kw-2">&amp;</span>cluster)
-        .map(<span class="macro">q!</span>(|string| (string, ())))
-        .tick_batch(<span class="kw-2">&amp;</span>cluster.tick())
-        .fold_keyed(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|count, <span class="kw">_</span>| <span class="kw-2">*</span>count += <span class="number">1</span>))
-        .inspect(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(
-            <span class="string">"partition count: {} - {}"</span>,
-            string, count
-        )))
-        .all_ticks()
-        .send_bincode_interleaved(<span class="kw-2">&amp;</span>process)
-        .tick_batch(<span class="kw-2">&amp;</span>process.tick())
-        .persist()
-        .reduce_keyed_commutative(<span class="macro">q!</span>(|total, count| <span class="kw-2">*</span>total += count))
-        .all_ticks()
-        .for_each(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(<span class="string">"{}: {}"</span>, string, count)));
+        .map(<span class="macro">q!</span>(|string| (string, ())));
+
+    <span class="kw">let </span>batches = <span class="kw">unsafe </span>{
+        <span class="comment">// SAFETY: addition is associative so we can batch reduce
+        </span>partitioned_words.timestamped(<span class="kw-2">&amp;</span>cluster.tick()).tick_batch()
+    }
+    .fold_keyed(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|count, <span class="kw">_</span>| <span class="kw-2">*</span>count += <span class="number">1</span>))
+    .inspect(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(
+        <span class="string">"partition count: {} - {}"</span>,
+        string, count
+    )))
+    .all_ticks()
+    .send_bincode_interleaved(<span class="kw-2">&amp;</span>process);
+
+    <span class="kw">unsafe </span>{
+        <span class="comment">// SAFETY: addition is associative so we can batch reduce
+        </span>batches
+            .timestamped(<span class="kw-2">&amp;</span>process.tick())
+            .tick_batch()
+            .persist()
+            .reduce_keyed_commutative(<span class="macro">q!</span>(|total, count| <span class="kw-2">*</span>total += count))
+    }
+    .all_ticks()
+    .for_each(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(<span class="string">"{}: {}"</span>, string, count)));
 
     (process, cluster)
 }

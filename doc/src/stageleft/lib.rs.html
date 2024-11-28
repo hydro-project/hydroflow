@@ -492,7 +492,6 @@
 <a href="#492" id="492">492</a>
 <a href="#493" id="493">493</a>
 <a href="#494" id="494">494</a>
-<a href="#495" id="495">495</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::panic;
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -964,8 +963,7 @@
 
 <span class="kw">impl</span>&lt;T: Copy&gt; Copy <span class="kw">for </span>RuntimeData&lt;T&gt; {}
 
-<span class="comment">// TODO(shadaj): relax this to allow for non-copy types
-</span><span class="kw">impl</span>&lt;T: Copy&gt; Clone <span class="kw">for </span>RuntimeData&lt;T&gt; {
+<span class="kw">impl</span>&lt;T: Copy&gt; Clone <span class="kw">for </span>RuntimeData&lt;T&gt; {
     <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         <span class="kw-2">*</span><span class="self">self
     </span>}

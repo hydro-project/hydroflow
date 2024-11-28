@@ -145,6 +145,8 @@
 <a href="#145" id="145">145</a>
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
@@ -167,14 +169,10 @@
 
 <span class="kw">pub trait </span>IsCluster {
     <span class="kw">type </span>Tag;
-    <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize;
 }
 
 <span class="kw">impl</span>&lt;C&gt; IsCluster <span class="kw">for </span>Cluster&lt;<span class="lifetime">'_</span>, C&gt; {
     <span class="kw">type </span>Tag = C;
-    <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-        <span class="self">self</span>.id
-    }
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, C&gt; Cluster&lt;<span class="lifetime">'a</span>, C&gt; {
@@ -272,8 +270,14 @@
     <span class="kw">where
         </span><span class="self">Self</span>: Sized,
     {
+        <span class="kw">let </span>cluster_id = <span class="kw">if let </span>LocationId::Cluster(id) = ctx.root().id() {
+            id
+        } <span class="kw">else </span>{
+            <span class="macro">unreachable!</span>()
+        };
+
         <span class="kw">let </span>ident = syn::Ident::new(
-            <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"__hydroflow_plus_cluster_self_id_{}"</span>, ctx.root().id()),
+            <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"__hydroflow_plus_cluster_self_id_{}"</span>, cluster_id),
             Span::call_site(),
         );
         <span class="kw">let </span>root = get_this_crate();

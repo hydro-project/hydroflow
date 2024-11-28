@@ -138,6 +138,9 @@
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashSet;
 
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
@@ -261,13 +264,16 @@
         <span class="kw">let </span>counter_func = <span class="macro">q!</span>(|count: <span class="kw-2">&amp;mut </span>i32, <span class="kw">_</span>| <span class="kw-2">*</span>count += <span class="number">1</span>);
         <span class="kw">let _ </span>= database.add_commutative_tag(counter_func, <span class="kw-2">&amp;</span>tick);
 
-        process
-            .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>[]))
-            .map(<span class="macro">q!</span>(|string: String| (string, ())))
-            .tick_batch(<span class="kw-2">&amp;</span>tick)
-            .fold_keyed(<span class="macro">q!</span>(|| <span class="number">0</span>), counter_func)
-            .all_ticks()
-            .for_each(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(<span class="string">"{}: {}"</span>, string, count)));
+        <span class="kw">unsafe </span>{
+            process
+                .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>[]))
+                .map(<span class="macro">q!</span>(|string: String| (string, ())))
+                .timestamped(<span class="kw-2">&amp;</span>tick)
+                .tick_batch()
+        }
+        .fold_keyed(<span class="macro">q!</span>(|| <span class="number">0</span>), counter_func)
+        .all_ticks()
+        .for_each(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(<span class="string">"{}: {}"</span>, string, count)));
 
         <span class="kw">let </span>built = flow
             .optimize_with(|ir| properties_optimize(ir, <span class="kw-2">&amp;</span>database))

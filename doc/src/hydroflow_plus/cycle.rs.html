@@ -51,7 +51,9 @@
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::location::Location;
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::location::{Location, LocationId};
 <span class="kw">use </span><span class="kw">crate</span>::staging_util::Invariant;
 
 <span class="kw">pub enum </span>ForwardRefMarker {}
@@ -62,7 +64,7 @@
 }
 
 <span class="kw">pub trait </span>CycleComplete&lt;<span class="lifetime">'a</span>, T&gt; {
-    <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident);
+    <span class="kw">fn </span>complete(<span class="self">self</span>, ident: syn::Ident, expected_location: LocationId);
 }
 
 <span class="kw">pub trait </span>CycleCollection&lt;<span class="lifetime">'a</span>, T&gt;: CycleComplete&lt;<span class="lifetime">'a</span>, T&gt; {
@@ -83,25 +85,27 @@
 /// See [`crate::FlowBuilder`] for an explainer on the type parameters.
 </span><span class="kw">pub struct </span>ForwardRef&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRefMarker&gt;&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) expected_location: LocationId,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: Invariant&lt;<span class="lifetime">'a</span>, S&gt;,
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, ForwardRefMarker&gt;&gt; ForwardRef&lt;<span class="lifetime">'a</span>, S&gt; {
     <span class="kw">pub fn </span>complete(<span class="self">self</span>, stream: S) {
         <span class="kw">let </span>ident = <span class="self">self</span>.ident;
-        S::complete(stream, ident)
+        S::complete(stream, ident, <span class="self">self</span>.expected_location)
     }
 }
 
 <span class="kw">pub struct </span>TickCycle&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, TickCycleMarker&gt; + DeferTick&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) expected_location: LocationId,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: Invariant&lt;<span class="lifetime">'a</span>, S&gt;,
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, S: CycleComplete&lt;<span class="lifetime">'a</span>, TickCycleMarker&gt; + DeferTick&gt; TickCycle&lt;<span class="lifetime">'a</span>, S&gt; {
     <span class="kw">pub fn </span>complete_next_tick(<span class="self">self</span>, stream: S) {
         <span class="kw">let </span>ident = <span class="self">self</span>.ident;
-        S::complete(stream.defer_tick(), ident)
+        S::complete(stream.defer_tick(), ident, <span class="self">self</span>.expected_location)
     }
 }
 </code></pre></div></section></main></body></html>

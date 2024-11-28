@@ -134,6 +134,18 @@
 <a href="#134" id="134">134</a>
 <a href="#135" id="135">135</a>
 <a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 <span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
@@ -150,15 +162,27 @@
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
     <span class="kw">let </span>tick = process.tick();
 
-    <span class="kw">let </span>users = process
-        .source_stream(users_stream)
-        .tick_batch(<span class="kw-2">&amp;</span>tick)
-        .persist();
+    <span class="kw">let </span>users = <span class="kw">unsafe </span>{
+        <span class="comment">// SAFETY: intentionally non-deterministic to not send messaged
+        // to users that joined after the message was sent
+        </span>process
+            .source_stream(users_stream)
+            .timestamped(<span class="kw-2">&amp;</span>tick)
+            .tick_batch()
+    }
+    .persist();
     <span class="kw">let </span>messages = process.source_stream(messages);
     <span class="kw">let </span>messages = <span class="kw">if </span>replay_messages {
-        messages.tick_batch(<span class="kw-2">&amp;</span>tick).persist()
+        <span class="kw">unsafe </span>{
+            <span class="comment">// SAFETY: see above
+            </span>messages.timestamped(<span class="kw-2">&amp;</span>tick).tick_batch()
+        }
+        .persist()
     } <span class="kw">else </span>{
-        messages.tick_batch(<span class="kw-2">&amp;</span>tick)
+        <span class="kw">unsafe </span>{
+            <span class="comment">// SAFETY: see above
+            </span>messages.timestamped(<span class="kw-2">&amp;</span>tick).tick_batch()
+        }
     };
 
     <span class="comment">// do this after the persist to test pullup
