@@ -508,12 +508,12 @@ fn recommit_after_leader_election<'a, P: PaxosPayload>(
             } else {
                 *curr_entry = (1, Some(new_entry));
             }
-        }));
+        }))
+        .map(q!(|(slot, (count, entry))| (slot, (count, entry.unwrap()))));
     let p_log_to_try_commit = p_p1b_highest_entries_and_count
         .clone()
         .cross_singleton(p_ballot.clone())
         .filter_map(q!(move |((slot, (count, entry)), ballot)| {
-            let entry = entry.unwrap();
             if count <= f {
                 Some(P2a {
                     ballot,
