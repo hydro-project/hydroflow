@@ -1,7 +1,6 @@
 use std::hash::Hash;
 
 use hydroflow_plus::*;
-use location::tick::Timestamped;
 use location::NoTick;
 
 #[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
