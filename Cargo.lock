@@ -1326,12 +1326,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fbf6a919d6cf397374f7dfeeea91d974c7c0a7221d0d0f4f20d859d329e53fcc"
 
 [[package]]
-name = "hex"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
-
-[[package]]
 name = "home"
 version = "0.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3228,19 +3222,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sha256"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18278f6a914fa3070aa316493f7d2ddfb9ac86ebc06fa3b83bffda487e9065b0"
-dependencies = [
- "async-trait",
- "bytes",
- "hex",
- "sha2",
- "tokio",
-]
-
-[[package]]
 name = "sharded-slab"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3364,7 +3345,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "sha256",
+ "sha2",
  "syn 2.0.75",
 ]
 
@@ -3391,7 +3372,7 @@ version = "0.4.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "sha256",
+ "sha2",
  "syn 2.0.75",
  "syn-inline-mod",
 ]

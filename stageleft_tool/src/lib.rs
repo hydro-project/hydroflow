@@ -4,6 +4,7 @@ use std::{env, fs};
 
 use proc_macro2::Span;
 use quote::ToTokens;
+use sha2::{Digest, Sha256};
 use syn::visit::Visit;
 use syn::visit_mut::VisitMut;
 use syn::{parse_quote, UsePath};
@@ -41,7 +42,7 @@ impl<'a> Visit<'a> for GenMacroVistor {
                 .chars()
                 .filter(|c| c.is_alphanumeric())
                 .collect::<String>();
-            let contents_hash = sha256::digest(contents);
+            let contents_hash = format!("{:X}", Sha256::digest(contents));
             self.exported_macros
                 .insert((contents_hash, cur_path.to_token_stream().to_string()));
         }
@@ -72,7 +73,7 @@ pub fn gen_macro(staged_path: &Path, crate_name: &str) {
 
         let proc_macro_wrapper: syn::ItemFn = parse_quote!(
             #[proc_macro]
-            #[expect(unused_qualifications, reason = "generated code")]
+            #[expect(unused_qualifications, non_snake_case, reason = "generated code")]
             pub fn #underscored_path(input: ::proc_macro::TokenStream) -> ::proc_macro::TokenStream {
                 let input = ::stageleft::internal::TokenStream::from(input);
                 let out = #exported_from_parsed::#underscored_path_impl(input);
