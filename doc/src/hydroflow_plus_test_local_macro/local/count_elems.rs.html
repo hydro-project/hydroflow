@@ -58,16 +58,20 @@
 <a href="#58" id="58">58</a>
 <a href="#59" id="59">59</a>
 <a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 <span class="kw">use </span>hydroflow_plus::deploy::SingleProcessGraph;
+<span class="kw">use </span>hydroflow_plus::hydroflow::scheduled::graph::Hydroflow;
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
+<span class="kw">use </span>stageleft::{Quoted, RuntimeData};
 
 <span class="kw">pub fn </span>count_elems_generic&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt;(
     flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
     input_stream: RuntimeData&lt;UnboundedReceiverStream&lt;T&gt;&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
-) -&gt; <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;, ()&gt; {
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
     <span class="kw">let </span>tick = process.tick();
 

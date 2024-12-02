@@ -55,10 +55,10 @@
 </span><span class="macro">stageleft::stageleft_no_entry_crate!</span>();
 
 <span class="kw">pub use </span>hydroflow;
-<span class="kw">pub use </span>hydroflow::scheduled::graph::Hydroflow;
-<span class="kw">pub use </span>stageleft::<span class="kw-2">*</span>;
+<span class="kw">pub use </span>stageleft::q;
 
-<span class="kw">pub mod </span>runtime_support {
+<span class="attr">#[doc(hidden)]
+</span><span class="kw">pub mod </span>runtime_support {
     <span class="kw">pub use </span>bincode;
 }
 
@@ -69,7 +69,7 @@
 <span class="kw">pub use </span>boundedness::{Bounded, Unbounded};
 
 <span class="kw">pub mod </span>stream;
-<span class="kw">pub use </span>stream::Stream;
+<span class="kw">pub use </span>stream::{NoOrder, Stream, TotalOrder};
 
 <span class="kw">pub mod </span>singleton;
 <span class="kw">pub use </span>singleton::Singleton;
@@ -79,7 +79,7 @@
 
 <span class="kw">pub mod </span>location;
 <span class="kw">pub use </span>location::cluster::CLUSTER_SELF_ID;
-<span class="kw">pub use </span>location::{Cluster, ClusterId, Location, Process, Tick};
+<span class="kw">pub use </span>location::{Cluster, ClusterId, ExternalProcess, Location, Process, Tick, Timestamped};
 
 <span class="kw">pub mod </span>deploy;
 

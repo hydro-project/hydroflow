@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["invalidate_current_thread_spans"],"struct":["DelimSpan"]};

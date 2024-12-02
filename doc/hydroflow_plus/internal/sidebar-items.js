@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"macro":["quote"],"mod":["proc_macro2","proc_macro_crate","syn"],"struct":["Span","TokenStream"],"type":["CaptureVec"]};

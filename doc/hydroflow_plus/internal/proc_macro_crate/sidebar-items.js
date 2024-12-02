@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Error","FoundCrate"],"fn":["crate_name"]};

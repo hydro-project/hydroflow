@@ -1,9 +1,9 @@
 (function() {
-    var implementors = Object.fromEntries([["hydroflow_plus",[]],["stageleft",[]]]);
+    var implementors = Object.fromEntries([["stageleft",[]]]);
     if (window.register_implementors) {
         window.register_implementors(implementors);
     } else {
         window.pending_implementors = implementors;
     }
 })()
-//{"start":57,"fragment_lengths":[21,17]}
+//{"start":57,"fragment_lengths":[16]}
