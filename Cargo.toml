@@ -14,6 +14,7 @@ members = [
     "hydroflow_lang",
     "hydroflow_macro",
     "hydroflow_plus",
+    "hydroflow_plus_std",
     "hydroflow_plus_test",
     "hydroflow_plus_test_local",
     "hydroflow_plus_test_local_macro",
