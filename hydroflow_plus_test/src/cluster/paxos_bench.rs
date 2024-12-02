@@ -3,11 +3,11 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use hydroflow_plus::*;
+use hydroflow_plus_std::quorum::collect_quorum;
 use tokio::time::Instant;
 
 use super::paxos::{Acceptor, Ballot, Proposer};
 use super::paxos_kv::{paxos_kv, KvPayload, Replica};
-use super::quorum::collect_quorum;
 
 pub struct Client {}
 
