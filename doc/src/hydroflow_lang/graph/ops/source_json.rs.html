@@ -65,10 +65,11 @@
 <a href="#65" id="65">65</a>
 <a href="#66" id="66">66</a>
 <a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
-    OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    FloType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
     OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
@@ -94,6 +95,7 @@
     type_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     is_external_input: <span class="bool-val">true</span>,
     has_singleton_output: <span class="bool-val">false</span>,
+    flo_type: <span class="prelude-val">Some</span>(FloType::Source),
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,

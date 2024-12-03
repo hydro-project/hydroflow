@@ -188,6 +188,7 @@
 <a href="#188" id="188">188</a>
 <a href="#189" id="189">189</a>
 <a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::Ident;
 <span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>syn::spanned::Spanned;
@@ -242,6 +243,7 @@
     type_args: RANGE_1,
     is_external_input: <span class="bool-val">false</span>,
     has_singleton_output: <span class="bool-val">false</span>,
+    flo_type: <span class="prelude-val">None</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">Some</span>(|| PortListSpec::Variadic),
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,

@@ -1558,6 +1558,66 @@
 <a href="#1558" id="1558">1558</a>
 <a href="#1559" id="1559">1559</a>
 <a href="#1560" id="1560">1560</a>
+<a href="#1561" id="1561">1561</a>
+<a href="#1562" id="1562">1562</a>
+<a href="#1563" id="1563">1563</a>
+<a href="#1564" id="1564">1564</a>
+<a href="#1565" id="1565">1565</a>
+<a href="#1566" id="1566">1566</a>
+<a href="#1567" id="1567">1567</a>
+<a href="#1568" id="1568">1568</a>
+<a href="#1569" id="1569">1569</a>
+<a href="#1570" id="1570">1570</a>
+<a href="#1571" id="1571">1571</a>
+<a href="#1572" id="1572">1572</a>
+<a href="#1573" id="1573">1573</a>
+<a href="#1574" id="1574">1574</a>
+<a href="#1575" id="1575">1575</a>
+<a href="#1576" id="1576">1576</a>
+<a href="#1577" id="1577">1577</a>
+<a href="#1578" id="1578">1578</a>
+<a href="#1579" id="1579">1579</a>
+<a href="#1580" id="1580">1580</a>
+<a href="#1581" id="1581">1581</a>
+<a href="#1582" id="1582">1582</a>
+<a href="#1583" id="1583">1583</a>
+<a href="#1584" id="1584">1584</a>
+<a href="#1585" id="1585">1585</a>
+<a href="#1586" id="1586">1586</a>
+<a href="#1587" id="1587">1587</a>
+<a href="#1588" id="1588">1588</a>
+<a href="#1589" id="1589">1589</a>
+<a href="#1590" id="1590">1590</a>
+<a href="#1591" id="1591">1591</a>
+<a href="#1592" id="1592">1592</a>
+<a href="#1593" id="1593">1593</a>
+<a href="#1594" id="1594">1594</a>
+<a href="#1595" id="1595">1595</a>
+<a href="#1596" id="1596">1596</a>
+<a href="#1597" id="1597">1597</a>
+<a href="#1598" id="1598">1598</a>
+<a href="#1599" id="1599">1599</a>
+<a href="#1600" id="1600">1600</a>
+<a href="#1601" id="1601">1601</a>
+<a href="#1602" id="1602">1602</a>
+<a href="#1603" id="1603">1603</a>
+<a href="#1604" id="1604">1604</a>
+<a href="#1605" id="1605">1605</a>
+<a href="#1606" id="1606">1606</a>
+<a href="#1607" id="1607">1607</a>
+<a href="#1608" id="1608">1608</a>
+<a href="#1609" id="1609">1609</a>
+<a href="#1610" id="1610">1610</a>
+<a href="#1611" id="1611">1611</a>
+<a href="#1612" id="1612">1612</a>
+<a href="#1613" id="1613">1613</a>
+<a href="#1614" id="1614">1614</a>
+<a href="#1615" id="1615">1615</a>
+<a href="#1616" id="1616">1616</a>
+<a href="#1617" id="1617">1617</a>
+<a href="#1618" id="1618">1618</a>
+<a href="#1619" id="1619">1619</a>
+<a href="#1620" id="1620">1620</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -1577,9 +1637,9 @@
     WriteContextArgs, OPERATORS,
 };
 <span class="kw">use super</span>::{
-    change_spans, get_operator_generics, Color, DiMulGraph, GraphEdgeId, GraphNode, GraphNodeId,
-    GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
-    HYDROFLOW, MODULE_BOUNDARY_NODE_STR,
+    change_spans, get_operator_generics, Color, DiMulGraph, GraphEdgeId, GraphLoopId, GraphNode,
+    GraphNodeId, GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT,
+    HANDOFF_NODE_STR, HYDROFLOW, MODULE_BOUNDARY_NODE_STR,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::{PrettyRowCol, PrettySpan};
@@ -1607,6 +1667,15 @@
     </span>graph: DiMulGraph&lt;GraphNodeId, GraphEdgeId&gt;,
     <span class="doccomment">/// Input and output port for each edge.
     </span>ports: SecondaryMap&lt;GraphEdgeId, (PortIndexValue, PortIndexValue)&gt;,
+
+    <span class="doccomment">/// Which loop a node belongs to (or none for top-level).
+    </span>node_loops: SecondaryMap&lt;GraphNodeId, GraphLoopId&gt;,
+    loop_nodes: SlotMap&lt;GraphLoopId, Vec&lt;GraphNodeId&gt;&gt;,
+    <span class="doccomment">/// For the key loop, what is its parent (`None` for top-level).
+    </span>loop_parent: SparseSecondaryMap&lt;GraphLoopId, GraphLoopId&gt;,
+    <span class="doccomment">/// For the key loop, what are its child loops.
+    </span>loop_children: SecondaryMap&lt;GraphLoopId, Vec&lt;GraphLoopId&gt;&gt;,
+
     <span class="doccomment">/// Which subgraph each node belongs to.
     </span>node_subgraph: SecondaryMap&lt;GraphNodeId, GraphSubgraphId&gt;,
 
@@ -1758,10 +1827,19 @@
     }
 
     <span class="doccomment">/// Insert a node, assigning the given varname.
-    </span><span class="kw">pub fn </span>insert_node(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node: GraphNode, varname_opt: <span class="prelude-ty">Option</span>&lt;Ident&gt;) -&gt; GraphNodeId {
+    </span><span class="kw">pub fn </span>insert_node(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        node: GraphNode,
+        varname_opt: <span class="prelude-ty">Option</span>&lt;Ident&gt;,
+        loop_opt: <span class="prelude-ty">Option</span>&lt;GraphLoopId&gt;,
+    ) -&gt; GraphNodeId {
         <span class="kw">let </span>node_id = <span class="self">self</span>.nodes.insert(node);
         <span class="kw">if let </span><span class="prelude-val">Some</span>(varname) = varname_opt {
             <span class="self">self</span>.node_varnames.insert(node_id, Varname(varname));
+        }
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(loop_id) = loop_opt {
+            <span class="self">self</span>.node_loops.insert(node_id, loop_id);
+            <span class="self">self</span>.loop_nodes[loop_id].push(node_id);
         }
         node_id
     }
@@ -3078,6 +3156,48 @@
             <span class="macro">writeln!</span>(write, <span class="string">"    {:?}--&gt;{:?}"</span>, src_key.data(), dst_key.data())<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
+    }
+}
+
+<span class="doccomment">/// Loops
+</span><span class="kw">impl </span>HydroflowGraph {
+    <span class="doccomment">/// Iterator over all loop IDs.
+    </span><span class="kw">pub fn </span>loop_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; slotmap::basic::Keys&lt;<span class="lifetime">'_</span>, GraphLoopId, Vec&lt;GraphNodeId&gt;&gt; {
+        <span class="self">self</span>.loop_nodes.keys()
+    }
+
+    <span class="doccomment">/// Iterator over all loops, ID and members: `(GraphLoopId, Vec&lt;GraphNodeId&gt;)`.
+    </span><span class="kw">pub fn </span>loops(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; slotmap::basic::Iter&lt;<span class="lifetime">'_</span>, GraphLoopId, Vec&lt;GraphNodeId&gt;&gt; {
+        <span class="self">self</span>.loop_nodes.iter()
+    }
+
+    <span class="doccomment">/// Create a new loop context, with the given parent loop (or `None`).
+    </span><span class="kw">pub fn </span>insert_loop(<span class="kw-2">&amp;mut </span><span class="self">self</span>, parent_loop: <span class="prelude-ty">Option</span>&lt;GraphLoopId&gt;) -&gt; GraphLoopId {
+        <span class="kw">let </span>loop_id = <span class="self">self</span>.loop_nodes.insert(Vec::new());
+        <span class="self">self</span>.loop_children.insert(loop_id, Vec::new());
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(parent_loop) = parent_loop {
+            <span class="self">self</span>.loop_parent.insert(loop_id, parent_loop);
+            <span class="self">self</span>.loop_children
+                .get_mut(parent_loop)
+                .unwrap()
+                .push(loop_id);
+        }
+        loop_id
+    }
+
+    <span class="doccomment">/// Get a node's loop context (or `None` for root).
+    </span><span class="kw">pub fn </span>node_loop(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId) -&gt; <span class="prelude-ty">Option</span>&lt;GraphLoopId&gt; {
+        <span class="self">self</span>.node_loops.get(node_id).copied()
+    }
+
+    <span class="doccomment">/// Get a loop context's parent loop context (or `None` for root).
+    </span><span class="kw">pub fn </span>loop_parent(<span class="kw-2">&amp;</span><span class="self">self</span>, loop_id: GraphLoopId) -&gt; <span class="prelude-ty">Option</span>&lt;GraphLoopId&gt; {
+        <span class="self">self</span>.loop_parent.get(loop_id).copied()
+    }
+
+    <span class="doccomment">/// Get a loop context's child loops.
+    </span><span class="kw">pub fn </span>loop_children(<span class="kw-2">&amp;</span><span class="self">self</span>, loop_id: GraphLoopId) -&gt; <span class="kw-2">&amp;</span>Vec&lt;GraphLoopId&gt; {
+        <span class="self">self</span>.loop_children.get(loop_id).unwrap()
     }
 }
 

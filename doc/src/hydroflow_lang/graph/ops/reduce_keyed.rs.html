@@ -229,6 +229,7 @@
 <a href="#229" id="229">229</a>
 <a href="#230" id="230">230</a>
 <a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
 <span class="kw">use super</span>::{
@@ -301,6 +302,7 @@
     // to prevent reading uncleared data if this subgraph doesn't run.
     // https://github.com/hydro-project/hydroflow/issues/1298
     </span>has_singleton_output: <span class="bool-val">false</span>,
+    flo_type: <span class="prelude-val">None</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),

@@ -193,6 +193,7 @@
 <a href="#193" id="193">193</a>
 <a href="#194" id="194">194</a>
 <a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
@@ -232,6 +233,7 @@
     // to prevent reading uncleared data if this subgraph doesn't run.
     // https://github.com/hydro-project/hydroflow/issues/1298
     </span>has_singleton_output: <span class="bool-val">false</span>,
+    flo_type: <span class="prelude-val">None</span>,
     ports_inn: <span class="prelude-val">Some</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote!</span> { pos, neg })),
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |idx| <span class="kw">match </span>idx {

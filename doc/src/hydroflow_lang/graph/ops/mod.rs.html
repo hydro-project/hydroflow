@@ -541,6 +541,27 @@
 <a href="#541" id="541">541</a>
 <a href="#542" id="542">542</a>
 <a href="#543" id="543">543</a>
+<a href="#544" id="544">544</a>
+<a href="#545" id="545">545</a>
+<a href="#546" id="546">546</a>
+<a href="#547" id="547">547</a>
+<a href="#548" id="548">548</a>
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
+<a href="#560" id="560">560</a>
+<a href="#561" id="561">561</a>
+<a href="#562" id="562">562</a>
+<a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Hydroflow's operators
 
 </span><span class="kw">use </span>std::collections::HashMap;
@@ -613,6 +634,8 @@
     /// If true, [`WriteContextArgs::singleton_output_ident`] will be set to a meaningful value in
     /// the [`Self::write_fn`] invocation.
     </span><span class="kw">pub </span>has_singleton_output: bool,
+    <span class="doccomment">/// Flo semantics type.
+    </span><span class="kw">pub </span>flo_type: <span class="prelude-ty">Option</span>&lt;FloType&gt;,
 
     <span class="doccomment">/// What named or numbered input ports to expect?
     </span><span class="kw">pub </span>ports_inn: <span class="prelude-ty">Option</span>&lt;<span class="kw">fn</span>() -&gt; PortListSpec&gt;,
@@ -783,10 +806,12 @@
     };
 }
 <span class="macro">declare_ops!</span>[
+    all_once::ALL_ONCE,
     anti_join::ANTI_JOIN,
     anti_join_multiset::ANTI_JOIN_MULTISET,
     assert::ASSERT,
     assert_eq::ASSERT_EQ,
+    batch::BATCH,
     chain::CHAIN,
     cross_join::CROSS_JOIN,
     cross_join_multiset::CROSS_JOIN_MULTISET,
@@ -1039,6 +1064,8 @@
     Sink,
     Control,
     CompilerFusionOperator,
+    Windowing,
+    Unwindowing,
 }
 <span class="kw">impl </span>OperatorCategory {
     <span class="doccomment">/// Human-readible heading name, for docs.
@@ -1057,6 +1084,8 @@
             OperatorCategory::Sink =&gt; <span class="string">"Sinks"</span>,
             OperatorCategory::Control =&gt; <span class="string">"Control Flow Operators"</span>,
             OperatorCategory::CompilerFusionOperator =&gt; <span class="string">"Compiler Fusion Operators"</span>,
+            OperatorCategory::Windowing =&gt; <span class="string">"Windowing Operator"</span>,
+            OperatorCategory::Unwindowing =&gt; <span class="string">"Un-Windowing Operator"</span>,
         }
     }
     <span class="doccomment">/// Human description, for docs.
@@ -1081,7 +1110,20 @@
             OperatorCategory::CompilerFusionOperator =&gt; {
                 <span class="string">"Operators which are necessary to implement certain optimizations and rewrite rules"
             </span>}
+            OperatorCategory::Windowing =&gt; <span class="string">"Operators for windowing `loop` inputs."</span>,
+            OperatorCategory::Unwindowing =&gt; <span class="string">"Operators for collecting `loop` outputs."</span>,
         }
     }
+}
+
+<span class="doccomment">/// Operator type for Flo semantics.
+</span><span class="attr">#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
+</span><span class="kw">pub enum </span>FloType {
+    <span class="doccomment">/// A source operator, which must be at the top level.
+    </span>Source,
+    <span class="doccomment">/// A windowing operator, for moving data into a loop context.
+    </span>Windowing,
+    <span class="doccomment">/// An un-windowing operator, for moving data out of a loop context.
+    </span>Unwindowing,
 }
 </code></pre></div></section></main></body></html>

@@ -594,6 +594,63 @@
 <a href="#594" id="594">594</a>
 <a href="#595" id="595">595</a>
 <a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
+<a href="#609" id="609">609</a>
+<a href="#610" id="610">610</a>
+<a href="#611" id="611">611</a>
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
+<a href="#625" id="625">625</a>
+<a href="#626" id="626">626</a>
+<a href="#627" id="627">627</a>
+<a href="#628" id="628">628</a>
+<a href="#629" id="629">629</a>
+<a href="#630" id="630">630</a>
+<a href="#631" id="631">631</a>
+<a href="#632" id="632">632</a>
+<a href="#633" id="633">633</a>
+<a href="#634" id="634">634</a>
+<a href="#635" id="635">635</a>
+<a href="#636" id="636">636</a>
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
+<a href="#639" id="639">639</a>
+<a href="#640" id="640">640</a>
+<a href="#641" id="641">641</a>
+<a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! AST for surface syntax, modelled on [`syn`]'s ASTs.
 </span><span class="attr">#![allow(clippy::allow_attributes, missing_docs, reason = <span class="string">"internal use"</span>)]
 
@@ -604,10 +661,10 @@
 <span class="kw">use </span>quote::ToTokens;
 <span class="kw">use </span>syn::parse::{Parse, ParseStream};
 <span class="kw">use </span>syn::punctuated::Punctuated;
-<span class="kw">use </span>syn::token::{Bracket, Paren};
+<span class="kw">use </span>syn::token::{Brace, Bracket, Paren};
 <span class="kw">use </span>syn::{
-    bracketed, parenthesized, AngleBracketedGenericArguments, Expr, ExprPath, GenericArgument,
-    Ident, ItemUse, LitInt, LitStr, Path, PathArguments, PathSegment, Token,
+    braced, bracketed, parenthesized, AngleBracketedGenericArguments, Expr, ExprPath,
+    GenericArgument, Ident, ItemUse, LitInt, LitStr, Path, PathArguments, PathSegment, Token,
 };
 
 <span class="kw">use </span><span class="kw">crate</span>::process_singletons::preprocess_singletons;
@@ -636,24 +693,45 @@
     Use(ItemUse),
     Named(NamedHfStatement),
     Pipeline(PipelineStatement),
+    Loop(LoopStatement),
 }
 <span class="kw">impl </span>Parse <span class="kw">for </span>HfStatement {
     <span class="kw">fn </span>parse(input: ParseStream) -&gt; syn::Result&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">if </span>input.peek(<span class="macro">Token!</span>[<span class="kw">use</span>]) {
+        <span class="kw">let </span>lookahead1 = input.lookahead1();
+        <span class="kw">if </span>lookahead1.peek(<span class="macro">Token!</span>[<span class="kw">use</span>]) {
             <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Use(ItemUse::parse(input)<span class="question-mark">?</span>))
-        } <span class="kw">else if </span>input.peek2(<span class="macro">Token!</span>[=]) {
-            <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Named(NamedHfStatement::parse(input)<span class="question-mark">?</span>))
-        } <span class="kw">else </span>{
+        } <span class="kw">else if </span>lookahead1.peek(Paren) || lookahead1.peek(Bracket) || lookahead1.peek(<span class="macro">Token!</span>[<span class="kw">mod</span>])
+        {
             <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Pipeline(PipelineStatement::parse(input)<span class="question-mark">?</span>))
+        } <span class="kw">else if </span>lookahead1.peek(<span class="macro">Token!</span>[<span class="kw">loop</span>]) {
+            <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Loop(LoopStatement::parse(input)<span class="question-mark">?</span>))
+        } <span class="kw">else if </span>lookahead1.peek(Ident) {
+            <span class="kw">let </span>fork = input.fork();
+            <span class="kw">let _</span>: Path = fork.parse()<span class="question-mark">?</span>;
+            <span class="kw">let </span>lookahead2 = fork.lookahead1();
+            <span class="kw">if </span>lookahead2.peek(<span class="macro">Token!</span>[=]) {
+                <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Named(NamedHfStatement::parse(input)<span class="question-mark">?</span>))
+            } <span class="kw">else if </span>lookahead2.peek(<span class="macro">Token!</span>[-&gt;])
+                || lookahead2.peek(Paren)
+                || lookahead2.peek(Bracket)
+                || lookahead2.peek(<span class="macro">Token!</span>[!])
+            {
+                <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Pipeline(PipelineStatement::parse(input)<span class="question-mark">?</span>))
+            } <span class="kw">else </span>{
+                <span class="prelude-val">Err</span>(lookahead2.error())
+            }
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(lookahead1.error())
         }
     }
 }
 <span class="kw">impl </span>ToTokens <span class="kw">for </span>HfStatement {
     <span class="kw">fn </span>to_tokens(<span class="kw-2">&amp;</span><span class="self">self</span>, tokens: <span class="kw-2">&amp;mut </span>TokenStream) {
         <span class="kw">match </span><span class="self">self </span>{
-            HfStatement::Use(x) =&gt; x.to_tokens(tokens),
-            HfStatement::Named(x) =&gt; x.to_tokens(tokens),
-            HfStatement::Pipeline(x) =&gt; x.to_tokens(tokens),
+            <span class="self">Self</span>::Use(x) =&gt; x.to_tokens(tokens),
+            <span class="self">Self</span>::Named(x) =&gt; x.to_tokens(tokens),
+            <span class="self">Self</span>::Pipeline(x) =&gt; x.to_tokens(tokens),
+            <span class="self">Self</span>::Loop(x) =&gt; x.to_tokens(tokens),
         }
     }
 }
@@ -793,13 +871,49 @@
 <span class="kw">impl </span>ToTokens <span class="kw">for </span>Pipeline {
     <span class="kw">fn </span>to_tokens(<span class="kw-2">&amp;</span><span class="self">self</span>, tokens: <span class="kw-2">&amp;mut </span>TokenStream) {
         <span class="kw">match </span><span class="self">self </span>{
-            Pipeline::Paren(x) =&gt; x.to_tokens(tokens),
-            Pipeline::Link(x) =&gt; x.to_tokens(tokens),
-            Pipeline::Name(x) =&gt; x.to_tokens(tokens),
-            Pipeline::Operator(x) =&gt; x.to_tokens(tokens),
-            Pipeline::ModuleBoundary(x) =&gt; x.to_tokens(tokens),
-            Pipeline::Import(x) =&gt; x.to_tokens(tokens),
+            <span class="self">Self</span>::Paren(x) =&gt; x.to_tokens(tokens),
+            <span class="self">Self</span>::Link(x) =&gt; x.to_tokens(tokens),
+            <span class="self">Self</span>::Name(x) =&gt; x.to_tokens(tokens),
+            <span class="self">Self</span>::Operator(x) =&gt; x.to_tokens(tokens),
+            <span class="self">Self</span>::ModuleBoundary(x) =&gt; x.to_tokens(tokens),
+            <span class="self">Self</span>::Import(x) =&gt; x.to_tokens(tokens),
         }
+    }
+}
+
+<span class="kw">pub struct </span>LoopStatement {
+    <span class="kw">pub </span>loop_token: <span class="macro">Token!</span>[<span class="kw">loop</span>],
+    <span class="kw">pub </span>ident: <span class="prelude-ty">Option</span>&lt;Ident&gt;,
+    <span class="kw">pub </span>brace_token: Brace,
+    <span class="kw">pub </span>statements: Vec&lt;HfStatement&gt;,
+}
+<span class="kw">impl </span>Parse <span class="kw">for </span>LoopStatement {
+    <span class="kw">fn </span>parse(input: ParseStream) -&gt; syn::Result&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span>loop_token = input.parse()<span class="question-mark">?</span>;
+        <span class="kw">let </span>ident = input.parse()<span class="question-mark">?</span>;
+        <span class="kw">let </span>content;
+        <span class="kw">let </span>brace_token = <span class="macro">braced!</span>(content <span class="kw">in </span>input);
+        <span class="kw">let </span><span class="kw-2">mut </span>statements = Vec::new();
+        <span class="kw">while </span>!content.is_empty() {
+            statements.push(content.parse()<span class="question-mark">?</span>);
+        }
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            loop_token,
+            ident,
+            brace_token,
+            statements,
+        })
+    }
+}
+<span class="kw">impl </span>ToTokens <span class="kw">for </span>LoopStatement {
+    <span class="kw">fn </span>to_tokens(<span class="kw-2">&amp;</span><span class="self">self</span>, tokens: <span class="kw-2">&amp;mut </span>TokenStream) {
+        <span class="self">self</span>.loop_token.to_tokens(tokens);
+        <span class="self">self</span>.ident.to_tokens(tokens);
+        <span class="self">self</span>.brace_token.surround(tokens, |tokens| {
+            <span class="kw">for </span>statement <span class="kw">in </span><span class="self">self</span>.statements.iter() {
+                statement.to_tokens(tokens);
+            }
+        });
     }
 }
 
