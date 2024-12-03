@@ -8,3 +8,4 @@ pub mod quorum;
 pub mod request_response;
 pub mod simple_cluster;
 pub mod two_pc;
+pub mod docs;
