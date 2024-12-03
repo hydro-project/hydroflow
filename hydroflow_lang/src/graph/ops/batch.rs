@@ -58,12 +58,8 @@ pub const BATCH: OperatorConstraints = OperatorConstraints {
             }
         } else if let Some(output) = outputs.first() {
             // Push with output.
-            quote_spanned! {op_span=>
-                let mut #vec_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
-                let #ident = #root::pusherator::inspect::Inspect::new(|item| {
-                    ::std::vec::Vec::push(#vec_ident, ::std::clone::Clone::clone(item));
-                }, #output);
-            }
+            // TODO(mingwei): Not supported - cannot tell EOS for pusherators.
+            panic!("Should not happen - batch must be at ingress to a loop, therefore ingress to a subgraph, so would be pull-based.");
         } else {
             // Push with no output.
             quote_spanned! {op_span=>
