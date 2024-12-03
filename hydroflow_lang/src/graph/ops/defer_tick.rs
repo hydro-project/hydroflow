@@ -72,6 +72,7 @@ pub const DEFER_TICK: OperatorConstraints = OperatorConstraints {
     type_args: &(0..=1),
     is_external_input: false,
     has_singleton_output: false,
+    flo_type: None,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Tick),

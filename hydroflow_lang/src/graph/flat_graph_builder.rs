@@ -11,8 +11,11 @@ use quote::ToTokens;
 use syn::spanned::Spanned;
 use syn::{Error, Ident, ItemUse};
 
-use super::{GraphEdgeId, GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
+use super::ops::defer_tick::DEFER_TICK;
+use super::ops::FloType;
+use super::{GraphEdgeId, GraphLoopId, GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
 use crate::diagnostic::{Diagnostic, Level};
+use crate::graph::graph_algorithms;
 use crate::graph::ops::{PortListSpec, RangeTrait};
 use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
 use crate::pretty_span::PrettySpan;
@@ -103,6 +106,7 @@ impl FlatGraphBuilder {
                     import_expr: Span::call_site(),
                 },
                 Some(Ident::new("input", Span::call_site())),
+                None,
             ),
             builder.flat_graph.insert_node(
                 GraphNode::ModuleBoundary {
@@ -110,6 +114,7 @@ impl FlatGraphBuilder {
                     import_expr: Span::call_site(),
                 },
                 Some(Ident::new("output", Span::call_site())),
+                None,
             ),
         ));
         builder.process_statements(input.statements);
@@ -134,15 +139,24 @@ impl FlatGraphBuilder {
         (self.flat_graph, self.uses, self.diagnostics)
     }
 
-    /// Add a single [`HfStatement`] line to this `HydroflowGraph`.
+    /// Add a single [`HfStatement`] line to this `HydroflowGraph` in the root context.
     pub fn add_statement(&mut self, stmt: HfStatement) {
+        self.add_statement_with_loop(stmt, None)
+    }
+
+    /// Add a single [`HfStatement`] line to this `HydroflowGraph` in the given loop context.
+    pub fn add_statement_with_loop(
+        &mut self,
+        stmt: HfStatement,
+        current_loop: Option<GraphLoopId>,
+    ) {
         match stmt {
             HfStatement::Use(yuse) => {
                 self.uses.push(yuse);
             }
             HfStatement::Named(named) => {
                 let stmt_span = named.span();
-                let ends = self.add_pipeline(named.pipeline, Some(&named.name));
+                let ends = self.add_pipeline(named.pipeline, Some(&named.name), current_loop);
                 match self.varname_ends.entry(named.name) {
                     Entry::Vacant(vacant_entry) => {
                         vacant_entry.insert(VarnameInfo::new(ends));
@@ -171,20 +185,32 @@ impl FlatGraphBuilder {
                 }
             }
             HfStatement::Pipeline(pipeline_stmt) => {
-                let ends = self.add_pipeline(pipeline_stmt.pipeline, None);
+                let ends = self.add_pipeline(pipeline_stmt.pipeline, None, current_loop);
                 Self::helper_check_unused_port(&mut self.diagnostics, &ends, true);
                 Self::helper_check_unused_port(&mut self.diagnostics, &ends, false);
+            }
+            HfStatement::Loop(loop_statement) => {
+                let inner_loop = self.flat_graph.insert_loop(current_loop);
+                for stmt in loop_statement.statements {
+                    self.add_statement_with_loop(stmt, Some(inner_loop));
+                }
             }
         }
     }
 
     /// Helper: Add a pipeline, i.e. `a -> b -> c`. Return the input and output ends for it.
-    fn add_pipeline(&mut self, pipeline: Pipeline, current_varname: Option<&Ident>) -> Ends {
+    fn add_pipeline(
+        &mut self,
+        pipeline: Pipeline,
+        current_varname: Option<&Ident>,
+        current_loop: Option<GraphLoopId>,
+    ) -> Ends {
         match pipeline {
             Pipeline::Paren(ported_pipeline_paren) => {
                 let (inn_port, pipeline_paren, out_port) =
                     PortIndexValue::from_ported(ported_pipeline_paren);
-                let og_ends = self.add_pipeline(*pipeline_paren.pipeline, current_varname);
+                let og_ends =
+                    self.add_pipeline(*pipeline_paren.pipeline, current_varname, current_loop);
                 Self::helper_combine_ends(&mut self.diagnostics, og_ends, inn_port, out_port)
             }
             Pipeline::Name(pipeline_name) => {
@@ -222,8 +248,8 @@ impl FlatGraphBuilder {
             }
             Pipeline::Link(pipeline_link) => {
                 // Add the nested LHS and RHS of this link.
-                let lhs_ends = self.add_pipeline(*pipeline_link.lhs, current_varname);
-                let rhs_ends = self.add_pipeline(*pipeline_link.rhs, current_varname);
+                let lhs_ends = self.add_pipeline(*pipeline_link.lhs, current_varname, current_loop);
+                let rhs_ends = self.add_pipeline(*pipeline_link.rhs, current_varname, current_loop);
 
                 // Outer (first and last) ends.
                 let outer_ends = Ends {
@@ -240,9 +266,11 @@ impl FlatGraphBuilder {
             }
             Pipeline::Operator(operator) => {
                 let op_span = Some(operator.span());
-                let nid = self
-                    .flat_graph
-                    .insert_node(GraphNode::Operator(operator), current_varname.cloned());
+                let nid = self.flat_graph.insert_node(
+                    GraphNode::Operator(operator),
+                    current_varname.cloned(),
+                    current_loop,
+                );
                 Ends {
                     inn: Some((PortIndexValue::Elided(op_span), GraphDet::Determined(nid))),
                     out: Some((PortIndexValue::Elided(op_span), GraphDet::Determined(nid))),
@@ -279,7 +307,7 @@ impl FlatGraphBuilder {
                         self.diagnostics.push(Diagnostic::spanned(
                             import.span(),
                             Level::Error,
-                            err.to_string(),
+                            format!("Error in module: {}", err),
                         ));
 
                         return Ends {
@@ -314,7 +342,7 @@ impl FlatGraphBuilder {
             match node {
                 GraphNode::Operator(_) => {
                     let varname = other.node_varname(other_node_id);
-                    let new_id = self.flat_graph.insert_node(node.clone(), varname);
+                    let new_id = self.flat_graph.insert_node(node.clone(), varname, None);
                     node_mapping.insert(other_node_id, new_id);
                 }
                 GraphNode::ModuleBoundary { input, .. } => {
@@ -324,6 +352,7 @@ impl FlatGraphBuilder {
                             import_expr: parent_span,
                         },
                         Some(Ident::new(&format!("module_{}", input), parent_span)),
+                        None,
                     );
                     node_mapping.insert(other_node_id, new_id);
 
@@ -562,6 +591,7 @@ impl FlatGraphBuilder {
         self.make_operator_instances();
         self.check_operator_errors();
         self.warn_unused_port_indexing();
+        self.check_loop_errors();
     }
 
     /// Make `OperatorInstance`s for each operator node.
@@ -885,6 +915,149 @@ impl FlatGraphBuilder {
                 // When errored, just use original and ignore OTHER port to minimize
                 // noisy/extra diagnostics.
                 Some((og_port, og_node))
+            }
+        }
+    }
+
+    /// Check for loop context-related errors.
+    fn check_loop_errors(&mut self) {
+        // All inputs must be declared in the root block.
+        for (node_id, node) in self.flat_graph.nodes() {
+            let Some(op_inst) = self.flat_graph.node_op_inst(node_id) else {
+                continue;
+            };
+            let loop_id = self.flat_graph.node_loop(node_id);
+
+            // Source operators must be at the top level.
+            if Some(FloType::Source) == op_inst.op_constraints.flo_type && loop_id.is_some() {
+                self.diagnostics.push(Diagnostic::spanned(
+                    node.span(),
+                    Level::Error,
+                    format!(
+                        "Source operator `{}(...)` must be at the root level, not within any `loop {{ ... }}` contexts.",
+                        op_inst.op_constraints.name
+                    )
+                ));
+            }
+        }
+
+        // Check windowing and un-windowing operators, for loop inputs and outputs respectively.
+        for (_edge_id, (pred_id, node_id)) in self.flat_graph.edges() {
+            let Some(op_inst) = self.flat_graph.node_op_inst(node_id) else {
+                continue;
+            };
+            let flo_type = &op_inst.op_constraints.flo_type;
+
+            let pred_loop_id = self.flat_graph.node_loop(pred_id);
+            let loop_id = self.flat_graph.node_loop(node_id);
+
+            let span = self.flat_graph.node(node_id).span();
+
+            let (is_input, is_output) = {
+                let parent_pred_loop_id =
+                    pred_loop_id.and_then(|lid| self.flat_graph.loop_parent(lid));
+                let parent_loop_id = loop_id.and_then(|lid| self.flat_graph.loop_parent(lid));
+                let is_same = pred_loop_id == loop_id;
+                let is_input = !is_same && parent_loop_id == pred_loop_id;
+                let is_output = !is_same && parent_pred_loop_id == loop_id;
+                if !(is_input || is_output || is_same) {
+                    self.diagnostics.push(Diagnostic::spanned(
+                        span,
+                        Level::Error,
+                        "Operator input edge may not cross multiple loop contexts.",
+                    ));
+                    continue;
+                }
+                (is_input, is_output)
+            };
+
+            match flo_type {
+                None => {
+                    if is_input {
+                        self.diagnostics.push(Diagnostic::spanned(
+                            span,
+                            Level::Error,
+                            format!(
+                                "Operator `{}(...)` entering a loop context must be a windowing operator, but is not.",
+                                op_inst.op_constraints.name
+                            )
+                        ));
+                    }
+                    if is_output {
+                        self.diagnostics.push(Diagnostic::spanned(
+                            span,
+                            Level::Error,
+                            format!(
+                                "Operator `{}(...)` exiting a loop context must be an un-windowing operator, but is not.",
+                                op_inst.op_constraints.name
+                            )
+                        ));
+                    }
+                }
+                Some(FloType::Windowing) => {
+                    if !is_input {
+                        self.diagnostics.push(Diagnostic::spanned(
+                            span,
+                            Level::Error,
+                            format!(
+                                "Windowing operator `{}(...)` must be the first input operator into a `loop {{ ... }} context.",
+                                op_inst.op_constraints.name
+                            )
+                        ));
+                    }
+                }
+                Some(FloType::Unwindowing) => {
+                    if !is_output {
+                        self.diagnostics.push(Diagnostic::spanned(
+                            span,
+                            Level::Error,
+                            format!(
+                                "Un-windowing operator `{}(...)` must be the first output operator after exiting a `loop {{ ... }} context.",
+                                op_inst.op_constraints.name
+                            )
+                        ));
+                    }
+                }
+                Some(FloType::Source) => {
+                    // Handled above.
+                }
+            }
+        }
+
+        // Must be a DAG (excluding `next_tick()` operators).
+        // TODO(mingwei): Nested loop blocks should count as a single node.
+        for (loop_id, loop_nodes) in self.flat_graph.loops() {
+            // Filter out `defer_tick()` operators.
+            let filter_defer_tick = |&node_id: &GraphNodeId| {
+                self.flat_graph
+                    .node_op_inst(node_id)
+                    .map(|op_inst| DEFER_TICK.name != op_inst.op_constraints.name)
+                    .unwrap_or(true)
+            };
+
+            let topo_sort_result = graph_algorithms::topo_sort(
+                loop_nodes.iter().copied().filter(filter_defer_tick),
+                |dst| {
+                    self.flat_graph
+                        .node_predecessor_nodes(dst)
+                        .filter(|&src| Some(loop_id) == self.flat_graph.node_loop(src))
+                        .filter(filter_defer_tick)
+                },
+            );
+            if let Err(cycle) = topo_sort_result {
+                let len = cycle.len();
+                for (i, node_id) in cycle.into_iter().enumerate() {
+                    let span = self.flat_graph.node(node_id).span();
+                    self.diagnostics.push(Diagnostic::spanned(
+                        span,
+                        Level::Error,
+                        format!(
+                            "Operator forms an illegal cycle within a `loop {{ ... }}` block ({}/{}).",
+                            i + 1,
+                            len
+                        ),
+                    ));
+                }
             }
         }
     }
