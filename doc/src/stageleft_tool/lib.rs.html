@@ -325,12 +325,14 @@
 <a href="#325" id="325">325</a>
 <a href="#326" id="326">326</a>
 <a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeSet;
 <span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::{env, fs};
 
 <span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>quote::ToTokens;
+<span class="kw">use </span>sha2::{Digest, Sha256};
 <span class="kw">use </span>syn::visit::Visit;
 <span class="kw">use </span>syn::visit_mut::VisitMut;
 <span class="kw">use </span>syn::{parse_quote, UsePath};
@@ -368,7 +370,7 @@
                 .chars()
                 .filter(|c| c.is_alphanumeric())
                 .collect::&lt;String&gt;();
-            <span class="kw">let </span>contents_hash = sha256::digest(contents);
+            <span class="kw">let </span>contents_hash = <span class="macro">format!</span>(<span class="string">"{:X}"</span>, Sha256::digest(contents));
             <span class="self">self</span>.exported_macros
                 .insert((contents_hash, cur_path.to_token_stream().to_string()));
         }
@@ -399,7 +401,7 @@
 
         <span class="kw">let </span>proc_macro_wrapper: syn::ItemFn = <span class="macro">parse_quote!</span>(
             <span class="attr">#[proc_macro]
-            #[expect(unused_qualifications, reason = <span class="string">"generated code"</span>)]
+            #[expect(unused_qualifications, non_snake_case, reason = <span class="string">"generated code"</span>)]
             </span><span class="kw">pub fn </span>#underscored_path(input: ::proc_macro::TokenStream) -&gt; ::proc_macro::TokenStream {
                 <span class="kw">let </span>input = ::stageleft::internal::TokenStream::from(input);
                 <span class="kw">let </span>out = #exported_from_parsed::#underscored_path_impl(input);
