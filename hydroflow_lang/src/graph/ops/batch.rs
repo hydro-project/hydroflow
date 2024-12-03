@@ -56,7 +56,7 @@ pub const BATCH: OperatorConstraints = OperatorConstraints {
                 *#vec_ident = #input.collect::<::std::vec::Vec<_>>();
                 let #ident = ::std::iter::once(::std::clone::Clone::clone(&*#vec_ident));
             }
-        } else if let Some(output) = outputs.first() {
+        } else if let Some(_output) = outputs.first() {
             // Push with output.
             // TODO(mingwei): Not supported - cannot tell EOS for pusherators.
             panic!("Should not happen - batch must be at ingress to a loop, therefore ingress to a subgraph, so would be pull-based.");
