@@ -66,6 +66,12 @@ pub fn unbounded_channel<T>() -> (
     (send, recv)
 }
 
+pub fn bounded_channel<T>(buffer: usize) -> (tokio::sync::mpsc::Sender<T>, tokio_stream::wrappers::ReceiverStream<T>) {
+    let (send, recv) = tokio::sync::mpsc::channel(buffer);
+    let recv = tokio_stream::wrappers::ReceiverStream::new(recv);
+    (send, recv)
+}
+
 /// Returns an unsync channel as a (1) sender and (2) receiver `Stream` for use in Hydroflow.
 pub fn unsync_channel<T>(
     capacity: Option<NonZeroUsize>,

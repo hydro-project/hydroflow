@@ -2,15 +2,16 @@ use std::convert::Infallible;
 use std::num::{NonZeroU32, ParseFloatError};
 use std::thread::sleep;
 use std::time::Duration;
-
+use affinity::set_thread_affinity;
 use clap::Parser;
 use gossip_kv::membership::{MemberDataBuilder, Protocol};
-use gossip_kv::{ClientRequest, GossipMessage};
+use gossip_kv::{ClientRequest, GossipMessage, Key};
 use governor::{Quota, RateLimiter};
 use lazy_static::lazy_static;
-use hydroflow::util::{unbounded_channel, unsync_channel};
+use hydroflow::util::{bounded_channel, unbounded_channel, unsync_channel};
 use prometheus::{gather, register_int_counter, Encoder, IntCounter, TextEncoder};
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::{Sender, UnboundedSender};
+use tokio::sync::watch::Receiver;
 use tokio::task;
 use tracing::{error, info, trace};
 use warp::Filter;
@@ -20,7 +21,7 @@ type LoadTestAddress = u64;
 use gossip_kv::server::{server, SeedNode};
 use hydroflow::futures::sink::drain;
 use hydroflow::futures::stream;
-use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
+use hydroflow::tokio_stream::wrappers::{ReceiverStream, UnboundedReceiverStream};
 use hydroflow::tokio_stream::StreamExt;
 use hydroflow::util::unsync::mpsc::bounded;
 use lattices::cc_traits::Iter;
@@ -61,7 +62,11 @@ fn run_server(
     seed_nodes: Vec<SeedNode<LoadTestAddress>>,
     opts: Opts,
 ) {
+    let (client_input_tx, client_input_rx) = bounded_channel(1000);
+
     std::thread::spawn(move || {
+        set_thread_affinity(0).unwrap();
+
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -69,7 +74,7 @@ fn run_server(
 
         let (gossip_output_tx, mut gossip_output_rx) = unsync_channel(None);
 
-        let (gossip_trigger_tx, gossip_trigger_rx) = unbounded_channel();
+         let (gossip_trigger_tx, gossip_trigger_rx) = unbounded_channel();
 
         let member_data = MemberDataBuilder::new(server_name.clone())
             .add_protocol(Protocol::new("gossip".into(), gossip_address))
@@ -77,25 +82,6 @@ fn run_server(
 
         rt.block_on(async {
             let local = task::LocalSet::new();
-
-            let (client_input_tx, client_input_rx) = bounded(1000);
-
-            let put_throughput = opts.max_set_throughput;
-            local.spawn_local(async move {
-                let rate_limiter = RateLimiter::direct(Quota::per_second(
-                    NonZeroU32::new(put_throughput).unwrap(),
-                ));
-                loop {
-                    rate_limiter.until_ready().await;
-                    let key = "/usr/table/key".parse().unwrap();
-                    let request = ClientRequest::Set {
-                        key,
-                        value: "FOOBAR".to_string(),
-                    };
-                    client_input_tx.send((request, UNKNOWN_ADDRESS)).await.unwrap();
-                    SETS_SENT.inc();
-                }
-            });
 
             let gossip_frequency = opts.gossip_frequency;
             local.spawn_local(async move {
@@ -134,6 +120,40 @@ fn run_server(
             local.await
         });
     });
+
+    std::thread::spawn(move || {
+        set_thread_affinity(2).unwrap();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+
+
+
+        let put_throughput = opts.max_set_throughput;
+
+        rt.block_on(async {
+            let local = task::LocalSet::new();
+
+            local.spawn_local(async move {
+                let rate_limiter = RateLimiter::direct(Quota::per_second(
+                    NonZeroU32::new(put_throughput).unwrap(),
+                ));
+                let key_master : Key = "/usr/table/key".parse().unwrap();
+                loop {
+                    rate_limiter.until_ready().await;
+                    let request = ClientRequest::Set {
+                        key: key_master.clone(),
+                        value: "FOOBAR".to_string(),
+                    };
+                    client_input_tx.send((request, UNKNOWN_ADDRESS)).await.unwrap();
+                    SETS_SENT.inc();
+                }
+            });
+        });
+
+    });
+
 }
 
 struct Switchboard {
