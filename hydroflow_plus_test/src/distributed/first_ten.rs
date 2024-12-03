@@ -1,6 +1,5 @@
 use hydroflow_plus::*;
 use location::external_process::ExternalBincodeSink;
-use location::ExternalProcess;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]

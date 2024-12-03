@@ -73,9 +73,7 @@ pub fn create_graph_trybuild(
         }
     });
 
-    let mut hasher = Sha256::new();
-    hasher.update(&source);
-    let hash = format!("{:X}", hasher.finalize())
+    let hash = format!("{:X}", Sha256::digest(&source))
         .chars()
         .take(8)
         .collect::<String>();
@@ -107,7 +105,7 @@ pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>
         use hydroflow_plus::*;
 
         #[allow(unused)]
-        fn __hfplus_runtime<'a>(__hydroflow_plus_trybuild_cli: &'a hydroflow_plus::hydroflow::util::deploy::DeployPorts<hydroflow_plus::deploy::HydroflowPlusMeta>) -> hydroflow_plus::Hydroflow<'a> {
+        fn __hfplus_runtime<'a>(__hydroflow_plus_trybuild_cli: &'a hydroflow_plus::hydroflow::util::deploy::DeployPorts<hydroflow_plus::deploy::HydroflowPlusMeta>) -> hydroflow_plus::hydroflow::scheduled::graph::Hydroflow<'a> {
             #(#extra_stmts)*
             #tokens
         }

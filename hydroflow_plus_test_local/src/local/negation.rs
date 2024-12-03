@@ -1,6 +1,8 @@
 use hydroflow::tokio::sync::mpsc::UnboundedSender;
 use hydroflow_plus::deploy::SingleProcessGraph;
+use hydroflow_plus::hydroflow::scheduled::graph::Hydroflow;
 use hydroflow_plus::*;
+use stageleft::{Quoted, RuntimeData};
 
 #[stageleft::entry]
 pub fn test_difference<'a>(
@@ -12,12 +14,24 @@ pub fn test_difference<'a>(
     let process = flow.process::<()>();
     let tick = process.tick();
 
-    let mut source = process.source_iter(q!(0..5)).tick_batch(&tick);
+    let mut source = unsafe {
+        // SAFETY: intentionally using ticks
+        process
+            .source_iter(q!(0..5))
+            .timestamped(&tick)
+            .tick_batch()
+    };
     if persist1 {
         source = source.persist();
     }
 
-    let mut source2 = process.source_iter(q!(3..6)).tick_batch(&tick);
+    let mut source2 = unsafe {
+        // SAFETY: intentionally using ticks
+        process
+            .source_iter(q!(3..6))
+            .timestamped(&tick)
+            .tick_batch()
+    };
     if persist2 {
         source2 = source2.persist();
     }
@@ -39,15 +53,25 @@ pub fn test_anti_join<'a>(
     let process = flow.process::<()>();
     let tick = process.tick();
 
-    let mut source = process
-        .source_iter(q!(0..5))
-        .map(q!(|v| (v, v)))
-        .tick_batch(&tick);
+    let mut source = unsafe {
+        // SAFETY: intentionally using ticks
+        process
+            .source_iter(q!(0..5))
+            .map(q!(|v| (v, v)))
+            .timestamped(&tick)
+            .tick_batch()
+    };
     if persist1 {
         source = source.persist();
     }
 
-    let mut source2 = process.source_iter(q!(3..6)).tick_batch(&tick);
+    let mut source2 = unsafe {
+        // SAFETY: intentionally using ticks
+        process
+            .source_iter(q!(3..6))
+            .timestamped(&tick)
+            .tick_batch()
+    };
     if persist2 {
         source2 = source2.persist();
     }

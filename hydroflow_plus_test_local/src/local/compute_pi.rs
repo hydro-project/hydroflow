@@ -1,7 +1,9 @@
 use std::time::Duration;
 
 use hydroflow_plus::deploy::SingleProcessGraph;
+use hydroflow_plus::hydroflow::scheduled::graph::Hydroflow;
 use hydroflow_plus::*;
+use stageleft::{Quoted, RuntimeData};
 
 pub fn compute_pi<'a>(flow: &FlowBuilder<'a>, batch_size: RuntimeData<usize>) -> Process<'a, ()> {
     let process = flow.process();
@@ -21,21 +23,25 @@ pub fn compute_pi<'a>(flow: &FlowBuilder<'a>, batch_size: RuntimeData<usize>) ->
                 *total += 1;
             }),
         )
-        .all_ticks();
+        .all_ticks()
+        .drop_timestamp();
 
-    trials
-        .reduce(q!(|(inside, total), (inside_batch, total_batch)| {
-            *inside += inside_batch;
-            *total += total_batch;
-        }))
-        .sample_every(q!(Duration::from_secs(1)))
-        .for_each(q!(|(inside, total)| {
-            println!(
-                "pi: {} ({} trials)",
-                4.0 * inside as f64 / total as f64,
-                total
-            );
-        }));
+    let estimate = trials.reduce(q!(|(inside, total), (inside_batch, total_batch)| {
+        *inside += inside_batch;
+        *total += total_batch;
+    }));
+
+    unsafe {
+        // SAFETY: intentional non-determinism
+        estimate.sample_every(q!(Duration::from_secs(1)))
+    }
+    .for_each(q!(|(inside, total)| {
+        println!(
+            "pi: {} ({} trials)",
+            4.0 * inside as f64 / total as f64,
+            total
+        );
+    }));
 
     process
 }

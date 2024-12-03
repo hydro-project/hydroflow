@@ -1,6 +1,7 @@
 #![expect(
     unused_qualifications,
     non_local_definitions,
+    unsafe_op_in_unsafe_fn,
     reason = "for pyo3 generated code"
 )]
 

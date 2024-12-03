@@ -2,7 +2,9 @@ use hydroflow::futures::stream::Stream;
 use hydroflow::tokio::sync::mpsc::UnboundedSender;
 use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::deploy::MultiGraph;
+use hydroflow_plus::hydroflow::scheduled::graph::Hydroflow;
 use hydroflow_plus::*;
+use stageleft::{Quoted, RuntimeData};
 
 struct N0 {}
 struct N1 {}
@@ -19,7 +21,13 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
     let node_one = flow.process::<N1>();
     let n0_tick = node_zero.tick();
 
-    let source = node_zero.source_stream(input_stream).tick_batch(&n0_tick);
+    let source = unsafe {
+        // SAFETY: intentionally using ticks
+        node_zero
+            .source_stream(input_stream)
+            .timestamped(&n0_tick)
+            .tick_batch()
+    };
     let map1 = source.clone().map(q!(|v| (v + 1, ())));
     let map2 = source.map(q!(|v| (v - 1, ())));
 

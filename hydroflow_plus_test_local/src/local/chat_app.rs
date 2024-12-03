@@ -1,7 +1,9 @@
 use hydroflow::tokio::sync::mpsc::UnboundedSender;
 use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::deploy::SingleProcessGraph;
+use hydroflow_plus::hydroflow::scheduled::graph::Hydroflow;
 use hydroflow_plus::*;
+use stageleft::{Quoted, RuntimeData};
 
 #[stageleft::entry]
 pub fn chat_app<'a>(
@@ -14,15 +16,27 @@ pub fn chat_app<'a>(
     let process = flow.process::<()>();
     let tick = process.tick();
 
-    let users = process
-        .source_stream(users_stream)
-        .tick_batch(&tick)
-        .persist();
+    let users = unsafe {
+        // SAFETY: intentionally non-deterministic to not send messaged
+        // to users that joined after the message was sent
+        process
+            .source_stream(users_stream)
+            .timestamped(&tick)
+            .tick_batch()
+    }
+    .persist();
     let messages = process.source_stream(messages);
     let messages = if replay_messages {
-        messages.tick_batch(&tick).persist()
+        unsafe {
+            // SAFETY: see above
+            messages.timestamped(&tick).tick_batch()
+        }
+        .persist()
     } else {
-        messages.tick_batch(&tick)
+        unsafe {
+            // SAFETY: see above
+            messages.timestamped(&tick).tick_batch()
+        }
     };
 
     // do this after the persist to test pullup
