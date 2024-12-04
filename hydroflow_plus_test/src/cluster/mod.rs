@@ -8,3 +8,10 @@ pub mod quorum;
 pub mod request_response;
 pub mod simple_cluster;
 pub mod two_pc;
+
+#[doc(hidden)]
+#[stageleft::runtime]
+pub mod docs {
+    #[doc = include_str!("../../../docs/docs/hydroflow_plus/consistency.mdx")]
+    mod consistency {}
+}
