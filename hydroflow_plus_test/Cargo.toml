@@ -13,6 +13,7 @@ stageleft_devel = []
 
 [dependencies]
 hydroflow_plus = { path = "../hydroflow_plus", version = "^0.10.0" }
+hydroflow_plus_std = { path = "../hydroflow_plus_std", version = "^0.10.0" }
 tokio = { version = "1.29.0", features = [ "full" ] }
 stageleft = { path = "../stageleft", version = "^0.5.0" }
 rand = "0.8.0"

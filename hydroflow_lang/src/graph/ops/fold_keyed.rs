@@ -80,6 +80,7 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
     // to prevent reading uncleared data if this subgraph doesn't run.
     // https://github.com/hydro-project/hydroflow/issues/1298
     has_singleton_output: false,
+    flo_type: None,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),

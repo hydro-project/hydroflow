@@ -4,11 +4,10 @@ use std::hash::Hash;
 use std::time::Duration;
 
 use hydroflow_plus::*;
+use hydroflow_plus_std::quorum::{collect_quorum, collect_quorum_with_response};
+use hydroflow_plus_std::request_response::join_responses;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-
-use super::quorum::{collect_quorum, collect_quorum_with_response};
-use super::request_response::join_responses;
 
 pub struct Proposer {}
 pub struct Acceptor {}

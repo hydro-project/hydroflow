@@ -116,7 +116,7 @@ fn find_subgraph_unionfind(
                 continue;
             }
 
-            // Ignore if would join stratum crossers (next edges).
+            // Do not connect stratum crossers (next edges).
             if barrier_crossers
                 .iter_node_pairs(partitioned_graph)
                 .any(|((x_src, x_dst), _)| {
@@ -126,6 +126,11 @@ fn find_subgraph_unionfind(
                             && subgraph_unionfind.same_set(x_dst, src))
                 })
             {
+                continue;
+            }
+
+            // Do not connect across loop contexts.
+            if partitioned_graph.node_loop(src) != partitioned_graph.node_loop(dst) {
                 continue;
             }
 

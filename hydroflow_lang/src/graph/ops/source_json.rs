@@ -1,7 +1,7 @@
 use quote::quote_spanned;
 
 use super::{
-    OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    FloType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
     OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
@@ -27,6 +27,7 @@ pub const SOURCE_JSON: OperatorConstraints = OperatorConstraints {
     type_args: &(0..=1),
     is_external_input: true,
     has_singleton_output: false,
+    flo_type: Some(FloType::Source),
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,

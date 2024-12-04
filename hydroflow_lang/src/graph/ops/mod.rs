@@ -70,6 +70,8 @@ pub struct OperatorConstraints {
     /// If true, [`WriteContextArgs::singleton_output_ident`] will be set to a meaningful value in
     /// the [`Self::write_fn`] invocation.
     pub has_singleton_output: bool,
+    /// Flo semantics type.
+    pub flo_type: Option<FloType>,
 
     /// What named or numbered input ports to expect?
     pub ports_inn: Option<fn() -> PortListSpec>,
@@ -240,10 +242,12 @@ macro_rules! declare_ops {
     };
 }
 declare_ops![
+    all_once::ALL_ONCE,
     anti_join::ANTI_JOIN,
     anti_join_multiset::ANTI_JOIN_MULTISET,
     assert::ASSERT,
     assert_eq::ASSERT_EQ,
+    batch::BATCH,
     chain::CHAIN,
     cross_join::CROSS_JOIN,
     cross_join_multiset::CROSS_JOIN_MULTISET,
@@ -496,6 +500,8 @@ pub enum OperatorCategory {
     Sink,
     Control,
     CompilerFusionOperator,
+    Windowing,
+    Unwindowing,
 }
 impl OperatorCategory {
     /// Human-readible heading name, for docs.
@@ -514,6 +520,8 @@ impl OperatorCategory {
             OperatorCategory::Sink => "Sinks",
             OperatorCategory::Control => "Control Flow Operators",
             OperatorCategory::CompilerFusionOperator => "Compiler Fusion Operators",
+            OperatorCategory::Windowing => "Windowing Operator",
+            OperatorCategory::Unwindowing => "Un-Windowing Operator",
         }
     }
     /// Human description, for docs.
@@ -538,6 +546,19 @@ impl OperatorCategory {
             OperatorCategory::CompilerFusionOperator => {
                 "Operators which are necessary to implement certain optimizations and rewrite rules"
             }
+            OperatorCategory::Windowing => "Operators for windowing `loop` inputs.",
+            OperatorCategory::Unwindowing => "Operators for collecting `loop` outputs.",
         }
     }
+}
+
+/// Operator type for Flo semantics.
+#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
+pub enum FloType {
+    /// A source operator, which must be at the top level.
+    Source,
+    /// A windowing operator, for moving data into a loop context.
+    Windowing,
+    /// An un-windowing operator, for moving data out of a loop context.
+    Unwindowing,
 }
