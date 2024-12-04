@@ -247,7 +247,16 @@ impl Default for Context {
 }
 /// Internal APIs.
 impl Context {
-    pub(crate) fn reset_state_at_end_of_tick(&mut self) {
+    /// Makes sure stratum STRATUM is initialized.
+    pub(super) fn init_stratum(&mut self, stratum: usize) {
+        if self.stratum_queues.len() <= stratum {
+            self.stratum_queues
+                .resize_with(stratum + 1, Default::default);
+        }
+    }
+
+    /// Call this at the end of a tick,
+    pub(super) fn reset_state_at_end_of_tick(&mut self) {
         for StateData { state, tick_reset } in self.states.iter_mut() {
             if let Some(tick_reset) = tick_reset {
                 (tick_reset)(Box::deref_mut(state));

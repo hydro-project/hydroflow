@@ -609,7 +609,7 @@ impl<'a> Hydroflow<'a> {
             true,
             laziness,
         ));
-        self.init_stratum(stratum);
+        self.context.init_stratum(stratum);
         self.context.stratum_queues[stratum].push_back(sg_id);
 
         sg_id
@@ -701,19 +701,10 @@ impl<'a> Hydroflow<'a> {
             true,
             false,
         ));
-        self.init_stratum(stratum);
+        self.context.init_stratum(stratum);
         self.context.stratum_queues[stratum].push_back(sg_id);
 
         sg_id
-    }
-
-    /// Makes sure stratum STRATUM is initialized.
-    fn init_stratum(&mut self, stratum: usize) {
-        if self.context.stratum_queues.len() <= stratum {
-            self.context
-                .stratum_queues
-                .resize_with(stratum + 1, Default::default);
-        }
     }
 
     /// Creates a handoff edge and returns the corresponding send and receive ports.
