@@ -12,10 +12,11 @@ export default function prismIncludeLanguages(PrismObject) {
     require(`prismjs/components/prism-${lang}`);
   });
   Prism.languages["rust,ignore"] = Prism.languages.rust;
+  Prism.languages["rust,no_run"] = Prism.languages.rust;
 
   const origTokenize = PrismObject.tokenize;
   PrismObject.hooks.add("after-tokenize", function(env) {
-    if (env.language === "rust") {
+    if (env.language === "rust" || env.language === "rust,ignore" || env.language === "rust,no_run") {
       let code = env.code.split("\n").filter(line => !line.startsWith("# ")).join("\n");
       env.tokens = origTokenize(code, env.grammar);
     }
