@@ -323,11 +323,11 @@
 <span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
+<span class="kw">use </span>hydroflow_plus_std::quorum::collect_quorum;
 <span class="kw">use </span>tokio::time::Instant;
 
 <span class="kw">use </span><span class="kw">super</span>::paxos::{Acceptor, Ballot, Proposer};
 <span class="kw">use </span><span class="kw">super</span>::paxos_kv::{paxos_kv, KvPayload, Replica};
-<span class="kw">use </span><span class="kw">super</span>::quorum::collect_quorum;
 
 <span class="kw">pub struct </span>Client {}
 

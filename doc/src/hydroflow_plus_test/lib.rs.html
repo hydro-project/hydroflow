@@ -2,8 +2,22 @@
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
+<a href="#5" id="5">5</a>
+<a href="#6" id="6">6</a>
+<a href="#7" id="7">7</a>
+<a href="#8" id="8">8</a>
+<a href="#9" id="9">9</a>
+<a href="#10" id="10">10</a>
+<a href="#11" id="11">11</a>
 </pre></div><pre class="rust"><code><span class="macro">stageleft::stageleft_no_entry_crate!</span>();
 
 <span class="kw">pub mod </span>cluster;
 <span class="kw">pub mod </span>distributed;
+
+<span class="attr">#[doc(hidden)]
+#[stageleft::runtime]
+</span><span class="kw">mod </span>docs {
+    <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">"../../docs/docs/hydroflow_plus/consistency.md"</span>)]
+    </span><span class="kw">mod </span>consistency {}
+}
 </code></pre></div></section></main></body></html>
