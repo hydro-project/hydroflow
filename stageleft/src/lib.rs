@@ -82,6 +82,7 @@ macro_rules! stageleft_no_entry_crate {
             unused,
             ambiguous_glob_reexports,
             clippy::suspicious_else_formatting,
+            clippy::type_complexity,
             reason = "generated code"
         )]
         pub mod __staged {

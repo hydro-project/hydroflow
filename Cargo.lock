@@ -1608,6 +1608,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "hydroflow_plus_std"
+version = "0.10.0"
+dependencies = [
+ "async-ssh2-lite",
+ "ctor",
+ "hydro_deploy",
+ "hydroflow_plus",
+ "insta",
+ "stageleft",
+ "stageleft_tool",
+]
+
+[[package]]
 name = "hydroflow_plus_test"
 version = "0.0.0"
 dependencies = [
@@ -1615,6 +1628,7 @@ dependencies = [
  "futures",
  "hydro_deploy",
  "hydroflow_plus",
+ "hydroflow_plus_std",
  "insta",
  "rand",
  "serde",

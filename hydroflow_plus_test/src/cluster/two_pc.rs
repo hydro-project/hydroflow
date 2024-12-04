@@ -1,6 +1,5 @@
 use hydroflow_plus::*;
-
-use super::quorum::collect_quorum;
+use hydroflow_plus_std::quorum::collect_quorum;
 
 // if the variable start with p, that means current work is at the participant side. if start with c, at coordinator side.
 //

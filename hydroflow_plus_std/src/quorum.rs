@@ -3,7 +3,7 @@ use std::hash::Hash;
 use hydroflow_plus::*;
 use location::NoTick;
 
-#[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
+#[expect(clippy::type_complexity, reason = "stream types with ordering")]
 pub fn collect_quorum_with_response<
     'a,
     L: Location<'a> + NoTick,
@@ -99,7 +99,7 @@ pub fn collect_quorum_with_response<
     )
 }
 
-#[expect(clippy::type_complexity, reason = "quorum types are complex")]
+#[expect(clippy::type_complexity, reason = "stream types with ordering")]
 pub fn collect_quorum<'a, L: Location<'a> + NoTick, Order, K: Clone + Eq + Hash, E: Clone>(
     responses: Stream<(K, Result<(), E>), Timestamped<L>, Unbounded, Order>,
     min: usize,
