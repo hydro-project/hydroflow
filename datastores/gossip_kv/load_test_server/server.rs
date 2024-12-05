@@ -147,7 +147,7 @@ fn run_server(
                         value: "FOOBAR".to_string(),
                     };
                     client_input_tx.send((request, UNKNOWN_ADDRESS)).await.unwrap();
-                    error!("request");
+                    trace!("request");
                     SETS_SENT.inc();
                 }
             });
