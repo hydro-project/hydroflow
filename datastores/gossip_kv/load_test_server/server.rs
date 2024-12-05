@@ -83,13 +83,13 @@ fn run_server(
         rt.block_on(async {
             let local = task::LocalSet::new();
 
-            let gossip_frequency = opts.gossip_frequency;
-            local.spawn_local(async move {
-                loop {
-                    tokio::time::sleep(gossip_frequency).await;
-                    gossip_trigger_tx.send(()).unwrap();
-                }
-            });
+            // let gossip_frequency = opts.gossip_frequency;
+            // local.spawn_local(async move {
+            //     loop {
+            //         tokio::time::sleep(gossip_frequency).await;
+            //         gossip_trigger_tx.send(()).unwrap();
+            //     }
+            // });
 
             // Networking
             local.spawn_local(async move {
