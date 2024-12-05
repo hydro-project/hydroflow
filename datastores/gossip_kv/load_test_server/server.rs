@@ -106,12 +106,8 @@ fn run_server(
             let put_throughput = opts.max_set_throughput;
 
             local.spawn_local(async move {
-                let rate_limiter = RateLimiter::direct(Quota::per_second(
-                    NonZeroU32::new(put_throughput).unwrap(),
-                ));
                 let key_master : u64 = 100;
                 loop {
-                    rate_limiter.until_ready().await;
                     let request = ClientRequest::Set {
                         key: key_master.clone(),
                         value: "FOOBAR".to_string(),
