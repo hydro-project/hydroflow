@@ -10,6 +10,8 @@ use governor::{Quota, RateLimiter};
 use lazy_static::lazy_static;
 use hydroflow::util::{unbounded_channel, unsync_channel};
 use prometheus::{gather, register_int_counter, Encoder, IntCounter, TextEncoder};
+use rand::Rng;
+use rand_distr::Zipf;
 use tokio::sync::mpsc::{Sender, UnboundedSender};
 use tokio::sync::watch::Receiver;
 use tokio::task;
@@ -106,10 +108,12 @@ fn run_server(
             let put_throughput = opts.max_set_throughput;
 
             local.spawn_local(async move {
-                let key_master : u64 = 100;
+                let mut rng = rand::thread_rng();
+                let zipf: Zipf<f64> = rand_distr::Zipf::new(1_000_000, 1.07).unwrap();
+
                 loop {
                     let request = ClientRequest::Set {
-                        key: key_master.clone(),
+                        key: rng.sample(zipf) as u64,
                         value: "FOOBAR".to_string(),
                     };
                     client_input_tx.send((request, UNKNOWN_ADDRESS)).await.unwrap();
