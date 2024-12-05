@@ -8,7 +8,7 @@ use gossip_kv::membership::{MemberDataBuilder, Protocol};
 use gossip_kv::{ClientRequest, GossipMessage, Key};
 use governor::{Quota, RateLimiter};
 use lazy_static::lazy_static;
-use hydroflow::util::{bounded_channel, unbounded_channel, unsync_channel};
+use hydroflow::util::{unbounded_channel, unsync_channel};
 use prometheus::{gather, register_int_counter, Encoder, IntCounter, TextEncoder};
 use tokio::sync::mpsc::{Sender, UnboundedSender};
 use tokio::sync::watch::Receiver;
@@ -62,7 +62,7 @@ fn run_server(
     seed_nodes: Vec<SeedNode<LoadTestAddress>>,
     opts: Opts,
 ) {
-    let (client_input_tx, client_input_rx) = bounded_channel(1000);
+
 
     std::thread::spawn(move || {
         //set_thread_affinity(0).unwrap();
@@ -71,6 +71,7 @@ fn run_server(
             .enable_all()
             .build()
             .unwrap();
+        let (client_input_tx, client_input_rx) = bounded(1000);
 
         let (gossip_output_tx, mut gossip_output_rx) = unsync_channel(None);
 
@@ -102,40 +103,7 @@ fn run_server(
                 }
             });
 
-            local.spawn_local(async {
-                let mut server = server(
-                    client_input_rx,
-                    drain(), // Ignoring client responses for now.
-                    gossip_input_rx,
-                    gossip_output_tx,
-                    gossip_trigger_rx,
-                    member_data,
-                    seed_nodes,
-                    stream::empty(),
-                );
-
-                server.run_async().await
-            });
-
-            local.await
-        });
-    });
-
-    std::thread::spawn(move || {
-        //set_thread_affinity(2).unwrap();
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-
-
-
-        let put_throughput = opts.max_set_throughput;
-
-        trace!("Starting client thread with throughput: {}", put_throughput);
-
-        rt.block_on(async {
-            let local = task::LocalSet::new();
+            let put_throughput = opts.max_set_throughput;
 
             local.spawn_local(async move {
                 let rate_limiter = RateLimiter::direct(Quota::per_second(
@@ -154,12 +122,24 @@ fn run_server(
                 }
             });
 
+            local.spawn_local(async {
+                let mut server = server(
+                    client_input_rx,
+                    drain(), // Ignoring client responses for now.
+                    gossip_input_rx,
+                    gossip_output_tx,
+                    gossip_trigger_rx,
+                    member_data,
+                    seed_nodes,
+                    stream::empty(),
+                );
+
+                server.run_async().await
+            });
+
             local.await
         });
-
-
     });
-
 }
 
 struct Switchboard {
