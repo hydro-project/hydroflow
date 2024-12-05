@@ -143,7 +143,6 @@ fn run_server(
                 ));
                 let key_master : u64 = 100;
                 loop {
-                    trace!("request");
                     rate_limiter.until_ready().await;
                     let request = ClientRequest::Set {
                         key: key_master.clone(),

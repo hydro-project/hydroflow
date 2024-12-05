@@ -144,7 +144,6 @@ where
             -> inspect(|request| trace!("{:?}: Received Set request: {:?}.", context.current_tick(), request))
             -> map(|(key, value, _addr) : (u64, String, Addr)| upsert_row(Clock::new(context.current_tick().0), key, value))
             -> inspect(|_| {
-                error!("SET request processed.");
                 SETS_COUNTER.inc(); // Bump SET metrics
             })
             -> writes;
