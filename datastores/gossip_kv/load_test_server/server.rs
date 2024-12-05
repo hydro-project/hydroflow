@@ -132,6 +132,8 @@ fn run_server(
 
         let put_throughput = opts.max_set_throughput;
 
+        trace!("Starting client thread with throughput: {}", put_throughput);
+
         rt.block_on(async {
             let local = task::LocalSet::new();
 
