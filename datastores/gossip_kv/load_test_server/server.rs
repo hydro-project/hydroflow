@@ -73,7 +73,7 @@ fn run_server(
             .enable_all()
             .build()
             .unwrap();
-        let (client_input_tx, client_input_rx) = bounded(1000);
+        let (client_input_tx, client_input_rx) = bounded(1000000);
 
         let (gossip_output_tx, mut gossip_output_rx) = unsync_channel(None);
 
