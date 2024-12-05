@@ -2,7 +2,7 @@ use std::convert::Infallible;
 use std::num::{NonZeroU32, ParseFloatError};
 use std::thread::sleep;
 use std::time::Duration;
-use affinity::set_thread_affinity;
+// use affinity::set_thread_affinity;
 use clap::Parser;
 use gossip_kv::membership::{MemberDataBuilder, Protocol};
 use gossip_kv::{ClientRequest, GossipMessage, Key};
@@ -65,7 +65,7 @@ fn run_server(
     let (client_input_tx, client_input_rx) = bounded_channel(1000);
 
     std::thread::spawn(move || {
-        set_thread_affinity(0).unwrap();
+        //set_thread_affinity(0).unwrap();
 
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -122,7 +122,7 @@ fn run_server(
     });
 
     std::thread::spawn(move || {
-        set_thread_affinity(2).unwrap();
+        //set_thread_affinity(2).unwrap();
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -139,7 +139,7 @@ fn run_server(
                 let rate_limiter = RateLimiter::direct(Quota::per_second(
                     NonZeroU32::new(put_throughput).unwrap(),
                 ));
-                let key_master : Key = "/usr/table/key".parse().unwrap();
+                let key_master : u64 = 100;
                 loop {
                     rate_limiter.until_ready().await;
                     let request = ClientRequest::Set {
