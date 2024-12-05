@@ -15,6 +15,7 @@ use rand_distr::Zipf;
 use tokio::sync::mpsc::{Sender, UnboundedSender};
 use tokio::sync::watch::Receiver;
 use tokio::task;
+use tokio::task::yield_now;
 use tracing::{error, info, trace};
 use warp::Filter;
 
@@ -73,7 +74,7 @@ fn run_server(
             .enable_all()
             .build()
             .unwrap();
-        let (client_input_tx, client_input_rx) = bounded(1000000);
+        let (client_input_tx, client_input_rx) = bounded(10000);
 
         let (gossip_output_tx, mut gossip_output_rx) = unsync_channel(None);
 
@@ -117,6 +118,8 @@ fn run_server(
                         value: "FOOBAR".to_string(),
                     };
                     client_input_tx.send((request, UNKNOWN_ADDRESS)).await.unwrap();
+
+                    yield_now().await;
 
                     SETS_SENT.inc();
                 }
