@@ -97,7 +97,7 @@ fn run_server(
                     trace!("Sending gossip message: {:?} to {}", msg, addr);
                     let outbox = switchboard.gossip_outboxes.get(addr as usize).unwrap();
                     if let Err(e) = outbox.send((msg, gossip_address)) {
-                        error!("Failed to send gossip message: {:?}", e);
+                        trace!("Failed to send gossip message: {:?}", e);
                     }
                 }
             });
