@@ -154,7 +154,10 @@ fn run_server(
                     SETS_SENT.inc();
                 }
             });
+
+            local.await
         });
+
 
     });
 
