@@ -141,13 +141,14 @@ fn run_server(
                 ));
                 let key_master : u64 = 100;
                 loop {
+                    trace!("request");
                     rate_limiter.until_ready().await;
                     let request = ClientRequest::Set {
                         key: key_master.clone(),
                         value: "FOOBAR".to_string(),
                     };
                     client_input_tx.send((request, UNKNOWN_ADDRESS)).await.unwrap();
-                    trace!("request");
+
                     SETS_SENT.inc();
                 }
             });
