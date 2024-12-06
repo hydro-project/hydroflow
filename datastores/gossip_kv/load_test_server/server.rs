@@ -130,13 +130,13 @@ fn run_server(
                     stream::empty(),
                 );
 
-                server.run_async().await
+                gossip_kv::server::server.run_async().await
             });
 
             local.await
         });
     });
-}
+});
 
 struct Switchboard {
     gossip_outboxes: Vec<UnboundedSender<(GossipMessage, LoadTestAddress)>>,
