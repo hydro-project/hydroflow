@@ -135,8 +135,9 @@ fn run_server(
             });
         });
     });
+}
 
-    struct Switchboard {
+struct Switchboard {
         gossip_outboxes: Vec<UnboundedSender<(GossipMessage, LoadTestAddress)>>,
     }
 
