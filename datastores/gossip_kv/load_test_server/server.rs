@@ -65,7 +65,7 @@ fn run_server(
     let (client_input_tx, client_input_rx) = bounded_channel(1000);
 
     std::thread::spawn(move || {
-        set_thread_affinity(0).unwrap();
+        set_thread_affinity([0]).unwrap();
 
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -122,7 +122,7 @@ fn run_server(
     });
 
     std::thread::spawn(move || {
-        set_thread_affinity(2).unwrap();
+        set_thread_affinity([2]).unwrap();
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
