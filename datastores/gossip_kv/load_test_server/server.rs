@@ -61,7 +61,6 @@ fn run_server(
     seed_nodes: Vec<SeedNode<LoadTestAddress>>,
     opts: Opts,
 ) {
-    let (client_input_tx, client_input_rx) = bounded_channel(1000);
 
     std::thread::spawn(move || {
 
@@ -69,6 +68,8 @@ fn run_server(
             .enable_all()
             .build()
             .unwrap();
+
+        let (client_input_tx, client_input_rx) = bounded(1000);
 
         let (gossip_output_tx, mut gossip_output_rx) = unsync_channel(None);
 
@@ -89,7 +90,24 @@ fn run_server(
                 }
             });
 
-            // Networking
+            let put_throughput = opts.max_set_throughput;
+
+            rt.block_on(async {
+                let local = task::LocalSet::new();
+                local.spawn_local(async move {
+                    let key_master : Key = "/usr/table/key".parse().unwrap();
+                    loop {
+                        let request = ClientRequest::Set {
+                            key: key_master.clone(),
+                            value: "FOOBAR".to_string(),
+                        };
+                        client_input_tx.send((request, UNKNOWN_ADDRESS)).await.unwrap();
+                        SETS_SENT.inc();
+                    }
+                });
+
+
+                // Networking
             local.spawn_local(async move {
                 while let Some((msg, addr)) = gossip_output_rx.next().await {
                     trace!("Sending gossip message: {:?} to {}", msg, addr);
@@ -118,41 +136,6 @@ fn run_server(
             local.await
         });
     });
-
-    std::thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-
-
-
-        let put_throughput = opts.max_set_throughput;
-
-        rt.block_on(async {
-            let local = task::LocalSet::new();
-
-            local.spawn_local(async move {
-                let rate_limiter = RateLimiter::direct(Quota::per_second(
-                    NonZeroU32::new(put_throughput).unwrap(),
-                ));
-                let key_master : Key = "/usr/table/key".parse().unwrap();
-                loop {
-                    rate_limiter.until_ready().await;
-                    let request = ClientRequest::Set {
-                        key: key_master.clone(),
-                        value: "FOOBAR".to_string(),
-                    };
-                    client_input_tx.send((request, UNKNOWN_ADDRESS)).await.unwrap();
-                    SETS_SENT.inc();
-                }
-            });
-
-            local.await;
-        });
-
-    });
-
 }
 
 struct Switchboard {
