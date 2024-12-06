@@ -61,9 +61,7 @@ fn run_server(
     seed_nodes: Vec<SeedNode<LoadTestAddress>>,
     opts: Opts,
 ) {
-
     std::thread::spawn(move || {
-
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -73,7 +71,7 @@ fn run_server(
 
         let (gossip_output_tx, mut gossip_output_rx) = unsync_channel(None);
 
-         let (gossip_trigger_tx, gossip_trigger_rx) = unbounded_channel();
+        let (gossip_trigger_tx, gossip_trigger_rx) = unbounded_channel();
 
         let member_data = MemberDataBuilder::new(server_name.clone())
             .add_protocol(Protocol::new("gossip".into(), gossip_address))
@@ -95,7 +93,7 @@ fn run_server(
             rt.block_on(async {
                 let local = task::LocalSet::new();
                 local.spawn_local(async move {
-                    let key_master : Key = "/usr/table/key".parse().unwrap();
+                    let key_master: Key = "/usr/table/key".parse().unwrap();
                     loop {
                         let request = ClientRequest::Set {
                             key: key_master.clone(),
@@ -108,130 +106,130 @@ fn run_server(
 
 
                 // Networking
-            local.spawn_local(async move {
-                while let Some((msg, addr)) = gossip_output_rx.next().await {
-                    trace!("Sending gossip message: {:?} to {}", msg, addr);
-                    let outbox = switchboard.gossip_outboxes.get(addr as usize).unwrap();
-                    if let Err(e) = outbox.send((msg, gossip_address)) {
-                        error!("Failed to send gossip message: {:?}", e);
+                local.spawn_local(async move {
+                    while let Some((msg, addr)) = gossip_output_rx.next().await {
+                        trace!("Sending gossip message: {:?} to {}", msg, addr);
+                        let outbox = switchboard.gossip_outboxes.get(addr as usize).unwrap();
+                        if let Err(e) = outbox.send((msg, gossip_address)) {
+                            error!("Failed to send gossip message: {:?}", e);
+                        }
                     }
-                }
+                });
+
+                local.spawn_local(async {
+                    let mut server = server(
+                        client_input_rx,
+                        drain(), // Ignoring client responses for now.
+                        gossip_input_rx,
+                        gossip_output_tx,
+                        gossip_trigger_rx,
+                        member_data,
+                        seed_nodes,
+                        stream::empty(),
+                    );
+
+                    gossip_kv::server::server.run_async().await
+                });
+
+                local.await
             });
-
-            local.spawn_local(async {
-                let mut server = server(
-                    client_input_rx,
-                    drain(), // Ignoring client responses for now.
-                    gossip_input_rx,
-                    gossip_output_tx,
-                    gossip_trigger_rx,
-                    member_data,
-                    seed_nodes,
-                    stream::empty(),
-                );
-
-                gossip_kv::server::server.run_async().await
-            });
-
-            local.await
-        });
-    });
-});
-
-struct Switchboard {
-    gossip_outboxes: Vec<UnboundedSender<(GossipMessage, LoadTestAddress)>>,
-}
-
-impl Clone for Switchboard {
-    fn clone(&self) -> Self {
-        Self {
-            gossip_outboxes: self.gossip_outboxes.clone(),
-        }
-    }
-}
-
-impl Switchboard {
-    fn new() -> Self {
-        Self {
-            gossip_outboxes: Vec::new(),
-        }
-    }
-    fn new_outbox(
-        &mut self,
-    ) -> (
-        LoadTestAddress,
-        UnboundedReceiverStream<(GossipMessage, LoadTestAddress)>,
-    ) {
-        let addr: LoadTestAddress = self.gossip_outboxes.len() as LoadTestAddress;
-        let (tx, rx) = unbounded_channel();
-        self.gossip_outboxes.push(tx);
-        (addr, rx)
-    }
-}
-
-async fn metrics_handler() -> Result<impl warp::Reply, Infallible> {
-    let encoder = TextEncoder::new();
-    let metric_families = gather();
-    let mut buffer = Vec::new();
-    encoder.encode(&metric_families, &mut buffer).unwrap();
-
-    Ok(warp::reply::with_header(
-        buffer,
-        "Content-Type",
-        encoder.format_type(),
-    ))
-}
-
-fn main() {
-    tracing_subscriber::fmt::init();
-
-    let opts: Opts = Opts::parse();
-
-    std::thread::spawn(move || {
-        let metrics_route = warp::path("metrics").and_then(metrics_handler);
-
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-
-        rt.block_on(async move {
-            info!("Starting metrics server on port 4003");
-            warp::serve(metrics_route).run(([0, 0, 0, 0], 4003)).await;
         });
     });
 
-    info!("Starting load test with with {} threads", opts.thread_count);
-
-    let mut switchboard = Switchboard::new();
-
-    let outboxes: Vec<_> = (0..opts.thread_count)
-        .map(|_| {
-            let (addr, rx) = switchboard.new_outbox();
-            (format!("SERVER-{}", addr), addr, rx)
-        })
-        .collect();
-
-    let seed_nodes: Vec<_> = outboxes
-        .iter()
-        .map(|(name, addr, _)| SeedNode {
-            id: name.clone(),
-            address: *addr,
-        })
-        .collect();
-
-    outboxes.into_iter().for_each(|(name, addr, outbox)| {
-        run_server(
-            name,
-            addr,
-            outbox,
-            switchboard.clone(),
-            seed_nodes.clone(),
-            opts,
-        );
-    });
-
-    loop {
-        sleep(Duration::from_secs(1));
+    struct Switchboard {
+        gossip_outboxes: Vec<UnboundedSender<(GossipMessage, LoadTestAddress)>>,
     }
-}
+
+    impl Clone for Switchboard {
+        fn clone(&self) -> Self {
+            Self {
+                gossip_outboxes: self.gossip_outboxes.clone(),
+            }
+        }
+    }
+
+    impl Switchboard {
+        fn new() -> Self {
+            Self {
+                gossip_outboxes: Vec::new(),
+            }
+        }
+        fn new_outbox(
+            &mut self,
+        ) -> (
+            LoadTestAddress,
+            UnboundedReceiverStream<(GossipMessage, LoadTestAddress)>,
+        ) {
+            let addr: LoadTestAddress = self.gossip_outboxes.len() as LoadTestAddress;
+            let (tx, rx) = unbounded_channel();
+            self.gossip_outboxes.push(tx);
+            (addr, rx)
+        }
+    }
+
+    async fn metrics_handler() -> Result<impl warp::Reply, Infallible> {
+        let encoder = TextEncoder::new();
+        let metric_families = gather();
+        let mut buffer = Vec::new();
+        encoder.encode(&metric_families, &mut buffer).unwrap();
+
+        Ok(warp::reply::with_header(
+            buffer,
+            "Content-Type",
+            encoder.format_type(),
+        ))
+    }
+
+    fn main() {
+        tracing_subscriber::fmt::init();
+
+        let opts: Opts = Opts::parse();
+
+        std::thread::spawn(move || {
+            let metrics_route = warp::path("metrics").and_then(metrics_handler);
+
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+
+            rt.block_on(async move {
+                info!("Starting metrics server on port 4003");
+                warp::serve(metrics_route).run(([0, 0, 0, 0], 4003)).await;
+            });
+        });
+
+        info!("Starting load test with with {} threads", opts.thread_count);
+
+        let mut switchboard = Switchboard::new();
+
+        let outboxes: Vec<_> = (0..opts.thread_count)
+            .map(|_| {
+                let (addr, rx) = switchboard.new_outbox();
+                (format!("SERVER-{}", addr), addr, rx)
+            })
+            .collect();
+
+        let seed_nodes: Vec<_> = outboxes
+            .iter()
+            .map(|(name, addr, _)| SeedNode {
+                id: name.clone(),
+                address: *addr,
+            })
+            .collect();
+
+        outboxes.into_iter().for_each(|(name, addr, outbox)| {
+            run_server(
+                name,
+                addr,
+                outbox,
+                switchboard.clone(),
+                seed_nodes.clone(),
+                opts,
+            );
+        });
+
+        loop {
+            sleep(Duration::from_secs(1));
+        }
+    }
