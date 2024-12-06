@@ -128,7 +128,7 @@ fn run_server(
                         stream::empty(),
                     );
 
-                    gossip_kv::server::server.run_async().await
+                    server.run_async().await
                 });
 
                 local.await
