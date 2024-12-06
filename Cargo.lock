@@ -2017,9 +2017,9 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 
 [[package]]
 name = "match_box"
-version = "0.0.1"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c017189a7d209500c9bd9d8f4d11912a0ef128a78c8d5bcefa6983e7fbc2cf3c"
+checksum = "c33c1d4fa92364abfc42bcc58c201cfbb63ae80f5e471aac5c051db48dab6843"
 dependencies = [
  "proc-macro2",
  "quote",
