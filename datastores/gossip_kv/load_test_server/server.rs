@@ -119,8 +119,6 @@ fn run_server(
                     };
                     client_input_tx.send((request, UNKNOWN_ADDRESS)).await.unwrap();
 
-                    yield_now().await;
-
                     SETS_SENT.inc();
                 }
             });
