@@ -7,7 +7,6 @@ license = "Apache-2.0"
 publish = false
 
 [dependencies]
-affinity = "0.1.2"
 clap = { version = "4.5.4", features = ["derive", "env"] }
 config = "0.14.0"
 governor = "0.7.0"
