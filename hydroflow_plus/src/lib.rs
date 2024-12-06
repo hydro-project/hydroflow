@@ -1,5 +1,3 @@
-#![feature(box_patterns)]
-
 stageleft::stageleft_no_entry_crate!();
 
 pub use hydroflow;

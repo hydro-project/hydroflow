@@ -1590,6 +1590,7 @@ dependencies = [
  "hydroflow",
  "hydroflow_lang",
  "insta",
+ "match_box",
  "nameof",
  "prettyplease",
  "proc-macro-crate",
@@ -2013,6 +2014,17 @@ name = "log"
 version = "0.4.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
+
+[[package]]
+name = "match_box"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c33c1d4fa92364abfc42bcc58c201cfbb63ae80f5e471aac5c051db48dab6843"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.75",
+]
 
 [[package]]
 name = "matchers"
