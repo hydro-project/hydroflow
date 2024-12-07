@@ -1,4 +1,5 @@
 [template]
+include = [".vscode/settings.json"]
 ignore = [
   "Cargo.lock",
 ]
