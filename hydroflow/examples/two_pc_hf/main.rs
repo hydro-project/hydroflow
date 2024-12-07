@@ -69,28 +69,31 @@ fn test() {
 
     use hydroflow::util::{run_cargo_example, wait_for_process_output};
 
+    const TEST_NAME: &str = "two_pc_hf";
+
     let members_path = format!(
-        "{}/examples/two_pc/members.json",
-        env!("CARGO_MANIFEST_DIR")
+        "{}/examples/{}/members.json",
+        env!("CARGO_MANIFEST_DIR"),
+        TEST_NAME,
     );
 
     let (_coordinator, mut coordinator_stdin, mut coordinator_stdout) = run_cargo_example(
-        "two_pc",
+        TEST_NAME,
         &format!("--path {members_path} --role coordinator --addr 127.0.0.1:12346"),
     );
 
     let (_subordinate1, _, mut subordinate1_stdout) = run_cargo_example(
-        "two_pc",
+        TEST_NAME,
         &format!("--path {members_path} --role subordinate --addr 127.0.0.1:12347"),
     );
 
     let (_subordinate2, _, mut subordinate2_stdout) = run_cargo_example(
-        "two_pc",
+        TEST_NAME,
         &format!("--path {members_path} --role subordinate --addr 127.0.0.1:12348"),
     );
 
     let (_subordinate3, _, mut subordinate3_stdout) = run_cargo_example(
-        "two_pc",
+        TEST_NAME,
         &format!("--path {members_path} --role subordinate --addr 127.0.0.1:12349"),
     );
 
