@@ -28,7 +28,11 @@ pub fn fork_join() -> std::io::Result<()> {
         writeln!(write, "a{} -> filter(|x| x % 2 == 0) -> a{};", i, i + 1)?;
         writeln!(write, "a{} -> filter(|x| x % 2 == 1) -> a{};", i, i + 1)?;
     }
-    writeln!(write, "a{} = union() -> for_each(|x| {{ black_box(x); }});", NUM_OPS)?;
+    writeln!(
+        write,
+        "a{} = union() -> for_each(|x| {{ black_box(x); }});",
+        NUM_OPS
+    )?;
     writeln!(write, "}}")?;
 
     write.flush()?;

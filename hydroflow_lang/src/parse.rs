@@ -176,7 +176,10 @@ impl Pipeline {
             let _ident: Ident = speculative.parse()?;
 
             // If has paren or generic next, it's an operator
-            if speculative.peek(Paren) || speculative.peek(Token![<]) || speculative.peek(Token![::]) {
+            if speculative.peek(Paren)
+                || speculative.peek(Token![<])
+                || speculative.peek(Token![::])
+            {
                 Ok(Self::Operator(input.parse()?))
             }
             // Otherwise it's a variable name
