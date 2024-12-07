@@ -95,32 +95,6 @@ impl FlatGraphBuilder {
         builder
     }
 
-    /// Convert the Hydroflow code AST into a graph builder.
-    pub fn from_hfmodule(input: HfCode, root_path: PathBuf) -> Self {
-        let mut builder = Self::default();
-        builder.invocating_file_path = root_path; // imports inside of modules should be relative to the importing file.
-        builder.module_boundary_nodes = Some((
-            builder.flat_graph.insert_node(
-                GraphNode::ModuleBoundary {
-                    input: true,
-                    import_expr: Span::call_site(),
-                },
-                Some(Ident::new("input", Span::call_site())),
-                None,
-            ),
-            builder.flat_graph.insert_node(
-                GraphNode::ModuleBoundary {
-                    input: false,
-                    import_expr: Span::call_site(),
-                },
-                Some(Ident::new("output", Span::call_site())),
-                None,
-            ),
-        ));
-        builder.process_statements(input.statements);
-        builder
-    }
-
     fn process_statements(&mut self, statements: impl IntoIterator<Item = HfStatement>) {
         for stmt in statements {
             self.add_statement(stmt);
