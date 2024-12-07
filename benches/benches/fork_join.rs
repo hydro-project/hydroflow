@@ -86,9 +86,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
 fn benchmark_hydroflow_surface(c: &mut Criterion) {
     c.bench_function("fork_join/hydroflow/surface", |b| {
         b.iter(|| {
-            let mut hf = hydroflow_syntax! {
-                source_iter(0..NUM_INTS) -> import!("fork_join_20.hf") -> for_each(|x| { black_box(x); });
-            };
+            let mut hf = include!("fork_join_20.hf");
             hf.run_available();
         })
     });
