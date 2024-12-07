@@ -1,7 +1,6 @@
 mod utils;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::path::PathBuf;
 use std::task::{Context, Poll};
 use std::thread_local;
 
@@ -120,8 +119,7 @@ pub fn compile_hydroflow(
 
     let out = match syn::parse_str(&program) {
         Ok(input) => {
-            let (graph_code_opt, diagnostics) =
-                build_hfcode(input, &quote!(hydroflow), PathBuf::default());
+            let (graph_code_opt, diagnostics) = build_hfcode(input, &quote!(hydroflow));
             let output = graph_code_opt.map(|(graph, code)| {
                 let mermaid = graph.to_mermaid(&write_config);
                 let file = syn::parse_quote! {

@@ -11,7 +11,7 @@ use syn::punctuated::Punctuated;
 use syn::token::{Brace, Bracket, Paren};
 use syn::{
     braced, bracketed, parenthesized, AngleBracketedGenericArguments, Expr, ExprPath,
-    GenericArgument, Ident, ItemUse, LitInt, LitStr, Path, PathArguments, PathSegment, Token,
+    GenericArgument, Ident, ItemUse, LitInt, Path, PathArguments, PathSegment, Token,
 };
 
 use crate::process_singletons::preprocess_singletons;
@@ -61,7 +61,6 @@ impl Parse for HfStatement {
             } else if lookahead2.peek(Token![->])
                 || lookahead2.peek(Paren)
                 || lookahead2.peek(Bracket)
-                || lookahead2.peek(Token![!])
             {
                 Ok(Self::Pipeline(PipelineStatement::parse(input)?))
             } else {
@@ -140,7 +139,6 @@ pub enum Pipeline {
     Link(PipelineLink),
     Operator(Operator),
     ModuleBoundary(Ported<Token![mod]>),
-    Import(Import),
 }
 impl Pipeline {
     fn parse_one(input: ParseStream) -> syn::Result<Self> {
@@ -175,20 +173,17 @@ impl Pipeline {
         // Ident or macro-style expression
         } else if lookahead1.peek(Ident) {
             let speculative = input.fork();
-            let ident: Ident = speculative.parse()?;
-            let lookahead2 = speculative.lookahead1();
+            let _ident: Ident = speculative.parse()?;
 
             // If has paren or generic next, it's an operator
-            if lookahead2.peek(Paren) || lookahead2.peek(Token![<]) || lookahead2.peek(Token![::]) {
+            if speculative.peek(Paren)
+                || speculative.peek(Token![<])
+                || speculative.peek(Token![::])
+            {
                 Ok(Self::Operator(input.parse()?))
-            // macro-style expression "x!.."
-            } else if lookahead2.peek(Token![!]) {
-                match ident.to_string().as_str() {
-                    "import" => Ok(Self::Import(input.parse()?)),
-                    _ => Err(syn::Error::new(ident.span(), r#"Expected "import""#)),
-                }
-            // Otherwise it's a name
-            } else {
+            }
+            // Otherwise it's a variable name
+            else {
                 Ok(Self::Name(input.parse()?))
             }
         }
@@ -223,7 +218,6 @@ impl ToTokens for Pipeline {
             Self::Name(x) => x.to_tokens(tokens),
             Self::Operator(x) => x.to_tokens(tokens),
             Self::ModuleBoundary(x) => x.to_tokens(tokens),
-            Self::Import(x) => x.to_tokens(tokens),
         }
     }
 }
@@ -261,38 +255,6 @@ impl ToTokens for LoopStatement {
                 statement.to_tokens(tokens);
             }
         });
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct Import {
-    pub import: Ident,
-    pub bang: Token![!],
-    pub paren_token: Paren,
-    pub filename: LitStr,
-}
-impl Parse for Import {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let import = input.parse()?;
-        let bang = input.parse()?;
-        let content;
-        let paren_token = parenthesized!(content in input);
-        let filename: LitStr = content.parse()?;
-
-        Ok(Self {
-            import,
-            bang,
-            paren_token,
-            filename,
-        })
-    }
-}
-impl ToTokens for Import {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.import.to_tokens(tokens);
-        self.bang.to_tokens(tokens);
-        self.paren_token
-            .surround(tokens, |tokens| self.filename.to_tokens(tokens));
     }
 }
 
