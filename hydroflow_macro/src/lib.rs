@@ -3,8 +3,6 @@
     feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)
 )]
 
-use std::path::PathBuf;
-
 use hydroflow_lang::diagnostic::{Diagnostic, Level};
 use hydroflow_lang::graph::{build_hfcode, partition_graph, FlatGraphBuilder};
 use hydroflow_lang::parse::HfCode;
@@ -59,32 +57,13 @@ fn root() -> proc_macro2::TokenStream {
     }
 }
 
-// May panic
-fn macro_invocation_path() -> PathBuf {
-    #[cfg(feature = "diagnostics")]
-    {
-        proc_macro::Span::call_site().source_file().path()
-    }
-    #[cfg(not(feature = "diagnostics"))]
-    {
-        std::env::current_dir().unwrap_or_else(|_| {
-            PathBuf::from(
-                std::env::var("CARGO_MANIFEST_DIR")
-                    .expect("Failed to determine fallback env var CARGO_MANIFEST_DIR."),
-            )
-        })
-    }
-}
-
 fn hydroflow_syntax_internal(
     input: proc_macro::TokenStream,
     min_diagnostic_level: Option<Level>,
 ) -> proc_macro::TokenStream {
-    let macro_invocation_path = macro_invocation_path();
-
     let input = parse_macro_input!(input as HfCode);
     let root = root();
-    let (graph_code_opt, diagnostics) = build_hfcode(input, &root, macro_invocation_path);
+    let (graph_code_opt, diagnostics) = build_hfcode(input, &root);
     let tokens = graph_code_opt
         .map(|(_graph, code)| code)
         .unwrap_or_else(|| quote! { #root::scheduled::graph::Hydroflow::new() });
@@ -119,11 +98,9 @@ fn hydroflow_syntax_internal(
 /// Used for testing, users will want to use [`hydroflow_syntax!`] instead.
 #[proc_macro]
 pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let macro_invocation_path = macro_invocation_path();
-
     let input = parse_macro_input!(input as HfCode);
 
-    let flat_graph_builder = FlatGraphBuilder::from_hfcode(input, macro_invocation_path);
+    let flat_graph_builder = FlatGraphBuilder::from_hfcode(input);
     let (mut flat_graph, _uses, mut diagnostics) = flat_graph_builder.build();
     if !diagnostics.iter().any(Diagnostic::is_error) {
         if let Err(diagnostic) = flat_graph.merge_modules() {

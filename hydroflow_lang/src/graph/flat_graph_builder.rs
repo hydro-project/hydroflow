@@ -3,7 +3,6 @@
 use std::borrow::Cow;
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::PathBuf;
 
 use itertools::Itertools;
 use proc_macro2::Span;
@@ -71,9 +70,6 @@ pub struct FlatGraphBuilder {
     /// Use statements.
     uses: Vec<ItemUse>,
 
-    /// In order to make import!() statements relative to the current file, we need to know where the file is that is building the flat graph.
-    invocating_file_path: PathBuf,
-
     /// If the flat graph is being loaded as a module, then two initial ModuleBoundary nodes are inserted into the graph. One
     /// for the input into the module and one for the output out of the module.
     module_boundary_nodes: Option<(GraphNodeId, GraphNodeId)>,
@@ -86,11 +82,8 @@ impl FlatGraphBuilder {
     }
 
     /// Convert the Hydroflow code AST into a graph builder.
-    pub fn from_hfcode(input: HfCode, macro_invocation_path: PathBuf) -> Self {
-        let mut builder = Self {
-            invocating_file_path: macro_invocation_path,
-            ..Default::default()
-        };
+    pub fn from_hfcode(input: HfCode) -> Self {
+        let mut builder = Self::default();
         builder.process_statements(input.statements);
         builder
     }
