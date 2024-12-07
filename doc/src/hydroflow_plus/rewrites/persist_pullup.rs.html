@@ -203,6 +203,8 @@
 <a href="#203" id="203">203</a>
 <a href="#204" id="204">204</a>
 <a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashSet;
 
@@ -212,114 +214,116 @@
     node: <span class="kw-2">&amp;mut </span>HfPlusNode,
     persist_pulled_tees: <span class="kw-2">&amp;mut </span>HashSet&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;&gt;,
 ) {
-    <span class="kw-2">*</span>node = <span class="kw">match </span>std::mem::replace(node, HfPlusNode::Placeholder) {
-        HfPlusNode::Unpersist(<span class="kw">box </span>HfPlusNode::Persist(<span class="kw">box </span>behind_persist)) =&gt; behind_persist,
+    <span class="kw-2">*</span>node = <span class="macro">match_box::match_box!</span> {
+        <span class="kw">match </span>std::mem::replace(node, HfPlusNode::Placeholder) {
+            HfPlusNode::Unpersist(<span class="macro">mb!</span>(* HfPlusNode::Persist(<span class="macro">mb!</span>(* behind_persist)))) =&gt; behind_persist,
 
-        HfPlusNode::Delta(<span class="kw">box </span>HfPlusNode::Persist(<span class="kw">box </span>behind_persist)) =&gt; behind_persist,
+            HfPlusNode::Delta(<span class="macro">mb!</span>(* HfPlusNode::Persist(<span class="macro">mb!</span>(* behind_persist)))) =&gt; behind_persist,
 
-        HfPlusNode::Tee { inner } =&gt; {
-            <span class="kw">if </span>persist_pulled_tees.contains(<span class="kw-2">&amp;</span>(inner.<span class="number">0</span>.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;)) {
-                HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
-                    inner: TeeNode(inner.<span class="number">0</span>.clone()),
-                }))
-            } <span class="kw">else if </span><span class="macro">matches!</span>(<span class="kw-2">*</span>inner.<span class="number">0</span>.borrow(), HfPlusNode::Persist(<span class="kw">_</span>)) {
-                persist_pulled_tees.insert(inner.<span class="number">0</span>.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;);
-                <span class="kw">if let </span>HfPlusNode::Persist(<span class="kw">box </span>behind_persist) =
-                    inner.<span class="number">0</span>.replace(HfPlusNode::Placeholder)
-                {
-                    <span class="kw-2">*</span>inner.<span class="number">0</span>.borrow_mut() = behind_persist;
+            HfPlusNode::Tee { inner } =&gt; {
+                <span class="kw">if </span>persist_pulled_tees.contains(<span class="kw-2">&amp;</span>(inner.<span class="number">0</span>.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;)) {
+                    HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
+                        inner: TeeNode(inner.<span class="number">0</span>.clone()),
+                    }))
+                } <span class="kw">else if </span><span class="macro">matches!</span>(<span class="kw-2">*</span>inner.<span class="number">0</span>.borrow(), HfPlusNode::Persist(<span class="kw">_</span>)) {
+                    persist_pulled_tees.insert(inner.<span class="number">0</span>.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;);
+                    <span class="kw">if let </span>HfPlusNode::Persist(behind_persist) =
+                        inner.<span class="number">0</span>.replace(HfPlusNode::Placeholder)
+                    {
+                        <span class="kw-2">*</span>inner.<span class="number">0</span>.borrow_mut() = <span class="kw-2">*</span>behind_persist;
+                    } <span class="kw">else </span>{
+                        <span class="macro">unreachable!</span>()
+                    }
+
+                    HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
+                        inner: TeeNode(inner.<span class="number">0</span>.clone()),
+                    }))
                 } <span class="kw">else </span>{
-                    <span class="macro">unreachable!</span>()
+                    HfPlusNode::Tee { inner }
                 }
-
-                HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
-                    inner: TeeNode(inner.<span class="number">0</span>.clone()),
-                }))
-            } <span class="kw">else </span>{
-                HfPlusNode::Tee { inner }
             }
-        }
 
-        HfPlusNode::Map {
-            f,
-            input: <span class="kw">box </span>HfPlusNode::Persist(behind_persist),
-        } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::Map {
-            f,
-            input: behind_persist,
-        })),
+            HfPlusNode::Map {
+                f,
+                input: <span class="macro">mb!</span>(* HfPlusNode::Persist(behind_persist)),
+            } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::Map {
+                f,
+                input: behind_persist,
+            })),
 
-        HfPlusNode::FilterMap {
-            f,
-            input: <span class="kw">box </span>HfPlusNode::Persist(behind_persist),
-        } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::FilterMap {
-            f,
-            input: behind_persist,
-        })),
+            HfPlusNode::FilterMap {
+                f,
+                input: <span class="macro">mb!</span>(* HfPlusNode::Persist(behind_persist)),
+            } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::FilterMap {
+                f,
+                input: behind_persist,
+            })),
 
-        HfPlusNode::FlatMap {
-            f,
-            input: <span class="kw">box </span>HfPlusNode::Persist(behind_persist),
-        } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::FlatMap {
-            f,
-            input: behind_persist,
-        })),
+            HfPlusNode::FlatMap {
+                f,
+                input: <span class="macro">mb!</span>(* HfPlusNode::Persist(behind_persist)),
+            } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::FlatMap {
+                f,
+                input: behind_persist,
+            })),
 
-        HfPlusNode::Filter {
-            f,
-            input: <span class="kw">box </span>HfPlusNode::Persist(behind_persist),
-        } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::Filter {
-            f,
-            input: behind_persist,
-        })),
+            HfPlusNode::Filter {
+                f,
+                input: <span class="macro">mb!</span>(* HfPlusNode::Persist(behind_persist)),
+            } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::Filter {
+                f,
+                input: behind_persist,
+            })),
 
-        HfPlusNode::Network {
-            from_location,
-            from_key,
-            to_location,
-            to_key,
-            serialize_pipeline,
-            instantiate_fn,
-            deserialize_pipeline,
-            input: <span class="kw">box </span>HfPlusNode::Persist(behind_persist),
-            ..
-        } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::Network {
-            from_location,
-            from_key,
-            to_location,
-            to_key,
-            serialize_pipeline,
-            instantiate_fn,
-            deserialize_pipeline,
-            input: behind_persist,
-        })),
+            HfPlusNode::Network {
+                from_location,
+                from_key,
+                to_location,
+                to_key,
+                serialize_pipeline,
+                instantiate_fn,
+                deserialize_pipeline,
+                input: <span class="macro">mb!</span>(* HfPlusNode::Persist(behind_persist)),
+                ..
+            } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+                from_location,
+                from_key,
+                to_location,
+                to_key,
+                serialize_pipeline,
+                instantiate_fn,
+                deserialize_pipeline,
+                input: behind_persist,
+            })),
 
-        HfPlusNode::Chain(<span class="kw">box </span>HfPlusNode::Persist(left), <span class="kw">box </span>HfPlusNode::Persist(right)) =&gt; {
-            HfPlusNode::Persist(Box::new(HfPlusNode::Chain(left, right)))
-        }
+            HfPlusNode::Chain(<span class="macro">mb!</span>(* HfPlusNode::Persist(left)), <span class="macro">mb!</span>(* HfPlusNode::Persist(right))) =&gt; {
+                HfPlusNode::Persist(Box::new(HfPlusNode::Chain(left, right)))
+            }
 
-        HfPlusNode::CrossProduct(<span class="kw">box </span>HfPlusNode::Persist(left), <span class="kw">box </span>HfPlusNode::Persist(right)) =&gt; {
-            HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(
-                HfPlusNode::CrossProduct(
+            HfPlusNode::CrossProduct(<span class="macro">mb!</span>(* HfPlusNode::Persist(left)), <span class="macro">mb!</span>(* HfPlusNode::Persist(right))) =&gt; {
+                HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(
+                    HfPlusNode::CrossProduct(
+                        Box::new(HfPlusNode::Persist(left)),
+                        Box::new(HfPlusNode::Persist(right)),
+                    ),
+                ))))
+            }
+
+            HfPlusNode::Join(<span class="macro">mb!</span>(* HfPlusNode::Persist(left)), <span class="macro">mb!</span>(* HfPlusNode::Persist(right))) =&gt; {
+                HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Join(
                     Box::new(HfPlusNode::Persist(left)),
                     Box::new(HfPlusNode::Persist(right)),
-                ),
-            ))))
-        }
+                )))))
+            }
 
-        HfPlusNode::Join(<span class="kw">box </span>HfPlusNode::Persist(left), <span class="kw">box </span>HfPlusNode::Persist(right)) =&gt; {
-            HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Join(
-                Box::new(HfPlusNode::Persist(left)),
-                Box::new(HfPlusNode::Persist(right)),
-            )))))
-        }
+            HfPlusNode::Unique(<span class="macro">mb!</span>(* HfPlusNode::Persist(inner))) =&gt; {
+                HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Unique(
+                    Box::new(HfPlusNode::Persist(inner)),
+                )))))
+            }
 
-        HfPlusNode::Unique(<span class="kw">box </span>HfPlusNode::Persist(inner)) =&gt; {
-            HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Unique(
-                Box::new(HfPlusNode::Persist(inner)),
-            )))))
+            node =&gt; node,
         }
-
-        node =&gt; node,
     };
 }
 
