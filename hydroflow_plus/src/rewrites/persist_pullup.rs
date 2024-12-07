@@ -7,114 +7,116 @@ fn persist_pullup_node(
     node: &mut HfPlusNode,
     persist_pulled_tees: &mut HashSet<*const RefCell<HfPlusNode>>,
 ) {
-    *node = match std::mem::replace(node, HfPlusNode::Placeholder) {
-        HfPlusNode::Unpersist(box HfPlusNode::Persist(box behind_persist)) => behind_persist,
+    *node = match_box::match_box! {
+        match std::mem::replace(node, HfPlusNode::Placeholder) {
+            HfPlusNode::Unpersist(mb!(* HfPlusNode::Persist(mb!(* behind_persist)))) => behind_persist,
 
-        HfPlusNode::Delta(box HfPlusNode::Persist(box behind_persist)) => behind_persist,
+            HfPlusNode::Delta(mb!(* HfPlusNode::Persist(mb!(* behind_persist)))) => behind_persist,
 
-        HfPlusNode::Tee { inner } => {
-            if persist_pulled_tees.contains(&(inner.0.as_ref() as *const RefCell<HfPlusNode>)) {
-                HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
-                    inner: TeeNode(inner.0.clone()),
-                }))
-            } else if matches!(*inner.0.borrow(), HfPlusNode::Persist(_)) {
-                persist_pulled_tees.insert(inner.0.as_ref() as *const RefCell<HfPlusNode>);
-                if let HfPlusNode::Persist(box behind_persist) =
-                    inner.0.replace(HfPlusNode::Placeholder)
-                {
-                    *inner.0.borrow_mut() = behind_persist;
+            HfPlusNode::Tee { inner } => {
+                if persist_pulled_tees.contains(&(inner.0.as_ref() as *const RefCell<HfPlusNode>)) {
+                    HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
+                        inner: TeeNode(inner.0.clone()),
+                    }))
+                } else if matches!(*inner.0.borrow(), HfPlusNode::Persist(_)) {
+                    persist_pulled_tees.insert(inner.0.as_ref() as *const RefCell<HfPlusNode>);
+                    if let HfPlusNode::Persist(behind_persist) =
+                        inner.0.replace(HfPlusNode::Placeholder)
+                    {
+                        *inner.0.borrow_mut() = *behind_persist;
+                    } else {
+                        unreachable!()
+                    }
+
+                    HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
+                        inner: TeeNode(inner.0.clone()),
+                    }))
                 } else {
-                    unreachable!()
+                    HfPlusNode::Tee { inner }
                 }
-
-                HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
-                    inner: TeeNode(inner.0.clone()),
-                }))
-            } else {
-                HfPlusNode::Tee { inner }
             }
-        }
 
-        HfPlusNode::Map {
-            f,
-            input: box HfPlusNode::Persist(behind_persist),
-        } => HfPlusNode::Persist(Box::new(HfPlusNode::Map {
-            f,
-            input: behind_persist,
-        })),
+            HfPlusNode::Map {
+                f,
+                input: mb!(* HfPlusNode::Persist(behind_persist)),
+            } => HfPlusNode::Persist(Box::new(HfPlusNode::Map {
+                f,
+                input: behind_persist,
+            })),
 
-        HfPlusNode::FilterMap {
-            f,
-            input: box HfPlusNode::Persist(behind_persist),
-        } => HfPlusNode::Persist(Box::new(HfPlusNode::FilterMap {
-            f,
-            input: behind_persist,
-        })),
+            HfPlusNode::FilterMap {
+                f,
+                input: mb!(* HfPlusNode::Persist(behind_persist)),
+            } => HfPlusNode::Persist(Box::new(HfPlusNode::FilterMap {
+                f,
+                input: behind_persist,
+            })),
 
-        HfPlusNode::FlatMap {
-            f,
-            input: box HfPlusNode::Persist(behind_persist),
-        } => HfPlusNode::Persist(Box::new(HfPlusNode::FlatMap {
-            f,
-            input: behind_persist,
-        })),
+            HfPlusNode::FlatMap {
+                f,
+                input: mb!(* HfPlusNode::Persist(behind_persist)),
+            } => HfPlusNode::Persist(Box::new(HfPlusNode::FlatMap {
+                f,
+                input: behind_persist,
+            })),
 
-        HfPlusNode::Filter {
-            f,
-            input: box HfPlusNode::Persist(behind_persist),
-        } => HfPlusNode::Persist(Box::new(HfPlusNode::Filter {
-            f,
-            input: behind_persist,
-        })),
+            HfPlusNode::Filter {
+                f,
+                input: mb!(* HfPlusNode::Persist(behind_persist)),
+            } => HfPlusNode::Persist(Box::new(HfPlusNode::Filter {
+                f,
+                input: behind_persist,
+            })),
 
-        HfPlusNode::Network {
-            from_location,
-            from_key,
-            to_location,
-            to_key,
-            serialize_pipeline,
-            instantiate_fn,
-            deserialize_pipeline,
-            input: box HfPlusNode::Persist(behind_persist),
-            ..
-        } => HfPlusNode::Persist(Box::new(HfPlusNode::Network {
-            from_location,
-            from_key,
-            to_location,
-            to_key,
-            serialize_pipeline,
-            instantiate_fn,
-            deserialize_pipeline,
-            input: behind_persist,
-        })),
+            HfPlusNode::Network {
+                from_location,
+                from_key,
+                to_location,
+                to_key,
+                serialize_pipeline,
+                instantiate_fn,
+                deserialize_pipeline,
+                input: mb!(* HfPlusNode::Persist(behind_persist)),
+                ..
+            } => HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+                from_location,
+                from_key,
+                to_location,
+                to_key,
+                serialize_pipeline,
+                instantiate_fn,
+                deserialize_pipeline,
+                input: behind_persist,
+            })),
 
-        HfPlusNode::Chain(box HfPlusNode::Persist(left), box HfPlusNode::Persist(right)) => {
-            HfPlusNode::Persist(Box::new(HfPlusNode::Chain(left, right)))
-        }
+            HfPlusNode::Chain(mb!(* HfPlusNode::Persist(left)), mb!(* HfPlusNode::Persist(right))) => {
+                HfPlusNode::Persist(Box::new(HfPlusNode::Chain(left, right)))
+            }
 
-        HfPlusNode::CrossProduct(box HfPlusNode::Persist(left), box HfPlusNode::Persist(right)) => {
-            HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(
-                HfPlusNode::CrossProduct(
+            HfPlusNode::CrossProduct(mb!(* HfPlusNode::Persist(left)), mb!(* HfPlusNode::Persist(right))) => {
+                HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(
+                    HfPlusNode::CrossProduct(
+                        Box::new(HfPlusNode::Persist(left)),
+                        Box::new(HfPlusNode::Persist(right)),
+                    ),
+                ))))
+            }
+
+            HfPlusNode::Join(mb!(* HfPlusNode::Persist(left)), mb!(* HfPlusNode::Persist(right))) => {
+                HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Join(
                     Box::new(HfPlusNode::Persist(left)),
                     Box::new(HfPlusNode::Persist(right)),
-                ),
-            ))))
-        }
+                )))))
+            }
 
-        HfPlusNode::Join(box HfPlusNode::Persist(left), box HfPlusNode::Persist(right)) => {
-            HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Join(
-                Box::new(HfPlusNode::Persist(left)),
-                Box::new(HfPlusNode::Persist(right)),
-            )))))
-        }
+            HfPlusNode::Unique(mb!(* HfPlusNode::Persist(inner))) => {
+                HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Unique(
+                    Box::new(HfPlusNode::Persist(inner)),
+                )))))
+            }
 
-        HfPlusNode::Unique(box HfPlusNode::Persist(inner)) => {
-            HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Unique(
-                Box::new(HfPlusNode::Persist(inner)),
-            )))))
+            node => node,
         }
-
-        node => node,
     };
 }
 
