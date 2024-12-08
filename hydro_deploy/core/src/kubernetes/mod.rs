@@ -128,7 +128,6 @@ impl Host for PodHost {
                     Ok(_) => (),
                 }
             }
-            ProgressTracker::println("Check 1");
 
             // Wait until the pod is running, otherwise we get 500 error.
             let wp = WatchParams::default().fields(format!("metadata.name={}", pod_name).as_str()).timeout(10);
@@ -137,10 +136,7 @@ impl Host for PodHost {
                 let status_result = stream.try_next().await;
                 match status_result {
                     Ok(Some(status)) => match status {
-                        WatchEvent::Added(o) => {
-                            ProgressTracker::println(&format!("Found pod {}", o.name_any()));
-                        }
-                        WatchEvent::Modified(o) => {
+                        WatchEvent::Added(o) | WatchEvent::Modified(o) => {
                             let s = o.status.as_ref().expect("status exists on pod");
                             if s.phase.clone().unwrap_or_default() == "Running" {
                                 ProgressTracker::println(&format!("Ready to attach to {}", o.name_any()));
@@ -160,12 +156,37 @@ impl Host for PodHost {
                 }
             }
 
-            let internal_ip = pods.get_status(pod_name.as_str()).await.unwrap().status.unwrap().pod_ip.unwrap();
+            let internal_ip = pods.get_status(pod_name.clone().as_str()).await.unwrap().status.unwrap().pod_ip.unwrap();
 
             self.launched.set(Arc::new(LaunchedPod {
                 internal_ip,
-                pod_name,
+                pod_name: pod_name.clone(),
             })).unwrap();
+
+            // Update apt-get in the pod
+            let ap = AttachParams::default().stdin(false).stdout(false).stderr(true);
+            let mut update_apt = pods.exec(pod_name.clone().as_str(), vec![&format!("apt-get"), "update"], &ap).await.unwrap();
+            let update_apt_status = update_apt.take_status().unwrap();
+
+            match update_apt_status.await {
+                None => {
+                    ProgressTracker::println("Warning: Command 'apt-get update' failed in pod");
+                }
+                _ => {}
+            }
+
+            // Install lsof in the pod to track open files
+            let mut install_lsof = pods.exec(pod_name.clone().as_str(), vec![&format!("apt-get"), "install", "-y", "lsof"], &ap).await.unwrap();
+            let install_lsof_status = install_lsof.take_status().unwrap();
+
+            match install_lsof_status.await {
+                None => {
+                    ProgressTracker::println("Warning: Command 'apt-get install -y lsof' failed in pod");
+                }
+                _ => {}
+            }
+            ProgressTracker::println("Finished apt install");
+
         }
 
         self.launched.get().unwrap().clone()
@@ -256,53 +277,109 @@ impl LaunchedHost for LaunchedPod {
 
     async fn copy_binary(&self, binary: &BuildOutput) -> Result<()> {
         // Create a new pod in the running kubernetes cluster (we assume the user already has one up)
-        ProgressTracker::println("Copying binary to pod");
+        ProgressTracker::println(&format!("Copying binary to pod: {:?}", binary.unique_id));
         let client = Client::try_default().await?;
         let pods: Api<Pod> = Api::default_namespaced(client);
 
+        // Initialize the hydroflow binary with executable permissions
         let file_name = format!("hydro-{}-binary", binary.unique_id);
-        // let metadata = std::fs::metadata("/Users/nickjiang/Nick/Hydro/hydroflow/hydro_deploy/core/src/kubernetes/hello_world_aarch64_musl")?;  // importantly, this file has executable permissions
-        {
-            let binary_data = binary.bin_data.clone();
-            let mut header = tar::Header::new_gnu();
-            header.set_path(file_name).unwrap();
-            header.set_size(binary_data.len() as u64);
-            // header.set_metadata(&metadata);
-            header.set_mode(0o755); // give the binary executable permissions
-            header.set_cksum();
+        let binary_data = binary.bin_data.clone();
+        let mut header = tar::Header::new_gnu();
+        header.set_path(file_name).unwrap();
+        header.set_size(binary_data.len() as u64);
+        header.set_mode(0o755); // give the binary executable permissions
+        header.set_cksum();
 
-            let mut ar = tar::Builder::new(Vec::new());
-            ar.append(&header, &mut binary_data.as_slice()).unwrap();
-            let data = ar.into_inner().unwrap();
+        let mut ar = tar::Builder::new(Vec::new());
+        ar.append(&header, &mut binary_data.as_slice()).unwrap();
+        let data = ar.into_inner().unwrap();
 
-            let ap = AttachParams::default().stdin(true).stderr(false);
-            let mut tar = pods
-                .exec(self.pod_name.as_str(), vec!["tar", "xf", "-", "-C", "/"], &ap)
-                .await?;
-            let mut tar_stdin = tar.stdin().unwrap();
-            // tar_stdin.write_all(&data).await?;
-            if let Err(e) = tar_stdin.write_all(&data).await {
-                ProgressTracker::println(&format!("Error writing to stdin: {:?}", e));
-                return Err(e.into());
-            }
-            ProgressTracker::println("Wrote all the stdin");
+        // Open up a tar extraction listening to stdin
+        let ap = AttachParams::default().stdin(true).stderr(false);
+        let mut tar = pods
+            .exec(self.pod_name.as_str(), vec!["tar", "xf", "-", "-C", "/"], &ap)
+            .await?;
+        let mut tar_stdin = tar.stdin().unwrap();
 
-            // Flush the stdin to finish sending the file through
-            if let Err(e) = tar_stdin.flush().await {
-                ProgressTracker::println(&format!("Error flushing stdin: {:?}", e));
-                return Err(e.into());
-            }
+        // Write file contents through stdin
+        if let Err(e) = tar_stdin.write_all(&data).await {
+            ProgressTracker::println(&format!("Error writing to stdin: {:?}", e));
+            return Err(e.into());
+        }
+        ProgressTracker::println("Wrote all the stdin");
 
-            ProgressTracker::println("Flushed!");
-            drop(tar_stdin); // Ensure stdin is closed before joining
-            let result = tar.join().await;
-            // tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-            match result {
-                Ok(_) => ProgressTracker::println("Successfully copied binary to pod"),
-                Err(e) => ProgressTracker::println(&format!("Failed to copy binary to pod: {:?}", e)),
+        // Flush the stdin to finish sending the file through
+        if let Err(e) = tar_stdin.flush().await {
+            ProgressTracker::println(&format!("Error flushing stdin: {:?}", e));
+            return Err(e.into());
+        }
+
+        ProgressTracker::println("Flushed!");
+        // sleep(Duration::from_secs(5)).await;
+
+        // let mut status_stdout = tar.stdout().unwrap();
+        // let mut stdout_buf = Vec::new();
+        // match status_stdout.read_to_end(&mut stdout_buf).await {
+        //     Ok(_) => {
+        //         let stdout_str = String::from_utf8_lossy(&stdout_buf);
+        //         ProgressTracker::println(&format!("Successfully read status output: {}", stdout_str));
+        //     },
+        //     Err(e) => ProgressTracker::println(&format!("Error reading status output: {:?}", e)),
+        // }
+        // sleep(Duration::from_secs(5)).await;
+
+        // TODO: the optimal delay here was 500 ms. WHAT IS GOING ON IN THESE 500 MS??
+        // tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        // Send `exit 1` to get a failure status.
+        // match status.await {
+        //     Some(status) => {
+        //         ProgressTracker::println(&format!("Status: {:?}", status));
+        //     }
+        //     None => {
+        //         ProgressTracker::println("Status is None");
+        //     }
+        // }
+        // Shut down stdin to end writing process
+        if let Err(e) = tar_stdin.shutdown().await {
+            ProgressTracker::println(&format!("Error shutting down stdin: {:?}", e));
+            return Err(e.into());
+        }
+        // drop(tar_stdin); // Ensure stdin is closed before joining
+        // let result = tar.join().await;
+        // // tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+        // match result {
+        //     Ok(_) => {
+        //         ProgressTracker::println("Successfully copied binary to pod");
+        //     },
+        //     Err(e) => ProgressTracker::println(&format!("Failed to copy binary to pod: {:?}", e)),
+        // }
+
+        // Wait until the binary file has finished extracting and is executable. Why can we not just use tar.join() to wait until the tar
+        // extraction has finished? That is because tar.join() only applies to the message loop that manages the streams (ex. stdin, stdout)
+        // used for the underlying HTTP request which actually executes tar. When we close the stdin sender, tar.join() automatically returns, but the
+        // underlying tar process may still be running for a bit longer. Thus, we check if our binary file is still open and only proceed when
+        // it is not.
+        loop {
+            let ap_stdout = AttachParams::default().stdin(false).stderr(false);
+
+            let mut lsof_file_process = pods.exec(self.pod_name.as_str(), vec!["lsof", &format!("./hydro-{}-binary", binary.unique_id)], &ap_stdout).await?;
+
+            let lsof_stdout = tokio_util::io::ReaderStream::new(lsof_file_process.stdout().unwrap());
+            let lsof_out = lsof_stdout
+                        .filter_map(|r| async { r.ok().and_then(|v| String::from_utf8(v.to_vec()).ok()) })
+                        .collect::<Vec<_>>()
+                        .await
+                        .join("");
+
+            ProgressTracker::println(&format!("LSOF: {:?}", lsof_out));
+            if !lsof_out.is_empty() {
+                // Binary is currently still open
+                tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+            } else {
+                // Binary is not in use, ready to proceed
+                break;
             }
         }
-        ProgressTracker::println("Finishd copying binary to pod");
 
         Ok(())
     }
@@ -327,17 +404,57 @@ impl LaunchedHost for LaunchedPod {
 
         // Execute binary inside the new pod
         let ap = AttachParams::default().stdin(true).stdout(true).stderr(true);
-        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-        let mut launch_binary = match pods.exec(pod_name, args_list, &ap).await {
-            Ok(exec) => exec,
-            Err(e) => {
-                ProgressTracker::println(&format!("Failed to launch binary in Pod: {:?}", e));
-                return Err(e.into());
+        // let mut lsof_process = match pods.exec(pod_name, vec![format!("lsof")], &ap).await?;
+        // let mut stdout_stream = tokio_util::io::ReaderStream::new(lsof_process.stdout().unwrap());
+        // let stdout = String::from_utf8(next_stdout.await.unwrap().unwrap().to_vec()).unwrap();
+        // ProgressTracker::println(&format!("Stdout: {:?}", stdout));
+
+
+
+        // tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+        // sleep(Duration::from_secs(3)).await;
+        let mut launch_binary;
+        loop {
+            match pods.exec(pod_name, args_list.clone(), &ap).await {
+                Ok(exec) => {
+                    launch_binary = exec;
+
+                    break;
+                }
+                Err(e) => {
+                    ProgressTracker::println(&format!("Failed to launch binary in Pod: {:?}. Retrying...", e));
+                    // Optionally, you can add a delay here before retrying
+                    // tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                }
             }
-        };
+        }
+
+        // TODO: is there a way to print out the bug that's causing the program to crash?
+        // let stdout_stream = tokio_util::io::ReaderStream::new(launch_binary.stderr().unwrap());
+        // let mut stdout_stream_peekable = stdout_stream.peekable();
+        // if let Some(Ok(data)) = stdout_stream_peekable.peek().await {
+        //     ProgressTracker::println(&format!("Stdout: {:?}", data));
+        // } else {
+        //     ProgressTracker::println("No more data in stdout stream.");
+        // }
+
+        // match stdout_stream.try_next().await {
+        //     Some(Ok(data)) => {
+        //         let stdout = String::from_utf8(data.to_vec()).unwrap();
+        //         ProgressTracker::println(&format!("Stdout: {:?}", stdout));
+        //     },
+        //     Some(Err(e)) => {
+        //         ProgressTracker::println(&format!("Error reading stdout: {:?}", e));
+        //     }
+        //     None => {
+        //         ProgressTracker::println("No more data in stdout stream.");
+        //     }
+        // };
+
+        ProgressTracker::println("Launched binary in Pod");
 
         Ok(Box::new(LaunchedPodBinary::new(
-            &mut launch_binary, id,
+            launch_binary, id, self.pod_name.clone(),
         )))
     }
 

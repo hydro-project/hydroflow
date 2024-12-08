@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use futures::TryStreamExt;
+use k8s_openapi::api::core::v1::Pod;
 use kube::api::AttachedProcess;
 use tokio::sync::{mpsc, oneshot};
 use std::sync::Mutex;
@@ -10,8 +11,13 @@ use anyhow::Error;
 
 use tokio::io::AsyncWriteExt;
 
+use crate::progress::ProgressTracker;
 use crate::util::prioritized_broadcast;
 use crate::LaunchedBinary;
+use kube::{
+    api::{Api, DeleteParams},
+    Client,
+};
 
 // pub struct LaunchedPodBinary {
 //     stdin_sender: Sender<String>,
@@ -25,11 +31,14 @@ pub struct LaunchedPodBinary {
     stdout_deploy_receivers: Arc<Mutex<Option<oneshot::Sender<String>>>>,
     stdout_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
     stderr_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
+    attached_process: Mutex<AttachedProcess>,
+    pod_name: String,
 }
 
 impl LaunchedPodBinary {
-    pub fn new(launched_pod_binary: &mut AttachedProcess, id: String) -> Self {
+    pub fn new(mut launched_pod_binary: AttachedProcess, id: String, pod_name: String) -> Self {
         // Create streams for stdout and stdin for the running binary in the pod
+        // let launched_pod_binary_mut = &mut launched_pod_binary;
 
         let launch_binary_out = tokio_util::io::ReaderStream::new(launched_pod_binary.stdout().unwrap());
         let launch_binary_err = tokio_util::io::ReaderStream::new(launched_pod_binary.stderr().unwrap());
@@ -62,6 +71,8 @@ impl LaunchedPodBinary {
             stdout_deploy_receivers,
             stdout_receivers,
             stderr_receivers,
+            attached_process: Mutex::new(launched_pod_binary),
+            pod_name,
         }
     }
 }
@@ -100,11 +111,23 @@ impl LaunchedBinary for LaunchedPodBinary {
 
     // returns exit code when the hydroflow program finishes
     fn exit_code(&self) -> Option<i32> {
-        None
+        ProgressTracker::println("Exit code");
+        Some(1)
     }
 
     // waits for the hydroflow program to finish
     async fn wait(&mut self) -> Result<i32, Error> {
+        ProgressTracker::println("Waiting");
+        let status = self.attached_process.get_mut().unwrap().take_status().unwrap().await;
+        ProgressTracker::println(&format!("Status: {:?}", status));
+        // match self.attached_process.lock().unwrap().join().await {
+        //     Ok(wait_code) => {
+        //         Ok(1)
+        //     }
+        //     Err(e) => {
+        //         Err(e.into())
+        //     }
+        // }
         Ok(1)
     }
 
@@ -112,6 +135,14 @@ impl LaunchedBinary for LaunchedPodBinary {
     async fn stop(&mut self) -> Result<(), Error> {
         // Implement the logic to stop the hydroflow program
         // For now, we will return Ok(()) to indicate success
-        Ok(())
+        let client = Client::try_default().await?;
+
+        // Manage pods
+        let pods: Api<Pod> = Api::default_namespaced(client);
+        let dp = DeleteParams::default();
+        match pods.delete(self.pod_name.as_str(), &dp).await {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
     }
 }
