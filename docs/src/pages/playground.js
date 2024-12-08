@@ -39,7 +39,7 @@ import styles from "./playground.module.css";
 function MermaidGraph({ id, source }) {
   const [svg, setSvg] = useState({ __html: 'Loading Mermaid graph...' });
   useEffect(() => {
-    mermaid.render(id, source, svg => {
+    mermaid.render(id, source).then(({ svg }) => {
       setSvg({
         __html: svg,
       });

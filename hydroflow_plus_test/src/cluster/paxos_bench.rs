@@ -1,46 +1,15 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 use hydroflow_plus::*;
-use serde::{Deserialize, Serialize};
-use stageleft::*;
+use hydroflow_plus_std::quorum::collect_quorum;
+use tokio::time::Instant;
 
-use super::paxos::{paxos_core, Acceptor, Ballot, PaxosPayload, Proposer};
-
-pub trait LeaderElected: Ord + Clone {
-    fn leader_id(&self) -> ClusterId<Proposer>;
-}
-
-pub struct Replica {}
+use super::paxos::{Acceptor, Ballot, Proposer};
+use super::paxos_kv::{paxos_kv, KvPayload, Replica};
 
 pub struct Client {}
-
-#[derive(Serialize, serde::Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
-pub struct ReplicaPayload {
-    // Note: Important that seq is the first member of the struct for sorting
-    pub seq: i32,
-    pub key: u32,
-    pub value: String,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
-pub struct ClientPayload {
-    pub key: u32,
-    pub value: String,
-}
-
-impl Default for ClientPayload {
-    fn default() -> Self {
-        Self {
-            key: 0,
-            value: "".to_string(),
-        }
-    }
-}
-
-impl PaxosPayload for ClientPayload {}
 
 // Important: By convention, all relations that represent booleans either have a single "true" value or nothing.
 // This allows us to use the continue_if_exists() and continue_if_empty() operators as if they were if (true) and if (false) statements.
@@ -60,355 +29,241 @@ pub fn paxos_bench<'a>(
     Cluster<'a, Client>,
     Cluster<'a, Replica>,
 ) {
+    let proposers = flow.cluster::<Proposer>();
+    let acceptors = flow.cluster::<Acceptor>();
     let clients = flow.cluster::<Client>();
     let replicas = flow.cluster::<Replica>();
 
-    let (c_to_proposers_complete_cycle, c_to_proposers) = clients.cycle();
+    let (new_leader_elected_complete, new_leader_elected) =
+        clients.forward_ref::<Stream<_, _, _, NoOrder>>();
 
-    let (proposers, acceptors, p_to_clients_new_leader_elected, r_new_processed_payloads) =
-        paxos_with_replica(
-            flow,
-            &replicas,
-            c_to_proposers,
-            f,
-            i_am_leader_send_timeout,
-            i_am_leader_check_timeout,
-            i_am_leader_check_timeout_delay_multiplier,
-            checkpoint_frequency,
-        );
-
-    c_to_proposers_complete_cycle.complete(bench_client(
-        &clients,
-        p_to_clients_new_leader_elected.broadcast_bincode_interleaved(&clients),
-        r_new_processed_payloads.send_bincode(&clients),
-        num_clients_per_node,
-        median_latency_window_size,
-        f,
-    ));
-
-    (proposers, acceptors, clients, replicas)
-}
-
-#[expect(
-    clippy::type_complexity,
-    clippy::too_many_arguments,
-    reason = "internal paxos code // TODO"
-)]
-fn paxos_with_replica<'a>(
-    flow: &FlowBuilder<'a>,
-    replicas: &Cluster<'a, Replica>,
-    c_to_proposers: Stream<
-        (ClusterId<Proposer>, ClientPayload),
-        Unbounded,
-        NoTick,
-        Cluster<'a, Client>,
-    >,
-    f: usize,
-    i_am_leader_send_timeout: u64,
-    i_am_leader_check_timeout: u64,
-    i_am_leader_check_timeout_delay_multiplier: usize,
-    checkpoint_frequency: usize,
-) -> (
-    Cluster<'a, Proposer>,
-    Cluster<'a, Acceptor>,
-    Stream<Ballot, Unbounded, NoTick, Cluster<'a, Proposer>>,
-    Stream<(ClusterId<Client>, ReplicaPayload), Unbounded, NoTick, Cluster<'a, Replica>>,
-) {
-    let (r_to_acceptors_checkpoint_complete_cycle, r_to_acceptors_checkpoint) =
-        replicas.cycle::<Stream<_, _, _, _>>();
-
-    let (proposers, acceptors, p_to_clients_new_leader_elected, p_to_replicas) = paxos_core(
-        flow,
-        |acceptors| r_to_acceptors_checkpoint.broadcast_bincode(acceptors),
-        |proposers| c_to_proposers.send_bincode_interleaved(proposers),
-        f,
-        i_am_leader_send_timeout,
-        i_am_leader_check_timeout,
-        i_am_leader_check_timeout_delay_multiplier,
-    );
-
-    let (r_to_acceptors_checkpoint_new, r_new_processed_payloads) = replica(
-        replicas,
-        p_to_replicas
-            .map(q!(|(slot, data)| ReplicaPayload {
-                seq: slot,
-                key: data.key,
-                value: data.value
-            }))
-            .broadcast_bincode_interleaved(replicas),
-        checkpoint_frequency,
-    );
-
-    r_to_acceptors_checkpoint_complete_cycle.complete(r_to_acceptors_checkpoint_new);
-
-    (
-        proposers,
-        acceptors,
-        p_to_clients_new_leader_elected,
-        r_new_processed_payloads,
-    )
-}
-
-// Replicas. All relations for replicas will be prefixed with r. Expects ReplicaPayload on p_to_replicas, outputs a stream of (client address, ReplicaPayload) after processing.
-#[expect(clippy::type_complexity, reason = "internal paxos code // TODO")]
-pub fn replica<'a>(
-    replicas: &Cluster<'a, Replica>,
-    p_to_replicas: Stream<ReplicaPayload, Unbounded, NoTick, Cluster<'a, Replica>>,
-    checkpoint_frequency: usize,
-) -> (
-    Stream<i32, Unbounded, NoTick, Cluster<'a, Replica>>,
-    Stream<(ClusterId<Client>, ReplicaPayload), Unbounded, NoTick, Cluster<'a, Replica>>,
-) {
-    let (r_buffered_payloads_complete_cycle, r_buffered_payloads) = replicas.tick_cycle();
-    // p_to_replicas.inspect(q!(|payload: ReplicaPayload| println!("Replica received payload: {:?}", payload)));
-    let r_sorted_payloads = p_to_replicas
-        .clone()
-        .tick_batch()
-        .union(r_buffered_payloads) // Combine with all payloads that we've received and not processed yet
-        .sort();
-    // Create a cycle since we'll use this seq before we define it
-    let (r_highest_seq_complete_cycle, r_highest_seq) =
-        replicas.tick_cycle::<Optional<i32, _, _, _>>();
-    let empty_slot = replicas.singleton_first_tick(q!(-1));
-    // Either the max sequence number executed so far or -1. Need to union otherwise r_highest_seq is empty and joins with it will fail
-    let r_highest_seq_with_default = r_highest_seq.union(empty_slot);
-    // Find highest the sequence number of any payload that can be processed in this tick. This is the payload right before a hole.
-    let r_highest_seq_processable_payload = r_sorted_payloads
-        .clone()
-        .cross_singleton(r_highest_seq_with_default)
-        .fold(
-            q!(|| -1),
-            q!(|filled_slot, (sorted_payload, highest_seq)| {
-                // Note: This function only works if the input is sorted on seq.
-                let next_slot = std::cmp::max(*filled_slot, highest_seq);
-
-                *filled_slot = if sorted_payload.seq == next_slot + 1 {
-                    sorted_payload.seq
-                } else {
-                    *filled_slot
-                };
-            }),
-        );
-    // Find all payloads that can and cannot be processed in this tick.
-    let r_processable_payloads = r_sorted_payloads
-        .clone()
-        .cross_singleton(r_highest_seq_processable_payload.clone())
-        .filter(q!(
-            |(sorted_payload, highest_seq)| sorted_payload.seq <= *highest_seq
-        ))
-        .map(q!(|(sorted_payload, _)| { sorted_payload }));
-    let r_new_non_processable_payloads = r_sorted_payloads
-        .clone()
-        .cross_singleton(r_highest_seq_processable_payload.clone())
-        .filter(q!(
-            |(sorted_payload, highest_seq)| sorted_payload.seq > *highest_seq
-        ))
-        .map(q!(|(sorted_payload, _)| { sorted_payload }));
-    // Save these, we can process them once the hole has been filled
-    r_buffered_payloads_complete_cycle.complete_next_tick(r_new_non_processable_payloads);
-
-    let r_kv_store = r_processable_payloads
-        .clone()
-        .persist() // Optimization: all_ticks() + fold() = fold<static>, where the state of the previous fold is saved and persisted values are deleted.
-        .fold(q!(|| (HashMap::<u32, String>::new(), -1)), q!(|state, payload| {
-            let kv_store = &mut state.0;
-            let last_seq = &mut state.1;
-            kv_store.insert(payload.key, payload.value);
-            debug_assert!(payload.seq == *last_seq + 1, "Hole in log between seq {} and {}", *last_seq, payload.seq);
-            *last_seq = payload.seq;
-            // println!("Replica kv store: {:?}", kv_store);
-        }));
-    // Update the highest seq for the next tick
-    let r_new_highest_seq = r_kv_store.map(q!(|(_kv_store, highest_seq)| highest_seq));
-    r_highest_seq_complete_cycle.complete_next_tick(r_new_highest_seq.clone().into());
-
-    // Send checkpoints to the acceptors when we've processed enough payloads
-    let (r_checkpointed_seqs_complete_cycle, r_checkpointed_seqs) =
-        replicas.tick_cycle::<Optional<i32, _, _, _>>();
-    let r_max_checkpointed_seq = r_checkpointed_seqs
-        .persist()
-        .max()
-        .unwrap_or(replicas.singleton(q!(-1)).latest_tick());
-    let r_checkpoint_seq_new = r_max_checkpointed_seq
-        .cross_singleton(r_new_highest_seq)
-        .filter_map(q!(
-            move |(max_checkpointed_seq, new_highest_seq)| if new_highest_seq - max_checkpointed_seq
-                >= checkpoint_frequency as i32
-            {
-                Some(new_highest_seq)
-            } else {
-                None
-            }
-        ));
-    r_checkpointed_seqs_complete_cycle.complete_next_tick(r_checkpoint_seq_new.clone());
-
-    // Tell clients that the payload has been committed. All ReplicaPayloads contain the client's machine ID (to string) as value.
-    let r_to_clients = p_to_replicas.map(q!(|payload| (
-        ClusterId::from_raw(payload.value.parse::<u32>().unwrap()),
-        payload
-    )));
-    (r_checkpoint_seq_new.all_ticks(), r_to_clients)
-}
-
-// Clients. All relations for clients will be prefixed with c. All ClientPayloads will contain the virtual client number as key and the client's machine ID (to string) as value. Expects p_to_clients_leader_elected containing Ballots whenever the leader is elected, and r_to_clients_payload_applied containing ReplicaPayloads whenever a payload is committed. Outputs (leader address, ClientPayload) when a new leader is elected or when the previous payload is committed.
-fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
-    clients: &Cluster<'a, Client>,
-    p_to_clients_leader_elected: Stream<B, Unbounded, NoTick, Cluster<'a, Client>>,
-    r_to_clients_payload_applied: Stream<
-        (ClusterId<Replica>, ReplicaPayload),
-        Unbounded,
-        NoTick,
-        Cluster<'a, Client>,
-    >,
-    num_clients_per_node: usize,
-    median_latency_window_size: usize,
-    f: usize,
-) -> Stream<(ClusterId<Proposer>, ClientPayload), Unbounded, NoTick, Cluster<'a, Client>> {
-    let c_id = clients.self_id();
-    // r_to_clients_payload_applied.clone().inspect(q!(|payload: &(u32, ReplicaPayload)| println!("Client received payload: {:?}", payload)));
-    // Only keep the latest leader
-    let c_max_leader_ballot = p_to_clients_leader_elected
+    let client_tick = clients.tick();
+    let cur_leader_id = new_leader_elected
         .inspect(q!(|ballot| println!(
             "Client notified that leader was elected: {:?}",
             ballot
         )))
-        .max();
-    let c_new_leader_ballot = c_max_leader_ballot.clone().latest_tick().delta();
-    // Whenever the leader changes, make all clients send a message
-    let c_new_payloads_when_leader_elected =
-        c_new_leader_ballot
+        .max()
+        .map(q!(|ballot: Ballot| ballot.proposer_id));
+
+    let leader_changed = unsafe {
+        // SAFETY: we are okay if we miss a transient leader ID, because we
+        // will eventually get the latest one and can restart requests then
+        cur_leader_id
             .clone()
-            .flat_map(q!(move |leader_ballot| (0..num_clients_per_node).map(
-                move |i| (
-                    leader_ballot.leader_id(),
-                    ClientPayload {
-                        key: i as u32,
-                        value: c_id.raw_id.to_string()
-                    }
-                )
-            )));
-    // Whenever replicas confirm that a payload was committed, collected it and wait for a quorum
-    let (c_pending_quorum_payloads_complete_cycle, c_pending_quorum_payloads) =
-        clients.tick_cycle();
-    let c_received_payloads = r_to_clients_payload_applied
-        .tick_batch()
-        .map(q!(|(sender, replica_payload)| (
-            replica_payload.key,
-            sender
-        )))
-        .union(c_pending_quorum_payloads);
-    let c_received_quorum_payloads = c_received_payloads
-        .clone()
-        .fold_keyed(
-            q!(|| 0),
-            q!(|curr_count, _sender| {
-                *curr_count += 1; // Assumes the same replica will only send commit once
-            }),
-        )
-        .filter_map(q!(move |(key, count)| {
-            if count == f + 1 {
-                Some(key)
-            } else {
-                None
+            .timestamped(&client_tick)
+            .latest_tick()
+            .delta()
+            .map(q!(|_| ()))
+            .all_ticks()
+            .drop_timestamp()
+    };
+
+    bench_client(
+        &clients,
+        leader_changed,
+        |c_to_proposers| {
+            let to_proposers = unsafe {
+                // SAFETY: the risk here is that we send a batch of requests
+                // with a stale leader ID, but because the leader ID comes from the
+                // network there is no way to guarantee that it is up to date
+
+                // TODO(shadaj): we should retry if we get an error due to sending
+                // to a stale leader
+                c_to_proposers
+                    .timestamped(&client_tick)
+                    .tick_batch()
+                    .cross_singleton(cur_leader_id.timestamped(&client_tick).latest_tick())
+                    .all_ticks()
             }
-        }));
-    let c_new_pending_quorum_payloads =
-        c_received_payloads.anti_join(c_received_quorum_payloads.clone());
-    c_pending_quorum_payloads_complete_cycle.complete_next_tick(c_new_pending_quorum_payloads);
+            .map(q!(move |((key, value), leader_id)| (
+                leader_id,
+                KvPayload {
+                    key,
+                    // we use our ID as part of the value and use that so the replica only notifies us
+                    value: (CLUSTER_SELF_ID, value)
+                }
+            )))
+            .send_bincode_interleaved(&proposers);
+
+            let to_proposers = unsafe {
+                // SAFETY: clients "own" certain keys, so interleaving elements from clients will not affect
+                // the order of writes to the same key
+                to_proposers.assume_ordering()
+            };
+
+            let (new_leader_elected, processed_payloads) = unsafe {
+                // SAFETY: Non-deterministic leader notifications are handled in `to_proposers`. We do not
+                // care about the order in which key writes are processed, which is the non-determinism in
+                // `processed_payloads`.
+                paxos_kv(
+                    &proposers,
+                    &acceptors,
+                    &replicas,
+                    to_proposers,
+                    f,
+                    i_am_leader_send_timeout,
+                    i_am_leader_check_timeout,
+                    i_am_leader_check_timeout_delay_multiplier,
+                    checkpoint_frequency,
+                )
+            };
+
+            new_leader_elected_complete
+                .complete(new_leader_elected.broadcast_bincode_interleaved(&clients));
+
+            let c_received_payloads = processed_payloads
+                .map(q!(|payload| (
+                    payload.value.0,
+                    ((payload.key, payload.value.1), Ok(()))
+                )))
+                .send_bincode_interleaved(&clients);
+
+            // we only mark a transaction as committed when all replicas have applied it
+            let (c_quorum_payloads, _) = collect_quorum::<_, _, _, ()>(
+                c_received_payloads.timestamped(&client_tick),
+                f + 1,
+                f + 1,
+            );
+
+            c_quorum_payloads.drop_timestamp()
+        },
+        num_clients_per_node,
+        median_latency_window_size,
+    );
+
+    (proposers, acceptors, clients, replicas)
+}
+
+fn bench_client<'a>(
+    clients: &Cluster<'a, Client>,
+    trigger_restart: Stream<(), Cluster<'a, Client>, Unbounded>,
+    transaction_cycle: impl FnOnce(
+        Stream<(u32, u32), Cluster<'a, Client>, Unbounded>,
+    ) -> Stream<(u32, u32), Cluster<'a, Client>, Unbounded, NoOrder>,
+    num_clients_per_node: usize,
+    median_latency_window_size: usize,
+) {
+    let client_tick = clients.tick();
+    // r_to_clients_payload_applied.clone().inspect(q!(|payload: &(u32, ReplicaPayload)| println!("Client received payload: {:?}", payload)));
+
+    // Whenever the leader changes, make all clients send a message
+    let restart_this_tick = unsafe {
+        // SAFETY: non-deterministic delay in restarting requests
+        // is okay because once it is restarted statistics should reach
+        // steady state regardless of when the restart happes
+        trigger_restart
+            .timestamped(&client_tick)
+            .tick_batch()
+            .last()
+    };
+
+    let c_new_payloads_when_restart = restart_this_tick.clone().flat_map_ordered(q!(move |_| (0
+        ..num_clients_per_node)
+        .map(move |i| (
+            (CLUSTER_SELF_ID.raw_id * (num_clients_per_node as u32)) + i as u32,
+            0
+        ))));
+
+    let (c_to_proposers_complete_cycle, c_to_proposers) =
+        clients.forward_ref::<Stream<_, _, _, TotalOrder>>();
+    let c_received_quorum_payloads = unsafe {
+        // SAFETY: because the transaction processor is required to handle arbitrary reordering
+        // across *different* keys, we are safe because delaying a transaction result for a key
+        // will only affect when the next request for that key is emitted with respect to other
+        // keys
+        transaction_cycle(c_to_proposers)
+            .timestamped(&client_tick)
+            .tick_batch()
+    };
+
     // Whenever all replicas confirm that a payload was committed, send another payload
     let c_new_payloads_when_committed = c_received_quorum_payloads
         .clone()
-        .cross_singleton(c_max_leader_ballot.clone().latest_tick())
-        .map(q!(move |(key, leader_ballot)| (
-            leader_ballot.leader_id(),
-            ClientPayload {
-                key,
-                value: c_id.raw_id.to_string()
-            }
-        )));
-    let c_to_proposers = c_new_payloads_when_leader_elected
-        .union(c_new_payloads_when_committed)
-        .all_ticks();
+        .map(q!(|payload| (payload.0, payload.1 + 1)));
+    c_to_proposers_complete_cycle.complete(
+        c_new_payloads_when_restart
+            .chain(unsafe {
+                // SAFETY: we don't send a new write for the same key until the previous one is committed,
+                // so this contains only a single write per key, and we don't care about order
+                // across keys
+                c_new_payloads_when_committed.assume_ordering()
+            })
+            .all_ticks()
+            .drop_timestamp(),
+    );
 
     // Track statistics
     let (c_timers_complete_cycle, c_timers) =
-        clients.tick_cycle::<Stream<(usize, SystemTime), _, _, _>>();
-    let c_new_timers_when_leader_elected = c_new_leader_ballot
-        .map(q!(|_| SystemTime::now()))
-        .flat_map(q!(
+        client_tick.cycle::<Stream<(usize, Instant), _, _, NoOrder>>();
+    let c_new_timers_when_leader_elected = restart_this_tick
+        .map(q!(|_| Instant::now()))
+        .flat_map_ordered(q!(
             move |now| (0..num_clients_per_node).map(move |virtual_id| (virtual_id, now))
         ));
     let c_updated_timers = c_received_quorum_payloads
         .clone()
-        .map(q!(|key| (key as usize, SystemTime::now())));
+        .map(q!(|(key, _prev_count)| (key as usize, Instant::now())));
     let c_new_timers = c_timers
         .clone() // Update c_timers in tick+1 so we can record differences during this tick (to track latency)
         .union(c_new_timers_when_leader_elected)
         .union(c_updated_timers.clone())
-        .reduce_keyed(q!(|curr_time, new_time| {
+        .reduce_keyed_commutative(q!(|curr_time, new_time| {
             if new_time > *curr_time {
                 *curr_time = new_time;
             }
         }));
     c_timers_complete_cycle.complete_next_tick(c_new_timers);
 
-    let c_stats_output_timer = clients.source_interval(q!(Duration::from_secs(1)));
+    let c_stats_output_timer = unsafe {
+        // SAFETY: intentionally sampling statistics
+        clients
+            .source_interval(q!(Duration::from_secs(1)))
+            .timestamped(&client_tick)
+            .tick_batch()
+    }
+    .first();
 
-    let c_latency_reset = c_stats_output_timer
-        .clone()
-        .latest_tick()
-        .map(q!(|_| None))
-        .defer_tick();
+    let c_latency_reset = c_stats_output_timer.clone().map(q!(|_| None)).defer_tick();
 
     let c_latencies = c_timers
         .join(c_updated_timers)
         .map(q!(|(_virtual_id, (prev_time, curr_time))| Some(
-            curr_time.duration_since(prev_time).unwrap().as_micros()
+            curr_time.duration_since(prev_time)
         )))
         .union(c_latency_reset.into_stream())
         .all_ticks()
-        .fold(
+        .flatten_ordered()
+        .fold_commutative(
             // Create window with ring buffer using vec + wraparound index
             // TODO: Would be nice if I could use vec![] instead, but that doesn't work in HF+ with RuntimeData *median_latency_window_size
             q!(move || (
-                Rc::new(RefCell::new(Vec::<u128>::with_capacity(
+                Rc::new(RefCell::new(Vec::<Duration>::with_capacity(
                     median_latency_window_size
                 ))),
                 0usize,
-                false
             )),
-            q!(move |(latencies, write_index, has_any_value), latency| {
+            q!(move |(latencies, write_index), latency| {
                 let mut latencies_mut = latencies.borrow_mut();
-                if let Some(latency) = latency {
-                    // Insert into latencies
-                    if let Some(prev_latency) = latencies_mut.get_mut(*write_index) {
-                        *prev_latency = latency;
-                    } else {
-                        latencies_mut.push(latency);
-                    }
-                    *has_any_value = true;
-                    // Increment write index and wrap around
-                    *write_index += 1;
-                    if *write_index == median_latency_window_size {
-                        *write_index = 0;
-                    }
+                if *write_index < latencies_mut.len() {
+                    latencies_mut[*write_index] = latency;
                 } else {
-                    // reset latencies
-                    latencies_mut.clear();
-                    *write_index = 0;
-                    *has_any_value = false;
+                    latencies_mut.push(latency);
                 }
+                // Increment write index and wrap around
+                *write_index = (*write_index + 1) % median_latency_window_size;
             }),
-        );
+        )
+        .map(q!(|(latencies, _)| latencies));
+
     let c_throughput_new_batch = c_received_quorum_payloads
         .clone()
         .count()
-        .continue_unless(c_stats_output_timer.clone().latest_tick())
+        .continue_unless(c_stats_output_timer.clone())
         .map(q!(|batch_size| (batch_size, false)));
 
     let c_throughput_reset = c_stats_output_timer
         .clone()
-        .latest_tick()
         .map(q!(|_| (0, true)))
         .defer_tick();
 
@@ -416,40 +271,33 @@ fn bench_client<'a, B: LeaderElected + std::fmt::Debug>(
         .union(c_throughput_reset)
         .all_ticks()
         .fold(
-            q!(|| (0, 0)),
-            q!(|(total, num_ticks), (batch_size, reset)| {
+            q!(|| 0),
+            q!(|total, (batch_size, reset)| {
                 if reset {
                     *total = 0;
-                    *num_ticks = 0;
                 } else {
-                    *total += batch_size as u32;
-                    *num_ticks += 1;
+                    *total += batch_size;
                 }
             }),
         );
 
-    c_stats_output_timer
-        .cross_singleton(c_latencies)
-        .cross_singleton(c_throughput)
-        .tick_samples()
-        .for_each(q!(move |(
-            (_, (latencies, _write_index, has_any_value)),
-            (throughput, num_ticks),
-        )| {
-            let mut latencies_mut = latencies.borrow_mut();
-            let median_latency = if has_any_value {
-                let (_, median, _) =
-                    latencies_mut.select_nth_unstable(median_latency_window_size / 2);
-                *median
-            } else {
-                0
-            };
-            println!("Median latency: {}ms", median_latency as f64 / 1000.0);
-            println!("Throughput: {} requests/s", throughput);
-            println!("Num ticks per second: {}", num_ticks);
-        }));
+    unsafe {
+        // SAFETY: intentionally sampling statistics
+        c_latencies.zip(c_throughput).latest_tick()
+    }
+    .continue_if(c_stats_output_timer)
+    .all_ticks()
+    .for_each(q!(move |(latencies, throughput)| {
+        let mut latencies_mut = latencies.borrow_mut();
+        if latencies_mut.len() > 0 {
+            let middle_idx = latencies_mut.len() / 2;
+            let (_, median, _) = latencies_mut.select_nth_unstable(middle_idx);
+            println!("Median latency: {}ms", median.as_micros() as f64 / 1000.0);
+        }
+
+        println!("Throughput: {} requests/s", throughput);
+    }));
     // End track statistics
-    c_to_proposers
 }
 
 #[cfg(test)]
@@ -461,12 +309,12 @@ mod tests {
     fn paxos_ir() {
         let builder = hydroflow_plus::FlowBuilder::new();
         let _ = super::paxos_bench(&builder, 1, 1, 1, 1, 1, 1, 1);
-        let built = builder.with_default_optimize();
+        let built = builder.with_default_optimize::<DeployRuntime>();
 
         hydroflow_plus::ir::dbg_dedup_tee(|| {
             insta::assert_debug_snapshot!(built.ir());
         });
 
-        let _ = built.compile::<DeployRuntime>(&RuntimeData::new("FAKE"));
+        let _ = built.compile(&RuntimeData::new("FAKE"));
     }
 }

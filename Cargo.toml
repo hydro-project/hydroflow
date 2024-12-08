@@ -3,6 +3,7 @@
 # See "Adding new crates" and "Moving crates" addendum sections in `RELEASING.md`
 members = [
     "benches",
+    "datastores/gossip_kv",
     "hydro_deploy/core",
     "hydro_deploy/hydro_cli",
     "hydro_deploy/hydro_cli_examples",
@@ -13,6 +14,7 @@ members = [
     "hydroflow_lang",
     "hydroflow_macro",
     "hydroflow_plus",
+    "hydroflow_plus_std",
     "hydroflow_plus_test",
     "hydroflow_plus_test_local",
     "hydroflow_plus_test_local_macro",
@@ -28,6 +30,7 @@ members = [
     "stageleft_tool",
     "topolotree",
     "variadics",
+    "variadics_macro",
     "website_playground",
 ]
 
@@ -55,6 +58,7 @@ opt-level = "s"
 
 [workspace.lints.rust]
 unused_qualifications = "warn"
+unsafe_op_in_unsafe_fn = "warn"
 
 [workspace.lints.clippy]
 allow_attributes = "warn"

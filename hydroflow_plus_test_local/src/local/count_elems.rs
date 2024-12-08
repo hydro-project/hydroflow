@@ -1,8 +1,9 @@
+use hydroflow::tokio::sync::mpsc::UnboundedSender;
+use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::deploy::SingleProcessGraph;
-use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
-use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
+use hydroflow_plus::hydroflow::scheduled::graph::Hydroflow;
 use hydroflow_plus::*;
-use stageleft::{q, Quoted, RuntimeData};
+use stageleft::{Quoted, RuntimeData};
 
 pub fn count_elems_generic<'a, T: 'a>(
     flow: FlowBuilder<'a>,
@@ -10,20 +11,21 @@ pub fn count_elems_generic<'a, T: 'a>(
     output: RuntimeData<&'a UnboundedSender<u32>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process::<()>();
+    let tick = process.tick();
 
     let source = process.source_stream(input_stream);
-    let count = source
-        .map(q!(|_| 1))
-        .tick_batch()
-        .fold(q!(|| 0), q!(|a, b| *a += b))
-        .all_ticks();
+    let count = unsafe {
+        // SAFETY: intentionally using ticks
+        source.map(q!(|_| 1)).timestamped(&tick).tick_batch()
+    }
+    .fold(q!(|| 0), q!(|a, b| *a += b))
+    .all_ticks();
 
     count.for_each(q!(|v| {
         output.send(v).unwrap();
     }));
 
-    flow.with_default_optimize()
-        .compile_no_network::<SingleProcessGraph>()
+    flow.compile_no_network::<SingleProcessGraph>()
 }
 
 #[stageleft::entry]
@@ -38,13 +40,13 @@ pub fn count_elems<'a>(
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use hydroflow_plus::assert_graphvis_snapshots;
-    use hydroflow_plus::util::collect_ready;
+    use hydroflow::assert_graphvis_snapshots;
+    use hydroflow::util::collect_ready;
 
     #[test]
     pub fn test_count() {
-        let (in_send, input) = hydroflow_plus::util::unbounded_channel();
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (in_send, input) = hydroflow::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut count = super::count_elems!(input, &out);
         assert_graphvis_snapshots!(count);

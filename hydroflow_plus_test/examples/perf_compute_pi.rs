@@ -45,13 +45,11 @@ async fn main() {
     let (cluster, leader) = hydroflow_plus_test::cluster::compute_pi::compute_pi(&builder, 8192);
 
     // Uncomment below, change .bin("counter_compute_pi") in order to track cardinality per operation
-    // let runtime_context = builder.runtime_context();
     // dbg!(builder.with_default_optimize()
-    //     .optimize_with(|ir| profiling(ir, runtime_context, RuntimeData::new("FAKE"), RuntimeData::new("FAKE")))
+    //     .optimize_with(|ir| profiling(ir, RuntimeData::new("FAKE"), RuntimeData::new("FAKE")))
     //     .ir());
 
     let _nodes = builder
-        .with_default_optimize()
         .with_process(
             &leader,
             TrybuildHost::new(create_host(&mut deployment))
@@ -68,21 +66,19 @@ async fn main() {
         )
         .with_cluster(
             &cluster,
-            (0..8)
-                .map(|idx| {
-                    TrybuildHost::new(create_host(&mut deployment))
-                        .rustflags(rustflags)
-                        .tracing(
-                            TracingOptions::builder()
-                                .perf_raw_outfile(format!("cluster{}.perf.data", idx))
-                                .dtrace_outfile(format!("cluster{}.leader.stacks", idx))
-                                .fold_outfile(format!("cluster{}.data.folded", idx))
-                                .flamegraph_outfile(format!("cluster{}.svg", idx))
-                                .frequency(128)
-                                .build(),
-                        )
-                })
-                .collect::<Vec<_>>(),
+            (0..8).map(|idx| {
+                TrybuildHost::new(create_host(&mut deployment))
+                    .rustflags(rustflags)
+                    .tracing(
+                        TracingOptions::builder()
+                            .perf_raw_outfile(format!("cluster{}.perf.data", idx))
+                            .dtrace_outfile(format!("cluster{}.leader.stacks", idx))
+                            .fold_outfile(format!("cluster{}.data.folded", idx))
+                            .flamegraph_outfile(format!("cluster{}.svg", idx))
+                            .frequency(128)
+                            .build(),
+                    )
+            }),
         )
         .deploy(&mut deployment);
     deployment.run_ctrl_c().await.unwrap();

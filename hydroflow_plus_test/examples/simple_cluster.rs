@@ -42,16 +42,13 @@ async fn main() {
     let (process, cluster) = hydroflow_plus_test::cluster::simple_cluster::simple_cluster(&builder);
 
     let _nodes = builder
-        .with_default_optimize()
         .with_process(
             &process,
             TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags),
         )
         .with_cluster(
             &cluster,
-            (0..2)
-                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags))
-                .collect::<Vec<_>>(),
+            (0..2).map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags)),
         )
         .deploy(&mut deployment);
     deployment.run_ctrl_c().await.unwrap();

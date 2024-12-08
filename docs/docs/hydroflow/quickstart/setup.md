@@ -99,7 +99,7 @@ Take note of the server's port number, and in a separate terminal, start a clien
 #shell-command-next-line
 cd <project name>
 #shell-command-next-line
-cargo run -- --role client --server-addr 127.0.0.1:<port>
+cargo run -- --role client --address 127.0.0.1:<port>
 Listening on 127.0.0.1:<client_port>
 Connecting to server at 127.0.0.1:<port>
 Client live!

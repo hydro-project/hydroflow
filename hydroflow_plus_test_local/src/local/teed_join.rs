@@ -1,9 +1,10 @@
+use hydroflow::futures::stream::Stream;
+use hydroflow::tokio::sync::mpsc::UnboundedSender;
+use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::deploy::MultiGraph;
-use hydroflow_plus::futures::stream::Stream;
-use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
-use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
+use hydroflow_plus::hydroflow::scheduled::graph::Hydroflow;
 use hydroflow_plus::*;
-use stageleft::{q, Quoted, RuntimeData};
+use stageleft::{Quoted, RuntimeData};
 
 struct N0 {}
 struct N1 {}
@@ -18,8 +19,15 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let node_zero = flow.process::<N0>();
     let node_one = flow.process::<N1>();
+    let n0_tick = node_zero.tick();
 
-    let source = node_zero.source_stream(input_stream).tick_batch();
+    let source = unsafe {
+        // SAFETY: intentionally using ticks
+        node_zero
+            .source_stream(input_stream)
+            .timestamped(&n0_tick)
+            .tick_batch()
+    };
     let map1 = source.clone().map(q!(|v| (v + 1, ())));
     let map2 = source.map(q!(|v| (v - 1, ())));
 
@@ -40,21 +48,20 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
         output.send(v).unwrap();
     }));
 
-    flow.with_default_optimize()
-        .compile_no_network::<MultiGraph>()
+    flow.compile_no_network::<MultiGraph>()
         .with_dynamic_id(subgraph_id)
 }
 
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use hydroflow_plus::assert_graphvis_snapshots;
-    use hydroflow_plus::util::collect_ready;
+    use hydroflow::assert_graphvis_snapshots;
+    use hydroflow::util::collect_ready;
 
     #[test]
     fn test_teed_join() {
-        let (in_send, input) = hydroflow_plus::util::unbounded_channel();
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (in_send, input) = hydroflow::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut joined = super::teed_join!(input, &out, false, 0);
         assert_graphvis_snapshots!(joined);
@@ -71,8 +78,8 @@ mod tests {
 
     #[test]
     fn test_teed_join_twice() {
-        let (in_send, input) = hydroflow_plus::util::unbounded_channel();
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (in_send, input) = hydroflow::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut joined = super::teed_join!(input, &out, true, 0);
         assert_graphvis_snapshots!(joined);
@@ -89,8 +96,8 @@ mod tests {
 
     #[test]
     fn test_teed_join_multi_node() {
-        let (_, input) = hydroflow_plus::util::unbounded_channel();
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (_, input) = hydroflow::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut joined = super::teed_join!(input, &out, true, 1);
         assert_graphvis_snapshots!(joined);

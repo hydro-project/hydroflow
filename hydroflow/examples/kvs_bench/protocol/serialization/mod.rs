@@ -116,7 +116,7 @@ enum KvsRequestField {
     Delete,
 }
 struct KvsRequestFieldVisitor;
-impl<'de> Visitor<'de> for KvsRequestFieldVisitor {
+impl Visitor<'_> for KvsRequestFieldVisitor {
     type Value = KvsRequestField;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

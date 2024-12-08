@@ -13,22 +13,19 @@ use hydro_deploy::hydroflow_crate::ports::{
 use hydro_deploy::hydroflow_crate::tracing_options::TracingOptions;
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{CustomService, Deployment, Host, HydroflowCrate};
-use hydroflow::futures::StreamExt;
+use hydroflow::bytes::Bytes;
+use hydroflow::futures::{Sink, SinkExt, Stream, StreamExt};
+use hydroflow::lang::graph::HydroflowGraph;
 use hydroflow::util::deploy::{ConnectedSink, ConnectedSource};
 use nameof::name_of;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use sha2::{Digest, Sha256};
-use stageleft::{Quoted, RuntimeData};
-use syn::visit_mut::VisitMut;
+use stageleft::{QuotedWithContext, RuntimeData};
 use tokio::sync::RwLock;
-use trybuild_internals_api::path;
 
 use super::deploy_runtime::*;
-use super::trybuild::{compile_graph_trybuild, create_trybuild};
-use super::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
-use crate::futures::SinkExt;
-use crate::lang::graph::HydroflowGraph;
+use super::trybuild::create_graph_trybuild;
+use super::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, Node, ProcessSpec, RegisterPort};
 
 pub struct HydroDeploy {}
 
@@ -373,14 +370,14 @@ impl<'a> Deploy<'a> for HydroDeploy {
     fn cluster_ids(
         _env: &Self::CompileEnv,
         of_cluster: usize,
-    ) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
+    ) -> impl QuotedWithContext<'a, &'a Vec<u32>, ()> + Copy + 'a {
         cluster_members(
             RuntimeData::new("__hydroflow_plus_trybuild_cli"),
             of_cluster,
         )
     }
 
-    fn cluster_self_id(_env: &Self::CompileEnv) -> impl Quoted<'a, u32> + Copy + 'a {
+    fn cluster_self_id(_env: &Self::CompileEnv) -> impl QuotedWithContext<'a, u32, ()> + Copy + 'a {
         cluster_self_id(RuntimeData::new("__hydroflow_plus_trybuild_cli"))
     }
 }
@@ -407,6 +404,32 @@ pub struct TrybuildHost {
     pub tracing: Option<TracingOptions>,
     pub name_hint: Option<String>,
     pub cluster_idx: Option<usize>,
+}
+
+impl From<Arc<dyn Host>> for TrybuildHost {
+    fn from(host: Arc<dyn Host>) -> Self {
+        Self {
+            host,
+            display_name: None,
+            rustflags: None,
+            tracing: None,
+            name_hint: None,
+            cluster_idx: None,
+        }
+    }
+}
+
+impl<H: Host + 'static> From<Arc<H>> for TrybuildHost {
+    fn from(host: Arc<H>) -> Self {
+        Self {
+            host,
+            display_name: None,
+            rustflags: None,
+            tracing: None,
+            name_hint: None,
+            cluster_idx: None,
+        }
+    }
 }
 
 impl TrybuildHost {
@@ -455,10 +478,25 @@ impl TrybuildHost {
     }
 }
 
-impl From<Arc<dyn Host>> for TrybuildHost {
-    fn from(h: Arc<dyn Host>) -> Self {
-        Self {
-            host: h,
+impl IntoProcessSpec<'_, HydroDeploy> for Arc<dyn Host> {
+    type ProcessSpec = TrybuildHost;
+    fn into_process_spec(self) -> TrybuildHost {
+        TrybuildHost {
+            host: self,
+            display_name: None,
+            rustflags: None,
+            tracing: None,
+            name_hint: None,
+            cluster_idx: None,
+        }
+    }
+}
+
+impl<H: Host + 'static> IntoProcessSpec<'_, HydroDeploy> for Arc<H> {
+    type ProcessSpec = TrybuildHost;
+    fn into_process_spec(self) -> TrybuildHost {
+        TrybuildHost {
+            host: self,
             display_name: None,
             rustflags: None,
             tracing: None,
@@ -501,49 +539,46 @@ impl<'a> RegisterPort<'a, HydroDeploy> for DeployExternal {
     fn as_bytes_sink(
         &self,
         key: usize,
-    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Sink<crate::bytes::Bytes, Error = Error>>>> + 'a
-    {
+    ) -> impl Future<Output = Pin<Box<dyn Sink<Bytes, Error = Error>>>> + 'a {
         let port = self.raw_port(key);
         async move {
             let sink = port.connect().await.into_sink();
-            sink as Pin<Box<dyn crate::futures::Sink<crate::bytes::Bytes, Error = Error>>>
+            sink as Pin<Box<dyn Sink<Bytes, Error = Error>>>
         }
     }
 
     fn as_bincode_sink<T: Serialize + 'static>(
         &self,
         key: usize,
-    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Sink<T, Error = Error>>>> + 'a {
+    ) -> impl Future<Output = Pin<Box<dyn Sink<T, Error = Error>>>> + 'a {
         let port = self.raw_port(key);
         async move {
             let sink = port.connect().await.into_sink();
             Box::pin(sink.with(|item| async move { Ok(bincode::serialize(&item).unwrap().into()) }))
-                as Pin<Box<dyn crate::futures::Sink<T, Error = Error>>>
+                as Pin<Box<dyn Sink<T, Error = Error>>>
         }
     }
 
     fn as_bytes_source(
         &self,
         key: usize,
-    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Stream<Item = crate::bytes::Bytes>>>> + 'a
-    {
+    ) -> impl Future<Output = Pin<Box<dyn Stream<Item = Bytes>>>> + 'a {
         let port = self.raw_port(key);
         async move {
             let source = port.connect().await.into_source();
-            Box::pin(source.map(|r| r.unwrap().freeze()))
-                as Pin<Box<dyn crate::futures::Stream<Item = crate::bytes::Bytes>>>
+            Box::pin(source.map(|r| r.unwrap().freeze())) as Pin<Box<dyn Stream<Item = Bytes>>>
         }
     }
 
     fn as_bincode_source<T: DeserializeOwned + 'static>(
         &self,
         key: usize,
-    ) -> impl Future<Output = Pin<Box<dyn crate::futures::Stream<Item = T>>>> + 'a {
+    ) -> impl Future<Output = Pin<Box<dyn Stream<Item = T>>>> + 'a {
         let port = self.raw_port(key);
         async move {
             let source = port.connect().await.into_source();
             Box::pin(source.map(|item| bincode::deserialize(&item.unwrap()).unwrap()))
-                as Pin<Box<dyn crate::futures::Stream<Item = T>>>
+                as Pin<Box<dyn Stream<Item = T>>>
         }
     }
 }
@@ -574,7 +609,19 @@ impl Node for DeployExternal {
     fn update_meta(&mut self, _meta: &Self::Meta) {}
 }
 
-impl<'a> ExternalSpec<'a, HydroDeploy> for Arc<dyn Host> {
+impl ExternalSpec<'_, HydroDeploy> for Arc<dyn Host> {
+    fn build(self, _id: usize, _name_hint: &str) -> DeployExternal {
+        DeployExternal {
+            next_port: Rc::new(RefCell::new(0)),
+            host: self,
+            underlying: Rc::new(RefCell::new(None)),
+            allocated_ports: Rc::new(RefCell::new(HashMap::new())),
+            client_ports: Rc::new(RefCell::new(HashMap::new())),
+        }
+    }
+}
+
+impl<H: Host + 'static> ExternalSpec<'_, HydroDeploy> for Arc<H> {
     fn build(self, _id: usize, _name_hint: &str) -> DeployExternal {
         DeployExternal {
             next_port: Rc::new(RefCell::new(0)),
@@ -753,7 +800,7 @@ impl DeployProcessSpec {
     }
 }
 
-impl<'a> ProcessSpec<'a, HydroDeploy> for DeployProcessSpec {
+impl ProcessSpec<'_, HydroDeploy> for DeployProcessSpec {
     fn build(self, id: usize, _name_hint: &str) -> DeployNode {
         DeployNode {
             id,
@@ -764,7 +811,7 @@ impl<'a> ProcessSpec<'a, HydroDeploy> for DeployProcessSpec {
     }
 }
 
-impl<'a> ProcessSpec<'a, HydroDeploy> for TrybuildHost {
+impl ProcessSpec<'_, HydroDeploy> for TrybuildHost {
     fn build(mut self, id: usize, name_hint: &str) -> DeployNode {
         self.name_hint = Some(format!("{} (process {id})", name_hint));
         DeployNode {
@@ -785,7 +832,7 @@ impl DeployClusterSpec {
     }
 }
 
-impl<'a> ClusterSpec<'a, HydroDeploy> for DeployClusterSpec {
+impl ClusterSpec<'_, HydroDeploy> for DeployClusterSpec {
     fn build(self, id: usize, _name_hint: &str) -> DeployCluster {
         DeployCluster {
             id,
@@ -799,7 +846,7 @@ impl<'a> ClusterSpec<'a, HydroDeploy> for DeployClusterSpec {
     }
 }
 
-impl<'a> ClusterSpec<'a, HydroDeploy> for Vec<TrybuildHost> {
+impl<T: Into<TrybuildHost>, I: IntoIterator<Item = T>> ClusterSpec<'_, HydroDeploy> for I {
     fn build(self, id: usize, name_hint: &str) -> DeployCluster {
         let name_hint = format!("{} (cluster {id})", name_hint);
         DeployCluster {
@@ -808,7 +855,8 @@ impl<'a> ClusterSpec<'a, HydroDeploy> for Vec<TrybuildHost> {
             cluster_spec: Rc::new(RefCell::new(Some(
                 self.into_iter()
                     .enumerate()
-                    .map(|(idx, mut b)| {
+                    .map(|(idx, b)| {
+                        let mut b = b.into();
                         b.name_hint = Some(name_hint.clone());
                         b.cluster_idx = Some(idx);
                         CrateOrTrybuild::Trybuild(b)
@@ -819,119 +867,6 @@ impl<'a> ClusterSpec<'a, HydroDeploy> for Vec<TrybuildHost> {
             name_hint: Some(name_hint),
         }
     }
-}
-
-fn clean_name_hint(name_hint: &str) -> String {
-    name_hint
-        .replace("::", "__")
-        .replace(" ", "_")
-        .replace(",", "_")
-        .replace("<", "_")
-        .replace(">", "")
-        .replace("(", "")
-        .replace(")", "")
-}
-
-// TODO(shadaj): has to be public due to stageleft limitations
-#[doc(hidden)]
-pub struct ReplaceCrateNameWithStaged {
-    pub crate_name: String,
-}
-
-impl VisitMut for ReplaceCrateNameWithStaged {
-    fn visit_type_path_mut(&mut self, i: &mut syn::TypePath) {
-        if let Some(first) = i.path.segments.first() {
-            if first.ident == self.crate_name {
-                let tail = i.path.segments.iter().skip(1).collect::<Vec<_>>();
-                *i = syn::parse_quote!(crate::__staged #(::#tail)*);
-            }
-        }
-
-        syn::visit_mut::visit_type_path_mut(self, i);
-    }
-}
-
-// TODO(shadaj): has to be public due to stageleft limitations
-#[doc(hidden)]
-pub struct ReplaceCrateWithOrig {
-    pub crate_name: String,
-}
-
-impl VisitMut for ReplaceCrateWithOrig {
-    fn visit_item_use_mut(&mut self, i: &mut syn::ItemUse) {
-        if let syn::UseTree::Path(p) = &mut i.tree {
-            if p.ident == "crate" {
-                p.ident = syn::Ident::new(&self.crate_name, p.ident.span());
-                i.leading_colon = Some(Default::default());
-            }
-        }
-
-        syn::visit_mut::visit_item_use_mut(self, i);
-    }
-}
-
-fn create_graph_trybuild(
-    graph: HydroflowGraph,
-    extra_stmts: Vec<syn::Stmt>,
-    name_hint: &Option<String>,
-) -> (
-    String,
-    (std::path::PathBuf, std::path::PathBuf, Option<Vec<String>>),
-) {
-    let source_dir = trybuild_internals_api::cargo::manifest_dir().unwrap();
-    let source_manifest = trybuild_internals_api::dependencies::get_manifest(&source_dir).unwrap();
-    let crate_name = &source_manifest.package.name.to_string().replace("-", "_");
-
-    let is_test = super::trybuild::IS_TEST.load(std::sync::atomic::Ordering::Relaxed);
-
-    let mut generated_code = compile_graph_trybuild(graph, extra_stmts);
-
-    ReplaceCrateNameWithStaged {
-        crate_name: crate_name.clone(),
-    }
-    .visit_file_mut(&mut generated_code);
-
-    let mut inlined_staged = stageleft_tool::gen_staged_trybuild(
-        &path!(source_dir / "src" / "lib.rs"),
-        crate_name.clone(),
-        is_test,
-    );
-
-    ReplaceCrateWithOrig {
-        crate_name: crate_name.clone(),
-    }
-    .visit_file_mut(&mut inlined_staged);
-
-    let source = prettyplease::unparse(&syn::parse_quote! {
-        #generated_code
-
-        #[allow(
-            unused,
-            ambiguous_glob_reexports,
-            clippy::suspicious_else_formatting,
-            unexpected_cfgs,
-            reason = "generated code"
-        )]
-        pub mod __staged {
-            #inlined_staged
-        }
-    });
-
-    let mut hasher = Sha256::new();
-    hasher.update(&source);
-    let hash = format!("{:X}", hasher.finalize())
-        .chars()
-        .take(8)
-        .collect::<String>();
-
-    let bin_name = if let Some(name_hint) = &name_hint {
-        format!("{}_{}", clean_name_hint(name_hint), &hash)
-    } else {
-        hash
-    };
-
-    let trybuild_created = create_trybuild(&source, &bin_name, is_test).unwrap();
-    (bin_name, trybuild_created)
 }
 
 fn create_trybuild_service(

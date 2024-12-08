@@ -86,6 +86,7 @@ pub const _LATTICE_JOIN_FUSED_JOIN: OperatorConstraints = OperatorConstraints {
     type_args: &(2..=2),
     is_external_input: false,
     has_singleton_output: false,
+    flo_type: None,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::MonotoneAccum),

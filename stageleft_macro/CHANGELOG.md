@@ -5,7 +5,72 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.4.0 (2024-11-08)
+
+### Chore
+
+ - <csr-id-d5677604e93c07a5392f4229af94a0b736eca382/> update pinned rust version, clippy lints, remove some dead code
+
+### New Features
+
+ - <csr-id-afe78c343658472513b34d28658634b253148aee/> add ability to have staged flows inside unit tests
+   Whenever a Hydroflow+ program is compiled, it depends on a generated
+   `__staged` module, which contains the entire contents of the crate but
+   with every type / function made `pub` and exported, so that the compiled
+   UDFs can resolve local references appropriately.
+   
+   Previously, we would not do this for `#[cfg(test)]` modules, since they
+   may use `dev-dependencies` and therefore the generated module may fail
+   to compile when not in test mode. To solve this, when running a unit
+   test (marked with `hydroflow_plus::deploy::init_test()`) that uses
+   trybuild, we emit a version of the `__staged` module with `#[cfg(test)]`
+   modules included _into the generated trybuild sources_ because we can
+   guarantee via trybuild that the appropriate `dev-dependencies` are
+   available.
+   
+   This by itself allows crates depending on `hydroflow_plus` to have local
+   unit tests with Hydroflow+ logic inside them. But we also want to use
+   this support for unit tests inside `hydroflow_plus` itself. To enable
+   that, we eliminate the `hydroflow_plus_deploy` crate and move its
+   contents directly to `hydroflow_plus` itself so that we can access the
+   trybuild machinery without incurring a circular dependency.
+   
+   Also fixes #1408
+ - <csr-id-60d9becaf0b67f9819316ce6d76bd867f7d46505/> splice UDFs with type hints to avoid inference failures
+
+### Bug Fixes
+
+ - <csr-id-486dfbe1fab51f1b7c7aa03a51e6e9e4e427b912/> support tuple patterns
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release.
+ - 69 days passed between releases.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 4 unique issues were worked on: [#1434](https://github.com/hydro-project/hydroflow/issues/1434), [#1444](https://github.com/hydro-project/hydroflow/issues/1444), [#1445](https://github.com/hydro-project/hydroflow/issues/1445), [#1450](https://github.com/hydro-project/hydroflow/issues/1450)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1434](https://github.com/hydro-project/hydroflow/issues/1434)**
+    - Splice UDFs with type hints to avoid inference failures ([`60d9bec`](https://github.com/hydro-project/hydroflow/commit/60d9becaf0b67f9819316ce6d76bd867f7d46505))
+ * **[#1444](https://github.com/hydro-project/hydroflow/issues/1444)**
+    - Update pinned rust version, clippy lints, remove some dead code ([`d567760`](https://github.com/hydro-project/hydroflow/commit/d5677604e93c07a5392f4229af94a0b736eca382))
+ * **[#1445](https://github.com/hydro-project/hydroflow/issues/1445)**
+    - Support tuple patterns ([`486dfbe`](https://github.com/hydro-project/hydroflow/commit/486dfbe1fab51f1b7c7aa03a51e6e9e4e427b912))
+ * **[#1450](https://github.com/hydro-project/hydroflow/issues/1450)**
+    - Add ability to have staged flows inside unit tests ([`afe78c3`](https://github.com/hydro-project/hydroflow/commit/afe78c343658472513b34d28658634b253148aee))
+</details>
+
 ## v0.3.0 (2024-08-30)
+
+<csr-id-11af32828bab6e4a4264d2635ff71a12bb0bb778/>
+<csr-id-461ae845c6c6506c733be6287eeefe6e3beca52c/>
 
 ### Chore
 
@@ -26,7 +91,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
+ - 4 commits contributed to the release.
+ - 97 days passed between releases.
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#1423](https://github.com/hydro-project/hydroflow/issues/1423), [#1426](https://github.com/hydro-project/hydroflow/issues/1426), [#1428](https://github.com/hydro-project/hydroflow/issues/1428)
 
@@ -42,6 +108,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Remove `lazy_static` dependency ([`461ae84`](https://github.com/hydro-project/hydroflow/commit/461ae845c6c6506c733be6287eeefe6e3beca52c))
  * **[#1428](https://github.com/hydro-project/hydroflow/issues/1428)**
     - Cleanup doc comments for clippy latest ([`f5f1eb0`](https://github.com/hydro-project/hydroflow/commit/f5f1eb0c612f5c0c1752360d972ef6853c5e12f0))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.9.0, hydroflow_datalog_core v0.9.0, hydroflow_datalog v0.9.0, hydroflow_deploy_integration v0.9.0, hydroflow_macro v0.9.0, lattices_macro v0.5.6, lattices v0.5.7, multiplatform_test v0.2.0, variadics v0.0.6, pusherator v0.0.8, hydroflow v0.9.0, stageleft_macro v0.3.0, stageleft v0.4.0, stageleft_tool v0.3.0, hydroflow_plus v0.9.0, hydro_deploy v0.9.0, hydro_cli v0.9.0, hydroflow_plus_deploy v0.9.0, safety bump 8 crates ([`0750117`](https://github.com/hydro-project/hydroflow/commit/0750117de7088c01a439b102adeb4c832889f171))
 </details>
 
 ## v0.2.0 (2024-05-24)
@@ -60,6 +128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 3 commits contributed to the release.
+ - 48 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1104](https://github.com/hydro-project/hydroflow/issues/1104), [#1151](https://github.com/hydro-project/hydroflow/issues/1151)
 
@@ -105,6 +174,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 5 commits contributed to the release.
+ - 67 days passed between releases.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1090](https://github.com/hydro-project/hydroflow/issues/1090), [#1100](https://github.com/hydro-project/hydroflow/issues/1100), [#1117](https://github.com/hydro-project/hydroflow/issues/1117), [#1124](https://github.com/hydro-project/hydroflow/issues/1124)
 

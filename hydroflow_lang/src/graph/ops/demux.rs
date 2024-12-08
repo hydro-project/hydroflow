@@ -53,6 +53,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
     type_args: RANGE_0,
     is_external_input: false,
     has_singleton_output: false,
+    flo_type: None,
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Variadic),
     input_delaytype_fn: |_| None,

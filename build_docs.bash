@@ -14,7 +14,13 @@ cd website_playground
 
 CARGO_CFG_HYDROFLOW_GENERATE_DOCS="1" RUSTFLAGS="--cfg procmacro2_semver_exempt --cfg super_unstable" CC="$PWD/../clang+llvm-13.0.0-$PLATFORM/bin/clang" wasm-pack build
 
-cd ../docs
+cd ..
+
+RUSTDOCFLAGS="-Dwarnings" cargo doc --no-deps
+
+cp -r target/doc docs/static/rustdoc
+
+cd docs
 
 npm ci
 

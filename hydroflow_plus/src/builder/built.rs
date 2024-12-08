@@ -3,11 +3,12 @@ use std::marker::PhantomData;
 
 use hydroflow_lang::graph::{eliminate_extra_unions_tees, HydroflowGraph};
 
+use super::compiled::CompiledFlow;
 use super::deploy::{DeployFlow, DeployResult};
-use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, LocalDeploy, ProcessSpec};
+use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDeploy};
 use crate::ir::HfPlusLeaf;
 use crate::location::{Cluster, ExternalProcess, Process};
-use crate::HfCompiled;
+use crate::staging_util::Invariant;
 
 pub struct BuiltFlow<'a> {
     pub(super) ir: Vec<HfPlusLeaf>,
@@ -15,33 +16,13 @@ pub struct BuiltFlow<'a> {
     pub(super) clusters: Vec<usize>,
     pub(super) used: bool,
 
-    pub(super) _phantom: PhantomData<&'a mut &'a ()>,
+    pub(super) _phantom: Invariant<'a>,
 }
 
-impl<'a> Drop for BuiltFlow<'a> {
+impl Drop for BuiltFlow<'_> {
     fn drop(&mut self) {
         if !self.used {
             panic!("Dropped BuiltFlow without instantiating, you may have forgotten to call `compile` or `deploy`.");
-        }
-    }
-}
-
-impl<'a> BuiltFlow<'a> {
-    pub fn ir(&self) -> &Vec<HfPlusLeaf> {
-        &self.ir
-    }
-
-    pub fn optimize_with(
-        mut self,
-        f: impl FnOnce(Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf>,
-    ) -> BuiltFlow<'a> {
-        self.used = true;
-        BuiltFlow {
-            ir: f(std::mem::take(&mut self.ir)),
-            processes: std::mem::take(&mut self.processes),
-            clusters: std::mem::take(&mut self.clusters),
-            used: false,
-            _phantom: PhantomData,
         }
     }
 }
@@ -65,18 +46,24 @@ pub(crate) fn build_inner(ir: &mut Vec<HfPlusLeaf>) -> BTreeMap<usize, Hydroflow
 }
 
 impl<'a> BuiltFlow<'a> {
-    pub fn compile_no_network<D: LocalDeploy<'a>>(mut self) -> HfCompiled<'a, D::GraphId> {
-        self.used = true;
+    pub fn ir(&self) -> &Vec<HfPlusLeaf> {
+        &self.ir
+    }
 
-        HfCompiled {
-            hydroflow_ir: build_inner(&mut self.ir),
-            extra_stmts: BTreeMap::new(),
+    pub fn optimize_with(mut self, f: impl FnOnce(Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf>) -> Self {
+        self.used = true;
+        BuiltFlow {
+            ir: f(std::mem::take(&mut self.ir)),
+            processes: std::mem::take(&mut self.processes),
+            clusters: std::mem::take(&mut self.clusters),
+            used: false,
             _phantom: PhantomData,
         }
     }
 
-    pub fn with_default_optimize(self) -> BuiltFlow<'a> {
-        self.optimize_with(crate::persist_pullup::persist_pullup)
+    pub fn with_default_optimize<D: LocalDeploy<'a>>(self) -> DeployFlow<'a, D> {
+        self.optimize_with(crate::rewrites::persist_pullup::persist_pullup)
+            .into_deploy()
     }
 
     fn into_deploy<D: LocalDeploy<'a>>(mut self) -> DeployFlow<'a, D> {
@@ -112,7 +99,7 @@ impl<'a> BuiltFlow<'a> {
     pub fn with_process<P, D: LocalDeploy<'a>>(
         self,
         process: &Process<P>,
-        spec: impl ProcessSpec<'a, D>,
+        spec: impl IntoProcessSpec<'a, D>,
     ) -> DeployFlow<'a, D> {
         self.into_deploy().with_process(process, spec)
     }
@@ -133,11 +120,15 @@ impl<'a> BuiltFlow<'a> {
         self.into_deploy().with_cluster(cluster, spec)
     }
 
-    pub fn compile<D: Deploy<'a> + 'a>(self, env: &D::CompileEnv) -> HfCompiled<'a, D::GraphId> {
+    pub fn compile<D: Deploy<'a>>(self, env: &D::CompileEnv) -> CompiledFlow<'a, D::GraphId> {
         self.into_deploy::<D>().compile(env)
     }
 
-    pub fn deploy<D: Deploy<'a, CompileEnv = ()> + 'a>(
+    pub fn compile_no_network<D: LocalDeploy<'a>>(self) -> CompiledFlow<'a, D::GraphId> {
+        self.into_deploy::<D>().compile_no_network()
+    }
+
+    pub fn deploy<D: Deploy<'a, CompileEnv = ()>>(
         self,
         env: &mut D::InstantiateEnv,
     ) -> DeployResult<'a, D> {
