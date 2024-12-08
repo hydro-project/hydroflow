@@ -22,16 +22,6 @@ use tokio::sync::{mpsc, oneshot};
 use tokio_stream::StreamExt;
 use tokio_util::io::SyncIoBridge;
 
-// use k8s_openapi::api::core::v1::Pod;
-// use kube::{
-//     api::{Api, AttachParams, AttachedProcess, DeleteParams, PostParams, ResourceExt, WatchEvent, WatchParams},
-//     Client,
-// };
-
-// use tokio::io::AsyncWriteExt;
-
-// use kube::core::subresource::AttachParams;
-
 use super::progress::ProgressTracker;
 use super::util::async_retry;
 use super::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
