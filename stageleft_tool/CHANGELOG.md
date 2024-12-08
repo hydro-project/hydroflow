@@ -1,6 +1,73 @@
 
 
+## v0.4.0 (2024-11-08)
+
+### Chore
+
+ - <csr-id-d5677604e93c07a5392f4229af94a0b736eca382/> update pinned rust version, clippy lints, remove some dead code
+
+### New Features
+
+ - <csr-id-afe78c343658472513b34d28658634b253148aee/> add ability to have staged flows inside unit tests
+   Whenever a Hydroflow+ program is compiled, it depends on a generated
+   `__staged` module, which contains the entire contents of the crate but
+   with every type / function made `pub` and exported, so that the compiled
+   UDFs can resolve local references appropriately.
+   
+   Previously, we would not do this for `#[cfg(test)]` modules, since they
+   may use `dev-dependencies` and therefore the generated module may fail
+   to compile when not in test mode. To solve this, when running a unit
+   test (marked with `hydroflow_plus::deploy::init_test()`) that uses
+   trybuild, we emit a version of the `__staged` module with `#[cfg(test)]`
+   modules included _into the generated trybuild sources_ because we can
+   guarantee via trybuild that the appropriate `dev-dependencies` are
+   available.
+   
+   This by itself allows crates depending on `hydroflow_plus` to have local
+   unit tests with Hydroflow+ logic inside them. But we also want to use
+   this support for unit tests inside `hydroflow_plus` itself. To enable
+   that, we eliminate the `hydroflow_plus_deploy` crate and move its
+   contents directly to `hydroflow_plus` itself so that we can access the
+   trybuild machinery without incurring a circular dependency.
+   
+   Also fixes #1408
+
+### Bug Fixes
+
+ - <csr-id-2faffdbf2cc886da22e496df64f46aefa380766c/> properly handle `crate::` imports
+
+### Refactor
+
+ - <csr-id-8b7b1c60fd33b78f9a4b0873bbbd150260ae2ad5/> complete split into leader election and sequencing phases
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release.
+ - 69 days passed between releases.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 4 unique issues were worked on: [#1444](https://github.com/hydro-project/hydroflow/issues/1444), [#1450](https://github.com/hydro-project/hydroflow/issues/1450), [#1486](https://github.com/hydro-project/hydroflow/issues/1486), [#1527](https://github.com/hydro-project/hydroflow/issues/1527)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1444](https://github.com/hydro-project/hydroflow/issues/1444)**
+    - Update pinned rust version, clippy lints, remove some dead code ([`d567760`](https://github.com/hydro-project/hydroflow/commit/d5677604e93c07a5392f4229af94a0b736eca382))
+ * **[#1450](https://github.com/hydro-project/hydroflow/issues/1450)**
+    - Add ability to have staged flows inside unit tests ([`afe78c3`](https://github.com/hydro-project/hydroflow/commit/afe78c343658472513b34d28658634b253148aee))
+ * **[#1486](https://github.com/hydro-project/hydroflow/issues/1486)**
+    - Complete split into leader election and sequencing phases ([`8b7b1c6`](https://github.com/hydro-project/hydroflow/commit/8b7b1c60fd33b78f9a4b0873bbbd150260ae2ad5))
+ * **[#1527](https://github.com/hydro-project/hydroflow/issues/1527)**
+    - Properly handle `crate::` imports ([`2faffdb`](https://github.com/hydro-project/hydroflow/commit/2faffdbf2cc886da22e496df64f46aefa380766c))
+</details>
+
 ## v0.3.0 (2024-08-30)
+
+<csr-id-11af32828bab6e4a4264d2635ff71a12bb0bb778/>
 
 ### Chore
 
@@ -17,7 +84,8 @@
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release.
+ - 3 commits contributed to the release.
+ - 97 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1398](https://github.com/hydro-project/hydroflow/issues/1398), [#1423](https://github.com/hydro-project/hydroflow/issues/1423)
 
@@ -31,6 +99,8 @@
     - Use trybuild to compile subgraph binaries ([`46a8a2c`](https://github.com/hydro-project/hydroflow/commit/46a8a2cb08732bb21096e824bc4542d208c68fb2))
  * **[#1423](https://github.com/hydro-project/hydroflow/issues/1423)**
     - Lower min dependency versions where possible, update `Cargo.lock` ([`11af328`](https://github.com/hydro-project/hydroflow/commit/11af32828bab6e4a4264d2635ff71a12bb0bb778))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.9.0, hydroflow_datalog_core v0.9.0, hydroflow_datalog v0.9.0, hydroflow_deploy_integration v0.9.0, hydroflow_macro v0.9.0, lattices_macro v0.5.6, lattices v0.5.7, multiplatform_test v0.2.0, variadics v0.0.6, pusherator v0.0.8, hydroflow v0.9.0, stageleft_macro v0.3.0, stageleft v0.4.0, stageleft_tool v0.3.0, hydroflow_plus v0.9.0, hydro_deploy v0.9.0, hydro_cli v0.9.0, hydroflow_plus_deploy v0.9.0, safety bump 8 crates ([`0750117`](https://github.com/hydro-project/hydroflow/commit/0750117de7088c01a439b102adeb4c832889f171))
 </details>
 
 ## v0.2.0 (2024-05-24)
@@ -52,6 +122,7 @@
 <csr-read-only-do-not-edit/>
 
  - 3 commits contributed to the release.
+ - 44 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1104](https://github.com/hydro-project/hydroflow/issues/1104), [#1192](https://github.com/hydro-project/hydroflow/issues/1192)
 
@@ -96,6 +167,7 @@
 <csr-read-only-do-not-edit/>
 
  - 6 commits contributed to the release.
+ - 71 days passed between releases.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1083](https://github.com/hydro-project/hydroflow/issues/1083), [#1090](https://github.com/hydro-project/hydroflow/issues/1090), [#1098](https://github.com/hydro-project/hydroflow/issues/1098), [#1140](https://github.com/hydro-project/hydroflow/issues/1140)
 

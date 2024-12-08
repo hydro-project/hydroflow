@@ -7,15 +7,14 @@ cargo generate gh:hydro-project/hydroflow template/hydroflow_plus
 cd <myproject>
 ```
 
-After `cd`ing into the workspace, ensure the correct nightly version of rust is installed:
-```bash
-rustup update
-```
+After `cd`ing into the workspace, run the sample tests
 
 Then test the project:
 ```bash
 cargo test
 ```
+
+To learn more about the template, see the [Hydroflow+ Quickstart](https://hydro.run/docs/hydroflow_plus/quickstart/first-dataflow).
 
 ## Project Structure
 The template includes a sample program `first_ten_distributed`.

@@ -56,30 +56,25 @@ async fn main() {
     let rustflags = "-C opt-level=3 -C codegen-units=1 -C strip=none -C debuginfo=2 -C lto=off";
 
     let _nodes = builder
-        .with_default_optimize()
         .with_cluster(
             &proposers,
             (0..f + 1)
-                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags))
-                .collect::<Vec<_>>(),
+                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags)),
         )
         .with_cluster(
             &acceptors,
             (0..2 * f + 1)
-                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags))
-                .collect::<Vec<_>>(),
+                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags)),
         )
         .with_cluster(
             &clients,
             (0..num_clients)
-                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags))
-                .collect::<Vec<_>>(),
+                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags)),
         )
         .with_cluster(
             &replicas,
             (0..f + 1)
-                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags))
-                .collect::<Vec<_>>(),
+                .map(|_| TrybuildHost::new(create_host(&mut deployment)).rustflags(rustflags)),
         )
         .deploy(&mut deployment);
 

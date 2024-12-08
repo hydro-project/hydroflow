@@ -7,13 +7,18 @@ use hydroflow::futures::{Sink, Stream};
 use hydroflow_lang::graph::HydroflowGraph;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use stageleft::Quoted;
+use stageleft::QuotedWithContext;
 
 #[cfg(feature = "deploy_runtime")]
 pub mod macro_runtime;
 
 #[cfg(feature = "deploy")]
 pub(crate) mod trybuild;
+
+// TODO(shadaj): has to be public due to stageleft limitations
+#[cfg(feature = "deploy")]
+#[doc(hidden)]
+pub mod trybuild_rewriters;
 
 pub use macro_runtime::*;
 #[cfg(feature = "deploy")]
@@ -171,8 +176,8 @@ pub trait Deploy<'a> {
     fn cluster_ids(
         env: &Self::CompileEnv,
         of_cluster: usize,
-    ) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a;
-    fn cluster_self_id(env: &Self::CompileEnv) -> impl Quoted<'a, u32> + Copy + 'a;
+    ) -> impl QuotedWithContext<'a, &'a Vec<u32>, ()> + Copy + 'a;
+    fn cluster_self_id(env: &Self::CompileEnv) -> impl QuotedWithContext<'a, u32, ()> + Copy + 'a;
 }
 
 impl<
@@ -206,6 +211,18 @@ impl<
 
 pub trait ProcessSpec<'a, D: LocalDeploy<'a> + ?Sized> {
     fn build(self, id: usize, name_hint: &str) -> D::Process;
+}
+
+pub trait IntoProcessSpec<'a, D: LocalDeploy<'a> + ?Sized> {
+    type ProcessSpec: ProcessSpec<'a, D>;
+    fn into_process_spec(self) -> Self::ProcessSpec;
+}
+
+impl<'a, D: LocalDeploy<'a> + ?Sized, T: ProcessSpec<'a, D>> IntoProcessSpec<'a, D> for T {
+    type ProcessSpec = T;
+    fn into_process_spec(self) -> Self::ProcessSpec {
+        self
+    }
 }
 
 pub trait ClusterSpec<'a, D: LocalDeploy<'a> + ?Sized> {

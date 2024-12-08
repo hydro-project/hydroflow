@@ -1,19 +1,16 @@
 use hydroflow_plus::*;
-use stageleft::*;
 
 pub fn decouple_cluster<'a>(flow: &FlowBuilder<'a>) -> (Cluster<'a, ()>, Cluster<'a, ()>) {
     let cluster1 = flow.cluster();
     let cluster2 = flow.cluster();
-    let cluster_self_id = cluster2.self_id();
-    let cluster1_self_id = cluster1.self_id();
     cluster1
-        .source_iter(q!(vec!(cluster1_self_id)))
+        .source_iter(q!(vec!(CLUSTER_SELF_ID)))
         // .for_each(q!(|message| println!("hey, {}", message)))
         .inspect(q!(|message| println!("Cluster1 node sending message: {}", message)))
         .decouple_cluster(&cluster2)
         .for_each(q!(move |message| println!(
             "My self id is {}, my message is {}",
-            cluster_self_id, message
+            CLUSTER_SELF_ID, message
         )));
     (cluster1, cluster2)
 }
@@ -35,17 +32,13 @@ pub fn simple_cluster<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, ()>, Cluster<'
     let numbers = process.source_iter(q!(0..5));
     let ids = process.source_iter(cluster.members()).map(q!(|&id| id));
 
-    let cluster_self_id = cluster.self_id();
-
     ids.cross_product(numbers)
         .map(q!(|(id, n)| (id, (id, n))))
         .send_bincode(&cluster)
-        .tick_batch()
         .inspect(q!(move |n| println!(
             "cluster received: {:?} (self cluster id: {})",
-            n, cluster_self_id
+            n, CLUSTER_SELF_ID
         )))
-        .all_ticks()
         .send_bincode(&process)
         .for_each(q!(|(id, d)| println!("node received: ({}, {:?})", id, d)));
 
@@ -55,7 +48,7 @@ pub fn simple_cluster<'a>(flow: &FlowBuilder<'a>) -> (Process<'a, ()>, Cluster<'
 #[cfg(test)]
 mod tests {
     use hydro_deploy::Deployment;
-    use hydroflow_plus::deploy::{DeployCrateWrapper, TrybuildHost};
+    use hydroflow_plus::deploy::DeployCrateWrapper;
 
     #[tokio::test]
     async fn simple_cluster() {
@@ -68,13 +61,8 @@ mod tests {
         insta::assert_debug_snapshot!(built.ir());
 
         let nodes = built
-            .with_process(&node, TrybuildHost::new(deployment.Localhost()))
-            .with_cluster(
-                &cluster,
-                (0..2)
-                    .map(|_| TrybuildHost::new(deployment.Localhost()))
-                    .collect::<Vec<_>>(),
-            )
+            .with_process(&node, deployment.Localhost())
+            .with_cluster(&cluster, (0..2).map(|_| deployment.Localhost()))
             .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
@@ -128,8 +116,8 @@ mod tests {
         let built = builder.with_default_optimize();
 
         let nodes = built
-            .with_process(&process1, TrybuildHost::new(deployment.Localhost()))
-            .with_process(&process2, TrybuildHost::new(deployment.Localhost()))
+            .with_process(&process1, deployment.Localhost())
+            .with_process(&process2, deployment.Localhost())
             .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();
@@ -150,18 +138,8 @@ mod tests {
         let built = builder.with_default_optimize();
 
         let nodes = built
-            .with_cluster(
-                &cluster1,
-                (0..3)
-                    .map(|_| TrybuildHost::new(deployment.Localhost()))
-                    .collect::<Vec<_>>(),
-            )
-            .with_cluster(
-                &cluster2,
-                (0..3)
-                    .map(|_| TrybuildHost::new(deployment.Localhost()))
-                    .collect::<Vec<_>>(),
-            )
+            .with_cluster(&cluster1, (0..3).map(|_| deployment.Localhost()))
+            .with_cluster(&cluster2, (0..3).map(|_| deployment.Localhost()))
             .deploy(&mut deployment);
 
         deployment.deploy().await.unwrap();

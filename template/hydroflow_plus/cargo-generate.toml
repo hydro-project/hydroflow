@@ -1,4 +1,15 @@
 [template]
+include = [
+  ".cargo",
+  ".vscode",
+  "examples",
+  "src",
+  ".gitignore",
+  "build.rs",
+  "Cargo.toml",
+  "README.md",
+  "rust-toolchain.toml"
+]
 ignore = [
   "Cargo.lock",
 ]

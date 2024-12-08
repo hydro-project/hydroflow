@@ -2,8 +2,8 @@ use quote::quote_spanned;
 use syn::parse_quote_spanned;
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1,
+    FloType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0,
+    RANGE_1,
 };
 
 /// > 0 input streams, 1 output stream
@@ -54,6 +54,7 @@ pub const SOURCE_INTERVAL: OperatorConstraints = OperatorConstraints {
     type_args: RANGE_0,
     is_external_input: true,
     has_singleton_output: false,
+    flo_type: Some(FloType::Source),
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,

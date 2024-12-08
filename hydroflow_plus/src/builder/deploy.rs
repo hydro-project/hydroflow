@@ -8,16 +8,20 @@ use hydroflow::futures::{Sink, Stream};
 use proc_macro2::Span;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use stageleft::Quoted;
+use stageleft::QuotedWithContext;
 
 use super::built::build_inner;
-use crate::deploy::{ExternalSpec, LocalDeploy, Node, RegisterPort};
-use crate::ir::HfPlusLeaf;
-use crate::location::{
-    ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort, ExternalProcess, Location,
-    LocationId,
+use super::compiled::CompiledFlow;
+use crate::deploy::{
+    ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDeploy, Node, ProcessSpec,
+    RegisterPort,
 };
-use crate::{Cluster, ClusterSpec, Deploy, HfCompiled, Process, ProcessSpec};
+use crate::ir::HfPlusLeaf;
+use crate::location::external_process::{
+    ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort,
+};
+use crate::location::{Cluster, ExternalProcess, Location, LocationId, Process};
+use crate::staging_util::Invariant;
 
 pub struct DeployFlow<'a, D: LocalDeploy<'a>> {
     pub(super) ir: Vec<HfPlusLeaf>,
@@ -26,7 +30,7 @@ pub struct DeployFlow<'a, D: LocalDeploy<'a>> {
     pub(super) clusters: HashMap<usize, D::Cluster>,
     pub(super) used: bool,
 
-    pub(super) _phantom: PhantomData<&'a mut &'a D>,
+    pub(super) _phantom: Invariant<'a, D>,
 }
 
 impl<'a, D: LocalDeploy<'a>> Drop for DeployFlow<'a, D> {
@@ -38,10 +42,20 @@ impl<'a, D: LocalDeploy<'a>> Drop for DeployFlow<'a, D> {
 }
 
 impl<'a, D: LocalDeploy<'a>> DeployFlow<'a, D> {
-    pub fn with_process<P>(mut self, process: &Process<P>, spec: impl ProcessSpec<'a, D>) -> Self {
+    pub fn ir(&self) -> &Vec<HfPlusLeaf> {
+        &self.ir
+    }
+
+    pub fn with_process<P>(
+        mut self,
+        process: &Process<P>,
+        spec: impl IntoProcessSpec<'a, D>,
+    ) -> Self {
         let tag_name = std::any::type_name::<P>().to_string();
-        self.nodes
-            .insert(process.id, spec.build(process.id, &tag_name));
+        self.nodes.insert(
+            process.id,
+            spec.into_process_spec().build(process.id, &tag_name),
+        );
         self
     }
 
@@ -62,10 +76,20 @@ impl<'a, D: LocalDeploy<'a>> DeployFlow<'a, D> {
             .insert(cluster.id, spec.build(cluster.id, &tag_name));
         self
     }
+
+    pub fn compile_no_network(mut self) -> CompiledFlow<'a, D::GraphId> {
+        self.used = true;
+
+        CompiledFlow {
+            hydroflow_ir: build_inner(&mut self.ir),
+            extra_stmts: BTreeMap::new(),
+            _phantom: PhantomData,
+        }
+    }
 }
 
 impl<'a, D: Deploy<'a>> DeployFlow<'a, D> {
-    pub fn compile(mut self, env: &D::CompileEnv) -> HfCompiled<'a, D::GraphId> {
+    pub fn compile(mut self, env: &D::CompileEnv) -> CompiledFlow<'a, D::GraphId> {
         self.used = true;
 
         let mut seen_tees: HashMap<_, _> = HashMap::new();
@@ -84,7 +108,7 @@ impl<'a, D: Deploy<'a>> DeployFlow<'a, D> {
 
         let extra_stmts = self.extra_stmts(env);
 
-        HfCompiled {
+        CompiledFlow {
             hydroflow_ir: build_inner(&mut flow_state_networked),
             extra_stmts,
             _phantom: PhantomData,

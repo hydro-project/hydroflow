@@ -1,13 +1,16 @@
 use std::cell::RefCell;
+use std::future::Future;
 use std::pin::Pin;
 use std::rc::Rc;
 
+use hydroflow::bytes::Bytes;
+use hydroflow::futures::{Sink, Stream};
 use hydroflow::util::deploy::DeployPorts;
-use stageleft::{Quoted, RuntimeData};
+use hydroflow_lang::graph::HydroflowGraph;
+use stageleft::{QuotedWithContext, RuntimeData};
 
 use super::HydroflowPlusMeta;
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
-use crate::lang::graph::HydroflowGraph;
 
 pub struct DeployRuntime {}
 
@@ -167,11 +170,11 @@ impl<'a> Deploy<'a> for DeployRuntime {
     fn cluster_ids(
         env: &Self::CompileEnv,
         of_cluster: usize,
-    ) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
+    ) -> impl QuotedWithContext<'a, &'a Vec<u32>, ()> + Copy + 'a {
         super::deploy_runtime::cluster_members(*env, of_cluster)
     }
 
-    fn cluster_self_id(env: &Self::CompileEnv) -> impl Quoted<'a, u32> + Copy + 'a {
+    fn cluster_self_id(env: &Self::CompileEnv) -> impl QuotedWithContext<'a, u32, ()> + Copy + 'a {
         super::deploy_runtime::cluster_self_id(*env)
     }
 }
@@ -197,9 +200,7 @@ impl<'a> RegisterPort<'a, DeployRuntime> for DeployRuntimeNode {
     fn as_bytes_sink(
         &self,
         _key: usize,
-    ) -> impl std::future::Future<
-        Output = Pin<Box<dyn crate::futures::Sink<crate::bytes::Bytes, Error = std::io::Error>>>,
-    > + 'a {
+    ) -> impl Future<Output = Pin<Box<dyn Sink<Bytes, Error = std::io::Error>>>> + 'a {
         async { panic!() }
     }
 
@@ -210,9 +211,7 @@ impl<'a> RegisterPort<'a, DeployRuntime> for DeployRuntimeNode {
     fn as_bincode_sink<T: serde::Serialize + 'static>(
         &self,
         _key: usize,
-    ) -> impl std::future::Future<
-        Output = Pin<Box<dyn crate::futures::Sink<T, Error = std::io::Error>>>,
-    > + 'a {
+    ) -> impl Future<Output = Pin<Box<dyn Sink<T, Error = std::io::Error>>>> + 'a {
         async { panic!() }
     }
 
@@ -223,9 +222,7 @@ impl<'a> RegisterPort<'a, DeployRuntime> for DeployRuntimeNode {
     fn as_bytes_source(
         &self,
         _key: usize,
-    ) -> impl std::future::Future<
-        Output = Pin<Box<dyn hydroflow::futures::Stream<Item = hydroflow::bytes::Bytes>>>,
-    > + 'a {
+    ) -> impl Future<Output = Pin<Box<dyn Stream<Item = Bytes>>>> + 'a {
         async { panic!() }
     }
 
@@ -236,8 +233,7 @@ impl<'a> RegisterPort<'a, DeployRuntime> for DeployRuntimeNode {
     fn as_bincode_source<T: serde::de::DeserializeOwned + 'static>(
         &self,
         _key: usize,
-    ) -> impl std::future::Future<Output = Pin<Box<dyn hydroflow::futures::Stream<Item = T>>>> + 'a
-    {
+    ) -> impl Future<Output = Pin<Box<dyn Stream<Item = T>>>> + 'a {
         async { panic!() }
     }
 }
@@ -295,7 +291,7 @@ impl Node for DeployRuntimeCluster {
     }
 }
 
-impl<'a> ProcessSpec<'a, DeployRuntime> for () {
+impl ProcessSpec<'_, DeployRuntime> for () {
     fn build(self, _id: usize, _name_hint: &str) -> DeployRuntimeNode {
         DeployRuntimeNode {
             next_port: Rc::new(RefCell::new(0)),
@@ -303,7 +299,7 @@ impl<'a> ProcessSpec<'a, DeployRuntime> for () {
     }
 }
 
-impl<'cli> ClusterSpec<'cli, DeployRuntime> for () {
+impl ClusterSpec<'_, DeployRuntime> for () {
     fn build(self, _id: usize, _name_hint: &str) -> DeployRuntimeCluster {
         DeployRuntimeCluster {
             next_port: Rc::new(RefCell::new(0)),
@@ -311,7 +307,7 @@ impl<'cli> ClusterSpec<'cli, DeployRuntime> for () {
     }
 }
 
-impl<'cli> ExternalSpec<'cli, DeployRuntime> for () {
+impl ExternalSpec<'_, DeployRuntime> for () {
     fn build(self, _id: usize, _name_hint: &str) -> DeployRuntimeNode {
         panic!()
     }

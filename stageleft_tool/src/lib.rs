@@ -4,9 +4,10 @@ use std::{env, fs};
 
 use proc_macro2::Span;
 use quote::ToTokens;
-use syn::parse_quote;
+use sha2::{Digest, Sha256};
 use syn::visit::Visit;
 use syn::visit_mut::VisitMut;
+use syn::{parse_quote, UsePath};
 
 struct GenMacroVistor {
     exported_macros: BTreeSet<(String, String)>,
@@ -41,7 +42,7 @@ impl<'a> Visit<'a> for GenMacroVistor {
                 .chars()
                 .filter(|c| c.is_alphanumeric())
                 .collect::<String>();
-            let contents_hash = sha256::digest(contents);
+            let contents_hash = format!("{:X}", Sha256::digest(contents));
             self.exported_macros
                 .insert((contents_hash, cur_path.to_token_stream().to_string()));
         }
@@ -72,7 +73,7 @@ pub fn gen_macro(staged_path: &Path, crate_name: &str) {
 
         let proc_macro_wrapper: syn::ItemFn = parse_quote!(
             #[proc_macro]
-            #[expect(unused_qualifications, reason = "generated code")]
+            #[expect(unused_qualifications, non_snake_case, reason = "generated code")]
             pub fn #underscored_path(input: ::proc_macro::TokenStream) -> ::proc_macro::TokenStream {
                 let input = ::stageleft::internal::TokenStream::from(input);
                 let out = #exported_from_parsed::#underscored_path_impl(input);
@@ -125,6 +126,10 @@ impl VisitMut for GenFinalPubVistor {
         syn::visit_mut::visit_item_enum_mut(self, i);
     }
 
+    fn visit_variant_mut(&mut self, _i: &mut syn::Variant) {
+        // variant fields do not have visibility modifiers
+    }
+
     fn visit_item_struct_mut(&mut self, i: &mut syn::ItemStruct) {
         i.vis = parse_quote!(pub);
         syn::visit_mut::visit_item_struct_mut(self, i);
@@ -138,6 +143,18 @@ impl VisitMut for GenFinalPubVistor {
     fn visit_item_use_mut(&mut self, i: &mut syn::ItemUse) {
         i.vis = parse_quote!(pub);
         syn::visit_mut::visit_item_use_mut(self, i);
+    }
+
+    fn visit_use_path_mut(&mut self, i: &mut UsePath) {
+        if i.ident == "crate" {
+            i.tree = Box::new(syn::UseTree::Path(UsePath {
+                ident: parse_quote!(__staged),
+                colon2_token: Default::default(),
+                tree: i.tree.clone(),
+            }));
+        }
+
+        syn::visit_mut::visit_use_path_mut(self, i);
     }
 
     fn visit_item_mod_mut(&mut self, i: &mut syn::ItemMod) {
@@ -228,6 +245,18 @@ impl VisitMut for GenFinalPubVistor {
                     #[cfg(stageleft_macro)]
                     #e
                 );
+            } else if let syn::Item::Static(e) = i {
+                if matches!(e.vis, syn::Visibility::Public(_)) {
+                    let e_name = &e.ident;
+                    *i = parse_quote!(pub use #cur_path::#e_name;);
+                    return;
+                }
+            } else if let syn::Item::Const(e) = i {
+                if matches!(e.vis, syn::Visibility::Public(_)) {
+                    let e_name = &e.ident;
+                    *i = parse_quote!(pub use #cur_path::#e_name;);
+                    return;
+                }
             }
         }
 

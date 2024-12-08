@@ -1,8 +1,9 @@
+use hydroflow::tokio::sync::mpsc::UnboundedSender;
+use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::deploy::SingleProcessGraph;
-use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
-use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
+use hydroflow_plus::hydroflow::scheduled::graph::Hydroflow;
 use hydroflow_plus::*;
-use stageleft::{q, Quoted, RuntimeData};
+use stageleft::{Quoted, RuntimeData};
 
 #[stageleft::entry]
 pub fn chat_app<'a>(
@@ -13,13 +14,29 @@ pub fn chat_app<'a>(
     replay_messages: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process::<()>();
+    let tick = process.tick();
 
-    let users = process.source_stream(users_stream).tick_batch().persist();
+    let users = unsafe {
+        // SAFETY: intentionally non-deterministic to not send messaged
+        // to users that joined after the message was sent
+        process
+            .source_stream(users_stream)
+            .timestamped(&tick)
+            .tick_batch()
+    }
+    .persist();
     let messages = process.source_stream(messages);
     let messages = if replay_messages {
-        messages.tick_batch().persist()
+        unsafe {
+            // SAFETY: see above
+            messages.timestamped(&tick).tick_batch()
+        }
+        .persist()
     } else {
-        messages.tick_batch()
+        unsafe {
+            // SAFETY: see above
+            messages.timestamped(&tick).tick_batch()
+        }
     };
 
     // do this after the persist to test pullup
@@ -34,21 +51,20 @@ pub fn chat_app<'a>(
         output.send(t).unwrap();
     }));
 
-    flow.with_default_optimize()
-        .compile_no_network::<SingleProcessGraph>()
+    flow.compile_no_network::<SingleProcessGraph>()
 }
 
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use hydroflow_plus::assert_graphvis_snapshots;
-    use hydroflow_plus::util::collect_ready;
+    use hydroflow::assert_graphvis_snapshots;
+    use hydroflow::util::collect_ready;
 
     #[test]
     fn test_chat_app_no_replay() {
-        let (users_send, users) = hydroflow_plus::util::unbounded_channel();
-        let (messages_send, messages) = hydroflow_plus::util::unbounded_channel();
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (users_send, users) = hydroflow::util::unbounded_channel();
+        let (messages_send, messages) = hydroflow::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut chat_server = super::chat_app!(users, messages, &out, false);
         assert_graphvis_snapshots!(chat_server);
@@ -89,9 +105,9 @@ mod tests {
 
     #[test]
     fn test_chat_app_replay() {
-        let (users_send, users) = hydroflow_plus::util::unbounded_channel();
-        let (messages_send, messages) = hydroflow_plus::util::unbounded_channel();
-        let (out, mut out_recv) = hydroflow_plus::util::unbounded_channel();
+        let (users_send, users) = hydroflow::util::unbounded_channel();
+        let (messages_send, messages) = hydroflow::util::unbounded_channel();
+        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
 
         let mut chat_server = super::chat_app!(users, messages, &out, true);
         assert_graphvis_snapshots!(chat_server);

@@ -1,5 +1,6 @@
 use proc_macro2::{Punct, Spacing, Span, TokenStream};
 use quote::{quote, quote_spanned, ToTokens};
+use sha2::{Digest, Sha256};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{AngleBracketedGenericArguments, Token, Type};
@@ -339,7 +340,7 @@ pub fn entry(
         .chars()
         .filter(|c| c.is_alphanumeric())
         .collect::<String>();
-    let input_hash = "macro_".to_string() + &sha256::digest(input_contents);
+    let input_hash = "macro_".to_string() + &format!("{:X}", Sha256::digest(input_contents));
     let input_hash_ident = syn::Ident::new(&input_hash, Span::call_site());
     let input_hash_impl_ident = syn::Ident::new(&(input_hash + "_impl"), Span::call_site());
 
@@ -353,6 +354,7 @@ pub fn entry(
 
         #[cfg_attr(not(stageleft_macro), allow(unused))]
         #[cfg_attr(not(stageleft_macro), doc(hidden))]
+        #[allow(non_snake_case)]
         pub(crate) fn #input_hash_impl_ident(input: #root::internal::TokenStream) -> #root::internal::TokenStream {
             let input_parsed = #root::internal::syn::parse::Parser::parse(
                 #root::internal::syn::punctuated::Punctuated::<#root::internal::syn::Expr, #root::internal::syn::Token![,]>::parse_terminated,
@@ -370,7 +372,7 @@ pub fn entry(
             #root::runtime_support::set_macro_to_crate(macro_crate_name, final_crate_name);
 
             let output_core = {
-                #root::Quoted::splice_untyped(#input_name #passed_generics(#root::QuotedContext::create(), #(#params_to_pass),*))
+                #root::QuotedWithContext::splice_untyped_ctx(#input_name #passed_generics(#root::QuotedContext::create(), #(#params_to_pass),*), &())
             };
 
             let final_crate_root = #root::runtime_support::get_final_crate_name(final_crate_name);

@@ -126,7 +126,7 @@ pub trait GraphExt {
         W: 'static + Handoff + CanReceive<T>;
 }
 
-impl<'a> GraphExt for Hydroflow<'a> {
+impl GraphExt for Hydroflow<'_> {
     subgraph_ext!(impl add_subgraph_sink, (recv_port: R), ());
     subgraph_ext!(
         impl add_subgraph_2sink,

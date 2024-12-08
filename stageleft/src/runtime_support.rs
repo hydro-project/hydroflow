@@ -5,7 +5,7 @@ use std::mem::MaybeUninit;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 
-use crate::Quoted;
+use crate::QuotedWithContext;
 
 pub fn get_final_crate_name(crate_name: &str) -> TokenStream {
     let final_crate = proc_macro_crate::crate_name(crate_name)
@@ -75,10 +75,28 @@ impl ParseFromLiteral for bool {
 impl_parse_from_literal_numeric!(i8, i16, i32, i64, i128, isize);
 impl_parse_from_literal_numeric!(u8, u16, u32, u64, u128, usize);
 
-pub trait FreeVariable<O> {
-    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>)
+pub trait FreeVariableWithContext<Ctx> {
+    type O;
+
+    fn to_tokens(self, ctx: &Ctx) -> (Option<TokenStream>, Option<TokenStream>)
     where
         Self: Sized;
+
+    fn uninitialized(&self, _ctx: &Ctx) -> Self::O {
+        #[expect(clippy::uninit_assumed_init, reason = "this code should never run")]
+        unsafe {
+            MaybeUninit::uninit().assume_init()
+        }
+    }
+}
+
+pub trait FreeVariable<O>: FreeVariableWithContext<(), O = O> {
+    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>)
+    where
+        Self: Sized,
+    {
+        FreeVariableWithContext::to_tokens(self, &())
+    }
 
     fn uninitialized(&self) -> O {
         #[expect(clippy::uninit_assumed_init, reason = "this code should never run")]
@@ -88,16 +106,20 @@ pub trait FreeVariable<O> {
     }
 }
 
+impl<O, T: FreeVariableWithContext<(), O = O>> FreeVariable<O> for T {}
+
 macro_rules! impl_free_variable_from_literal_numeric {
     ($($ty:ty),*) => {
         $(
-            impl FreeVariable<$ty> for $ty {
-                fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
+            impl <Ctx> FreeVariableWithContext<Ctx> for $ty {
+                type O = $ty;
+
+                fn to_tokens(self, _ctx: &Ctx) -> (Option<TokenStream>, Option<TokenStream>) {
                     (None, Some(quote!(#self)))
                 }
             }
 
-            impl<'a> Quoted<'a, $ty> for $ty {}
+            impl<'a, Ctx> QuotedWithContext<'a, $ty, Ctx> for $ty {}
         )*
     };
 }
@@ -105,8 +127,10 @@ macro_rules! impl_free_variable_from_literal_numeric {
 impl_free_variable_from_literal_numeric!(i8, i16, i32, i64, i128, isize);
 impl_free_variable_from_literal_numeric!(u8, u16, u32, u64, u128, usize);
 
-impl FreeVariable<&str> for &str {
-    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
+impl<Ctx> FreeVariableWithContext<Ctx> for &str {
+    type O = &'static str;
+
+    fn to_tokens(self, _ctx: &Ctx) -> (Option<TokenStream>, Option<TokenStream>) {
         (None, Some(quote!(#self)))
     }
 }
@@ -142,8 +166,10 @@ pub fn create_import<T>(
     }
 }
 
-impl<T> FreeVariable<T> for Import<T> {
-    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
+impl<T, Ctx> FreeVariableWithContext<Ctx> for Import<T> {
+    type O = T;
+
+    fn to_tokens(self, _ctx: &Ctx) -> (Option<TokenStream>, Option<TokenStream>) {
         let final_crate_root = get_final_crate_name(self.crate_name);
 
         let module_path = syn::parse_str::<syn::Path>(self.module_path).unwrap();

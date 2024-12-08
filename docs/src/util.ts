@@ -1,13 +1,56 @@
-/// Grabs the specified lines `[lineStart, lineEnd]` from the string.
+/// Grabs the specified lines from the string.
+///
+/// Can specify a line number range `lineStart, lineEnd`, a specific line number `lineNumber` (no
+/// second arg), or a section name.
 ///
 /// Lines are one-indexed (start with `1`). Both `lineStart` and `lineEnd` are inclusive.
-export function getLines(str: string, lineStart: number, lineEnd?: number): string {
-    let lines = str.split('\n').slice(lineStart - 1, lineEnd || lineStart);
+///
+/// Sections are marked in the code with a start tag `//[mysection]//` and and end tag
+/// `//[/mysection]//`. The rest of these tag lines must be whitespace, and these tag lines are not
+/// included in the output. However they are included for line number _counting_.
+export function getLines(str: string, sectionName: string): string;
+export function getLines(str: string, lineStart: number, lineEnd?: number): string;
+export function getLines(str: string, lineStartOrSectionName: number | string, lineEnd?: number): string {
+    // `//[section]//` or `//[/section]//` (rest of line must be whitespace).
+    const SECTION_REGEX = /^\s*\/\/\[(\/?)(\S+)\]\/\/\s*$/;
+    let lines;
+    if ('string' === typeof lineStartOrSectionName) {
+        let inSection = false;
+        lines = str
+            .split('\n')
+            .filter(line => {
+                const match = SECTION_REGEX.exec(line);
+                if (null == match) {
+                    return inSection;
+                }
+                const [_, end, name] = match;
+                if (name == lineStartOrSectionName) {
+                    inSection = 0 === end.length;
+                }
+                return false;
+            })
+    }
+    else {
+        lines = str
+            .split('\n')
+            .slice(lineStartOrSectionName - 1, lineEnd || lineStartOrSectionName) // Select lines before removing section lines.
+            .filter(line => !SECTION_REGEX.test(line));
+    }
     const leadingWhitespace = Math.min(...lines.filter(line => 0 !== line.length).map(line => line.search(/\S/)).map(Number));
     if (0 < leadingWhitespace) {
         lines = lines.map(line => line.slice(leadingWhitespace));
     }
     return lines.join('\n');
+}
+
+/// Adds `// highlight-next-line` annotations to the specified lines.
+export function highlightLines(code: string, lines: number[]): string {
+    return code.split('\n').map((line, i) => {
+        if (lines.includes(i + 1)) {
+            return `// highlight-next-line\n${line}`;
+        }
+        return line;
+    }).join('\n');
 }
 
 /// Extract the output from the stdout snapshots created by `surface_examples.rs`.
@@ -40,7 +83,7 @@ ${stdOut}`;
 /// Extract the mermaid graph logged to stdout from the snapshots created by `surface_examples.rs`.
 export function extractMermaid(output: string): string {
     const outputLines = output.split('\n');
-     // Delete the first four lines, which are the snapshot front matter.
+    // Delete the first four lines, which are the snapshot front matter.
     outputLines.splice(0, 4);
     // Mermaid graph starts with double-percent signs.
     if (!outputLines[0].startsWith('%%')) {

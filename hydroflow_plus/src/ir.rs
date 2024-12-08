@@ -69,7 +69,6 @@ pub enum HfPlusSource {
     Stream(DebugExpr),
     ExternalNetwork(),
     Iter(DebugExpr),
-    Interval(DebugExpr),
     Spin(),
 }
 
@@ -94,7 +93,7 @@ pub enum HfPlusLeaf {
 }
 
 impl HfPlusLeaf {
-    pub fn compile_network<'a, D: Deploy<'a> + 'a>(
+    pub fn compile_network<'a, D: Deploy<'a>>(
         self,
         compile_env: &D::CompileEnv,
         seen_tees: &mut SeenTees,
@@ -187,9 +186,10 @@ impl HfPlusLeaf {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
-                let location_id = match location_kind {
+                let location_id = match location_kind.root() {
                     LocationId::Process(id) => id,
                     LocationId::Cluster(id) => id,
+                    LocationId::Tick(_, _) => panic!(),
                     LocationId::ExternalProcess(_) => panic!(),
                 };
 
@@ -286,7 +286,7 @@ pub enum HfPlusNode {
     Unpersist(Box<HfPlusNode>),
     Delta(Box<HfPlusNode>),
 
-    Union(Box<HfPlusNode>, Box<HfPlusNode>),
+    Chain(Box<HfPlusNode>, Box<HfPlusNode>),
     CrossProduct(Box<HfPlusNode>, Box<HfPlusNode>),
     CrossSingleton(Box<HfPlusNode>, Box<HfPlusNode>),
     Join(Box<HfPlusNode>, Box<HfPlusNode>),
@@ -311,7 +311,10 @@ pub enum HfPlusNode {
     },
 
     DeferTick(Box<HfPlusNode>),
-    Enumerate(Box<HfPlusNode>),
+    Enumerate {
+        is_static: bool,
+        input: Box<HfPlusNode>,
+    },
     Inspect {
         f: DebugExpr,
         input: Box<HfPlusNode>,
@@ -355,7 +358,7 @@ pub enum HfPlusNode {
 pub type SeenTees = HashMap<*const RefCell<HfPlusNode>, Rc<RefCell<HfPlusNode>>>;
 
 impl<'a> HfPlusNode {
-    pub fn compile_network<D: Deploy<'a> + 'a>(
+    pub fn compile_network<D: Deploy<'a>>(
         &mut self,
         compile_env: &D::CompileEnv,
         seen_tees: &mut SeenTees,
@@ -457,7 +460,7 @@ impl<'a> HfPlusNode {
             HfPlusNode::Unpersist(inner) => transform(inner.as_mut(), seen_tees),
             HfPlusNode::Delta(inner) => transform(inner.as_mut(), seen_tees),
 
-            HfPlusNode::Union(left, right) => {
+            HfPlusNode::Chain(left, right) => {
                 transform(left.as_mut(), seen_tees);
                 transform(right.as_mut(), seen_tees);
             }
@@ -500,7 +503,7 @@ impl<'a> HfPlusNode {
             HfPlusNode::DeferTick(input) => {
                 transform(input.as_mut(), seen_tees);
             }
-            HfPlusNode::Enumerate(input) => {
+            HfPlusNode::Enumerate { input, .. } => {
                 transform(input.as_mut(), seen_tees);
             }
             HfPlusNode::Inspect { input, .. } => {
@@ -587,6 +590,7 @@ impl<'a> HfPlusNode {
                 let location_id = match location_kind {
                     LocationId::Process(id) => id,
                     LocationId::Cluster(id) => id,
+                    LocationId::Tick(_, _) => panic!(),
                     LocationId::ExternalProcess(id) => id,
                 };
 
@@ -616,12 +620,6 @@ impl<'a> HfPlusNode {
                             }
                         }
 
-                        HfPlusSource::Interval(expr) => {
-                            parse_quote! {
-                                #source_ident = source_interval(#expr);
-                            }
-                        }
-
                         HfPlusSource::Spin() => {
                             parse_quote! {
                                 #source_ident = spin();
@@ -642,9 +640,10 @@ impl<'a> HfPlusNode {
                 ident,
                 location_kind,
             } => {
-                let location_id = match location_kind {
+                let location_id = match location_kind.root() {
                     LocationId::Process(id) => id,
                     LocationId::Cluster(id) => id,
+                    LocationId::Tick(_, _) => panic!(),
                     LocationId::ExternalProcess(_) => panic!(),
                 };
 
@@ -682,7 +681,7 @@ impl<'a> HfPlusNode {
                 }
             }
 
-            HfPlusNode::Union(left, right) => {
+            HfPlusNode::Chain(left, right) => {
                 let (left_ident, left_location_id) =
                     left.emit(graph_builders, built_tees, next_stmt_id);
                 let (right_ident, right_location_id) =
@@ -690,29 +689,29 @@ impl<'a> HfPlusNode {
 
                 assert_eq!(
                     left_location_id, right_location_id,
-                    "union inputs must be in the same location"
+                    "chain inputs must be in the same location"
                 );
 
                 let union_id = *next_stmt_id;
                 *next_stmt_id += 1;
 
-                let union_ident =
+                let chain_ident =
                     syn::Ident::new(&format!("stream_{}", union_id), Span::call_site());
 
                 let builder = graph_builders.entry(left_location_id).or_default();
                 builder.add_statement(parse_quote! {
-                    #union_ident = union();
+                    #chain_ident = chain();
                 });
 
                 builder.add_statement(parse_quote! {
-                    #left_ident -> [0]#union_ident;
+                    #left_ident -> [0]#chain_ident;
                 });
 
                 builder.add_statement(parse_quote! {
-                    #right_ident -> [1]#union_ident;
+                    #right_ident -> [1]#chain_ident;
                 });
 
-                (union_ident, left_location_id)
+                (chain_ident, left_location_id)
             }
 
             HfPlusNode::CrossSingleton(left, right) => {
@@ -991,7 +990,7 @@ impl<'a> HfPlusNode {
                 (defer_tick_ident, input_location_id)
             }
 
-            HfPlusNode::Enumerate(input) => {
+            HfPlusNode::Enumerate { is_static, input } => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -1002,9 +1001,16 @@ impl<'a> HfPlusNode {
                     syn::Ident::new(&format!("stream_{}", enumerate_id), Span::call_site());
 
                 let builder = graph_builders.entry(input_location_id).or_default();
-                builder.add_statement(parse_quote! {
-                    #enumerate_ident = #input_ident -> enumerate();
-                });
+
+                if *is_static {
+                    builder.add_statement(parse_quote! {
+                        #enumerate_ident = #input_ident -> enumerate::<'static>();
+                    });
+                } else {
+                    builder.add_statement(parse_quote! {
+                        #enumerate_ident = #input_ident -> enumerate::<'tick>();
+                    });
+                }
 
                 (enumerate_ident, input_location_id)
             }
@@ -1168,6 +1174,7 @@ impl<'a> HfPlusNode {
                 let to_id = match to_location {
                     LocationId::Process(id) => id,
                     LocationId::Cluster(id) => id,
+                    LocationId::Tick(_, _) => panic!(),
                     LocationId::ExternalProcess(id) => id,
                 };
 
@@ -1195,7 +1202,7 @@ impl<'a> HfPlusNode {
 }
 
 #[expect(clippy::too_many_arguments, reason = "networking internals")]
-fn instantiate_network<'a, D: Deploy<'a> + 'a>(
+fn instantiate_network<'a, D: Deploy<'a>>(
     from_location: &mut LocationId,
     from_key: Option<usize>,
     to_location: &mut LocationId,
@@ -1362,6 +1369,8 @@ fn instantiate_network<'a, D: Deploy<'a> + 'a>(
         (LocationId::Cluster(_from), LocationId::ExternalProcess(_to)) => {
             todo!("NYI")
         }
+        (LocationId::Tick(_, _), _) => panic!(),
+        (_, LocationId::Tick(_, _)) => panic!(),
     };
     (sink, source, connect_fn)
 }

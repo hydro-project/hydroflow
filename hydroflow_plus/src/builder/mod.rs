@@ -3,18 +3,17 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
-use internal::TokenStream;
-use proc_macro2::Span;
-use quote::quote;
-use runtime_support::FreeVariable;
+use compiled::CompiledFlow;
+use deploy::{DeployFlow, DeployResult};
 use stageleft::*;
 
-use super::staging_util::get_this_crate;
+use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDeploy};
 use crate::ir::HfPlusLeaf;
 use crate::location::{Cluster, ExternalProcess, Process};
-use crate::{ClusterId, RuntimeContext};
+use crate::staging_util::Invariant;
 
 pub mod built;
+pub mod compiled;
 pub mod deploy;
 
 pub struct FlowStateInner {
@@ -28,77 +27,14 @@ pub struct FlowStateInner {
 
     /// Counters for generating identifiers for cycles.
     pub(crate) cycle_counts: HashMap<usize, usize>,
+
+    /// Counters for clock IDs.
+    pub(crate) next_clock_id: usize,
 }
 
 pub type FlowState = Rc<RefCell<FlowStateInner>>;
 
-pub struct ClusterIds<'a, C> {
-    pub(crate) id: usize,
-    pub(crate) _phantom: PhantomData<&'a mut &'a C>,
-}
-
-impl<'a, C> Clone for ClusterIds<'a, C> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<'a, C> Copy for ClusterIds<'a, C> {}
-
-impl<'a, C> FreeVariable<&'a Vec<ClusterId<C>>> for ClusterIds<'a, C> {
-    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>)
-    where
-        Self: Sized,
-    {
-        let ident = syn::Ident::new(
-            &format!("__hydroflow_plus_cluster_ids_{}", self.id),
-            Span::call_site(),
-        );
-        let root = get_this_crate();
-        let c_type = quote_type::<C>();
-        (
-            None,
-            Some(
-                quote! { unsafe { ::std::mem::transmute::<_, &::std::vec::Vec<#root::ClusterId<#c_type>>>(#ident) } },
-            ),
-        )
-    }
-}
-
-impl<'a, C> Quoted<'a, &'a Vec<ClusterId<C>>> for ClusterIds<'a, C> {}
-
-pub(crate) struct ClusterSelfId<'a, C> {
-    pub(crate) id: usize,
-    pub(crate) _phantom: PhantomData<&'a mut &'a C>,
-}
-
-impl<'a, C> Clone for ClusterSelfId<'a, C> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<'a, C> Copy for ClusterSelfId<'a, C> {}
-
-impl<'a, C> FreeVariable<ClusterId<C>> for ClusterSelfId<'a, C> {
-    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>)
-    where
-        Self: Sized,
-    {
-        let ident = syn::Ident::new(
-            &format!("__hydroflow_plus_cluster_self_id_{}", self.id),
-            Span::call_site(),
-        );
-        let root = get_this_crate();
-        let c_type: syn::Type = quote_type::<C>();
-        (
-            None,
-            Some(quote! { #root::ClusterId::<#c_type>::from_raw(#ident) }),
-        )
-    }
-}
-
-impl<'a, C> Quoted<'a, ClusterId<C>> for ClusterSelfId<'a, C> {}
+pub const FLOW_USED_MESSAGE: &str = "Attempted to add a leaf to a flow that has already been finalized. No leaves can be added after the flow has been compiled.";
 
 pub struct FlowBuilder<'a> {
     flow_state: FlowState,
@@ -115,10 +51,10 @@ pub struct FlowBuilder<'a> {
     /// capture more data that it is allowed to; 'a is generated at the
     /// entrypoint of the staged code and we keep it invariant here
     /// to enforce the appropriate constraints
-    _phantom: PhantomData<&'a mut &'a ()>,
+    _phantom: Invariant<'a>,
 }
 
-impl<'a> Drop for FlowBuilder<'a> {
+impl Drop for FlowBuilder<'_> {
     fn drop(&mut self) {
         if !self.finalized {
             panic!("Dropped FlowBuilder without finalizing, you may have forgotten to call `with_default_optimize`, `optimize_with`, or `finalize`.");
@@ -126,7 +62,7 @@ impl<'a> Drop for FlowBuilder<'a> {
     }
 }
 
-impl<'a> QuotedContext for FlowBuilder<'a> {
+impl QuotedContext for FlowBuilder<'_> {
     fn create() -> Self {
         FlowBuilder::new()
     }
@@ -143,6 +79,7 @@ impl<'a> FlowBuilder<'a> {
                 leaves: Some(vec![]),
                 next_external_out: 0,
                 cycle_counts: HashMap::new(),
+                next_clock_id: 0,
             })),
             nodes: RefCell::new(vec![]),
             clusters: RefCell::new(vec![]),
@@ -164,7 +101,7 @@ impl<'a> FlowBuilder<'a> {
         }
     }
 
-    pub fn with_default_optimize(self) -> built::BuiltFlow<'a> {
+    pub fn with_default_optimize<D: LocalDeploy<'a>>(self) -> DeployFlow<'a, D> {
         self.finalize().with_default_optimize()
     }
 
@@ -221,9 +158,42 @@ impl<'a> FlowBuilder<'a> {
         }
     }
 
-    pub fn runtime_context(&self) -> RuntimeContext<'a> {
-        RuntimeContext {
-            _phantom: PhantomData,
-        }
+    pub fn with_process<P, D: LocalDeploy<'a>>(
+        self,
+        process: &Process<P>,
+        spec: impl IntoProcessSpec<'a, D>,
+    ) -> DeployFlow<'a, D> {
+        self.with_default_optimize().with_process(process, spec)
+    }
+
+    pub fn with_external<P, D: LocalDeploy<'a>>(
+        self,
+        process: &ExternalProcess<P>,
+        spec: impl ExternalSpec<'a, D>,
+    ) -> DeployFlow<'a, D> {
+        self.with_default_optimize().with_external(process, spec)
+    }
+
+    pub fn with_cluster<C, D: LocalDeploy<'a>>(
+        self,
+        cluster: &Cluster<C>,
+        spec: impl ClusterSpec<'a, D>,
+    ) -> DeployFlow<'a, D> {
+        self.with_default_optimize().with_cluster(cluster, spec)
+    }
+
+    pub fn compile<D: Deploy<'a>>(self, env: &D::CompileEnv) -> CompiledFlow<'a, D::GraphId> {
+        self.with_default_optimize::<D>().compile(env)
+    }
+
+    pub fn compile_no_network<D: LocalDeploy<'a>>(self) -> CompiledFlow<'a, D::GraphId> {
+        self.with_default_optimize::<D>().compile_no_network()
+    }
+
+    pub fn deploy<D: Deploy<'a, CompileEnv = ()>>(
+        self,
+        env: &mut D::InstantiateEnv,
+    ) -> DeployResult<'a, D> {
+        self.with_default_optimize().deploy(env)
     }
 }
