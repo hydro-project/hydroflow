@@ -1,29 +1,24 @@
-use std::{collections::HashMap, sync::OnceLock};
+use std::collections::HashMap;
 use std::net::SocketAddr;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use anyhow::Result;
 use async_trait::async_trait;
+use futures::{StreamExt, TryStreamExt};
 use hydroflow_deploy_integration::ServerBindConfig;
+use k8s_openapi::api::core::v1::Pod;
+use kube::api::{Api, AttachParams, ListParams, PostParams, ResourceExt, WatchEvent, WatchParams};
+use kube::Client;
+use nanoid::nanoid;
+use tokio::io::AsyncWriteExt;
 
-use crate::hydroflow_crate::{build::BuildOutput, tracing_options::TracingOptions};
-
+use super::progress::ProgressTracker;
 use super::{
     ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
     ResourceResult, ServerStrategy,
 };
-
-use futures::{StreamExt, TryStreamExt};
-use k8s_openapi::api::core::v1::Pod;
-use kube::{
-    api::{Api, AttachParams, ListParams, PostParams, ResourceExt, WatchEvent, WatchParams},
-    Client,
-};
-
-use tokio::io::AsyncWriteExt;
-use nanoid::nanoid;
-
-use super::progress::ProgressTracker;
+use crate::hydroflow_crate::build::BuildOutput;
+use crate::hydroflow_crate::tracing_options::TracingOptions;
 
 pub mod launched_binary;
 pub use launched_binary::*;
@@ -101,7 +96,8 @@ impl Host for PodHost {
                         "command": ["tail", "-f", "/dev/null"],
                     }],
                 }
-            })).unwrap();
+            }))
+            .unwrap();
 
             let pods: Api<Pod> = Api::default_namespaced(client);
 
@@ -117,7 +113,13 @@ impl Host for PodHost {
                     }
                 }
                 Err(e) => {
-                    ProgressTracker::println(format!("Error listing pods: {:?}. Maybe your kubernetes cluster is not up?", e).as_str());
+                    ProgressTracker::println(
+                        format!(
+                            "Error listing pods: {:?}. Maybe your kubernetes cluster is not up?",
+                            e
+                        )
+                        .as_str(),
+                    );
                 }
             }
             if !found_existing_pod {
@@ -130,7 +132,9 @@ impl Host for PodHost {
             }
 
             // Wait until the pod is running, otherwise we get 500 error.
-            let wp = WatchParams::default().fields(format!("metadata.name={}", pod_name).as_str()).timeout(10);
+            let wp = WatchParams::default()
+                .fields(format!("metadata.name={}", pod_name).as_str())
+                .timeout(10);
             let mut stream = pods.watch(&wp, "0").await.unwrap().boxed();
             loop {
                 let status_result = stream.try_next().await;
@@ -139,7 +143,10 @@ impl Host for PodHost {
                         WatchEvent::Added(o) | WatchEvent::Modified(o) => {
                             let s = o.status.as_ref().expect("status exists on pod");
                             if s.phase.clone().unwrap_or_default() == "Running" {
-                                ProgressTracker::println(&format!("Ready to attach to {}", o.name_any()));
+                                ProgressTracker::println(&format!(
+                                    "Ready to attach to {}",
+                                    o.name_any()
+                                ));
                                 break;
                             }
                         }
@@ -156,16 +163,35 @@ impl Host for PodHost {
                 }
             }
 
-            let internal_ip = pods.get_status(pod_name.clone().as_str()).await.unwrap().status.unwrap().pod_ip.unwrap();
+            let internal_ip = pods
+                .get_status(pod_name.clone().as_str())
+                .await
+                .unwrap()
+                .status
+                .unwrap()
+                .pod_ip
+                .unwrap();
 
-            self.launched.set(Arc::new(LaunchedPod {
-                internal_ip,
-                pod_name: pod_name.clone(),
-            })).unwrap();
+            self.launched
+                .set(Arc::new(LaunchedPod {
+                    internal_ip,
+                    pod_name: pod_name.clone(),
+                }))
+                .unwrap();
 
             // Update apt-get in the pod
-            let ap = AttachParams::default().stdin(false).stdout(false).stderr(true);
-            let mut update_apt = pods.exec(pod_name.clone().as_str(), vec![&format!("apt-get"), "update"], &ap).await.unwrap();
+            let ap = AttachParams::default()
+                .stdin(false)
+                .stdout(false)
+                .stderr(true);
+            let mut update_apt = pods
+                .exec(
+                    pod_name.clone().as_str(),
+                    vec![&format!("apt-get"), "update"],
+                    &ap,
+                )
+                .await
+                .unwrap();
             let update_apt_status = update_apt.take_status().unwrap();
 
             match update_apt_status.await {
@@ -176,17 +202,25 @@ impl Host for PodHost {
             }
 
             // Install lsof in the pod to track open files
-            let mut install_lsof = pods.exec(pod_name.clone().as_str(), vec![&format!("apt-get"), "install", "-y", "lsof"], &ap).await.unwrap();
+            let mut install_lsof = pods
+                .exec(
+                    pod_name.clone().as_str(),
+                    vec![&format!("apt-get"), "install", "-y", "lsof"],
+                    &ap,
+                )
+                .await
+                .unwrap();
             let install_lsof_status = install_lsof.take_status().unwrap();
 
             match install_lsof_status.await {
                 None => {
-                    ProgressTracker::println("Warning: Command 'apt-get install -y lsof' failed in pod");
+                    ProgressTracker::println(
+                        "Warning: Command 'apt-get install -y lsof' failed in pod",
+                    );
                 }
                 _ => {}
             }
             ProgressTracker::println("Finished apt install");
-
         }
 
         self.launched.get().unwrap().clone()
@@ -197,7 +231,7 @@ impl Host for PodHost {
         connection_from: &dyn Host,
     ) -> Result<(
         ClientStrategy<'a>,
-        Box<dyn FnOnce(& dyn std::any::Any) -> ServerStrategy>,
+        Box<dyn FnOnce(&dyn std::any::Any) -> ServerStrategy>,
     )> {
         if self.client_only {
             anyhow::bail!("Pod cannot be a server if it is client only")
@@ -233,7 +267,7 @@ impl Host for PodHost {
                 }
             }
             // target_host.as_any().downcast_ref::<PodHost>()
-            ClientStrategy::InternalTcpPort(_target_host) => true, // TODO: if I'm on the same cluster, can just return true first
+            ClientStrategy::InternalTcpPort(_target_host) => true, /* TODO: if I'm on the same cluster, can just return true first */
             ClientStrategy::ForwardedTcpPort(_) => true,
         }
     }
@@ -250,7 +284,7 @@ impl LaunchedHost for LaunchedPod {
     fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig {
         match bind_type {
             ServerStrategy::UnixSocket => ServerBindConfig::UnixSocket,
-            ServerStrategy::InternalTcpPort => ServerBindConfig::TcpPort(self.internal_ip.clone()), // TODO: change to pod's internal port
+            ServerStrategy::InternalTcpPort => ServerBindConfig::TcpPort(self.internal_ip.clone()), /* TODO: change to pod's internal port */
             ServerStrategy::ExternalTcpPort(_) => panic!("Cannot bind to external port"),
             ServerStrategy::Demux(demux) => {
                 let mut config_map = HashMap::new();
@@ -297,7 +331,11 @@ impl LaunchedHost for LaunchedPod {
         // Open up a tar extraction listening to stdin
         let ap = AttachParams::default().stdin(true).stderr(false);
         let mut tar = pods
-            .exec(self.pod_name.as_str(), vec!["tar", "xf", "-", "-C", "/"], &ap)
+            .exec(
+                self.pod_name.as_str(),
+                vec!["tar", "xf", "-", "-C", "/"],
+                &ap,
+            )
             .await?;
         let mut tar_stdin = tar.stdin().unwrap();
 
@@ -306,7 +344,6 @@ impl LaunchedHost for LaunchedPod {
             ProgressTracker::println(&format!("Error writing to stdin: {:?}", e));
             return Err(e.into());
         }
-        ProgressTracker::println("Wrote all the stdin");
 
         // Flush the stdin to finish sending the file through
         if let Err(e) = tar_stdin.flush().await {
@@ -314,45 +351,11 @@ impl LaunchedHost for LaunchedPod {
             return Err(e.into());
         }
 
-        ProgressTracker::println("Flushed!");
-        // sleep(Duration::from_secs(5)).await;
-
-        // let mut status_stdout = tar.stdout().unwrap();
-        // let mut stdout_buf = Vec::new();
-        // match status_stdout.read_to_end(&mut stdout_buf).await {
-        //     Ok(_) => {
-        //         let stdout_str = String::from_utf8_lossy(&stdout_buf);
-        //         ProgressTracker::println(&format!("Successfully read status output: {}", stdout_str));
-        //     },
-        //     Err(e) => ProgressTracker::println(&format!("Error reading status output: {:?}", e)),
-        // }
-        // sleep(Duration::from_secs(5)).await;
-
-        // TODO: the optimal delay here was 500 ms. WHAT IS GOING ON IN THESE 500 MS??
-        // tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-        // Send `exit 1` to get a failure status.
-        // match status.await {
-        //     Some(status) => {
-        //         ProgressTracker::println(&format!("Status: {:?}", status));
-        //     }
-        //     None => {
-        //         ProgressTracker::println("Status is None");
-        //     }
-        // }
         // Shut down stdin to end writing process
         if let Err(e) = tar_stdin.shutdown().await {
             ProgressTracker::println(&format!("Error shutting down stdin: {:?}", e));
             return Err(e.into());
         }
-        // drop(tar_stdin); // Ensure stdin is closed before joining
-        // let result = tar.join().await;
-        // // tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-        // match result {
-        //     Ok(_) => {
-        //         ProgressTracker::println("Successfully copied binary to pod");
-        //     },
-        //     Err(e) => ProgressTracker::println(&format!("Failed to copy binary to pod: {:?}", e)),
-        // }
 
         // Wait until the binary file has finished extracting and is executable. Why can we not just use tar.join() to wait until the tar
         // extraction has finished? That is because tar.join() only applies to the message loop that manages the streams (ex. stdin, stdout)
@@ -362,18 +365,24 @@ impl LaunchedHost for LaunchedPod {
         loop {
             let ap_stdout = AttachParams::default().stdin(false).stderr(false);
 
-            let mut lsof_file_process = pods.exec(self.pod_name.as_str(), vec!["lsof", &format!("./hydro-{}-binary", binary.unique_id)], &ap_stdout).await?;
+            let mut lsof_file_process = pods
+                .exec(
+                    self.pod_name.as_str(),
+                    vec!["lsof", &format!("./hydro-{}-binary", binary.unique_id)],
+                    &ap_stdout,
+                )
+                .await?;
 
-            let lsof_stdout = tokio_util::io::ReaderStream::new(lsof_file_process.stdout().unwrap());
+            let lsof_stdout =
+                tokio_util::io::ReaderStream::new(lsof_file_process.stdout().unwrap());
             let lsof_out = lsof_stdout
-                        .filter_map(|r| async { r.ok().and_then(|v| String::from_utf8(v.to_vec()).ok()) })
-                        .collect::<Vec<_>>()
-                        .await
-                        .join("");
+                .filter_map(|r| async { r.ok().and_then(|v| String::from_utf8(v.to_vec()).ok()) })
+                .collect::<Vec<_>>()
+                .await
+                .join("");
 
-            ProgressTracker::println(&format!("LSOF: {:?}", lsof_out));
             if !lsof_out.is_empty() {
-                // Binary is currently still open
+                // Binary is currently still open and being written to
                 tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
             } else {
                 // Binary is not in use, ready to proceed
@@ -403,58 +412,24 @@ impl LaunchedHost for LaunchedPod {
         args_list.extend(args.iter().cloned());
 
         // Execute binary inside the new pod
-        let ap = AttachParams::default().stdin(true).stdout(true).stderr(true);
-        // let mut lsof_process = match pods.exec(pod_name, vec![format!("lsof")], &ap).await?;
-        // let mut stdout_stream = tokio_util::io::ReaderStream::new(lsof_process.stdout().unwrap());
-        // let stdout = String::from_utf8(next_stdout.await.unwrap().unwrap().to_vec()).unwrap();
-        // ProgressTracker::println(&format!("Stdout: {:?}", stdout));
-
-
-
-        // tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-        // sleep(Duration::from_secs(3)).await;
-        let mut launch_binary;
-        loop {
-            match pods.exec(pod_name, args_list.clone(), &ap).await {
-                Ok(exec) => {
-                    launch_binary = exec;
-
-                    break;
-                }
-                Err(e) => {
-                    ProgressTracker::println(&format!("Failed to launch binary in Pod: {:?}. Retrying...", e));
-                    // Optionally, you can add a delay here before retrying
-                    // tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                }
+        let ap = AttachParams::default()
+            .stdin(true)
+            .stdout(true)
+            .stderr(true);
+        // Execute binary inside the new pod
+        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+        let launch_binary = match pods.exec(pod_name, args_list, &ap).await {
+            Ok(exec) => exec,
+            Err(e) => {
+                ProgressTracker::println(&format!("Failed to launch binary in Pod: {:?}", e));
+                return Err(e.into());
             }
-        }
-
-        // TODO: is there a way to print out the bug that's causing the program to crash?
-        // let stdout_stream = tokio_util::io::ReaderStream::new(launch_binary.stderr().unwrap());
-        // let mut stdout_stream_peekable = stdout_stream.peekable();
-        // if let Some(Ok(data)) = stdout_stream_peekable.peek().await {
-        //     ProgressTracker::println(&format!("Stdout: {:?}", data));
-        // } else {
-        //     ProgressTracker::println("No more data in stdout stream.");
-        // }
-
-        // match stdout_stream.try_next().await {
-        //     Some(Ok(data)) => {
-        //         let stdout = String::from_utf8(data.to_vec()).unwrap();
-        //         ProgressTracker::println(&format!("Stdout: {:?}", stdout));
-        //     },
-        //     Some(Err(e)) => {
-        //         ProgressTracker::println(&format!("Error reading stdout: {:?}", e));
-        //     }
-        //     None => {
-        //         ProgressTracker::println("No more data in stdout stream.");
-        //     }
-        // };
-
-        ProgressTracker::println("Launched binary in Pod");
+        };
 
         Ok(Box::new(LaunchedPodBinary::new(
-            launch_binary, id, self.pod_name.clone(),
+            launch_binary,
+            id,
+            self.pod_name.clone(),
         )))
     }
 

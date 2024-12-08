@@ -8,8 +8,8 @@ use tokio::sync::RwLock;
 
 use super::gcp::GcpNetwork;
 use super::{
-    progress, CustomService, GcpComputeEngineHost, Host, LocalhostHost, ResourcePool,
-    ResourceResult, Service, PodHost
+    progress, CustomService, GcpComputeEngineHost, Host, LocalhostHost, PodHost, ResourcePool,
+    ResourceResult, Service,
 };
 use crate::{AzureHost, ServiceBuilder};
 
@@ -257,14 +257,23 @@ impl Deployment {
         region: String,
         user: Option<String>,
     ) -> Arc<AzureHost> {
-        self.add_host(|id| AzureHost::new(id, project, os_type, machine_size, architecture, image, region, user))
+        self.add_host(|id| {
+            AzureHost::new(
+                id,
+                project,
+                os_type,
+                machine_size,
+                architecture,
+                image,
+                region,
+                user,
+            )
+        })
     }
 
     #[allow(clippy::too_many_arguments)]
     #[builder(entry = "PodHost", exit = "add")]
-    pub fn add_pod_host(
-        &mut self,
-    ) -> Arc<PodHost> {
+    pub fn add_pod_host(&mut self) -> Arc<PodHost> {
         self.add_host(|id| PodHost::new(id))
     }
 }
