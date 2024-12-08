@@ -165,11 +165,10 @@ impl Deployment {
 
     #[expect(non_snake_case, reason = "pymethods")]
     fn PodHost(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let arc = self.underlying.blocking_write().add_host(|id| {
-            core::PodHost::new(
-                id
-            )
-        });
+        let arc = self
+            .underlying
+            .blocking_write()
+            .add_host(|id| core::PodHost::new(id));
 
         Ok(Py::new(
             py,
@@ -245,7 +244,16 @@ impl Deployment {
         user: Option<String>,
     ) -> PyResult<Py<PyAny>> {
         let arc = self.underlying.blocking_write().add_host(|id| {
-            core::AzureHost::new(id, project, os_type, machine_size, architecture, image, region, user)
+            core::AzureHost::new(
+                id,
+                project,
+                os_type,
+                machine_size,
+                architecture,
+                image,
+                region,
+                user,
+            )
         });
 
         Ok(Py::new(
@@ -400,7 +408,6 @@ impl KubernetesPodHost {
         .into_py(py))
     }
 }
-
 
 #[pyclass]
 #[derive(Clone)]

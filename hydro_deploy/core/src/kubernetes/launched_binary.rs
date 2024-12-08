@@ -120,12 +120,8 @@ impl LaunchedBinary for LaunchedPodBinary {
             .unwrap()
             .await;
         match status {
-            Some(_) => {
-                return Ok(1)
-            }
-            None => {
-                return Ok(0)
-            }
+            Some(_) => return Ok(1),
+            None => return Ok(0),
         }
     }
 
