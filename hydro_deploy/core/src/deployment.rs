@@ -8,7 +8,7 @@ use tokio::sync::RwLock;
 
 use super::gcp::GcpNetwork;
 use super::{
-    progress, CustomService, GcpComputeEngineHost, Host, LocalhostHost, ResourcePool,
+    progress, CustomService, GcpComputeEngineHost, Host, LocalhostHost, PodHost, ResourcePool,
     ResourceResult, Service,
 };
 use crate::{AzureHost, ServiceBuilder};
@@ -117,7 +117,7 @@ impl Deployment {
             self.last_resource_result = Some(resource_result.clone());
 
             for host in self.hosts.iter().filter_map(Weak::upgrade) {
-                host.provision(&resource_result);
+                host.provision(&resource_result).await;
             }
 
             let upgraded_services = self
@@ -229,6 +229,7 @@ impl Deployment {
         &mut self,
         project: String,
         machine_type: String,
+        architecture: Option<String>,
         image: String,
         region: String,
         network: Arc<RwLock<GcpNetwork>>,
@@ -240,6 +241,7 @@ impl Deployment {
                 id,
                 project,
                 machine_type,
+                architecture,
                 image,
                 region,
                 network,
@@ -255,10 +257,28 @@ impl Deployment {
         project: String,
         os_type: String, // linux or windows
         machine_size: String,
+        architecture: Option<String>,
         image: Option<HashMap<String, String>>,
         region: String,
         user: Option<String>,
     ) -> Arc<AzureHost> {
-        self.add_host(|id| AzureHost::new(id, project, os_type, machine_size, image, region, user))
+        self.add_host(|id| {
+            AzureHost::new(
+                id,
+                project,
+                os_type,
+                machine_size,
+                architecture,
+                image,
+                region,
+                user,
+            )
+        })
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    #[builder(entry = "PodHost", exit = "add")]
+    pub fn add_pod_host(&mut self) -> Arc<PodHost> {
+        self.add_host(|id| PodHost::new(id))
     }
 }
