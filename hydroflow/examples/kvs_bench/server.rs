@@ -165,7 +165,7 @@ pub fn run_server<RX>(
                             key,
                             value,
                         }, 99999999)
-                    })
+                    }).take(2000);
                 });
 
                 union_puts_and_gossip_requests = union();
