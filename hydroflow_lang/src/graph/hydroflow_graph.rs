@@ -1029,7 +1029,7 @@ impl HydroflowGraph {
                                     .ok();
 
                                 #[cfg_attr(
-                                    nightly,
+                                    not(nightly),
                                     expect(
                                         clippy::unnecessary_literal_unwrap,
                                         reason = "conditional compilation"
