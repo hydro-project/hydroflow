@@ -68,10 +68,10 @@ impl Diagnostic {
         }
     }
 
-    /// Emit the diagnostic. Only works from the `proc_macro` context. Does not work outside of
-    /// that e.g. in normal runtime execution or in tests.
+    /// Emit the diagnostic. Only works from the `proc_macro` context on nightly versions. Does
+    /// not work outside of that e.g. in normal runtime execution or in tests.
     pub fn emit(&self) {
-        #[cfg(feature = "diagnostics")]
+        #[cfg(nightly)]
         {
             let pm_diag = match self.level {
                 Level::Error => self.span.unwrap().error(&*self.message),
@@ -169,7 +169,7 @@ pub struct SerdeSpan {
 }
 impl From<Span> for SerdeSpan {
     fn from(span: Span) -> Self {
-        #[cfg(feature = "diagnostics")]
+        #[cfg(nightly)]
         let path = span
             .unwrap()
             .source_file()
@@ -178,7 +178,7 @@ impl From<Span> for SerdeSpan {
             .to_string()
             .into();
 
-        #[cfg(not(feature = "diagnostics"))]
+        #[cfg(not(nightly))]
         let path = "unknown".into();
 
         Self {

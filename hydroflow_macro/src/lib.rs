@@ -1,5 +1,5 @@
 #![cfg_attr(
-    feature = "diagnostics",
+    nightly,
     feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)
 )]
 
@@ -72,13 +72,13 @@ fn hydroflow_syntax_internal(
         .iter()
         .filter(|diag: &&Diagnostic| Some(diag.level) <= min_diagnostic_level);
 
-    #[cfg(feature = "diagnostics")]
+    #[cfg(nightly)]
     {
         diagnostics.for_each(Diagnostic::emit);
         tokens.into()
     }
 
-    #[cfg(not(feature = "diagnostics"))]
+    #[cfg(not(nightly))]
     {
         let diagnostics = diagnostics.map(Diagnostic::to_tokens);
         quote! {
