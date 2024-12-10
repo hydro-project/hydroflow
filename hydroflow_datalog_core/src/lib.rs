@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 
-use hydroflow_lang::diagnostic::{Diagnostic, Level};
+pub use hydroflow_lang::diagnostic::{Diagnostic, Level};
 use hydroflow_lang::graph::{
     eliminate_extra_unions_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,
 };

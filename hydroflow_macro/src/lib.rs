@@ -72,25 +72,16 @@ fn hydroflow_syntax_internal(
         .iter()
         .filter(|diag: &&Diagnostic| Some(diag.level) <= min_diagnostic_level);
 
-    #[cfg(nightly)]
-    {
-        diagnostics.for_each(Diagnostic::emit);
-        tokens.into()
-    }
-
-    #[cfg(not(nightly))]
-    {
-        let diagnostics = diagnostics.map(Diagnostic::to_tokens);
-        quote! {
-            {
-                #(
-                    #diagnostics
-                )*
-                #tokens
-            }
+    let diagnostic_tokens = Diagnostic::try_emit_all(diagnostics)
+        .err()
+        .unwrap_or_default();
+    quote! {
+        {
+            #diagnostic_tokens
+            #tokens
         }
-        .into()
     }
+    .into()
 }
 
 /// Parse Hydroflow "surface syntax" without emitting code.
@@ -123,8 +114,10 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
         }
     }
 
-    diagnostics.iter().for_each(Diagnostic::emit);
-    quote! {}.into()
+    Diagnostic::try_emit_all(diagnostics.iter())
+        .err()
+        .unwrap_or_default()
+        .into()
 }
 
 #[doc(hidden)]

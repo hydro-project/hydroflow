@@ -68,23 +68,47 @@ impl Diagnostic {
         }
     }
 
-    /// Emit the diagnostic. Only works from the `proc_macro` context on nightly versions. Does
-    /// not work outside of that e.g. in normal runtime execution or in tests.
-    pub fn emit(&self) {
+    /// Emit if possible, otherwise return `Err` containing a [`TokenStream`] of a
+    /// `compile_error!(...)` call.
+    pub fn try_emit(&self) -> Result<(), TokenStream> {
         #[cfg(nightly)]
         {
-            let pm_diag = match self.level {
-                Level::Error => self.span.unwrap().error(&*self.message),
-                Level::Warning => self.span.unwrap().warning(&*self.message),
-                Level::Note => self.span.unwrap().note(&*self.message),
-                Level::Help => self.span.unwrap().help(&*self.message),
-            };
-            pm_diag.emit();
+            if let Ok(()) = std::panic::catch_unwind(|| {
+                let pm_diag = match self.level {
+                    Level::Error => self.span.unwrap().error(&*self.message),
+                    Level::Warning => self.span.unwrap().warning(&*self.message),
+                    Level::Note => self.span.unwrap().note(&*self.message),
+                    Level::Help => self.span.unwrap().help(&*self.message),
+                };
+                pm_diag.emit()
+            }) {
+                return Ok(());
+            }
+        }
+        Err(self.to_tokens())
+    }
+
+    /// Emits all if possible, otherwise returns `Err` containing a [`TokenStream`] of
+    /// `compile_error!(...)` calls.
+    pub fn try_emit_all<'a>(
+        diagnostics: impl IntoIterator<Item = &'a Self>,
+    ) -> Result<(), TokenStream> {
+        if let Some(tokens) = diagnostics
+            .into_iter()
+            .filter_map(|diag| diag.try_emit().err())
+            .reduce(|mut tokens, next| {
+                tokens.extend(next);
+                tokens
+            })
+        {
+            Err(tokens)
+        } else {
+            Ok(())
         }
     }
 
     /// Used to emulate [`Diagnostic::emit`] by turning this diagnostic into a properly spanned [`TokenStream`]
-    /// that emits an error with this diagnostic's message.
+    /// that emits an error via `compile_error!(...)` with this diagnostic's message.
     pub fn to_tokens(&self) -> TokenStream {
         let msg_lit: Literal = Literal::string(&self.message);
         let unique_ident = {
@@ -98,7 +122,7 @@ impl Diagnostic {
         if Level::Error == self.level {
             quote_spanned! {self.span=>
                 {
-                    ::std::compile_error!(#msg_lit);
+                    ::core::compile_error!(#msg_lit);
                 }
             }
         } else {

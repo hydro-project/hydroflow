@@ -1,4 +1,4 @@
-use hydroflow_datalog_core::{gen_hydroflow_graph, hydroflow_graph_to_program};
+use hydroflow_datalog_core::{gen_hydroflow_graph, hydroflow_graph_to_program, Diagnostic};
 use proc_macro2::Span;
 use quote::{quote, ToTokens};
 
@@ -31,10 +31,15 @@ pub fn datalog(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
             program.to_token_stream().into()
         }
         Err(diagnostics) => {
-            for diagnostic in diagnostics {
-                diagnostic.emit();
-            }
-            proc_macro::TokenStream::from(quote!(hydroflow::scheduled::graph::Hydroflow::new()))
+            let diagnostic_tokens = Diagnostic::try_emit_all(diagnostics.iter())
+                .err()
+                .unwrap_or_default();
+            proc_macro::TokenStream::from(quote! {
+                {
+                    #diagnostic_tokens
+                    hydroflow::scheduled::graph::Hydroflow::new()
+                }
+            })
         }
     }
 }
