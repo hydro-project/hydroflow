@@ -40,8 +40,8 @@ impl Level {
 /// Diagnostic. A warning or error (or lower [`Level`]) with a message and span. Shown by IDEs
 /// usually as a squiggly red or yellow underline.
 ///
-/// Must call [`Diagnostic::emit`] or manually emit the output of [`Diagnostic::to_tokens`] for the
-/// diagnostic to show up.
+/// Diagnostics must be emitted via [`Diagnostic::try_emit`], [`Diagnostic::to_tokens`], or
+/// [`Diagnostic::try_emit_all`] for diagnostics to show up.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Diagnostic<S = Span> {
     /// Span (source code location).
