@@ -3,7 +3,6 @@
 use std::borrow::Cow;
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::PathBuf;
 
 use itertools::Itertools;
 use proc_macro2::Span;
@@ -71,9 +70,6 @@ pub struct FlatGraphBuilder {
     /// Use statements.
     uses: Vec<ItemUse>,
 
-    /// In order to make import!() statements relative to the current file, we need to know where the file is that is building the flat graph.
-    invocating_file_path: PathBuf,
-
     /// If the flat graph is being loaded as a module, then two initial ModuleBoundary nodes are inserted into the graph. One
     /// for the input into the module and one for the output out of the module.
     module_boundary_nodes: Option<(GraphNodeId, GraphNodeId)>,
@@ -86,37 +82,8 @@ impl FlatGraphBuilder {
     }
 
     /// Convert the Hydroflow code AST into a graph builder.
-    pub fn from_hfcode(input: HfCode, macro_invocation_path: PathBuf) -> Self {
-        let mut builder = Self {
-            invocating_file_path: macro_invocation_path,
-            ..Default::default()
-        };
-        builder.process_statements(input.statements);
-        builder
-    }
-
-    /// Convert the Hydroflow code AST into a graph builder.
-    pub fn from_hfmodule(input: HfCode, root_path: PathBuf) -> Self {
+    pub fn from_hfcode(input: HfCode) -> Self {
         let mut builder = Self::default();
-        builder.invocating_file_path = root_path; // imports inside of modules should be relative to the importing file.
-        builder.module_boundary_nodes = Some((
-            builder.flat_graph.insert_node(
-                GraphNode::ModuleBoundary {
-                    input: true,
-                    import_expr: Span::call_site(),
-                },
-                Some(Ident::new("input", Span::call_site())),
-                None,
-            ),
-            builder.flat_graph.insert_node(
-                GraphNode::ModuleBoundary {
-                    input: false,
-                    import_expr: Span::call_site(),
-                },
-                Some(Ident::new("output", Span::call_site())),
-                None,
-            ),
-        ));
         builder.process_statements(input.statements);
         builder
     }
@@ -276,118 +243,7 @@ impl FlatGraphBuilder {
                     out: Some((PortIndexValue::Elided(op_span), GraphDet::Determined(nid))),
                 }
             }
-            Pipeline::Import(import) => {
-                // TODO: https://github.com/rust-lang/rfcs/pull/3200
-                // this would be way better...
-                let file_path = {
-                    let mut dir = self.invocating_file_path.clone();
-                    dir.pop();
-                    dir.join(import.filename.value())
-                };
-
-                let file_contents = match std::fs::read_to_string(&file_path) {
-                    Ok(contents) => contents,
-                    Err(err) => {
-                        self.diagnostics.push(Diagnostic::spanned(
-                            import.filename.span(),
-                            Level::Error,
-                            format!("filename: {}, err: {err}", import.filename.value()),
-                        ));
-
-                        return Ends {
-                            inn: None,
-                            out: None,
-                        };
-                    }
-                };
-
-                let statements = match syn::parse_str::<HfCode>(&file_contents) {
-                    Ok(code) => code,
-                    Err(err) => {
-                        self.diagnostics.push(Diagnostic::spanned(
-                            import.span(),
-                            Level::Error,
-                            format!("Error in module: {}", err),
-                        ));
-
-                        return Ends {
-                            inn: None,
-                            out: None,
-                        };
-                    }
-                };
-
-                let flat_graph_builder = FlatGraphBuilder::from_hfmodule(statements, file_path);
-                let (flat_graph, _uses, diagnostics) = flat_graph_builder.build();
-                diagnostics.iter().for_each(Diagnostic::emit);
-
-                self.merge_in(flat_graph, import.span())
-            }
         }
-    }
-
-    /// Merge one flatgraph into the current flatgraph
-    /// other must be a flatgraph and not be partitioned yet.
-    fn merge_in(&mut self, other: HydroflowGraph, parent_span: Span) -> Ends {
-        assert_eq!(other.subgraphs().count(), 0);
-
-        let mut ends = Ends {
-            inn: None,
-            out: None,
-        };
-
-        let mut node_mapping = BTreeMap::new();
-
-        for (other_node_id, node) in other.nodes() {
-            match node {
-                GraphNode::Operator(_) => {
-                    let varname = other.node_varname(other_node_id);
-                    let new_id = self.flat_graph.insert_node(node.clone(), varname, None);
-                    node_mapping.insert(other_node_id, new_id);
-                }
-                GraphNode::ModuleBoundary { input, .. } => {
-                    let new_id = self.flat_graph.insert_node(
-                        GraphNode::ModuleBoundary {
-                            input: *input,
-                            import_expr: parent_span,
-                        },
-                        Some(Ident::new(&format!("module_{}", input), parent_span)),
-                        None,
-                    );
-                    node_mapping.insert(other_node_id, new_id);
-
-                    // in the case of nested imports, this module boundary might not be the module boundary into or out of the top-most module
-                    // So we have to be careful to only target those two boundaries.
-                    // There should be no inputs to it, if it is an input boundary, if it is the top-most one.
-                    // and there should be no outputs from it, if it is an output boundary, if it is the top-most one.
-                    if *input && other.node_predecessor_nodes(other_node_id).count() == 0 {
-                        if other.node_predecessor_nodes(other_node_id).count() == 0 {
-                            ends.inn =
-                                Some((PortIndexValue::Elided(None), GraphDet::Determined(new_id)));
-                        }
-                    } else if !(*input) && other.node_successor_nodes(other_node_id).count() == 0 {
-                        ends.out =
-                            Some((PortIndexValue::Elided(None), GraphDet::Determined(new_id)));
-                    }
-                }
-                GraphNode::Handoff { .. } => {
-                    panic!("Handoff in graph that is being merged into self")
-                }
-            }
-        }
-
-        for (other_edge_id, (other_src, other_dst)) in other.edges() {
-            let (src_port, dst_port) = other.edge_ports(other_edge_id);
-
-            let _new_edge_id = self.flat_graph.insert_edge(
-                *node_mapping.get(&other_src).unwrap(),
-                src_port.clone(),
-                *node_mapping.get(&other_dst).unwrap(),
-                dst_port.clone(),
-            );
-        }
-
-        ends
     }
 
     /// Connects operator links as a final building step. Processes all the links stored in

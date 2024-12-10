@@ -25,7 +25,6 @@ mod hydroflow_graph;
 mod hydroflow_graph_debugging;
 
 use std::fmt::Display;
-use std::path::PathBuf;
 
 pub use di_mul_graph::DiMulGraph;
 pub use eliminate_extra_unions_tees::eliminate_extra_unions_tees;
@@ -376,9 +375,8 @@ impl Display for PortIndexValue {
 pub fn build_hfcode(
     hf_code: HfCode,
     root: &TokenStream,
-    macro_invocation_path: PathBuf,
 ) -> (Option<(HydroflowGraph, TokenStream)>, Vec<Diagnostic>) {
-    let flat_graph_builder = FlatGraphBuilder::from_hfcode(hf_code, macro_invocation_path);
+    let flat_graph_builder = FlatGraphBuilder::from_hfcode(hf_code);
     let (mut flat_graph, uses, mut diagnostics) = flat_graph_builder.build();
     if !diagnostics.iter().any(Diagnostic::is_error) {
         if let Err(diagnostic) = flat_graph.merge_modules() {
