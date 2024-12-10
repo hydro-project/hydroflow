@@ -613,44 +613,6 @@
 <a href="#613" id="613">613</a>
 <a href="#614" id="614">614</a>
 <a href="#615" id="615">615</a>
-<a href="#616" id="616">616</a>
-<a href="#617" id="617">617</a>
-<a href="#618" id="618">618</a>
-<a href="#619" id="619">619</a>
-<a href="#620" id="620">620</a>
-<a href="#621" id="621">621</a>
-<a href="#622" id="622">622</a>
-<a href="#623" id="623">623</a>
-<a href="#624" id="624">624</a>
-<a href="#625" id="625">625</a>
-<a href="#626" id="626">626</a>
-<a href="#627" id="627">627</a>
-<a href="#628" id="628">628</a>
-<a href="#629" id="629">629</a>
-<a href="#630" id="630">630</a>
-<a href="#631" id="631">631</a>
-<a href="#632" id="632">632</a>
-<a href="#633" id="633">633</a>
-<a href="#634" id="634">634</a>
-<a href="#635" id="635">635</a>
-<a href="#636" id="636">636</a>
-<a href="#637" id="637">637</a>
-<a href="#638" id="638">638</a>
-<a href="#639" id="639">639</a>
-<a href="#640" id="640">640</a>
-<a href="#641" id="641">641</a>
-<a href="#642" id="642">642</a>
-<a href="#643" id="643">643</a>
-<a href="#644" id="644">644</a>
-<a href="#645" id="645">645</a>
-<a href="#646" id="646">646</a>
-<a href="#647" id="647">647</a>
-<a href="#648" id="648">648</a>
-<a href="#649" id="649">649</a>
-<a href="#650" id="650">650</a>
-<a href="#651" id="651">651</a>
-<a href="#652" id="652">652</a>
-<a href="#653" id="653">653</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! AST for surface syntax, modelled on [`syn`]'s ASTs.
 </span><span class="attr">#![allow(clippy::allow_attributes, missing_docs, reason = <span class="string">"internal use"</span>)]
 
@@ -664,7 +626,7 @@
 <span class="kw">use </span>syn::token::{Brace, Bracket, Paren};
 <span class="kw">use </span>syn::{
     braced, bracketed, parenthesized, AngleBracketedGenericArguments, Expr, ExprPath,
-    GenericArgument, Ident, ItemUse, LitInt, LitStr, Path, PathArguments, PathSegment, Token,
+    GenericArgument, Ident, ItemUse, LitInt, Path, PathArguments, PathSegment, Token,
 };
 
 <span class="kw">use </span><span class="kw">crate</span>::process_singletons::preprocess_singletons;
@@ -714,7 +676,6 @@
             } <span class="kw">else if </span>lookahead2.peek(<span class="macro">Token!</span>[-&gt;])
                 || lookahead2.peek(Paren)
                 || lookahead2.peek(Bracket)
-                || lookahead2.peek(<span class="macro">Token!</span>[!])
             {
                 <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Pipeline(PipelineStatement::parse(input)<span class="question-mark">?</span>))
             } <span class="kw">else </span>{
@@ -793,7 +754,6 @@
     Link(PipelineLink),
     Operator(Operator),
     ModuleBoundary(Ported&lt;<span class="macro">Token!</span>[<span class="kw">mod</span>]&gt;),
-    Import(Import),
 }
 <span class="kw">impl </span>Pipeline {
     <span class="kw">fn </span>parse_one(input: ParseStream) -&gt; syn::Result&lt;<span class="self">Self</span>&gt; {
@@ -828,20 +788,17 @@
         <span class="comment">// Ident or macro-style expression
         </span>} <span class="kw">else if </span>lookahead1.peek(Ident) {
             <span class="kw">let </span>speculative = input.fork();
-            <span class="kw">let </span>ident: Ident = speculative.parse()<span class="question-mark">?</span>;
-            <span class="kw">let </span>lookahead2 = speculative.lookahead1();
+            <span class="kw">let </span>_ident: Ident = speculative.parse()<span class="question-mark">?</span>;
 
             <span class="comment">// If has paren or generic next, it's an operator
-            </span><span class="kw">if </span>lookahead2.peek(Paren) || lookahead2.peek(<span class="macro">Token!</span>[&lt;]) || lookahead2.peek(<span class="macro">Token!</span>[::]) {
+            </span><span class="kw">if </span>speculative.peek(Paren)
+                || speculative.peek(<span class="macro">Token!</span>[&lt;])
+                || speculative.peek(<span class="macro">Token!</span>[::])
+            {
                 <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Operator(input.parse()<span class="question-mark">?</span>))
-            <span class="comment">// macro-style expression "x!.."
-            </span>} <span class="kw">else if </span>lookahead2.peek(<span class="macro">Token!</span>[!]) {
-                <span class="kw">match </span>ident.to_string().as_str() {
-                    <span class="string">"import" </span>=&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Import(input.parse()<span class="question-mark">?</span>)),
-                    <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(syn::Error::new(ident.span(), <span class="string">r#"Expected "import""#</span>)),
-                }
-            <span class="comment">// Otherwise it's a name
-            </span>} <span class="kw">else </span>{
+            }
+            <span class="comment">// Otherwise it's a variable name
+            </span><span class="kw">else </span>{
                 <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Name(input.parse()<span class="question-mark">?</span>))
             }
         }
@@ -876,7 +833,6 @@
             <span class="self">Self</span>::Name(x) =&gt; x.to_tokens(tokens),
             <span class="self">Self</span>::Operator(x) =&gt; x.to_tokens(tokens),
             <span class="self">Self</span>::ModuleBoundary(x) =&gt; x.to_tokens(tokens),
-            <span class="self">Self</span>::Import(x) =&gt; x.to_tokens(tokens),
         }
     }
 }
@@ -914,38 +870,6 @@
                 statement.to_tokens(tokens);
             }
         });
-    }
-}
-
-<span class="attr">#[derive(Clone, Debug)]
-</span><span class="kw">pub struct </span>Import {
-    <span class="kw">pub </span>import: Ident,
-    <span class="kw">pub </span>bang: <span class="macro">Token!</span>[!],
-    <span class="kw">pub </span>paren_token: Paren,
-    <span class="kw">pub </span>filename: LitStr,
-}
-<span class="kw">impl </span>Parse <span class="kw">for </span>Import {
-    <span class="kw">fn </span>parse(input: ParseStream) -&gt; syn::Result&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span>import = input.parse()<span class="question-mark">?</span>;
-        <span class="kw">let </span>bang = input.parse()<span class="question-mark">?</span>;
-        <span class="kw">let </span>content;
-        <span class="kw">let </span>paren_token = <span class="macro">parenthesized!</span>(content <span class="kw">in </span>input);
-        <span class="kw">let </span>filename: LitStr = content.parse()<span class="question-mark">?</span>;
-
-        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-            import,
-            bang,
-            paren_token,
-            filename,
-        })
-    }
-}
-<span class="kw">impl </span>ToTokens <span class="kw">for </span>Import {
-    <span class="kw">fn </span>to_tokens(<span class="kw-2">&amp;</span><span class="self">self</span>, tokens: <span class="kw-2">&amp;mut </span>TokenStream) {
-        <span class="self">self</span>.import.to_tokens(tokens);
-        <span class="self">self</span>.bang.to_tokens(tokens);
-        <span class="self">self</span>.paren_token
-            .surround(tokens, |tokens| <span class="self">self</span>.filename.to_tokens(tokens));
     }
 }
 
