@@ -205,7 +205,7 @@ impl Service for HydroflowCrateService {
                 let built = ProgressTracker::leaf("build", self.build()).await?;
 
                 let host = &self.on;
-                let launched = host.provision(resource_result);
+                let launched = host.provision(resource_result).await;
 
                 launched.copy_binary(built).await?;
 
@@ -267,6 +267,9 @@ impl Service for HydroflowCrateService {
                     *self.server_defns.try_write().unwrap() =
                         serde_json::from_str(ready_line.trim_start_matches("ready: ")).unwrap();
                 } else {
+                    ProgressTracker::println(
+                        format!("Did not find ready. Instead found: {:?}", ready_line).as_str(),
+                    );
                     bail!("expected ready");
                 }
 
