@@ -55,6 +55,10 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v3
 
+      - name: Override RUSTFLAGS
+        run: echo "BRANCH=''" >> $GITHUB_ENV
+        if: matrix.rust_release == 'latest-stable'
+
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -108,6 +112,10 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v3
 
+      - name: Override RUSTFLAGS
+        run: echo "BRANCH=''" >> $GITHUB_ENV
+        if: matrix.rust_release == 'latest-stable'
+
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -151,6 +159,10 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
+
+      - name: Override RUSTFLAGS
+        run: echo "BRANCH=''" >> $GITHUB_ENV
+        if: matrix.rust_release == 'latest-stable'
 
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
@@ -246,6 +258,10 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
+
+      - name: Override RUSTFLAGS
+        run: echo "BRANCH=''" >> $GITHUB_ENV
+        if: matrix.rust_release == 'latest-stable'
 
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
