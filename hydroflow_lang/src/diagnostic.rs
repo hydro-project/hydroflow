@@ -107,7 +107,7 @@ impl Diagnostic {
         }
     }
 
-    /// Used to emulate [`Diagnostic::emit`] by turning this diagnostic into a properly spanned [`TokenStream`]
+    /// Used to emulate `proc_macro::Diagnostic::emit` by turning this diagnostic into a properly spanned [`TokenStream`]
     /// that emits an error via `compile_error!(...)` with this diagnostic's message.
     pub fn to_tokens(&self) -> TokenStream {
         let msg_lit: Literal = Literal::string(&self.message);
