@@ -57,6 +57,7 @@ jobs:
 
       - name: Override RUSTFLAGS
         run: echo "RUSTFLAGS=--cfg noop" >> $GITHUB_ENV
+        shell: bash
         if: matrix.rust_release == 'latest-stable'
 
       - name: Install toolchain
@@ -114,6 +115,7 @@ jobs:
 
       - name: Override RUSTFLAGS
         run: echo "RUSTFLAGS=--cfg noop" >> $GITHUB_ENV
+        shell: bash
         if: matrix.rust_release == 'latest-stable'
 
       - name: Install toolchain
@@ -162,6 +164,7 @@ jobs:
 
       - name: Override RUSTFLAGS
         run: echo "RUSTFLAGS=--cfg noop" >> $GITHUB_ENV
+        shell: bash
         if: matrix.rust_release == 'latest-stable'
 
       - name: Install toolchain
@@ -261,6 +264,7 @@ jobs:
 
       - name: Override RUSTFLAGS
         run: echo "RUSTFLAGS=--cfg noop" >> $GITHUB_ENV
+        shell: bash
         if: matrix.rust_release == 'latest-stable'
 
       - name: Install toolchain
