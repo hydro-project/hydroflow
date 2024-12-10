@@ -303,6 +303,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
+          toolchain: nightly
 
       - name: Run cargo doc
         uses: actions-rs/cargo@v1
@@ -369,6 +370,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
+          toolchain: nightly
 
       - name: Checkout gh-pages
         shell: bash
