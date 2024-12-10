@@ -50,12 +50,13 @@ tokio = { version = "1.29.0", features = ["full"] }
 toml = { version = "0.8.0", optional = true }
 trybuild-internals-api = { version = "1.0.99", optional = true }
 
-[build-dependencies]
-stageleft_tool = { path = "../stageleft_tool", version = "^0.4.0" }
-
 [dev-dependencies]
 async-ssh2-lite = { version = "0.5.0", features = ["vendored-openssl"] }
 ctor = "0.2.8"
 hydro_deploy = { path = "../hydro_deploy/core", version = "^0.10.0" }
 insta = "1.39"
 trybuild = "1"
+
+[build-dependencies]
+rustc_version = "0.4.0"
+stageleft_tool = { path = "../stageleft_tool", version = "^0.4.0" }
