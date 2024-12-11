@@ -71,7 +71,7 @@ impl Diagnostic {
     /// Emit if possible, otherwise return `Err` containing a [`TokenStream`] of a
     /// `compile_error!(...)` call.
     pub fn try_emit(&self) -> Result<(), TokenStream> {
-        #[cfg(nightly)]
+        #[cfg(all(nightly, panic = "unwind"))]
         {
             if let Ok(()) = std::panic::catch_unwind(|| {
                 let pm_diag = match self.level {
@@ -193,16 +193,17 @@ pub struct SerdeSpan {
 }
 impl From<Span> for SerdeSpan {
     fn from(span: Span) -> Self {
-        #[cfg(nightly)]
-        let path = std::panic::catch_unwind(|| span.unwrap())
-            .map(|span| span.source_file().path().display().to_string())
-            .ok();
+        let path = 'a: {
+            #[cfg(all(nightly, panic = "unwind"))]
+            if let Ok(span) = std::panic::catch_unwind(|| span.unwrap()) {
+                break 'a span.source_file().path().display().to_string().into();
+            }
 
-        #[cfg(not(nightly))]
-        let path = None::<String>;
+            break 'a "unknown".into();
+        };
 
         Self {
-            path: path.map_or(Cow::Borrowed("unknown"), Cow::Owned),
+            path,
             line: span.start().line,
             column: span.start().column,
         }

@@ -1006,13 +1006,12 @@ impl HydroflowGraph {
                             subgraph_op_iter_code.push(write_iterator);
 
                             if include_type_guards {
-                                #[cfg(not(nightly))]
-                                let source_info = Option::<String>::None;
-
-                                #[cfg(nightly)]
-                                let source_info = std::panic::catch_unwind(|| op_span.unwrap())
-                                    .map(|op_span| {
-                                        format!(
+                                let source_info = 'a: {
+                                    #[cfg(all(nightly, panic = "unwind"))]
+                                    if let Ok(op_span) =
+                                        std::panic::catch_unwind(|| op_span.unwrap())
+                                    {
+                                        break 'a format!(
                                             "loc_{}_{}_{}_{}_{}",
                                             op_span
                                                 .source_file()
@@ -1024,26 +1023,17 @@ impl HydroflowGraph {
                                             op_span.start().column(),
                                             op_span.end().line(),
                                             op_span.end().column(),
-                                        )
-                                    })
-                                    .ok();
+                                        );
+                                    }
 
-                                #[cfg_attr(
-                                    not(nightly),
-                                    expect(
-                                        clippy::unnecessary_literal_unwrap,
-                                        reason = "conditional compilation"
-                                    )
-                                )]
-                                let source_info = source_info.unwrap_or_else(|| {
-                                    format!(
+                                    break 'a format!(
                                         "loc_nopath_{}_{}_{}_{}",
                                         op_span.start().line,
                                         op_span.start().column,
                                         op_span.end().line,
                                         op_span.end().column
-                                    )
-                                });
+                                    );
+                                };
 
                                 let fn_ident = format_ident!(
                                     "{}__{}__{}",

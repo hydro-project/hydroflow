@@ -5,7 +5,7 @@
 pub struct PrettySpan(pub proc_macro2::Span);
 impl std::fmt::Display for PrettySpan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        #[cfg(nightly)]
+        #[cfg(all(nightly, panic = "unwind"))]
         {
             if let Ok(span) = std::panic::catch_unwind(|| self.0.unwrap()) {
                 write!(
