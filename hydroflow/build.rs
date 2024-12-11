@@ -8,6 +8,4 @@ fn main() {
     ) {
         println!("cargo:rustc-cfg=nightly");
     }
-
-    stageleft_tool::gen_final!();
 }

@@ -10,6 +10,7 @@ use hydroflow_lang::graph::ops::{PortListSpec, OPERATORS};
 use hydroflow_lang::graph::PortIndexValue;
 use itertools::Itertools;
 use quote::ToTokens;
+use rustc_version::{version_meta, Channel};
 
 const FILENAME: &str = "surface_ops_gen.md";
 
@@ -207,6 +208,14 @@ fn update_book() -> Result<()> {
 }
 
 fn main() {
+    println!("cargo::rustc-check-cfg=cfg(nightly)");
+    if matches!(
+        version_meta().map(|meta| meta.channel),
+        Ok(Channel::Nightly)
+    ) {
+        println!("cargo:rustc-cfg=nightly");
+    }
+
     if Err(VarError::NotPresent) != std::env::var("CARGO_CFG_HYDROFLOW_GENERATE_DOCS") {
         if let Err(err) = update_book() {
             eprintln!("hydroflow_macro/build.rs error: {:?}", err);

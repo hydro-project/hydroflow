@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io::{BufWriter, Error, ErrorKind, Result, Write};
 use std::path::PathBuf;
 
+use rustc_version::{version_meta, Channel};
 use syn::{
     parse_quote, AttrStyle, Expr, ExprLit, Ident, Item, Lit, Member, Meta, MetaNameValue, Path,
 };
@@ -12,6 +13,15 @@ const OPS_PATH: &str = "src/graph/ops";
 
 fn main() {
     println!("cargo::rerun-if-changed={}", OPS_PATH);
+
+    println!("cargo::rustc-check-cfg=cfg(nightly)");
+    if matches!(
+        version_meta().map(|meta| meta.channel),
+        Ok(Channel::Nightly)
+    ) {
+        println!("cargo:rustc-cfg=nightly");
+    }
+
     if Err(VarError::NotPresent) != var("CARGO_CFG_HYDROFLOW_GENERATE_DOCS") {
         if let Err(err) = generate_op_docs() {
             eprintln!("hydroflow_lang/build.rs error: {:?}", err);

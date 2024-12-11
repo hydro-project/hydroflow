@@ -10,7 +10,7 @@ const katex = require('rehype-katex');
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Hydro - Build for Every Scale',
-  tagline: 'Dinosaurs are cool',
+  tagline: 'Program the Cloud',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here

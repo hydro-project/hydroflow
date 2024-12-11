@@ -25,3 +25,6 @@ variadics_macro = { path = "../variadics_macro", version = "^0.5.5" }
 
 [dev-dependencies]
 trybuild = "1.0.0"
+
+[build-dependencies]
+rustc_version = "0.4.0"

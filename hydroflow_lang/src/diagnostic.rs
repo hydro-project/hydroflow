@@ -40,8 +40,8 @@ impl Level {
 /// Diagnostic. A warning or error (or lower [`Level`]) with a message and span. Shown by IDEs
 /// usually as a squiggly red or yellow underline.
 ///
-/// Must call [`Diagnostic::emit`] or manually emit the output of [`Diagnostic::to_tokens`] for the
-/// diagnostic to show up.
+/// Diagnostics must be emitted via [`Diagnostic::try_emit`], [`Diagnostic::to_tokens`], or
+/// [`Diagnostic::try_emit_all`] for diagnostics to show up.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Diagnostic<S = Span> {
     /// Span (source code location).
@@ -68,23 +68,47 @@ impl Diagnostic {
         }
     }
 
-    /// Emit the diagnostic. Only works from the `proc_macro` context. Does not work outside of
-    /// that e.g. in normal runtime execution or in tests.
-    pub fn emit(&self) {
-        #[cfg(feature = "diagnostics")]
+    /// Emit if possible, otherwise return `Err` containing a [`TokenStream`] of a
+    /// `compile_error!(...)` call.
+    pub fn try_emit(&self) -> Result<(), TokenStream> {
+        #[cfg(nightly)]
         {
-            let pm_diag = match self.level {
-                Level::Error => self.span.unwrap().error(&*self.message),
-                Level::Warning => self.span.unwrap().warning(&*self.message),
-                Level::Note => self.span.unwrap().note(&*self.message),
-                Level::Help => self.span.unwrap().help(&*self.message),
-            };
-            pm_diag.emit();
+            if let Ok(()) = std::panic::catch_unwind(|| {
+                let pm_diag = match self.level {
+                    Level::Error => self.span.unwrap().error(&*self.message),
+                    Level::Warning => self.span.unwrap().warning(&*self.message),
+                    Level::Note => self.span.unwrap().note(&*self.message),
+                    Level::Help => self.span.unwrap().help(&*self.message),
+                };
+                pm_diag.emit()
+            }) {
+                return Ok(());
+            }
+        }
+        Err(self.to_tokens())
+    }
+
+    /// Emits all if possible, otherwise returns `Err` containing a [`TokenStream`] of
+    /// `compile_error!(...)` calls.
+    pub fn try_emit_all<'a>(
+        diagnostics: impl IntoIterator<Item = &'a Self>,
+    ) -> Result<(), TokenStream> {
+        if let Some(tokens) = diagnostics
+            .into_iter()
+            .filter_map(|diag| diag.try_emit().err())
+            .reduce(|mut tokens, next| {
+                tokens.extend(next);
+                tokens
+            })
+        {
+            Err(tokens)
+        } else {
+            Ok(())
         }
     }
 
-    /// Used to emulate [`Diagnostic::emit`] by turning this diagnostic into a properly spanned [`TokenStream`]
-    /// that emits an error with this diagnostic's message.
+    /// Used to emulate `proc_macro::Diagnostic::emit` by turning this diagnostic into a properly spanned [`TokenStream`]
+    /// that emits an error via `compile_error!(...)` with this diagnostic's message.
     pub fn to_tokens(&self) -> TokenStream {
         let msg_lit: Literal = Literal::string(&self.message);
         let unique_ident = {
@@ -98,7 +122,7 @@ impl Diagnostic {
         if Level::Error == self.level {
             quote_spanned! {self.span=>
                 {
-                    ::std::compile_error!(#msg_lit);
+                    ::core::compile_error!(#msg_lit);
                 }
             }
         } else {
@@ -169,7 +193,7 @@ pub struct SerdeSpan {
 }
 impl From<Span> for SerdeSpan {
     fn from(span: Span) -> Self {
-        #[cfg(feature = "diagnostics")]
+        #[cfg(nightly)]
         let path = span
             .unwrap()
             .source_file()
@@ -178,7 +202,7 @@ impl From<Span> for SerdeSpan {
             .to_string()
             .into();
 
-        #[cfg(not(feature = "diagnostics"))]
+        #[cfg(not(nightly))]
         let path = "unknown".into();
 
         Self {

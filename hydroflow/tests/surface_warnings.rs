@@ -1,6 +1,4 @@
-// TODO(mingwei): fix line numbers in tests
-// https://github.com/hydro-project/hydroflow/issues/729
-// https://github.com/rust-lang/rust/pull/111571
+#![cfg(nightly)]
 
 use std::cell::RefCell;
 use std::rc::Rc;
