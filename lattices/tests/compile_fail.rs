@@ -1,4 +1,4 @@
-#[cfg(nightly)]
+#![cfg(nightly)]
 
 #[test]
 fn test_all() {
