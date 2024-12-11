@@ -194,19 +194,15 @@ pub struct SerdeSpan {
 impl From<Span> for SerdeSpan {
     fn from(span: Span) -> Self {
         #[cfg(nightly)]
-        let path = span
-            .unwrap()
-            .source_file()
-            .path()
-            .display()
-            .to_string()
-            .into();
+        let path = std::panic::catch_unwind(|| span.unwrap())
+            .map(|span| span.source_file().path().display().to_string())
+            .ok();
 
         #[cfg(not(nightly))]
-        let path = "unknown".into();
+        let path = None::<String>;
 
         Self {
-            path,
+            path: path.map_or(Cow::Borrowed("unknown"), Cow::Owned),
             line: span.start().line,
             column: span.start().column,
         }

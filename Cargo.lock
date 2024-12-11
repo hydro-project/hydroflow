@@ -1577,6 +1577,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
+ "rustc_version 0.4.1",
  "syn 2.0.75",
 ]
 
