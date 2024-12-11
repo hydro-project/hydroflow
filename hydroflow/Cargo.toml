@@ -13,7 +13,7 @@ workspace = true
 [features]
 default = [ "macros", "nightly", "debugging" ]
 
-nightly = [ "hydroflow_macro", "hydroflow_macro/diagnostics" ]
+nightly = []
 macros = [ "hydroflow_macro", "hydroflow_datalog" ]
 hydroflow_macro = [ "dep:hydroflow_macro" ]
 hydroflow_datalog = [ "dep:hydroflow_datalog" ]

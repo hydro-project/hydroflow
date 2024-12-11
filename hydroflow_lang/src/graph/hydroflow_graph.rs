@@ -1006,10 +1006,10 @@ impl HydroflowGraph {
                             subgraph_op_iter_code.push(write_iterator);
 
                             if include_type_guards {
-                                #[cfg(not(feature = "diagnostics"))]
+                                #[cfg(not(nightly))]
                                 let source_info = Option::<String>::None;
 
-                                #[cfg(feature = "diagnostics")]
+                                #[cfg(nightly)]
                                 let source_info = std::panic::catch_unwind(|| op_span.unwrap())
                                     .map(|op_span| {
                                         format!(
@@ -1029,7 +1029,7 @@ impl HydroflowGraph {
                                     .ok();
 
                                 #[cfg_attr(
-                                    not(feature = "diagnostics"),
+                                    not(nightly),
                                     expect(
                                         clippy::unnecessary_literal_unwrap,
                                         reason = "conditional compilation"
