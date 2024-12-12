@@ -182,6 +182,8 @@ jobs:
 
       - name: Run cargo nextest on all targets
         run: cargo nextest run --no-fail-fast --features python --features deploy --all-targets
+        env:
+          TRYBUILD: ${{ matrix.rust_release != 'pinned-nightly' && 'overwrite' || '' }}
 
       - name: Run doctests
         run: cargo test --no-fail-fast --features python --features deploy --doc

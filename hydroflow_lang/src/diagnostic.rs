@@ -192,6 +192,10 @@ pub struct SerdeSpan {
 }
 impl From<Span> for SerdeSpan {
     fn from(span: Span) -> Self {
+        #[cfg_attr(
+            not(nightly),
+            expect(unused_labels, reason = "conditional compilation")
+        )]
         let path = 'a: {
             #[cfg(nightly)]
             if proc_macro::is_available() {
@@ -204,11 +208,7 @@ impl From<Span> for SerdeSpan {
                     .into();
             }
 
-            #[cfg_attr(
-                not(nightly),
-                expect(clippy::diverging_sub_expression, reason = "conditional compilation")
-            )]
-            break 'a "unknown".into();
+            "unknown".into()
         };
 
         Self {
