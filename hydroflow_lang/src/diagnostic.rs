@@ -1,5 +1,7 @@
 //! Compatibility for `proc_macro` diagnostics, which are missing from [`proc_macro2`].
 
+extern crate proc_macro;
+
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 
@@ -71,19 +73,16 @@ impl Diagnostic {
     /// Emit if possible, otherwise return `Err` containing a [`TokenStream`] of a
     /// `compile_error!(...)` call.
     pub fn try_emit(&self) -> Result<(), TokenStream> {
-        #[cfg(all(nightly, panic = "unwind"))]
-        {
-            if let Ok(()) = std::panic::catch_unwind(|| {
-                let pm_diag = match self.level {
-                    Level::Error => self.span.unwrap().error(&*self.message),
-                    Level::Warning => self.span.unwrap().warning(&*self.message),
-                    Level::Note => self.span.unwrap().note(&*self.message),
-                    Level::Help => self.span.unwrap().help(&*self.message),
-                };
-                pm_diag.emit()
-            }) {
-                return Ok(());
-            }
+        #[cfg(nightly)]
+        if proc_macro::is_available() {
+            let pm_diag = match self.level {
+                Level::Error => self.span.unwrap().error(&*self.message),
+                Level::Warning => self.span.unwrap().warning(&*self.message),
+                Level::Note => self.span.unwrap().note(&*self.message),
+                Level::Help => self.span.unwrap().help(&*self.message),
+            };
+            pm_diag.emit();
+            return Ok(());
         }
         Err(self.to_tokens())
     }
@@ -194,9 +193,15 @@ pub struct SerdeSpan {
 impl From<Span> for SerdeSpan {
     fn from(span: Span) -> Self {
         let path = 'a: {
-            #[cfg(all(nightly, panic = "unwind"))]
-            if let Ok(span) = std::panic::catch_unwind(|| span.unwrap()) {
-                break 'a span.source_file().path().display().to_string().into();
+            #[cfg(nightly)]
+            if proc_macro::is_available() {
+                break 'a span
+                    .unwrap()
+                    .source_file()
+                    .path()
+                    .display()
+                    .to_string()
+                    .into();
             }
 
             break 'a "unknown".into();

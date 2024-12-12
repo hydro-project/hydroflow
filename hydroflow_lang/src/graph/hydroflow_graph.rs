@@ -1,5 +1,7 @@
 #![warn(missing_docs)]
 
+extern crate proc_macro;
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Debug;
 use std::iter::FusedIterator;
@@ -1007,10 +1009,9 @@ impl HydroflowGraph {
 
                             if include_type_guards {
                                 let source_info = 'a: {
-                                    #[cfg(all(nightly, panic = "unwind"))]
-                                    if let Ok(op_span) =
-                                        std::panic::catch_unwind(|| op_span.unwrap())
-                                    {
+                                    #[cfg(nightly)]
+                                    if proc_macro::is_available() {
+                                        let op_span = op_span.unwrap();
                                         break 'a format!(
                                             "loc_{}_{}_{}_{}_{}",
                                             op_span
