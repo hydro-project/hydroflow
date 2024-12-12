@@ -7,7 +7,7 @@ extern crate proc_macro;
 pub struct PrettySpan(pub proc_macro2::Span);
 impl std::fmt::Display for PrettySpan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        #[cfg(all(nightly, panic = "unwind"))]
+        #[cfg(nightly)]
         if proc_macro::is_available() {
             let span = self.0.unwrap();
             write!(
