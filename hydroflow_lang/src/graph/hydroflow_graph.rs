@@ -1027,6 +1027,13 @@ impl HydroflowGraph {
                                         );
                                     }
 
+                                    #[cfg_attr(
+                                        not(nightly),
+                                        expect(
+                                            clippy::diverging_sub_expression,
+                                            reason = "conditional compilation"
+                                        )
+                                    )]
                                     break 'a format!(
                                         "loc_nopath_{}_{}_{}_{}",
                                         op_span.start().line,

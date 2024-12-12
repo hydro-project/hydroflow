@@ -204,6 +204,10 @@ impl From<Span> for SerdeSpan {
                     .into();
             }
 
+            #[cfg_attr(
+                not(nightly),
+                expect(clippy::diverging_sub_expression, reason = "conditional compilation")
+            )]
             break 'a "unknown".into();
         };
 
