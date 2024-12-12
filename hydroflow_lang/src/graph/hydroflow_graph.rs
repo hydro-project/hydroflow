@@ -1008,6 +1008,10 @@ impl HydroflowGraph {
                             subgraph_op_iter_code.push(write_iterator);
 
                             if include_type_guards {
+                                #[cfg_attr(
+                                    not(nightly),
+                                    expect(unused_labels, reason = "conditional compilation")
+                                )]
                                 let source_info = 'a: {
                                     #[cfg(nightly)]
                                     if proc_macro::is_available() {
@@ -1027,13 +1031,13 @@ impl HydroflowGraph {
                                         );
                                     }
 
-                                    break 'a format!(
+                                    format!(
                                         "loc_nopath_{}_{}_{}_{}",
                                         op_span.start().line,
                                         op_span.start().column,
                                         op_span.end().line,
                                         op_span.end().column
-                                    );
+                                    )
                                 };
 
                                 let fn_ident = format_ident!(

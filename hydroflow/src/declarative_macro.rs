@@ -55,24 +55,32 @@ macro_rules! hydroflow_expect_warnings {
         $( , )?
     ) => {
         {
-            let __file = std::file!();
-            let __line = std::line!() as usize;
-            let __hf = hydroflow::hydroflow_syntax_noemit! $hf;
+            fn emit(msg: impl ::std::convert::AsRef<str>) {
+                if Ok("ignore") == ::std::env::var("HYDROFLOW_EXPECT_WARNINGS").as_deref() {
+                    eprintln!("{}", msg.as_ref());
+                } else {
+                    panic!("{}", msg.as_ref());
+                }
+            }
+
+            let __file = ::std::file!();
+            let __line = ::std::line!() as usize;
+            let __hf = $crate::hydroflow_syntax_noemit! $hf;
 
             let actuals = __hf.diagnostics().expect("Expected `diagnostics()` to be set.");
             let actuals_len = actuals.len();
-            let actuals = std::collections::BTreeSet::from_iter(actuals.iter().cloned().map(|mut actual| {
+            let actuals = ::std::collections::BTreeSet::from_iter(actuals.iter().cloned().map(|mut actual| {
                 actual.span.line = actual.span.line.saturating_sub(__line);
-                std::borrow::Cow::<'static, str>::Owned(actual.to_string().replace(__file, "$FILE"))
+                ::std::borrow::Cow::<'static, str>::Owned(actual.to_string().replace(__file, "$FILE"))
             }));
 
             let expecteds = [
                 $(
-                    std::borrow::Cow::Borrowed( $msg ),
+                    ::std::borrow::Cow::Borrowed( $msg ),
                 )*
             ];
             let expecteds_len = expecteds.len();
-            let expecteds = std::collections::BTreeSet::from(expecteds);
+            let expecteds = ::std::collections::BTreeSet::from(expecteds);
 
             let missing_errs = expecteds.difference(&actuals).map(|missing| {
                 format!("Expected diagnostic `{}` was not emitted.", missing)
@@ -80,13 +88,18 @@ macro_rules! hydroflow_expect_warnings {
             let extra_errs = actuals.difference(&expecteds).map(|extra| {
                 format!("Unexpected extra diagnostic `{}` was emitted", extra)
             });
-            let all_errs: Vec<_> = missing_errs.chain(extra_errs).collect();
+            let all_errs: ::std::vec::Vec<_> = missing_errs.chain(extra_errs).collect();
             if !all_errs.is_empty() {
-                panic!("{}", all_errs.join("\n"));
+                emit(all_errs.join("\n"));
             }
 
-            // TODO(mingwei): fix duplicates generated from multi-pass flow prop algorithm.
-            // assert_eq!(actuals_len, expecteds_len, "Wrong nubmer of diagnostics, were there duplicates?");
+            if actuals_len != expecteds_len {
+                emit(format!(
+                    "Number of expected warnings ({}) does not match number of actual warnings ({}), were there duplicates?",
+                    expecteds_len,
+                    actuals_len
+                ));
+            }
 
             __hf
         }
