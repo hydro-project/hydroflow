@@ -1,8 +1,8 @@
 set -e
 
-PLATFORM=${1:-"x86_64-linux-gnu-ubuntu-16.04"}
+PLATFORM=${1:-"x86_64-linux-gnu-ubuntu-20.04"}
 
-wget -qO- https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.0/clang+llvm-13.0.0-$PLATFORM.tar.xz | tar xJ
+wget -qO- https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-$PLATFORM.tar.xz | tar xJ
 
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 

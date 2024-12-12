@@ -11,9 +11,8 @@ description = "Hydro's low-level dataflow runtime and IR"
 workspace = true
 
 [features]
-default = [ "macros", "nightly", "debugging" ]
+default = [ "macros", "debugging" ]
 
-nightly = [ "hydroflow_macro", "hydroflow_macro/diagnostics" ]
 macros = [ "hydroflow_macro", "hydroflow_datalog" ]
 hydroflow_macro = [ "dep:hydroflow_macro" ]
 hydroflow_datalog = [ "dep:hydroflow_datalog" ]
@@ -28,14 +27,6 @@ required-features = [ "nightly" ]
 [[example]]
 name = "python_udf"
 required-features = [ "python" ]
-
-[[example]]
-name = "modules_outer_join"
-required-features = [ "debugging" ]
-
-[[example]]
-name = "modules_triple_cross_join"
-required-features = [ "debugging" ]
 
 [dependencies]
 bincode = "1.3.1"

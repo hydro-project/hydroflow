@@ -1,4 +1,3 @@
-#![cfg_attr(feature = "nightly", feature(never_type))]
 #![warn(missing_docs)]
 
 //! Hydroflow is a low-level dataflow-based runtime system for the [Hydro Project](https://hydro.run/).
@@ -39,12 +38,9 @@ pub use hydroflow_macro::{
     hydroflow_test as test, monotonic_fn, morphism, DemuxEnum,
 };
 
+// TODO(mingwei): Use the [nightly "never" type `!`](https://doc.rust-lang.org/std/primitive.never.html)
 /// Stand-in for the [nightly "never" type `!`](https://doc.rust-lang.org/std/primitive.never.html)
-#[cfg(not(feature = "nightly"))]
 pub type Never = std::convert::Infallible;
-/// The [nightly "never" type `!`](https://doc.rust-lang.org/std/primitive.never.html)
-#[cfg(feature = "nightly")]
-pub type Never = !;
 
 #[cfg(doctest)]
 mod booktest {
