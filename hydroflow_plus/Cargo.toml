@@ -15,7 +15,6 @@ path = "src/lib.rs"
 
 [features]
 default = ["deploy_runtime"]
-diagnostics = [ "hydroflow_lang/diagnostics" ]
 stageleft_devel = []
 deploy_runtime = [ "hydroflow/deploy_integration" ]
 deploy = [ "deploy_runtime", "dep:hydro_deploy", "dep:trybuild-internals-api", "dep:toml", "dep:prettyplease" ]

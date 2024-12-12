@@ -11,9 +11,8 @@ description = "Hydro's low-level dataflow runtime and IR"
 workspace = true
 
 [features]
-default = [ "macros", "nightly", "debugging" ]
+default = [ "macros", "debugging" ]
 
-nightly = [ "hydroflow_macro", "hydroflow_macro/diagnostics" ]
 macros = [ "hydroflow_macro", "hydroflow_datalog" ]
 hydroflow_macro = [ "dep:hydroflow_macro" ]
 hydroflow_datalog = [ "dep:hydroflow_datalog" ]

@@ -1,5 +1,7 @@
 #![warn(missing_docs)]
 
+extern crate proc_macro;
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Debug;
 use std::iter::FusedIterator;
@@ -1006,13 +1008,11 @@ impl HydroflowGraph {
                             subgraph_op_iter_code.push(write_iterator);
 
                             if include_type_guards {
-                                #[cfg(not(feature = "diagnostics"))]
-                                let source_info = Option::<String>::None;
-
-                                #[cfg(feature = "diagnostics")]
-                                let source_info = std::panic::catch_unwind(|| op_span.unwrap())
-                                    .map(|op_span| {
-                                        format!(
+                                let source_info = 'a: {
+                                    #[cfg(nightly)]
+                                    if proc_macro::is_available() {
+                                        let op_span = op_span.unwrap();
+                                        break 'a format!(
                                             "loc_{}_{}_{}_{}_{}",
                                             op_span
                                                 .source_file()
@@ -1024,26 +1024,17 @@ impl HydroflowGraph {
                                             op_span.start().column(),
                                             op_span.end().line(),
                                             op_span.end().column(),
-                                        )
-                                    })
-                                    .ok();
+                                        );
+                                    }
 
-                                #[cfg_attr(
-                                    not(feature = "diagnostics"),
-                                    expect(
-                                        clippy::unnecessary_literal_unwrap,
-                                        reason = "conditional compilation"
-                                    )
-                                )]
-                                let source_info = source_info.unwrap_or_else(|| {
-                                    format!(
+                                    break 'a format!(
                                         "loc_nopath_{}_{}_{}_{}",
                                         op_span.start().line,
                                         op_span.start().column,
                                         op_span.end().line,
                                         op_span.end().column
-                                    )
-                                });
+                                    );
+                                };
 
                                 let fn_ident = format_ident!(
                                     "{}__{}__{}",
