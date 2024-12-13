@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/**
+    pull_request:
     tags:
       - 'hydro_cli-v[0-9]+.[0-9]+.[0-9]+'
 
@@ -138,7 +139,7 @@ jobs:
           - target: i686-pc-windows-msvc
             arch: x86
           - target: aarch64-pc-windows-msvc
-            arch: x64
+            arch: aarch64
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v5
