@@ -153,6 +153,9 @@ jobs:
           working-directory: hydro_deploy/hydro_cli
           target: ${{ matrix.platform.target }}
           args: --release --out dist
+        env:
+          # aarch64 build fails, see https://github.com/PyO3/maturin/issues/2110
+          XWIN_VERSION: 16
       - name: "Install built wheel"
         if: ${{ !startsWith(matrix.platform.target, 'aarch64') }}
         shell: bash
