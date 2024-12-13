@@ -346,15 +346,8 @@
 <a href="#346" id="346">346</a>
 <a href="#347" id="347">347</a>
 <a href="#348" id="348">348</a>
-<a href="#349" id="349">349</a>
-<a href="#350" id="350">350</a>
-<a href="#351" id="351">351</a>
-<a href="#352" id="352">352</a>
-<a href="#353" id="353">353</a>
-<a href="#354" id="354">354</a>
-<a href="#355" id="355">355</a>
 </pre></div><pre class="rust"><code><span class="attr">#![cfg_attr(
-    feature = <span class="string">"diagnostics"</span>,
+    nightly,
     feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)
 )]
 
@@ -427,25 +420,16 @@
         .iter()
         .filter(|diag: &amp;&amp;Diagnostic| <span class="prelude-val">Some</span>(diag.level) &lt;= min_diagnostic_level);
 
-    <span class="attr">#[cfg(feature = <span class="string">"diagnostics"</span>)]
-    </span>{
-        diagnostics.for_each(Diagnostic::emit);
-        tokens.into()
-    }
-
-    <span class="attr">#[cfg(not(feature = <span class="string">"diagnostics"</span>))]
-    </span>{
-        <span class="kw">let </span>diagnostics = diagnostics.map(Diagnostic::to_tokens);
-        <span class="macro">quote!</span> {
-            {
-                #(
-                    #diagnostics
-                )*
-                #tokens
-            }
+    <span class="kw">let </span>diagnostic_tokens = Diagnostic::try_emit_all(diagnostics)
+        .err()
+        .unwrap_or_default();
+    <span class="macro">quote!</span> {
+        {
+            #diagnostic_tokens
+            #tokens
         }
-        .into()
     }
+    .into()
 }
 
 <span class="doccomment">/// Parse Hydroflow "surface syntax" without emitting code.
@@ -478,8 +462,10 @@
         }
     }
 
-    diagnostics.iter().for_each(Diagnostic::emit);
-    <span class="macro">quote!</span> {}.into()
+    Diagnostic::try_emit_all(diagnostics.iter())
+        .err()
+        .unwrap_or_default()
+        .into()
 }
 
 <span class="attr">#[doc(hidden)]

@@ -1276,9 +1276,11 @@
 <a href="#1276" id="1276">1276</a>
 <a href="#1277" id="1277">1277</a>
 <a href="#1278" id="1278">1278</a>
+<a href="#1279" id="1279">1279</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
 <span class="kw">use </span>std::ops::Deref;
 
+<span class="kw">pub use </span>hydroflow_lang::diagnostic;
 <span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span>hydroflow_lang::graph::{
     eliminate_extra_unions_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,

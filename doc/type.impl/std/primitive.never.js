@@ -1,9 +1,0 @@
-(function() {
-    var type_impls = Object.fromEntries([["hydroflow",[["<details class=\"toggle implementors-toggle\" open><summary><section id=\"impl-From%3C!%3E-for-T\" class=\"impl\"><span class=\"rightside\"><span class=\"since\" title=\"Stable since Rust version 1.34.0\">1.34.0</span> · <a class=\"src\" href=\"https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#782\">source</a></span><a href=\"#impl-From%3C!%3E-for-T\" class=\"anchor\">§</a><h3 class=\"code-header\">impl&lt;T&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/convert/trait.From.html\" title=\"trait core::convert::From\">From</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/nightly/std/primitive.never.html\">!</a>&gt; for T</h3></section></summary><div class=\"docblock\"><p><strong>Stability note:</strong> This impl does not yet exist, but we are\n“reserving space” to add it in the future. See\n<a href=\"https://github.com/rust-lang/rust/issues/64715\">rust-lang/rust#64715</a> for details.</p>\n</div><div class=\"impl-items\"><details class=\"toggle method-toggle\" open><summary><section id=\"method.from\" class=\"method trait-impl\"><a class=\"src rightside\" href=\"https://doc.rust-lang.org/nightly/src/core/convert/mod.rs.html#783\">source</a><a href=\"#method.from\" class=\"anchor\">§</a><h4 class=\"code-header\">fn <a href=\"https://doc.rust-lang.org/nightly/core/convert/trait.From.html#tymethod.from\" class=\"fn\">from</a>(t: <a class=\"primitive\" href=\"https://doc.rust-lang.org/nightly/std/primitive.never.html\">!</a>) -&gt; T</h4></section></summary><div class='docblock'>Converts to this type from the input type.</div></details></div></details>","From<!>","hydroflow::Never"]]]]);
-    if (window.register_type_impls) {
-        window.register_type_impls(type_impls);
-    } else {
-        window.pending_type_impls = type_impls;
-    }
-})()
-//{"start":55,"fragment_lengths":[1678]}

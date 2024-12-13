@@ -36,30 +36,32 @@
 <a href="#36" id="36">36</a>
 <a href="#37" id="37">37</a>
 <a href="#38" id="38">38</a>
+<a href="#39" id="39">39</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Pretty, human-readable printing of [`proc_macro2::Span`]s.
 
-/// Helper struct which displays the span as `path:row:col` for human reading/IDE linking.
+</span><span class="kw">extern crate </span>proc_macro;
+
+<span class="doccomment">/// Helper struct which displays the span as `path:row:col` for human reading/IDE linking.
 /// Example: `hydroflow\tests\surface_syntax.rs:42:18`.
 </span><span class="kw">pub struct </span>PrettySpan(<span class="kw">pub </span>proc_macro2::Span);
 <span class="kw">impl </span>std::fmt::Display <span class="kw">for </span>PrettySpan {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
-        <span class="attr">#[cfg(feature = <span class="string">"diagnostics"</span>)]
-        </span>{
-            <span class="kw">if let </span><span class="prelude-val">Ok</span>(span) = std::panic::catch_unwind(|| <span class="self">self</span>.<span class="number">0</span>.unwrap()) {
-                <span class="macro">write!</span>(
-                    f,
-                    <span class="string">"{}:{}:{}"</span>,
-                    span.source_file().path().display(),
-                    span.start().line(),
-                    span.start().column(),
-                )<span class="question-mark">?</span>;
-                <span class="kw">return </span><span class="prelude-val">Ok</span>(());
-            }
+        <span class="attr">#[cfg(nightly)]
+        </span><span class="kw">if </span>proc_macro::is_available() {
+            <span class="kw">let </span>span = <span class="self">self</span>.<span class="number">0</span>.unwrap();
+            <span class="macro">write!</span>(
+                f,
+                <span class="string">"{}:{}:{}"</span>,
+                span.source_file().path().display(),
+                span.start().line(),
+                span.start().column(),
+            )<span class="question-mark">?</span>;
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
         <span class="macro">write!</span>(
             f,
-            <span class="string">"nopath:{}:{}"</span>,
+            <span class="string">"unknown:{}:{}"</span>,
             <span class="self">self</span>.<span class="number">0</span>.start().line,
             <span class="self">self</span>.<span class="number">0</span>.start().column
         )
