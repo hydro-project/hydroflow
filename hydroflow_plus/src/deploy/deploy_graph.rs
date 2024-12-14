@@ -15,17 +15,17 @@ use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{CustomService, Deployment, Host, HydroflowCrate};
 use hydroflow::bytes::Bytes;
 use hydroflow::futures::{Sink, SinkExt, Stream, StreamExt};
-use hydroflow::lang::graph::HydroflowGraph;
 use hydroflow::util::deploy::{ConnectedSink, ConnectedSource};
+use hydroflow_lang::graph::HydroflowGraph;
 use nameof::name_of;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use stageleft::{QuotedWithContext, RuntimeData};
 use tokio::sync::RwLock;
 
-use super::deploy_runtime::*;
 use super::trybuild::create_graph_trybuild;
 use super::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, Node, ProcessSpec, RegisterPort};
+use crate::deploy_runtime::*;
 
 pub struct HydroDeploy {}
 

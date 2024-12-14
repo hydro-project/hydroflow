@@ -9,8 +9,8 @@ use hydroflow::util::deploy::DeployPorts;
 use hydroflow_lang::graph::HydroflowGraph;
 use stageleft::{QuotedWithContext, RuntimeData};
 
-use super::HydroflowPlusMeta;
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
+use crate::deploy_runtime::HydroflowPlusMeta;
 
 pub struct DeployRuntime {}
 
@@ -35,7 +35,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         }
     }
 
-    fn trivail_cluster(_id: usize) -> Self::Cluster {
+    fn trivial_cluster(_id: usize) -> Self::Cluster {
         DeployRuntimeCluster {
             next_port: Rc::new(RefCell::new(0)),
         }
@@ -60,7 +60,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p2: &Self::Process,
         p2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr) {
-        super::deploy_runtime::deploy_o2o(*env, p1_port.as_str(), p2_port.as_str())
+        crate::deploy_runtime::deploy_o2o(*env, p1_port.as_str(), p2_port.as_str())
     }
 
     fn o2o_connect(
@@ -79,7 +79,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _c2: &Self::Cluster,
         c2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr) {
-        super::deploy_runtime::deploy_o2m(*env, p1_port.as_str(), c2_port.as_str())
+        crate::deploy_runtime::deploy_o2m(*env, p1_port.as_str(), c2_port.as_str())
     }
 
     fn o2m_connect(
@@ -98,7 +98,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _p2: &Self::Process,
         p2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr) {
-        super::deploy_runtime::deploy_m2o(*env, c1_port.as_str(), p2_port.as_str())
+        crate::deploy_runtime::deploy_m2o(*env, c1_port.as_str(), p2_port.as_str())
     }
 
     fn m2o_connect(
@@ -117,7 +117,7 @@ impl<'a> Deploy<'a> for DeployRuntime {
         _c2: &Self::Cluster,
         c2_port: &Self::Port,
     ) -> (syn::Expr, syn::Expr) {
-        super::deploy_runtime::deploy_m2m(*env, c1_port.as_str(), c2_port.as_str())
+        crate::deploy_runtime::deploy_m2m(*env, c1_port.as_str(), c2_port.as_str())
     }
 
     fn m2m_connect(
@@ -171,11 +171,11 @@ impl<'a> Deploy<'a> for DeployRuntime {
         env: &Self::CompileEnv,
         of_cluster: usize,
     ) -> impl QuotedWithContext<'a, &'a Vec<u32>, ()> + Copy + 'a {
-        super::deploy_runtime::cluster_members(*env, of_cluster)
+        crate::deploy_runtime::cluster_members(*env, of_cluster)
     }
 
     fn cluster_self_id(env: &Self::CompileEnv) -> impl QuotedWithContext<'a, u32, ()> + Copy + 'a {
-        super::deploy_runtime::cluster_self_id(*env)
+        crate::deploy_runtime::cluster_self_id(*env)
     }
 }
 

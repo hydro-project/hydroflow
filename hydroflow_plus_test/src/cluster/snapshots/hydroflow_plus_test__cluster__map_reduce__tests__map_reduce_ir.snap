@@ -19,26 +19,12 @@ expression: built.ir()
                             0,
                         ),
                         to_key: None,
-                        serialize_pipeline: Some(
-                            Operator(
-                                Operator {
-                                    path: "map",
-                                    args: [
-                                        "| data | { hydroflow_plus :: runtime_support :: bincode :: serialize :: < (std :: string :: String , i32) > (& data) . unwrap () . into () }",
-                                    ],
-                                },
-                            ),
+                        serialize_fn: Some(
+                            | data | { hydroflow_plus :: runtime_support :: bincode :: serialize :: < (std :: string :: String , i32) > (& data) . unwrap () . into () },
                         ),
                         instantiate_fn: <network instantiate>,
-                        deserialize_pipeline: Some(
-                            Operator(
-                                Operator {
-                                    path: "map",
-                                    args: [
-                                        "| res | { let (id , b) = res . unwrap () ; (hydroflow_plus :: ClusterId :: < hydroflow_plus_test :: cluster :: map_reduce :: Worker > :: from_raw (id) , hydroflow_plus :: runtime_support :: bincode :: deserialize :: < (std :: string :: String , i32) > (& b) . unwrap ()) }",
-                                    ],
-                                },
-                            ),
+                        deserialize_fn: Some(
+                            | res | { let (id , b) = res . unwrap () ; (hydroflow_plus :: ClusterId :: < hydroflow_plus_test :: cluster :: map_reduce :: Worker > :: from_raw (id) , hydroflow_plus :: runtime_support :: bincode :: deserialize :: < (std :: string :: String , i32) > (& b) . unwrap ()) },
                         ),
                         input: Inspect {
                             f: stageleft :: runtime_support :: fn1_borrow_type_hint :: < (std :: string :: String , i32) , () > ({ use crate :: __staged :: cluster :: map_reduce :: * ; | (string , count) | println ! ("partition count: {} - {}" , string , count) }),
@@ -56,26 +42,12 @@ expression: built.ir()
                                             1,
                                         ),
                                         to_key: None,
-                                        serialize_pipeline: Some(
-                                            Operator(
-                                                Operator {
-                                                    path: "map",
-                                                    args: [
-                                                        "| (id , data) : (hydroflow_plus :: ClusterId < _ > , std :: string :: String) | { (id . raw_id , hydroflow_plus :: runtime_support :: bincode :: serialize :: < std :: string :: String > (& data) . unwrap () . into ()) }",
-                                                    ],
-                                                },
-                                            ),
+                                        serialize_fn: Some(
+                                            | (id , data) : (hydroflow_plus :: ClusterId < _ > , std :: string :: String) | { (id . raw_id , hydroflow_plus :: runtime_support :: bincode :: serialize :: < std :: string :: String > (& data) . unwrap () . into ()) },
                                         ),
                                         instantiate_fn: <network instantiate>,
-                                        deserialize_pipeline: Some(
-                                            Operator(
-                                                Operator {
-                                                    path: "map",
-                                                    args: [
-                                                        "| res | { hydroflow_plus :: runtime_support :: bincode :: deserialize :: < std :: string :: String > (& res . unwrap ()) . unwrap () }",
-                                                    ],
-                                                },
-                                            ),
+                                        deserialize_fn: Some(
+                                            | res | { hydroflow_plus :: runtime_support :: bincode :: deserialize :: < std :: string :: String > (& res . unwrap ()) . unwrap () },
                                         ),
                                         input: Map {
                                             f: stageleft :: runtime_support :: fn1_type_hint :: < (usize , std :: string :: String) , (hydroflow_plus :: location :: cluster :: cluster_id :: ClusterId < hydroflow_plus_test :: cluster :: map_reduce :: Worker > , std :: string :: String) > ({ use hydroflow_plus :: __staged :: stream :: * ; let ids__free = unsafe { :: std :: mem :: transmute :: < _ , & :: std :: vec :: Vec < hydroflow_plus :: ClusterId < hydroflow_plus_test :: cluster :: map_reduce :: Worker > > > (__hydroflow_plus_cluster_ids_1) } ; | (i , w) | (ids__free [i % ids__free . len ()] , w) }),

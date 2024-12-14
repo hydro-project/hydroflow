@@ -11,18 +11,24 @@ use crate::staging_util::Invariant;
 use crate::{Stream, Unbounded};
 
 pub struct ExternalBytesPort {
+    #[allow(clippy::allow_attributes, unused, reason = "unused without feature")]
     pub(crate) process_id: usize,
+    #[allow(clippy::allow_attributes, unused, reason = "unused without feature")]
     pub(crate) port_id: usize,
 }
 
 pub struct ExternalBincodeSink<T: Serialize> {
+    #[allow(clippy::allow_attributes, unused, reason = "unused without feature")]
     pub(crate) process_id: usize,
+    #[allow(clippy::allow_attributes, unused, reason = "unused without feature")]
     pub(crate) port_id: usize,
     pub(crate) _phantom: PhantomData<T>,
 }
 
 pub struct ExternalBincodeStream<T: DeserializeOwned> {
+    #[allow(clippy::allow_attributes, unused, reason = "unused without feature")]
     pub(crate) process_id: usize,
+    #[allow(clippy::allow_attributes, unused, reason = "unused without feature")]
     pub(crate) port_id: usize,
     pub(crate) _phantom: PhantomData<T>,
 }
@@ -77,6 +83,8 @@ impl<'a, P> ExternalProcess<'a, P> {
             id
         };
 
+        let deser_expr: syn::Expr = syn::parse_quote!(|b| b.unwrap().freeze());
+
         (
             ExternalBytesPort {
                 process_id: self.id,
@@ -89,9 +97,9 @@ impl<'a, P> ExternalProcess<'a, P> {
                     from_key: Some(next_external_port_id),
                     to_location: to.id(),
                     to_key: None,
-                    serialize_pipeline: None,
+                    serialize_fn: None,
                     instantiate_fn: crate::ir::DebugInstantiate::Building(),
-                    deserialize_pipeline: Some(syn::parse_quote!(map(|b| b.unwrap().freeze()))),
+                    deserialize_fn: Some(deser_expr.into()),
                     input: Box::new(HfPlusNode::Source {
                         source: HfPlusSource::ExternalNetwork(),
                         location_kind: LocationId::ExternalProcess(self.id),
@@ -125,9 +133,9 @@ impl<'a, P> ExternalProcess<'a, P> {
                     from_key: Some(next_external_port_id),
                     to_location: to.id(),
                     to_key: None,
-                    serialize_pipeline: None,
+                    serialize_fn: None,
                     instantiate_fn: crate::ir::DebugInstantiate::Building(),
-                    deserialize_pipeline: Some(crate::stream::deserialize_bincode::<T>(None)),
+                    deserialize_fn: Some(crate::stream::deserialize_bincode::<T>(None).into()),
                     input: Box::new(HfPlusNode::Source {
                         source: HfPlusSource::ExternalNetwork(),
                         location_kind: LocationId::ExternalProcess(self.id),
