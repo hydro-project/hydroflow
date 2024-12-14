@@ -73,9 +73,9 @@ fn persist_pullup_node(
                 from_key,
                 to_location,
                 to_key,
-                serialize_pipeline,
+                serialize_fn,
                 instantiate_fn,
-                deserialize_pipeline,
+                deserialize_fn,
                 input: mb!(* HfPlusNode::Persist(behind_persist)),
                 ..
             } => HfPlusNode::Persist(Box::new(HfPlusNode::Network {
@@ -83,9 +83,9 @@ fn persist_pullup_node(
                 from_key,
                 to_location,
                 to_key,
-                serialize_pipeline,
+                serialize_fn,
                 instantiate_fn,
-                deserialize_pipeline,
+                deserialize_fn,
                 input: behind_persist,
             })),
 

@@ -9,8 +9,8 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use stageleft::QuotedWithContext;
 
-#[cfg(feature = "deploy_runtime")]
 pub mod macro_runtime;
+pub use macro_runtime::*;
 
 #[cfg(feature = "deploy")]
 pub(crate) mod trybuild;
@@ -20,14 +20,8 @@ pub(crate) mod trybuild;
 #[doc(hidden)]
 pub mod trybuild_rewriters;
 
-pub use macro_runtime::*;
 #[cfg(feature = "deploy")]
 pub use trybuild::init_test;
-
-#[cfg(feature = "deploy_runtime")]
-pub mod deploy_runtime;
-#[cfg(feature = "deploy_runtime")]
-pub use deploy_runtime::HydroflowPlusMeta;
 
 #[cfg(feature = "deploy")]
 pub mod deploy_graph;
@@ -81,7 +75,7 @@ pub trait Deploy<'a> {
         panic!("No trivial process")
     }
 
-    fn trivail_cluster(_id: usize) -> Self::Cluster {
+    fn trivial_cluster(_id: usize) -> Self::Cluster {
         panic!("No trivial cluster")
     }
 
@@ -205,7 +199,7 @@ impl<
     }
 
     fn trivial_cluster(id: usize) -> Self::Cluster {
-        <T as Deploy<'a>>::trivail_cluster(id)
+        <T as Deploy<'a>>::trivial_cluster(id)
     }
 }
 

@@ -16,17 +16,10 @@ expression: built.ir()
                 1,
             ),
             to_key: None,
-            serialize_pipeline: None,
+            serialize_fn: None,
             instantiate_fn: <network instantiate>,
-            deserialize_pipeline: Some(
-                Operator(
-                    Operator {
-                        path: "map",
-                        args: [
-                            "| res | { hydroflow_plus :: runtime_support :: bincode :: deserialize :: < std :: string :: String > (& res . unwrap ()) . unwrap () }",
-                        ],
-                    },
-                ),
+            deserialize_fn: Some(
+                | res | { hydroflow_plus :: runtime_support :: bincode :: deserialize :: < std :: string :: String > (& res . unwrap ()) . unwrap () },
             ),
             input: Source {
                 source: ExternalNetwork,
@@ -47,26 +40,12 @@ expression: built.ir()
                 2,
             ),
             to_key: None,
-            serialize_pipeline: Some(
-                Operator(
-                    Operator {
-                        path: "map",
-                        args: [
-                            "| data | { hydroflow_plus :: runtime_support :: bincode :: serialize :: < hydroflow_plus_test :: distributed :: first_ten :: SendOverNetwork > (& data) . unwrap () . into () }",
-                        ],
-                    },
-                ),
+            serialize_fn: Some(
+                | data | { hydroflow_plus :: runtime_support :: bincode :: serialize :: < hydroflow_plus_test :: distributed :: first_ten :: SendOverNetwork > (& data) . unwrap () . into () },
             ),
             instantiate_fn: <network instantiate>,
-            deserialize_pipeline: Some(
-                Operator(
-                    Operator {
-                        path: "map",
-                        args: [
-                            "| res | { hydroflow_plus :: runtime_support :: bincode :: deserialize :: < hydroflow_plus_test :: distributed :: first_ten :: SendOverNetwork > (& res . unwrap ()) . unwrap () }",
-                        ],
-                    },
-                ),
+            deserialize_fn: Some(
+                | res | { hydroflow_plus :: runtime_support :: bincode :: deserialize :: < hydroflow_plus_test :: distributed :: first_ten :: SendOverNetwork > (& res . unwrap ()) . unwrap () },
             ),
             input: Map {
                 f: stageleft :: runtime_support :: fn1_type_hint :: < u32 , hydroflow_plus_test :: distributed :: first_ten :: SendOverNetwork > ({ use crate :: __staged :: distributed :: first_ten :: * ; | n | SendOverNetwork { n } }),
