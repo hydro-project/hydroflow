@@ -3,17 +3,23 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
+#[cfg(feature = "build")]
 use compiled::CompiledFlow;
+#[cfg(feature = "build")]
 use deploy::{DeployFlow, DeployResult};
 use stageleft::*;
 
+#[cfg(feature = "build")]
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDeploy};
 use crate::ir::HfPlusLeaf;
 use crate::location::{Cluster, ExternalProcess, Process};
 use crate::staging_util::Invariant;
 
+#[cfg(feature = "build")]
 pub mod built;
+#[cfg(feature = "build")]
 pub mod compiled;
+#[cfg(feature = "build")]
 pub mod deploy;
 
 pub struct FlowStateInner {
@@ -89,6 +95,7 @@ impl<'a> FlowBuilder<'a> {
         }
     }
 
+    #[cfg(feature = "build")]
     pub fn finalize(mut self) -> built::BuiltFlow<'a> {
         self.finalized = true;
 
@@ -101,10 +108,12 @@ impl<'a> FlowBuilder<'a> {
         }
     }
 
+    #[cfg(feature = "build")]
     pub fn with_default_optimize<D: LocalDeploy<'a>>(self) -> DeployFlow<'a, D> {
         self.finalize().with_default_optimize()
     }
 
+    #[cfg(feature = "build")]
     pub fn optimize_with(
         self,
         f: impl FnOnce(Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf>,
@@ -158,6 +167,7 @@ impl<'a> FlowBuilder<'a> {
         }
     }
 
+    #[cfg(feature = "build")]
     pub fn with_process<P, D: LocalDeploy<'a>>(
         self,
         process: &Process<P>,
@@ -166,6 +176,7 @@ impl<'a> FlowBuilder<'a> {
         self.with_default_optimize().with_process(process, spec)
     }
 
+    #[cfg(feature = "build")]
     pub fn with_external<P, D: LocalDeploy<'a>>(
         self,
         process: &ExternalProcess<P>,
@@ -174,6 +185,7 @@ impl<'a> FlowBuilder<'a> {
         self.with_default_optimize().with_external(process, spec)
     }
 
+    #[cfg(feature = "build")]
     pub fn with_cluster<C, D: LocalDeploy<'a>>(
         self,
         cluster: &Cluster<C>,
@@ -182,14 +194,17 @@ impl<'a> FlowBuilder<'a> {
         self.with_default_optimize().with_cluster(cluster, spec)
     }
 
+    #[cfg(feature = "build")]
     pub fn compile<D: Deploy<'a>>(self, env: &D::CompileEnv) -> CompiledFlow<'a, D::GraphId> {
         self.with_default_optimize::<D>().compile(env)
     }
 
+    #[cfg(feature = "build")]
     pub fn compile_no_network<D: LocalDeploy<'a>>(self) -> CompiledFlow<'a, D::GraphId> {
         self.with_default_optimize::<D>().compile_no_network()
     }
 
+    #[cfg(feature = "build")]
     pub fn deploy<D: Deploy<'a, CompileEnv = ()>>(
         self,
         env: &mut D::InstantiateEnv,

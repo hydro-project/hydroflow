@@ -27,7 +27,10 @@ pub mod location;
 pub use location::cluster::CLUSTER_SELF_ID;
 pub use location::{Cluster, ClusterId, ExternalProcess, Location, Process, Tick, Timestamped};
 
+#[cfg(feature = "build")]
 pub mod deploy;
+
+pub mod deploy_runtime;
 
 pub mod cycle;
 
