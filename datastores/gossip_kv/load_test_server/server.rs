@@ -2,14 +2,15 @@ use std::convert::Infallible;
 use std::num::{NonZeroU32, ParseFloatError};
 use std::thread::sleep;
 use std::time::Duration;
-
 use clap::Parser;
 use gossip_kv::membership::{MemberDataBuilder, Protocol};
-use gossip_kv::{ClientRequest, GossipMessage};
+use gossip_kv::{ClientRequest, GossipMessage, Key};
 use governor::{Quota, RateLimiter};
+use lazy_static::lazy_static;
 use hydroflow::util::{unbounded_channel, unsync_channel};
-use prometheus::{gather, Encoder, TextEncoder};
-use tokio::sync::mpsc::UnboundedSender;
+use prometheus::{gather, register_int_counter, Encoder, IntCounter, TextEncoder};
+use tokio::sync::mpsc::{Sender, UnboundedSender};
+use tokio::sync::watch::Receiver;
 use tokio::task;
 use tracing::{error, info, trace};
 use warp::Filter;
@@ -19,8 +20,9 @@ type LoadTestAddress = u64;
 use gossip_kv::server::{server, SeedNode};
 use hydroflow::futures::sink::drain;
 use hydroflow::futures::stream;
-use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
+use hydroflow::tokio_stream::wrappers::{ReceiverStream, UnboundedReceiverStream};
 use hydroflow::tokio_stream::StreamExt;
+use hydroflow::util::unsync::mpsc::bounded;
 use lattices::cc_traits::Iter;
 
 const UNKNOWN_ADDRESS: LoadTestAddress = 9999999999;
@@ -38,6 +40,12 @@ struct Opts {
     /// Maximum number of SET requests to send per second.
     #[clap(short, long, default_value = "1")]
     max_set_throughput: u32,
+}
+
+
+lazy_static! {
+    pub static ref SETS_SENT: IntCounter =
+        register_int_counter!("sets_sent", "Counts the number of SET requests sent.").unwrap();
 }
 
 /// Parse duration from float string for clap args.
@@ -59,6 +67,8 @@ fn run_server(
             .build()
             .unwrap();
 
+        let (client_input_tx, client_input_rx) = bounded(1000);
+
         let (gossip_output_tx, mut gossip_output_rx) = unsync_channel(None);
 
         let (gossip_trigger_tx, gossip_trigger_rx) = unbounded_channel();
@@ -68,33 +78,29 @@ fn run_server(
             .build();
 
         rt.block_on(async {
+            // Disabled gossip for now
+            // let gossip_frequency = opts.gossip_frequency;
+            // local.spawn_local(async move {
+            //     loop {
+            //         tokio::time::sleep(gossip_frequency).await;
+            //         gossip_trigger_tx.send(()).unwrap();
+            //     }
+            // });
+
+            // let put_throughput = opts.max_set_throughput;
             let local = task::LocalSet::new();
-
-            let (client_input_tx, client_input_rx) = unbounded_channel();
-
-            let put_throughput = opts.max_set_throughput;
             local.spawn_local(async move {
-                let rate_limiter = RateLimiter::direct(Quota::per_second(
-                    NonZeroU32::new(put_throughput).unwrap(),
-                ));
+                let key_master: Key = "/usr/table/key".parse().unwrap();
                 loop {
-                    rate_limiter.until_ready().await;
-                    let key = "/usr/table/key".parse().unwrap();
                     let request = ClientRequest::Set {
-                        key,
+                        key: key_master.clone(),
                         value: "FOOBAR".to_string(),
                     };
-                    client_input_tx.send((request, UNKNOWN_ADDRESS)).unwrap();
+                    client_input_tx.send((request, UNKNOWN_ADDRESS)).await.unwrap();
+                    SETS_SENT.inc();
                 }
             });
 
-            let gossip_frequency = opts.gossip_frequency;
-            local.spawn_local(async move {
-                loop {
-                    tokio::time::sleep(gossip_frequency).await;
-                    gossip_trigger_tx.send(()).unwrap();
-                }
-            });
 
             // Networking
             local.spawn_local(async move {
@@ -132,95 +138,95 @@ struct Switchboard {
 }
 
 impl Clone for Switchboard {
-    fn clone(&self) -> Self {
-        Self {
-            gossip_outboxes: self.gossip_outboxes.clone(),
+        fn clone(&self) -> Self {
+            Self {
+                gossip_outboxes: self.gossip_outboxes.clone(),
+            }
         }
     }
-}
 
-impl Switchboard {
-    fn new() -> Self {
-        Self {
-            gossip_outboxes: Vec::new(),
+    impl Switchboard {
+        fn new() -> Self {
+            Self {
+                gossip_outboxes: Vec::new(),
+            }
+        }
+        fn new_outbox(
+            &mut self,
+        ) -> (
+            LoadTestAddress,
+            UnboundedReceiverStream<(GossipMessage, LoadTestAddress)>,
+        ) {
+            let addr: LoadTestAddress = self.gossip_outboxes.len() as LoadTestAddress;
+            let (tx, rx) = unbounded_channel();
+            self.gossip_outboxes.push(tx);
+            (addr, rx)
         }
     }
-    fn new_outbox(
-        &mut self,
-    ) -> (
-        LoadTestAddress,
-        UnboundedReceiverStream<(GossipMessage, LoadTestAddress)>,
-    ) {
-        let addr: LoadTestAddress = self.gossip_outboxes.len() as LoadTestAddress;
-        let (tx, rx) = unbounded_channel();
-        self.gossip_outboxes.push(tx);
-        (addr, rx)
+
+    async fn metrics_handler() -> Result<impl warp::Reply, Infallible> {
+        let encoder = TextEncoder::new();
+        let metric_families = gather();
+        let mut buffer = Vec::new();
+        encoder.encode(&metric_families, &mut buffer).unwrap();
+
+        Ok(warp::reply::with_header(
+            buffer,
+            "Content-Type",
+            encoder.format_type(),
+        ))
     }
-}
 
-async fn metrics_handler() -> Result<impl warp::Reply, Infallible> {
-    let encoder = TextEncoder::new();
-    let metric_families = gather();
-    let mut buffer = Vec::new();
-    encoder.encode(&metric_families, &mut buffer).unwrap();
+    fn main() {
+        tracing_subscriber::fmt::init();
 
-    Ok(warp::reply::with_header(
-        buffer,
-        "Content-Type",
-        encoder.format_type(),
-    ))
-}
+        let opts: Opts = Opts::parse();
 
-fn main() {
-    tracing_subscriber::fmt::init();
+        std::thread::spawn(move || {
+            let metrics_route = warp::path("metrics").and_then(metrics_handler);
 
-    let opts: Opts = Opts::parse();
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
 
-    std::thread::spawn(move || {
-        let metrics_route = warp::path("metrics").and_then(metrics_handler);
-
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-
-        rt.block_on(async move {
-            info!("Starting metrics server on port 4003");
-            warp::serve(metrics_route).run(([0, 0, 0, 0], 4003)).await;
+            rt.block_on(async move {
+                info!("Starting metrics server on port 4003");
+                warp::serve(metrics_route).run(([0, 0, 0, 0], 4003)).await;
+            });
         });
-    });
 
-    info!("Starting load test with with {} threads", opts.thread_count);
+        info!("Starting load test with with {} threads", opts.thread_count);
 
-    let mut switchboard = Switchboard::new();
+        let mut switchboard = Switchboard::new();
 
-    let outboxes: Vec<_> = (0..opts.thread_count)
-        .map(|_| {
-            let (addr, rx) = switchboard.new_outbox();
-            (format!("SERVER-{}", addr), addr, rx)
-        })
-        .collect();
+        let outboxes: Vec<_> = (0..opts.thread_count)
+            .map(|_| {
+                let (addr, rx) = switchboard.new_outbox();
+                (format!("SERVER-{}", addr), addr, rx)
+            })
+            .collect();
 
-    let seed_nodes: Vec<_> = outboxes
-        .iter()
-        .map(|(name, addr, _)| SeedNode {
-            id: name.clone(),
-            address: *addr,
-        })
-        .collect();
+        let seed_nodes: Vec<_> = outboxes
+            .iter()
+            .map(|(name, addr, _)| SeedNode {
+                id: name.clone(),
+                address: *addr,
+            })
+            .collect();
 
-    outboxes.into_iter().for_each(|(name, addr, outbox)| {
-        run_server(
-            name,
-            addr,
-            outbox,
-            switchboard.clone(),
-            seed_nodes.clone(),
-            opts,
-        );
-    });
+        outboxes.into_iter().for_each(|(name, addr, outbox)| {
+            run_server(
+                name,
+                addr,
+                outbox,
+                switchboard.clone(),
+                seed_nodes.clone(),
+                opts,
+            );
+        });
 
-    loop {
-        sleep(Duration::from_secs(1));
+        loop {
+            sleep(Duration::from_secs(1));
+        }
     }
-}
