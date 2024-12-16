@@ -1,16 +1,22 @@
 use core::panic;
 use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap};
+#[cfg(feature = "build")]
+use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::ops::Deref;
 use std::rc::Rc;
 
+#[cfg(feature = "build")]
 use hydroflow_lang::graph::FlatGraphBuilder;
-use hydroflow_lang::parse::Pipeline;
-use proc_macro2::{Span, TokenStream};
+#[cfg(feature = "build")]
+use proc_macro2::Span;
+use proc_macro2::TokenStream;
 use quote::ToTokens;
+#[cfg(feature = "build")]
 use syn::parse_quote;
 
+#[cfg(feature = "build")]
 use crate::deploy::{Deploy, RegisterPort};
 use crate::location::LocationId;
 
@@ -54,15 +60,6 @@ impl Debug for DebugInstantiate {
     }
 }
 
-#[derive(Clone)]
-pub struct DebugPipelineFn(pub Rc<dyn Fn() -> Pipeline + 'static>);
-
-impl Debug for DebugPipelineFn {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "<function>")
-    }
-}
-
 /// A source in a Hydroflow+ graph, where data enters the graph.
 #[derive(Debug)]
 pub enum HfPlusSource {
@@ -93,6 +90,7 @@ pub enum HfPlusLeaf {
 }
 
 impl HfPlusLeaf {
+    #[cfg(feature = "build")]
     pub fn compile_network<'a, D: Deploy<'a>>(
         self,
         compile_env: &D::CompileEnv,
@@ -147,6 +145,7 @@ impl HfPlusLeaf {
         }
     }
 
+    #[cfg(feature = "build")]
     pub fn emit(
         &self,
         graph_builders: &mut BTreeMap<usize, FlatGraphBuilder>,
@@ -348,9 +347,9 @@ pub enum HfPlusNode {
         from_key: Option<usize>,
         to_location: LocationId,
         to_key: Option<usize>,
-        serialize_pipeline: Option<Pipeline>,
+        serialize_fn: Option<DebugExpr>,
         instantiate_fn: DebugInstantiate,
-        deserialize_pipeline: Option<Pipeline>,
+        deserialize_fn: Option<DebugExpr>,
         input: Box<HfPlusNode>,
     },
 }
@@ -358,6 +357,7 @@ pub enum HfPlusNode {
 pub type SeenTees = HashMap<*const RefCell<HfPlusNode>, Rc<RefCell<HfPlusNode>>>;
 
 impl<'a> HfPlusNode {
+    #[cfg(feature = "build")]
     pub fn compile_network<D: Deploy<'a>>(
         &mut self,
         compile_env: &D::CompileEnv,
@@ -534,6 +534,7 @@ impl<'a> HfPlusNode {
         }
     }
 
+    #[cfg(feature = "build")]
     pub fn emit(
         &self,
         graph_builders: &mut BTreeMap<usize, FlatGraphBuilder>,
@@ -1141,9 +1142,9 @@ impl<'a> HfPlusNode {
                 from_key: _,
                 to_location,
                 to_key: _,
-                serialize_pipeline,
+                serialize_fn: serialize_pipeline,
                 instantiate_fn,
-                deserialize_pipeline,
+                deserialize_fn: deserialize_pipeline,
                 input,
             } => {
                 let (sink_expr, source_expr, _connect_fn) = match instantiate_fn {
@@ -1163,7 +1164,7 @@ impl<'a> HfPlusNode {
 
                 if let Some(serialize_pipeline) = serialize_pipeline {
                     sender_builder.add_statement(parse_quote! {
-                        #input_ident -> #serialize_pipeline -> dest_sink(#sink_expr);
+                        #input_ident -> map(#serialize_pipeline) -> dest_sink(#sink_expr);
                     });
                 } else {
                     sender_builder.add_statement(parse_quote! {
@@ -1187,7 +1188,7 @@ impl<'a> HfPlusNode {
 
                 if let Some(deserialize_pipeline) = deserialize_pipeline {
                     receiver_builder.add_statement(parse_quote! {
-                        #receiver_stream_ident = source_stream(#source_expr) -> #deserialize_pipeline;
+                        #receiver_stream_ident = source_stream(#source_expr) -> map(#deserialize_pipeline);
                     });
                 } else {
                     receiver_builder.add_statement(parse_quote! {
@@ -1201,6 +1202,7 @@ impl<'a> HfPlusNode {
     }
 }
 
+#[cfg(feature = "build")]
 #[expect(clippy::too_many_arguments, reason = "networking internals")]
 fn instantiate_network<'a, D: Deploy<'a>>(
     from_location: &mut LocationId,

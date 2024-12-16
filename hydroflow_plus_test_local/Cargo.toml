@@ -12,7 +12,7 @@ stageleft_devel = []
 
 [dependencies]
 hydroflow = { path = "../hydroflow", version = "^0.10.0", default-features = false } # , features = ["debugging"] }
-hydroflow_plus = { path = "../hydroflow_plus", version = "^0.10.0" }
+hydroflow_plus = { path = "../hydroflow_plus", version = "^0.10.0", features = ["build"] }
 stageleft = { path = "../stageleft", version = "^0.5.0" }
 rand = "0.8.0"
 

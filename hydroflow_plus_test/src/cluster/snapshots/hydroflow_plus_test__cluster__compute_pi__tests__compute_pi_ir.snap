@@ -22,26 +22,12 @@ expression: built.ir()
                                     1,
                                 ),
                                 to_key: None,
-                                serialize_pipeline: Some(
-                                    Operator(
-                                        Operator {
-                                            path: "map",
-                                            args: [
-                                                "| data | { hydroflow_plus :: runtime_support :: bincode :: serialize :: < (u64 , u64) > (& data) . unwrap () . into () }",
-                                            ],
-                                        },
-                                    ),
+                                serialize_fn: Some(
+                                    | data | { hydroflow_plus :: runtime_support :: bincode :: serialize :: < (u64 , u64) > (& data) . unwrap () . into () },
                                 ),
                                 instantiate_fn: <network instantiate>,
-                                deserialize_pipeline: Some(
-                                    Operator(
-                                        Operator {
-                                            path: "map",
-                                            args: [
-                                                "| res | { let (id , b) = res . unwrap () ; (hydroflow_plus :: ClusterId :: < hydroflow_plus_test :: cluster :: compute_pi :: Worker > :: from_raw (id) , hydroflow_plus :: runtime_support :: bincode :: deserialize :: < (u64 , u64) > (& b) . unwrap ()) }",
-                                            ],
-                                        },
-                                    ),
+                                deserialize_fn: Some(
+                                    | res | { let (id , b) = res . unwrap () ; (hydroflow_plus :: ClusterId :: < hydroflow_plus_test :: cluster :: compute_pi :: Worker > :: from_raw (id) , hydroflow_plus :: runtime_support :: bincode :: deserialize :: < (u64 , u64) > (& b) . unwrap ()) },
                                 ),
                                 input: Fold {
                                     init: stageleft :: runtime_support :: fn0_type_hint :: < (u64 , u64) > ({ use crate :: __staged :: cluster :: compute_pi :: * ; | | (0u64 , 0u64) }),

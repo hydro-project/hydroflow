@@ -6,7 +6,6 @@ use std::rc::Rc;
 
 use hydroflow::bytes::Bytes;
 use hydroflow::futures;
-use hydroflow_lang::parse::Pipeline;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use stageleft::{q, IntoQuotedMut, QuotedWithContext};
@@ -923,43 +922,43 @@ impl<'a, T, L: Location<'a>, Order> Stream<T, Tick<L>, Bounded, Order> {
     }
 }
 
-fn serialize_bincode<T: Serialize>(is_demux: bool) -> Pipeline {
+fn serialize_bincode<T: Serialize>(is_demux: bool) -> syn::Expr {
     let root = get_this_crate();
 
     let t_type: syn::Type = stageleft::quote_type::<T>();
 
     if is_demux {
         parse_quote! {
-            map(|(id, data): (#root::ClusterId<_>, #t_type)| {
+            |(id, data): (#root::ClusterId<_>, #t_type)| {
                 (id.raw_id, #root::runtime_support::bincode::serialize::<#t_type>(&data).unwrap().into())
-            })
+            }
         }
     } else {
         parse_quote! {
-            map(|data| {
+            |data| {
                 #root::runtime_support::bincode::serialize::<#t_type>(&data).unwrap().into()
-            })
+            }
         }
     }
 }
 
-pub(super) fn deserialize_bincode<T: DeserializeOwned>(tagged: Option<syn::Type>) -> Pipeline {
+pub(super) fn deserialize_bincode<T: DeserializeOwned>(tagged: Option<syn::Type>) -> syn::Expr {
     let root = get_this_crate();
 
     let t_type: syn::Type = stageleft::quote_type::<T>();
 
     if let Some(c_type) = tagged {
         parse_quote! {
-            map(|res| {
+            |res| {
                 let (id, b) = res.unwrap();
                 (#root::ClusterId::<#c_type>::from_raw(id), #root::runtime_support::bincode::deserialize::<#t_type>(&b).unwrap())
-            })
+            }
         }
     } else {
         parse_quote! {
-            map(|res| {
+            |res| {
                 #root::runtime_support::bincode::deserialize::<#t_type>(&res.unwrap()).unwrap()
-            })
+            }
         }
     }
 }
@@ -1027,9 +1026,9 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
                 from_key: None,
                 to_location: other.id(),
                 to_key: None,
-                serialize_pipeline,
+                serialize_fn: serialize_pipeline.map(|e| e.into()),
                 instantiate_fn: DebugInstantiate::Building(),
-                deserialize_pipeline,
+                deserialize_fn: deserialize_pipeline.map(|e| e.into()),
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
@@ -1062,9 +1061,9 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
                 from_key: None,
                 to_location: other.id(),
                 to_key: Some(external_key),
-                serialize_pipeline,
+                serialize_fn: serialize_pipeline.map(|e| e.into()),
                 instantiate_fn: DebugInstantiate::Building(),
-                deserialize_pipeline: None,
+                deserialize_fn: None,
                 input: Box::new(self.ir_node.into_inner()),
             }),
         });
@@ -1092,14 +1091,14 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
                 from_key: None,
                 to_location: other.id(),
                 to_key: None,
-                serialize_pipeline: None,
+                serialize_fn: None,
                 instantiate_fn: DebugInstantiate::Building(),
-                deserialize_pipeline: if let Some(c_type) = L::Root::tagged_type() {
-                    Some(
-                        parse_quote!(map(|(id, b)| (#root::ClusterId<#c_type>::from_raw(id), b.unwrap().freeze()))),
-                    )
+                deserialize_fn: if let Some(c_type) = L::Root::tagged_type() {
+                    let expr: syn::Expr = parse_quote!(|(id, b)| (#root::ClusterId<#c_type>::from_raw(id), b.unwrap().freeze()));
+                    Some(expr.into())
                 } else {
-                    Some(parse_quote!(map(|b| b.unwrap().freeze())))
+                    let expr: syn::Expr = parse_quote!(|b| b.unwrap().freeze());
+                    Some(expr.into())
                 },
                 input: Box::new(self.ir_node.into_inner()),
             },
@@ -1125,9 +1124,9 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
                 from_key: None,
                 to_location: other.id(),
                 to_key: Some(external_key),
-                serialize_pipeline: None,
+                serialize_fn: None,
                 instantiate_fn: DebugInstantiate::Building(),
-                deserialize_pipeline: None,
+                deserialize_fn: None,
                 input: Box::new(self.ir_node.into_inner()),
             }),
         });
