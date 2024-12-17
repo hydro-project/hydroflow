@@ -895,6 +895,19 @@
 <a href="#895" id="895">895</a>
 <a href="#896" id="896">896</a>
 <a href="#897" id="897">897</a>
+<a href="#898" id="898">898</a>
+<a href="#899" id="899">899</a>
+<a href="#900" id="900">900</a>
+<a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+<a href="#908" id="908">908</a>
+<a href="#909" id="909">909</a>
+<a href="#910" id="910">910</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for the [`Hydroflow`] struct and helper items.
 
 </span><span class="kw">use </span>std::any::Any;
@@ -903,8 +916,10 @@
 <span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
-<span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
+<span class="attr">#[cfg(feature = <span class="string">"meta"</span>)]
+</span><span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
+<span class="attr">#[cfg(feature = <span class="string">"meta"</span>)]
+</span><span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
 <span class="kw">use </span>ref_cast::RefCast;
 <span class="kw">use </span>smallvec::SmallVec;
 <span class="kw">use </span>web_time::SystemTime;
@@ -928,9 +943,12 @@
 
     handoffs: Vec&lt;HandoffData&gt;,
 
-    <span class="doccomment">/// See [`Self::meta_graph()`].
+    <span class="attr">#[cfg(feature = <span class="string">"meta"</span>)]
+    </span><span class="doccomment">/// See [`Self::meta_graph()`].
     </span>meta_graph: <span class="prelude-ty">Option</span>&lt;HydroflowGraph&gt;,
-    <span class="doccomment">/// See [`Self::diagnostics()`].
+
+    <span class="attr">#[cfg(feature = <span class="string">"meta"</span>)]
+    </span><span class="doccomment">/// See [`Self::diagnostics()`].
     </span>diagnostics: <span class="prelude-ty">Option</span>&lt;Vec&lt;Diagnostic&lt;SerdeSpan&gt;&gt;&gt;,
 }
 
@@ -1028,37 +1046,45 @@
 
     <span class="doccomment">/// Assign the `HydroflowGraph` via JSON string.
     </span><span class="attr">#[doc(hidden)]
-    </span><span class="kw">pub fn </span>__assign_meta_graph(<span class="kw-2">&amp;mut </span><span class="self">self</span>, meta_graph_json: <span class="kw-2">&amp;</span>str) {
-        <span class="kw">let </span><span class="kw-2">mut </span>meta_graph: HydroflowGraph =
-            serde_json::from_str(meta_graph_json).expect(<span class="string">"Failed to deserialize graph."</span>);
+    </span><span class="kw">pub fn </span>__assign_meta_graph(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _meta_graph_json: <span class="kw-2">&amp;</span>str) {
+        <span class="attr">#[cfg(feature = <span class="string">"meta"</span>)]
+        </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>meta_graph: HydroflowGraph =
+                serde_json::from_str(_meta_graph_json).expect(<span class="string">"Failed to deserialize graph."</span>);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>op_inst_diagnostics = Vec::new();
-        meta_graph.insert_node_op_insts_all(<span class="kw-2">&amp;mut </span>op_inst_diagnostics);
-        <span class="macro">assert!</span>(
-            op_inst_diagnostics.is_empty(),
-            <span class="string">"Expected no diagnostics, got: {:#?}"</span>,
-            op_inst_diagnostics
-        );
+            <span class="kw">let </span><span class="kw-2">mut </span>op_inst_diagnostics = Vec::new();
+            meta_graph.insert_node_op_insts_all(<span class="kw-2">&amp;mut </span>op_inst_diagnostics);
+            <span class="macro">assert!</span>(
+                op_inst_diagnostics.is_empty(),
+                <span class="string">"Expected no diagnostics, got: {:#?}"</span>,
+                op_inst_diagnostics
+            );
 
-        <span class="macro">assert!</span>(<span class="self">self</span>.meta_graph.replace(meta_graph).is_none());
+            <span class="macro">assert!</span>(<span class="self">self</span>.meta_graph.replace(meta_graph).is_none());
+        }
     }
     <span class="doccomment">/// Assign the diagnostics via JSON string.
     </span><span class="attr">#[doc(hidden)]
-    </span><span class="kw">pub fn </span>__assign_diagnostics(<span class="kw-2">&amp;mut </span><span class="self">self</span>, diagnostics_json: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) {
-        <span class="kw">let </span>diagnostics: Vec&lt;Diagnostic&lt;SerdeSpan&gt;&gt; =
-            serde_json::from_str(diagnostics_json).expect(<span class="string">"Failed to deserialize diagnostics."</span>);
+    </span><span class="kw">pub fn </span>__assign_diagnostics(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _diagnostics_json: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) {
+        <span class="attr">#[cfg(feature = <span class="string">"meta"</span>)]
+        </span>{
+            <span class="kw">let </span>diagnostics: Vec&lt;Diagnostic&lt;SerdeSpan&gt;&gt; = serde_json::from_str(_diagnostics_json)
+                .expect(<span class="string">"Failed to deserialize diagnostics."</span>);
 
-        <span class="macro">assert!</span>(<span class="self">self</span>.diagnostics.replace(diagnostics).is_none());
+            <span class="macro">assert!</span>(<span class="self">self</span>.diagnostics.replace(diagnostics).is_none());
+        }
     }
 
-    <span class="doccomment">/// Return a handle to the meta `HydroflowGraph` if set. The `HydroflowGraph is a
+    <span class="attr">#[cfg(feature = <span class="string">"meta"</span>)]
+    </span><span class="doccomment">/// Return a handle to the meta `HydroflowGraph` if set. The `HydroflowGraph is a
     /// representation of all the operators, subgraphs, and handoffs in this `Hydroflow` instance.
     /// Will only be set if this graph was constructed using a surface syntax macro.
     </span><span class="kw">pub fn </span>meta_graph(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>HydroflowGraph&gt; {
         <span class="self">self</span>.meta_graph.as_ref()
     }
 
-    <span class="doccomment">/// Returns any diagnostics generated by the surface syntax macro. Each diagnostic is a pair of
+    <span class="attr">#[cfg(feature = <span class="string">"meta"</span>)]
+    </span><span class="doccomment">/// Returns any diagnostics generated by the surface syntax macro. Each diagnostic is a pair of
     /// (1) a `Diagnostic` with span info reset and (2) the `ToString` version of the diagnostic
     /// with original span info.
     /// Will only be set if this graph was constructed using a surface syntax macro.

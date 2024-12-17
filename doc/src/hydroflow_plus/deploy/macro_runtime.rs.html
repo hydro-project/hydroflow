@@ -323,8 +323,8 @@
 <span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
 <span class="kw">use </span>stageleft::{QuotedWithContext, RuntimeData};
 
-<span class="kw">use </span><span class="kw">super</span>::HydroflowPlusMeta;
 <span class="kw">use </span><span class="kw">crate</span>::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
+<span class="kw">use </span><span class="kw">crate</span>::deploy_runtime::HydroflowPlusMeta;
 
 <span class="kw">pub struct </span>DeployRuntime {}
 
@@ -349,7 +349,7 @@
         }
     }
 
-    <span class="kw">fn </span>trivail_cluster(_id: usize) -&gt; <span class="self">Self</span>::Cluster {
+    <span class="kw">fn </span>trivial_cluster(_id: usize) -&gt; <span class="self">Self</span>::Cluster {
         DeployRuntimeCluster {
             next_port: Rc::new(RefCell::new(<span class="number">0</span>)),
         }
@@ -374,7 +374,7 @@
         _p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
         p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
     ) -&gt; (syn::Expr, syn::Expr) {
-        <span class="kw">super</span>::deploy_runtime::deploy_o2o(<span class="kw-2">*</span>env, p1_port.as_str(), p2_port.as_str())
+        <span class="kw">crate</span>::deploy_runtime::deploy_o2o(<span class="kw-2">*</span>env, p1_port.as_str(), p2_port.as_str())
     }
 
     <span class="kw">fn </span>o2o_connect(
@@ -393,7 +393,7 @@
         _c2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster,
         c2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
     ) -&gt; (syn::Expr, syn::Expr) {
-        <span class="kw">super</span>::deploy_runtime::deploy_o2m(<span class="kw-2">*</span>env, p1_port.as_str(), c2_port.as_str())
+        <span class="kw">crate</span>::deploy_runtime::deploy_o2m(<span class="kw-2">*</span>env, p1_port.as_str(), c2_port.as_str())
     }
 
     <span class="kw">fn </span>o2m_connect(
@@ -412,7 +412,7 @@
         _p2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Process,
         p2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
     ) -&gt; (syn::Expr, syn::Expr) {
-        <span class="kw">super</span>::deploy_runtime::deploy_m2o(<span class="kw-2">*</span>env, c1_port.as_str(), p2_port.as_str())
+        <span class="kw">crate</span>::deploy_runtime::deploy_m2o(<span class="kw-2">*</span>env, c1_port.as_str(), p2_port.as_str())
     }
 
     <span class="kw">fn </span>m2o_connect(
@@ -431,7 +431,7 @@
         _c2: <span class="kw-2">&amp;</span><span class="self">Self</span>::Cluster,
         c2_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port,
     ) -&gt; (syn::Expr, syn::Expr) {
-        <span class="kw">super</span>::deploy_runtime::deploy_m2m(<span class="kw-2">*</span>env, c1_port.as_str(), c2_port.as_str())
+        <span class="kw">crate</span>::deploy_runtime::deploy_m2m(<span class="kw-2">*</span>env, c1_port.as_str(), c2_port.as_str())
     }
 
     <span class="kw">fn </span>m2m_connect(
@@ -485,11 +485,11 @@
         env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv,
         of_cluster: usize,
     ) -&gt; <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Vec&lt;u32&gt;, ()&gt; + Copy + <span class="lifetime">'a </span>{
-        <span class="kw">super</span>::deploy_runtime::cluster_members(<span class="kw-2">*</span>env, of_cluster)
+        <span class="kw">crate</span>::deploy_runtime::cluster_members(<span class="kw-2">*</span>env, of_cluster)
     }
 
     <span class="kw">fn </span>cluster_self_id(env: <span class="kw-2">&amp;</span><span class="self">Self</span>::CompileEnv) -&gt; <span class="kw">impl </span>QuotedWithContext&lt;<span class="lifetime">'a</span>, u32, ()&gt; + Copy + <span class="lifetime">'a </span>{
-        <span class="kw">super</span>::deploy_runtime::cluster_self_id(<span class="kw-2">*</span>env)
+        <span class="kw">crate</span>::deploy_runtime::cluster_self_id(<span class="kw-2">*</span>env)
     }
 }
 

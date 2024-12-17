@@ -280,9 +280,9 @@
                 from_key,
                 to_location,
                 to_key,
-                serialize_pipeline,
+                serialize_fn,
                 instantiate_fn,
-                deserialize_pipeline,
+                deserialize_fn,
                 input: <span class="macro">mb!</span>(* HfPlusNode::Persist(behind_persist)),
                 ..
             } =&gt; HfPlusNode::Persist(Box::new(HfPlusNode::Network {
@@ -290,9 +290,9 @@
                 from_key,
                 to_location,
                 to_key,
-                serialize_pipeline,
+                serialize_fn,
                 instantiate_fn,
-                deserialize_pipeline,
+                deserialize_fn,
                 input: behind_persist,
             })),
 

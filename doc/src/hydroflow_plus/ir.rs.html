@@ -1374,20 +1374,28 @@
 <a href="#1374" id="1374">1374</a>
 <a href="#1375" id="1375">1375</a>
 <a href="#1376" id="1376">1376</a>
+<a href="#1377" id="1377">1377</a>
+<a href="#1378" id="1378">1378</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::panic;
 <span class="kw">use </span>std::cell::RefCell;
-<span class="kw">use </span>std::collections::{BTreeMap, HashMap};
+<span class="attr">#[cfg(feature = <span class="string">"build"</span>)]
+</span><span class="kw">use </span>std::collections::BTreeMap;
+<span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::ops::Deref;
 <span class="kw">use </span>std::rc::Rc;
 
-<span class="kw">use </span>hydroflow_lang::graph::FlatGraphBuilder;
-<span class="kw">use </span>hydroflow_lang::parse::Pipeline;
-<span class="kw">use </span>proc_macro2::{Span, TokenStream};
+<span class="attr">#[cfg(feature = <span class="string">"build"</span>)]
+</span><span class="kw">use </span>hydroflow_lang::graph::FlatGraphBuilder;
+<span class="attr">#[cfg(feature = <span class="string">"build"</span>)]
+</span><span class="kw">use </span>proc_macro2::Span;
+<span class="kw">use </span>proc_macro2::TokenStream;
 <span class="kw">use </span>quote::ToTokens;
-<span class="kw">use </span>syn::parse_quote;
+<span class="attr">#[cfg(feature = <span class="string">"build"</span>)]
+</span><span class="kw">use </span>syn::parse_quote;
 
-<span class="kw">use </span><span class="kw">crate</span>::deploy::{Deploy, RegisterPort};
+<span class="attr">#[cfg(feature = <span class="string">"build"</span>)]
+</span><span class="kw">use </span><span class="kw">crate</span>::deploy::{Deploy, RegisterPort};
 <span class="kw">use </span><span class="kw">crate</span>::location::LocationId;
 
 <span class="attr">#[derive(Clone)]
@@ -1430,15 +1438,6 @@
     }
 }
 
-<span class="attr">#[derive(Clone)]
-</span><span class="kw">pub struct </span>DebugPipelineFn(<span class="kw">pub </span>Rc&lt;<span class="kw">dyn </span>Fn() -&gt; Pipeline + <span class="lifetime">'static</span>&gt;);
-
-<span class="kw">impl </span>Debug <span class="kw">for </span>DebugPipelineFn {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
-        <span class="macro">write!</span>(f, <span class="string">"&lt;function&gt;"</span>)
-    }
-}
-
 <span class="doccomment">/// A source in a Hydroflow+ graph, where data enters the graph.
 </span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub enum </span>HfPlusSource {
@@ -1469,7 +1468,8 @@
 }
 
 <span class="kw">impl </span>HfPlusLeaf {
-    <span class="kw">pub fn </span>compile_network&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
+    <span class="attr">#[cfg(feature = <span class="string">"build"</span>)]
+    </span><span class="kw">pub fn </span>compile_network&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="self">self</span>,
         compile_env: <span class="kw-2">&amp;</span>D::CompileEnv,
         seen_tees: <span class="kw-2">&amp;mut </span>SeenTees,
@@ -1523,7 +1523,8 @@
         }
     }
 
-    <span class="kw">pub fn </span>emit(
+    <span class="attr">#[cfg(feature = <span class="string">"build"</span>)]
+    </span><span class="kw">pub fn </span>emit(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         graph_builders: <span class="kw-2">&amp;mut </span>BTreeMap&lt;usize, FlatGraphBuilder&gt;,
         built_tees: <span class="kw-2">&amp;mut </span>HashMap&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;, (syn::Ident, usize)&gt;,
@@ -1724,9 +1725,9 @@
         from_key: <span class="prelude-ty">Option</span>&lt;usize&gt;,
         to_location: LocationId,
         to_key: <span class="prelude-ty">Option</span>&lt;usize&gt;,
-        serialize_pipeline: <span class="prelude-ty">Option</span>&lt;Pipeline&gt;,
+        serialize_fn: <span class="prelude-ty">Option</span>&lt;DebugExpr&gt;,
         instantiate_fn: DebugInstantiate,
-        deserialize_pipeline: <span class="prelude-ty">Option</span>&lt;Pipeline&gt;,
+        deserialize_fn: <span class="prelude-ty">Option</span>&lt;DebugExpr&gt;,
         input: Box&lt;HfPlusNode&gt;,
     },
 }
@@ -1734,7 +1735,8 @@
 <span class="kw">pub type </span>SeenTees = HashMap&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;, Rc&lt;RefCell&lt;HfPlusNode&gt;&gt;&gt;;
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; HfPlusNode {
-    <span class="kw">pub fn </span>compile_network&lt;D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
+    <span class="attr">#[cfg(feature = <span class="string">"build"</span>)]
+    </span><span class="kw">pub fn </span>compile_network&lt;D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         compile_env: <span class="kw-2">&amp;</span>D::CompileEnv,
         seen_tees: <span class="kw-2">&amp;mut </span>SeenTees,
@@ -1910,7 +1912,8 @@
         }
     }
 
-    <span class="kw">pub fn </span>emit(
+    <span class="attr">#[cfg(feature = <span class="string">"build"</span>)]
+    </span><span class="kw">pub fn </span>emit(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         graph_builders: <span class="kw-2">&amp;mut </span>BTreeMap&lt;usize, FlatGraphBuilder&gt;,
         built_tees: <span class="kw-2">&amp;mut </span>HashMap&lt;<span class="kw-2">*const </span>RefCell&lt;HfPlusNode&gt;, (syn::Ident, usize)&gt;,
@@ -2517,9 +2520,9 @@
                 from_key: <span class="kw">_</span>,
                 to_location,
                 to_key: <span class="kw">_</span>,
-                serialize_pipeline,
+                serialize_fn: serialize_pipeline,
                 instantiate_fn,
-                deserialize_pipeline,
+                deserialize_fn: deserialize_pipeline,
                 input,
             } =&gt; {
                 <span class="kw">let </span>(sink_expr, source_expr, _connect_fn) = <span class="kw">match </span>instantiate_fn {
@@ -2539,7 +2542,7 @@
 
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(serialize_pipeline) = serialize_pipeline {
                     sender_builder.add_statement(<span class="macro">parse_quote!</span> {
-                        #input_ident -&gt; #serialize_pipeline -&gt; dest_sink(#sink_expr);
+                        #input_ident -&gt; map(#serialize_pipeline) -&gt; dest_sink(#sink_expr);
                     });
                 } <span class="kw">else </span>{
                     sender_builder.add_statement(<span class="macro">parse_quote!</span> {
@@ -2563,7 +2566,7 @@
 
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(deserialize_pipeline) = deserialize_pipeline {
                     receiver_builder.add_statement(<span class="macro">parse_quote!</span> {
-                        #receiver_stream_ident = source_stream(#source_expr) -&gt; #deserialize_pipeline;
+                        #receiver_stream_ident = source_stream(#source_expr) -&gt; map(#deserialize_pipeline);
                     });
                 } <span class="kw">else </span>{
                     receiver_builder.add_statement(<span class="macro">parse_quote!</span> {
@@ -2577,7 +2580,8 @@
     }
 }
 
-<span class="attr">#[expect(clippy::too_many_arguments, reason = <span class="string">"networking internals"</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"build"</span>)]
+#[expect(clippy::too_many_arguments, reason = <span class="string">"networking internals"</span>)]
 </span><span class="kw">fn </span>instantiate_network&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
     from_location: <span class="kw-2">&amp;mut </span>LocationId,
     from_key: <span class="prelude-ty">Option</span>&lt;usize&gt;,

@@ -137,6 +137,32 @@
 <a href="#137" id="137">137</a>
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
 <span class="kw">use </span>hydroflow::bytes::Bytes;
@@ -150,19 +176,43 @@
 <span class="kw">use crate</span>::{Stream, Unbounded};
 
 <span class="kw">pub struct </span>ExternalBytesPort {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) process_id: usize,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) port_id: usize,
+    <span class="attr">#[cfg_attr(
+        not(feature = <span class="string">"build"</span>),
+        expect(unused, reason = <span class="string">"unused without feature"</span>)
+    )]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) process_id: usize,
+    <span class="attr">#[cfg_attr(
+        not(feature = <span class="string">"build"</span>),
+        expect(unused, reason = <span class="string">"unused without feature"</span>)
+    )]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) port_id: usize,
 }
 
 <span class="kw">pub struct </span>ExternalBincodeSink&lt;T: Serialize&gt; {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) process_id: usize,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) port_id: usize,
+    <span class="attr">#[cfg_attr(
+        not(feature = <span class="string">"build"</span>),
+        expect(unused, reason = <span class="string">"unused without feature"</span>)
+    )]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) process_id: usize,
+    <span class="attr">#[cfg_attr(
+        not(feature = <span class="string">"build"</span>),
+        expect(unused, reason = <span class="string">"unused without feature"</span>)
+    )]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) port_id: usize,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;T&gt;,
 }
 
 <span class="kw">pub struct </span>ExternalBincodeStream&lt;T: DeserializeOwned&gt; {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) process_id: usize,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) port_id: usize,
+    <span class="attr">#[cfg_attr(
+        not(feature = <span class="string">"build"</span>),
+        expect(unused, reason = <span class="string">"unused without feature"</span>)
+    )]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) process_id: usize,
+    <span class="attr">#[cfg_attr(
+        not(feature = <span class="string">"build"</span>),
+        expect(unused, reason = <span class="string">"unused without feature"</span>)
+    )]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) port_id: usize,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;T&gt;,
 }
 
@@ -216,6 +266,8 @@
             id
         };
 
+        <span class="kw">let </span>deser_expr: syn::Expr = <span class="macro">syn::parse_quote!</span>(|b| b.unwrap().freeze());
+
         (
             ExternalBytesPort {
                 process_id: <span class="self">self</span>.id,
@@ -228,9 +280,9 @@
                     from_key: <span class="prelude-val">Some</span>(next_external_port_id),
                     to_location: to.id(),
                     to_key: <span class="prelude-val">None</span>,
-                    serialize_pipeline: <span class="prelude-val">None</span>,
+                    serialize_fn: <span class="prelude-val">None</span>,
                     instantiate_fn: <span class="kw">crate</span>::ir::DebugInstantiate::Building(),
-                    deserialize_pipeline: <span class="prelude-val">Some</span>(<span class="macro">syn::parse_quote!</span>(map(|b| b.unwrap().freeze()))),
+                    deserialize_fn: <span class="prelude-val">Some</span>(deser_expr.into()),
                     input: Box::new(HfPlusNode::Source {
                         source: HfPlusSource::ExternalNetwork(),
                         location_kind: LocationId::ExternalProcess(<span class="self">self</span>.id),
@@ -264,9 +316,9 @@
                     from_key: <span class="prelude-val">Some</span>(next_external_port_id),
                     to_location: to.id(),
                     to_key: <span class="prelude-val">None</span>,
-                    serialize_pipeline: <span class="prelude-val">None</span>,
+                    serialize_fn: <span class="prelude-val">None</span>,
                     instantiate_fn: <span class="kw">crate</span>::ir::DebugInstantiate::Building(),
-                    deserialize_pipeline: <span class="prelude-val">Some</span>(<span class="kw">crate</span>::stream::deserialize_bincode::&lt;T&gt;(<span class="prelude-val">None</span>)),
+                    deserialize_fn: <span class="prelude-val">Some</span>(<span class="kw">crate</span>::stream::deserialize_bincode::&lt;T&gt;(<span class="prelude-val">None</span>).into()),
                     input: Box::new(HfPlusNode::Source {
                         source: HfPlusSource::ExternalNetwork(),
                         location_kind: LocationId::ExternalProcess(<span class="self">self</span>.id),

@@ -1376,7 +1376,6 @@
 <a href="#1376" id="1376">1376</a>
 <a href="#1377" id="1377">1377</a>
 <a href="#1378" id="1378">1378</a>
-<a href="#1379" id="1379">1379</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -1385,7 +1384,6 @@
 
 <span class="kw">use </span>hydroflow::bytes::Bytes;
 <span class="kw">use </span>hydroflow::futures;
-<span class="kw">use </span>hydroflow_lang::parse::Pipeline;
 <span class="kw">use </span>serde::de::DeserializeOwned;
 <span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>stageleft::{q, IntoQuotedMut, QuotedWithContext};
@@ -2302,43 +2300,43 @@
     }
 }
 
-<span class="kw">fn </span>serialize_bincode&lt;T: Serialize&gt;(is_demux: bool) -&gt; Pipeline {
+<span class="kw">fn </span>serialize_bincode&lt;T: Serialize&gt;(is_demux: bool) -&gt; syn::Expr {
     <span class="kw">let </span>root = get_this_crate();
 
     <span class="kw">let </span>t_type: syn::Type = stageleft::quote_type::&lt;T&gt;();
 
     <span class="kw">if </span>is_demux {
         <span class="macro">parse_quote!</span> {
-            map(|(id, data): (#root::ClusterId&lt;<span class="kw">_</span>&gt;, #t_type)| {
+            |(id, data): (#root::ClusterId&lt;<span class="kw">_</span>&gt;, #t_type)| {
                 (id.raw_id, #root::runtime_support::bincode::serialize::&lt;#t_type&gt;(<span class="kw-2">&amp;</span>data).unwrap().into())
-            })
+            }
         }
     } <span class="kw">else </span>{
         <span class="macro">parse_quote!</span> {
-            map(|data| {
+            |data| {
                 #root::runtime_support::bincode::serialize::&lt;#t_type&gt;(<span class="kw-2">&amp;</span>data).unwrap().into()
-            })
+            }
         }
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>deserialize_bincode&lt;T: DeserializeOwned&gt;(tagged: <span class="prelude-ty">Option</span>&lt;syn::Type&gt;) -&gt; Pipeline {
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>deserialize_bincode&lt;T: DeserializeOwned&gt;(tagged: <span class="prelude-ty">Option</span>&lt;syn::Type&gt;) -&gt; syn::Expr {
     <span class="kw">let </span>root = get_this_crate();
 
     <span class="kw">let </span>t_type: syn::Type = stageleft::quote_type::&lt;T&gt;();
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(c_type) = tagged {
         <span class="macro">parse_quote!</span> {
-            map(|res| {
+            |res| {
                 <span class="kw">let </span>(id, b) = res.unwrap();
                 (#root::ClusterId::&lt;#c_type&gt;::from_raw(id), #root::runtime_support::bincode::deserialize::&lt;#t_type&gt;(<span class="kw-2">&amp;</span>b).unwrap())
-            })
+            }
         }
     } <span class="kw">else </span>{
         <span class="macro">parse_quote!</span> {
-            map(|res| {
+            |res| {
                 #root::runtime_support::bincode::deserialize::&lt;#t_type&gt;(<span class="kw-2">&amp;</span>res.unwrap()).unwrap()
-            })
+            }
         }
     }
 }
@@ -2406,9 +2404,9 @@
                 from_key: <span class="prelude-val">None</span>,
                 to_location: other.id(),
                 to_key: <span class="prelude-val">None</span>,
-                serialize_pipeline,
+                serialize_fn: serialize_pipeline.map(|e| e.into()),
                 instantiate_fn: DebugInstantiate::Building(),
-                deserialize_pipeline,
+                deserialize_fn: deserialize_pipeline.map(|e| e.into()),
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
         )
@@ -2441,9 +2439,9 @@
                 from_key: <span class="prelude-val">None</span>,
                 to_location: other.id(),
                 to_key: <span class="prelude-val">Some</span>(external_key),
-                serialize_pipeline,
+                serialize_fn: serialize_pipeline.map(|e| e.into()),
                 instantiate_fn: DebugInstantiate::Building(),
-                deserialize_pipeline: <span class="prelude-val">None</span>,
+                deserialize_fn: <span class="prelude-val">None</span>,
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             }),
         });
@@ -2471,14 +2469,14 @@
                 from_key: <span class="prelude-val">None</span>,
                 to_location: other.id(),
                 to_key: <span class="prelude-val">None</span>,
-                serialize_pipeline: <span class="prelude-val">None</span>,
+                serialize_fn: <span class="prelude-val">None</span>,
                 instantiate_fn: DebugInstantiate::Building(),
-                deserialize_pipeline: <span class="kw">if let </span><span class="prelude-val">Some</span>(c_type) = L::Root::tagged_type() {
-                    <span class="prelude-val">Some</span>(
-                        <span class="macro">parse_quote!</span>(map(|(id, b)| (#root::ClusterId&lt;#c_type&gt;::from_raw(id), b.unwrap().freeze()))),
-                    )
+                deserialize_fn: <span class="kw">if let </span><span class="prelude-val">Some</span>(c_type) = L::Root::tagged_type() {
+                    <span class="kw">let </span>expr: syn::Expr = <span class="macro">parse_quote!</span>(|(id, b)| (#root::ClusterId&lt;#c_type&gt;::from_raw(id), b.unwrap().freeze()));
+                    <span class="prelude-val">Some</span>(expr.into())
                 } <span class="kw">else </span>{
-                    <span class="prelude-val">Some</span>(<span class="macro">parse_quote!</span>(map(|b| b.unwrap().freeze())))
+                    <span class="kw">let </span>expr: syn::Expr = <span class="macro">parse_quote!</span>(|b| b.unwrap().freeze());
+                    <span class="prelude-val">Some</span>(expr.into())
                 },
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             },
@@ -2504,9 +2502,9 @@
                 from_key: <span class="prelude-val">None</span>,
                 to_location: other.id(),
                 to_key: <span class="prelude-val">Some</span>(external_key),
-                serialize_pipeline: <span class="prelude-val">None</span>,
+                serialize_fn: <span class="prelude-val">None</span>,
                 instantiate_fn: DebugInstantiate::Building(),
-                deserialize_pipeline: <span class="prelude-val">None</span>,
+                deserialize_fn: <span class="prelude-val">None</span>,
                 input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
             }),
         });
