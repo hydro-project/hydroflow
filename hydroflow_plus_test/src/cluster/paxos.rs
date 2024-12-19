@@ -494,7 +494,7 @@ fn recommit_after_leader_election<'a, P: PaxosPayload>(
             }
         }))
         .max()
-        .unwrap_or(proposer_tick.singleton(q!(-1 as i64)));
+        .unwrap_or(proposer_tick.singleton(q!(-1_i64)));
     let p_p1b_highest_entries_and_count = accepted_logs
         .map(q!(|(_checkpoint, log)| log))
         .flatten_unordered() // Convert HashMap log back to stream
@@ -546,7 +546,9 @@ fn recommit_after_leader_election<'a, P: PaxosPayload>(
         .clone()
         .into_stream()
         .cross_singleton(p_p1b_max_checkpoint)
-        .flat_map_ordered(q!(|(max_slot, checkpoint)| (checkpoint+1) as usize..max_slot))
+        .flat_map_ordered(q!(
+            |(max_slot, checkpoint)| (checkpoint + 1) as usize..max_slot
+        ))
         .filter_not_in(p_proposed_slots)
         .cross_singleton(p_ballot.clone())
         .map(q!(|(slot, ballot)| P2a {
@@ -590,7 +592,11 @@ unsafe fn sequence_payload<'a, P: PaxosPayload, R>(
     a_max_ballot: Singleton<Ballot, Tick<Cluster<'a, Acceptor>>, Bounded>,
 ) -> (
     Stream<(usize, Option<P>), Cluster<'a, Proposer>, Unbounded, NoOrder>,
-    Singleton<(Option<usize>, HashMap<usize, LogValue<P>>), Timestamped<Cluster<'a, Acceptor>>, Unbounded>,
+    Singleton<
+        (Option<usize>, HashMap<usize, LogValue<P>>),
+        Timestamped<Cluster<'a, Acceptor>>,
+        Unbounded,
+    >,
     Stream<Ballot, Cluster<'a, Proposer>, Unbounded, NoOrder>,
 ) {
     let (p_log_to_recommit, p_max_slot) =
