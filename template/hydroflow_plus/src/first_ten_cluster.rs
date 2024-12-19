@@ -1,4 +1,4 @@
-use hydroflow_plus::*;
+use hydro_lang::*;
 
 pub struct Leader {}
 pub struct Worker {}
@@ -16,8 +16,8 @@ pub fn first_ten_cluster<'a>(leader: &Process<'a, Leader>, workers: &Cluster<'a,
 #[cfg(test)]
 mod tests {
     use hydro_deploy::Deployment;
-    use hydroflow_plus::deploy::DeployCrateWrapper;
-    use hydroflow_plus::hydroflow::futures::StreamExt;
+    use hydro_lang::deploy::DeployCrateWrapper;
+    use hydro_lang::hydroflow::futures::StreamExt;
     use tokio_stream::wrappers::UnboundedReceiverStream;
 
     #[tokio::test]
@@ -25,7 +25,7 @@ mod tests {
         let mut deployment = Deployment::new();
         let localhost = deployment.Localhost();
 
-        let flow = hydroflow_plus::FlowBuilder::new();
+        let flow = hydro_lang::FlowBuilder::new();
         let leader = flow.process();
         let workers = flow.cluster();
         super::first_ten_cluster(&leader, &workers);

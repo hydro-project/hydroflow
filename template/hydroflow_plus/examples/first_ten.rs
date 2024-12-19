@@ -4,9 +4,9 @@ use hydro_deploy::Deployment;
 async fn main() {
     let mut deployment = Deployment::new();
 
-    let flow = hydroflow_plus::FlowBuilder::new();
+    let flow = hydro_lang::FlowBuilder::new();
     let process = flow.process();
-    hydroflow_plus_template::first_ten::first_ten(&process);
+    hydro_template::first_ten::first_ten(&process);
 
     let _nodes = flow
         .with_process(&process, deployment.Localhost())

@@ -1,4 +1,4 @@
-use hydroflow_plus::*;
+use hydro_lang::*;
 
 pub struct P1 {}
 pub struct P2 {}
@@ -12,8 +12,8 @@ pub fn first_ten_distributed<'a>(p1: &Process<'a, P1>, p2: &Process<'a, P2>) {
 #[cfg(test)]
 mod tests {
     use hydro_deploy::Deployment;
-    use hydroflow_plus::deploy::DeployCrateWrapper;
-    use hydroflow_plus::hydroflow::futures::StreamExt;
+    use hydro_lang::deploy::DeployCrateWrapper;
+    use hydro_lang::hydroflow::futures::StreamExt;
     use tokio_stream::wrappers::UnboundedReceiverStream;
 
     #[tokio::test]

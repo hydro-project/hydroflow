@@ -32,7 +32,7 @@ Hydroflow+ offers APIs for such concepts behind an **`unsafe`** guard. This keyw
 To call such an API, the Rust compiler will ask you to wrap the call in an `unsafe` block. It is typically good practice to also include a `// SAFETY: ...` comment to explain why the non-determinism is there.
 
 ```rust,no_run
-# use hydroflow_plus::*;
+# use hydro_lang::*;
 # let flow = FlowBuilder::new();
 # let stream_inputs = flow.process::<()>().source_iter(q!([123]));
 use std::time::Duration;
@@ -49,7 +49,7 @@ When writing a function with Hydroflow+ that involves `unsafe` code, it is impor
 But other utilities may expose the non-determinism, in which case they should be marked `unsafe` as well. If the function is public, Rust will require you to put a `# Safety` section in its documentation explain the non-determinism.
 
 ```rust
-# use hydroflow_plus::*;
+# use hydro_lang::*;
 use std::fmt::Debug;
 use std::time::Duration;
 

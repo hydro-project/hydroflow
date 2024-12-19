@@ -12,7 +12,7 @@ Relative to the repository root:
 * `hydroflow` is the main Hydroflow package, containing the Hydroflow runtime. It re-exports the
   surface syntax macros in `hydroflow_macro` and `hydroflow_lang`. The runtime is the "scheduled
   layer" while the surface syntax compiler is the "compiled layer".
-* `hydroflow_plus` and related packages contain Hydroflow+, which is a functional syntax built on
+* `hydro_lang` and related (hydro_*) packages contain Hydro, which is a functional syntax built on
   top of `hydroflow`.
 * `hydroflow_datalog` provides a datalog compiler, based on top of the Hydroflow surface syntax.
 * `docs` is the [Hydro.run](https://hydro.run/) website. `website_playground` contains the

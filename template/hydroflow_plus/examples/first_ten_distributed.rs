@@ -4,10 +4,10 @@ use hydro_deploy::Deployment;
 async fn main() {
     let mut deployment = Deployment::new();
 
-    let flow = hydroflow_plus::FlowBuilder::new();
+    let flow = hydro_lang::FlowBuilder::new();
     let p1 = flow.process();
     let p2 = flow.process();
-    hydroflow_plus_template::first_ten_distributed::first_ten_distributed(&p1, &p2);
+    hydro_template::first_ten_distributed::first_ten_distributed(&p1, &p2);
 
     let _nodes = flow
         .with_process(&p1, deployment.Localhost())

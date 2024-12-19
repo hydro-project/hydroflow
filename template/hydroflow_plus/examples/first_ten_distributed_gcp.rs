@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use hydro_deploy::gcp::GcpNetwork;
 use hydro_deploy::Deployment;
-use hydroflow_plus::deploy::TrybuildHost;
+use hydroflow_lang::deploy::TrybuildHost;
 use tokio::sync::RwLock;
 
 static RELEASE_RUSTFLAGS: &str =
@@ -17,10 +17,10 @@ async fn main() {
     let mut deployment = Deployment::new();
     let vpc = Arc::new(RwLock::new(GcpNetwork::new(&gcp_project, None)));
 
-    let flow = hydroflow_plus::FlowBuilder::new();
+    let flow = hydro_lang::FlowBuilder::new();
     let p1 = flow.process();
     let p2 = flow.process();
-    hydroflow_plus_template::first_ten_distributed::first_ten_distributed(&p1, &p2);
+    hydro_template::first_ten_distributed::first_ten_distributed(&p1, &p2);
 
     let _nodes = flow
         .with_process(

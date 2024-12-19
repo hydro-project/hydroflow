@@ -96,7 +96,7 @@ jobs:
           fi
 
   test_hydroflow_plus:
-    name: Test hydroflow_plus
+    name: Test hydro_lang
     if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
     timeout-minutes: 10
     needs: pre_job
