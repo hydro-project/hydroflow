@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Setup
 
-This section explains how to get Hydroflow running, either for development or
+This section explains how to get DFIR running, either for development or
 usage, even if you are not familiar with Rust development.
 
 ## Installing Rust
@@ -27,8 +27,8 @@ The following `cargo` commands will come in handy:
 * `cargo clean` - Cleans the build cache, sometimes needed if the build is
   acting up.
 * `cargo test` - Runs tests in the workspace.
-* `cargo run -p hydroflow --example <example name>` - Run an example program in
-  `hydroflow/examples`.
+* `cargo run -p dfir_rs --example <example name>` - Run an example program in
+  `dfir_rs/examples`.
 
 To learn Rust see the official [Learn Rust page](https://www.rust-lang.org/learn).
 Here are some good resources:
@@ -37,8 +37,8 @@ Here are some good resources:
   is a good way to learn Rust's ownership system and its
   implications.
 
-In this book we will be using the Hydroflow template generator, which we recommend
-as a starting point for your Hydroflow projects. For this purpose you
+In this book we will be using the DFIR template generator, which we recommend
+as a starting point for your DFIR projects. For this purpose you
 will need to install the `cargo-generate` tool:
 ```bash
 #shell-command-next-line
@@ -50,12 +50,12 @@ cargo install cargo-generate
 We recommend using VS Code with the `rust-analyzer` extension (and NOT the
 `Rust` extension).
 
-## Setting up a Hydroflow Project
-The easiest way to get started with Hydroflow is to begin with a template project.
+## Setting up a DFIR Project
+The easiest way to get started with DFIR is to begin with a template project.
 Create a directory where you'd like to put that project, direct your terminal there and run:
 ```bash
 #shell-command-next-line
-cargo generate gh:hydro-project/hydroflow template/hydroflow
+cargo generate gh:hydro-project/hydroflow template/dfir
 ```
 You will be prompted to name your project. The `cargo generate` command will create a subdirectory
 with the relevant files and folders.
@@ -68,7 +68,7 @@ cd <my-project>
 rustup update
 ```
 
-As part of generating the project, the `hydroflow` library will be downloaded as a dependency.
+As part of generating the project, the `dfir_rs` library will be downloaded as a dependency.
 You can then open the project in VS Code or IDE of your choice, or
 you can simply build the template project with `cargo build`.
 ```bash
@@ -77,13 +77,13 @@ cargo build
 ```
 This should return successfully.
 
-The template provides a simple working example of a Hydroflow program.
+The template provides a simple working example of a DFIR program.
 As a sort of "hello, world" of distributed systems, it implements an "echo server" that
 simply echoes back the messages you sent it; it also implements a client to test the server.
 We will replace the code in that example with our own, but it's a good idea to run it first to make sure everything is working.
 
 :::note
-We call a running Hydroflow binary a *transducer*.
+We call a running DFIR binary a *transducer*.
 :::
 
 Start by running a transducer for the server:
@@ -113,7 +113,7 @@ Hello!
 ## Alternative: Checking out the Hydroflow Repository
 
 This book will assume you are using the template project, but some
-Rust experts may want to get started with Hydroflow by cloning and working in the
+Rust experts may want to get started with DFIR by cloning and working in the
 repository directly.
 You should fork the repository if you want to push your
 changes.
@@ -122,21 +122,21 @@ To clone the repo, run:
 ```bash
 git clone git@github.com:hydro-project/hydroflow.git
 ```
-Hydroflow requires nightly Rust, but the repo is already configured for it via
+DFIR requires nightly Rust, but the repo is already configured for it via
 `rust-toolchain.toml`.
 
 You can then open the repo in VS Code or IDE of your choice. In VS Code, `rust-analyzer`
 will provide inline type and error messages, code completion, etc.
 
 To work with the repository, it's best to start with an "example", found in the
-[`hydroflow/examples` folder](https://github.com/hydro-project/hydroflow/tree/main/dfir_rs/examples).
+[`dfir/examples` folder](https://github.com/hydro-project/hydroflow/tree/main/dfir_rs/examples).
 The simplest example is the
 ['hello world'](https://github.com/hydro-project/hydroflow/blob/main/dfir_rs/examples/hello_world/main.rs) example;
 the simplest example with networking is the
 [`echo server`](https://github.com/hydro-project/hydroflow/blob/main/dfir_rs/examples/echoserver/main.rs).
 
-The Hydroflow repository is set up as a [workspace](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html),
-i.e. a repo containing a bunch of separate packages, `hydroflow` is just the
+The DFIR repository is set up as a [workspace](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html),
+i.e. a repo containing a bunch of separate packages, `dfir_rs` is just the
 main one. So if you want to work in a proper separate cargo package, you can
 create one and add it into the [root `Cargo.toml`](https://github.com/hydro-project/hydroflow/blob/main/Cargo.toml),
-much like the [provided template](https://github.com/hydro-project/hydroflow/tree/main/template/hydroflow#readme).
+much like the [provided template](https://github.com/hydro-project/hydroflow/tree/main/template/dfir#readme).

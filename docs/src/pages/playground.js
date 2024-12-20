@@ -10,11 +10,11 @@ import siteConfig from '@generated/docusaurus.config';
 import * as wasm from "website_playground/website_playground_bg.wasm";
 import * as playgroundJS from "website_playground/website_playground_bg.js";
 
-let compile_hydroflow = null;
+let compile_DFIR = null;
 let compile_datalog = null;
 
 if (siteConfig.customFields.LOAD_PLAYGROUND === '1') {
-  compile_hydroflow = playgroundJS.compile_hydroflow;
+  compile_DFIR = playgroundJS.compile_DFIR;
   compile_datalog = playgroundJS.compile_datalog;
 
   if (ExecutionEnvironment.canUseDOM) {
@@ -51,7 +51,7 @@ function MermaidGraph({ id, source }) {
   }} dangerouslySetInnerHTML={svg}></div>;
 }
 
-const hydroflowExamples = {
+const DFIRExamples = {
   "Simplest": `\
 // https://hydro.run/docs/hydroflow/quickstart/example_1_simplest
 source_iter(0..10) -> for_each(|n| println!("Hello {}", n));`,
@@ -177,8 +177,8 @@ reachable(x) :- seed_reachable(x)
 reachable(y) :- reachable(x), edges(x, y)`
 };
 
-export function HydroflowSurfaceDemo() {
-  return <EditorDemo compileFn={compile_hydroflow} examples={hydroflowExamples} mermaidId="mermaid-hydroflow"></EditorDemo>
+export function DFIRSurfaceDemo() {
+  return <EditorDemo compileFn={compile_DFIR} examples={DFIRExamples} mermaidId="mermaid-hydroflow"></EditorDemo>
 }
 export function DatalogDemo() {
   return <EditorDemo compileFn={compile_datalog} examples={datalogExamples} mermaidId="mermaid-datalog"></EditorDemo>
@@ -322,11 +322,11 @@ export default function Playground() {
           <h1 style={{
             fontSize: "3.5rem"
           }}>Playground</h1>
-          <p>In these interactive editors, you can experiment with the Hydroflow compiler by running it in your browser (through WebAssembly)! Try selecting one of the templates or edit the code yourself to see how Hydroflow logic is compiled into a dataflow graph and executable Rust.</p>
+          <p>In these interactive editors, you can experiment with the DFIR compiler by running it in your browser (through WebAssembly)! Try selecting one of the templates or edit the code yourself to see how DFIR logic is compiled into a dataflow graph and executable Rust.</p>
           <h1 style={{
             fontSize: "2.5rem"
-          }}>Hydroflow</h1>
-          <HydroflowSurfaceDemo />
+          }}>DFIR</h1>
+          <DFIRSurfaceDemo />
           <h1 style={{
             fontSize: "2.5rem"
           }}>Datalog</h1>

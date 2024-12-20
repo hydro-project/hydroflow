@@ -1,47 +1,47 @@
 # Concepts
-Hydroflow is different from other distributed systems infrastructure, so you probably have questions, like:
-What is Hydroflow? How does it work? What is special about it, and what are the key concepts to understand?
+DFIR is different from other distributed systems infrastructure, so you probably have questions, like:
+What is DFIR? How does it work? What is special about it, and what are the key concepts to understand?
 
-This chapter covers those basic questions. We start simple describing Hydroflow, and build up to an understanding of
-what makes Hydroflow uniquely powerful.
+This chapter covers those basic questions. We start simple describing DFIR, and build up to an understanding of
+what makes DFIR uniquely powerful.
 
-But in case you want a preview of the Hydroflow goodies, here are the main themes:
-1. **Distributed Correctness**: Hydroflow's type system can prevent distributed system bugs at compile time. (One example: will your code
+But in case you want a preview of the DFIR goodies, here are the main themes:
+1. **Distributed Correctness**: DFIR's type system can prevent distributed system bugs at compile time. (One example: will your code
 produce the same results if you deploy on a single machine or replicate on a distributed cluster of machines?)
-2. **Local Efficiency**: Hydroflow compiles your dataflow programs into efficient, low-latency, single-threaded executables.
+2. **Local Efficiency**: DFIR compiles your dataflow programs into efficient, low-latency, single-threaded executables.
 
-Taken together, Hydroflow provides a high-efficiency substrate on which to build powerful languages for distributed computing.
+Taken together, DFIR provides a high-efficiency substrate on which to build powerful languages for distributed computing.
 
-> Hydroflow's type system checks are not yet implemented, but they are coming soon!
+> DFIR's type system checks are not yet implemented, but they are coming soon!
 
-## Hydroflow: A Runtime Library and a DSL in Rust
-Setting fanfare aside, what *is* Hydroflow?
+## DFIR: A Runtime Library and a DSL in Rust
+Setting fanfare aside, what *is* DFIR?
 
-Hydroflow is a library that can be used in any Rust program. It includes two main components:
+DFIR is a library that can be used in any Rust program. It includes two main components:
 
 1. A runtime library that executes low-latency, reactive dataflow programs written in Rust. (The *core API*.)
-2. A domain-specific language (DSL) for specifying dataflow programs. (The Hydroflow *surface syntax*.)
+2. A domain-specific language (DSL) for specifying dataflow programs. (The DFIR *surface syntax*.)
 
-Hydroflow's surface syntax must be embedded in a Rust program; the Rust compiler takes that Hydroflow syntax and
+DFIR's surface syntax must be embedded in a Rust program; the Rust compiler takes that DFIR syntax and
 compiles it into an efficient binary executable.
 
-> We call a running Hydroflow binary a *transducer*.
+> We call a running DFIR binary a *transducer*.
 
 In typical usage, a developer writes a transducer as a single-threaded Rust program that is mostly composed of
-Hydroflow surface syntax. Each transducer is typically responsible for a single
+DFIR surface syntax. Each transducer is typically responsible for a single
 "node" (a machine, or a core) in a distributed system composed of many such transducers,
 which send and receive flows of data to each other.
 
-> Hydroflow itself does not generate distributed code. It is a library for specifying the transducers (individual nodes) that
+> DFIR itself does not generate distributed code. It is a library for specifying the transducers (individual nodes) that
 > participate in a distributed system.
 >
-> In the [Hydro Project](https://hydro.run), higher-level languages are being built on top of Hydroflow to generate
+> In the [Hydro Project](https://hydro.run), higher-level languages are being built on top of DFIR to generate
 > distributed code in the form of multiple transducers.
-> Meanwhile, you can use Hydroflow to write your own distributed code, by writing individual transducers that work together,
+> Meanwhile, you can use DFIR to write your own distributed code, by writing individual transducers that work together,
 > and deploying them manually or with a tool like [Hydroplane](https://github.com/hydro-project/hydroplane). See the [Hydro Ecosystem](../ecosystem) for more on this.
 
-### So how might a human write distributed systems with Hydroflow?
-As an illustration of how you can work at the Hydroflow layer, consider the
+### So how might a human write distributed systems with DFIR?
+As an illustration of how you can work at the DFIR layer, consider the
 [Chat Server example](https://github.com/hydro-project/hydroflow/tree/main/dfir_rs/examples/chat). If you run that binary
 with the command-line argument `--role server` it will start a single transducer that is responsible for a chat server: receiving
 membership requests and messages from clients, and forwarding messages from individual clients to all other clients.

@@ -27,7 +27,7 @@ operator.
 ## Streaming Sources
 More commonly, a flow should handle external data coming in asynchronously from a [_Tokio_ runtime](https://tokio.rs/tokio/tutorial).
 
-One way to do this is with _channels_ that allow Rust code to send data into Hydroflow via the [`source_stream()`](./surface_ops_gen.md#source_stream) operator.
+One way to do this is with _channels_ that allow Rust code to send data into DFIR via the [`source_stream()`](./surface_ops_gen.md#source_stream) operator.
 The code below creates a channel for data of (Rust) type `(usize, usize)`:
 ```rust,ignore
     let (input_send, input_recv) = dfir_rs::util::unbounded_channel::<(usize, usize)>();
@@ -38,7 +38,7 @@ it explicitly as follows:
 ```rust,ignore
     input_send.send((0, 1)).unwrap()
 ```
-And in our Hydroflow syntax we can receive the data from the channel using the [`source_stream()`](./surface_ops_gen.md#source_stream) operator and
+And in our DFIR syntax we can receive the data from the channel using the [`source_stream()`](./surface_ops_gen.md#source_stream) operator and
 pass it along a flow:
 ```rust,ignore
     source_stream(input_recv) -> ...
@@ -60,12 +60,12 @@ They are fairly straightforward, so the best source for further information is t
 
 ### Outputing data synchronously
 Not all output destinations are asynchronous, in which case we can use `for_each` instead.
-The easiest way to output data from Hydroflow is using an [unbounded channel](https://docs.rs/hydroflow/latest/hydroflow/util/fn.unbounded_channel.html).
+The easiest way to output data from DFIR is using an [unbounded channel](https://docs.rs/dfir_rs/latest/dfir_rs/util/fn.unbounded_channel.html).
 Since the channel is unbounded, we can always synchronously write to it using a `for_each` operator:
 
 <CodeBlock language="rust" showLineNumbers>{exampleCodeOutput}</CodeBlock>
 
-Here we use [`collect_ready`](https://docs.rs/hydroflow/latest/hydroflow/util/fn.collect_ready.html)
+Here we use [`collect_ready`](https://docs.rs/dfir_rs/latest/dfir_rs/util/fn.collect_ready.html)
 as a quick way to validate the output. In a fully functional program you should spin up a separate async task to consume the output from `output_recv` as it arrives.
 
 ## Serde: Network Serialization and Deserialization

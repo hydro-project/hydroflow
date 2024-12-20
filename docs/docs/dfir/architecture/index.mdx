@@ -3,10 +3,10 @@ import { extractMermaid } from '../../../src/util';
 
 # Architecture
 
-Hydroflow graphs are divided into two layers: the outer _scheduled layer_ and
+DFIR graphs are divided into two layers: the outer _scheduled layer_ and
 inner _compiled layer_.
 
-In the mermaid diagrams generated for Hydroflow, the scheduler is responsible for the outermost gray boxes
+In the mermaid diagrams generated for DFIR, the scheduler is responsible for the outermost gray boxes
 (the *subgraphs*)
 and handoffs, while the insides of the gray boxes are compiled via the compiled layer. As a reminder,
 here is the graph from the
@@ -14,7 +14,7 @@ here is the graph from the
 
 <mermaid value={extractMermaid(exampleOutput)}></mermaid>
 
-The [Hydroflow Architecture Design Doc](https://hydro-project.github.io/hydroflow/design_docs/2021-10_architecture_design_doc.html)
+The [DFIR Architecture Design Doc](https://hydro-project.github.io/hydroflow/design_docs/2021-10_architecture_design_doc.html)
 contains a more detailed explanation of this section. Note that some aspects of
 the design doc are not implemented (e.g. early yielding) or may become out of
 date as time passes.
@@ -76,7 +76,7 @@ convert a graph into in-out trees.
 
 ## Surface Syntax and APIs
 
-Hydroflow's _Surface Syntax_ hides
+DFIR _Surface Syntax_ hides
 the distinction between these two layers. It offers a natural `Iterator`-like chaining syntax for building
 graphs that get parsed and compiled into a scheduled graph of one or more compiled subgraphs. Please see the [Surface Syntax](../syntax/) docs for more information.
 
@@ -85,8 +85,8 @@ level. It doesn't provide any notion of chainable operators. You can use Rust `I
 or any other arbitrary Rust code to implement the operators.
 
 The Core API lives in [`dfir_rs::scheduled`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/index.html),
-mainly in methods on the [`Hydroflow` struct](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html).  Compiled push-based iterators live in [`dfir_rs::compiled`](https://hydro-project.github.io/hydroflow/doc/hydroflow/compiled/index.html). We intend users to use the Surface Syntax as it is much more friendly, but as
-Hydroflow is in active development some operators might not be available in
+mainly in methods on the [`DFIR` struct](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Dfir.html).  Compiled push-based iterators live in [`dfir_rs::compiled`](https://hydro-project.github.io/hydroflow/doc/hydroflow/compiled/index.html). We intend users to use the Surface Syntax as it is much more friendly, but as
+DFIR is in active development some operators might not be available in
 the Surface Syntax, in which case the Core API can be used instead. If you find
-yourself in this sitation be sure to [submit an issue](https://github.com/hydro-project/hydroflow/issues/new)!
+yourself in this situation be sure to [submit an issue](https://github.com/hydro-project/hydroflow/issues/new)!
 

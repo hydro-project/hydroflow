@@ -10,7 +10,7 @@ import exampleOutput2 from '!!raw-loader!../../../../dfir_rs/tests/snapshots/sur
 import { getLines, extractOutput } from '../../../src/util';
 
 # Simple Example
-> In this example we will cover some additional standard Hydroflow operators:
+> In this example we will cover some additional standard DFIR operators:
 > - [`map`](../syntax/surface_ops_gen.md#map)
 > - [`filter`](../syntax/surface_ops_gen.md#filter)
 > - [`flatten`](../syntax/surface_ops_gen.md#flatten)
@@ -18,10 +18,10 @@ import { getLines, extractOutput } from '../../../src/util';
 > - [`flat_map`](../syntax/surface_ops_gen.md#flat_map)
 
 Lets build on the simplest example to explore some of the operators available
-in Hydroflow. You may be familiar with operators such as [`map(...)`](../syntax/surface_ops_gen.md#map),
+in DFIR. You may be familiar with operators such as [`map(...)`](../syntax/surface_ops_gen.md#map),
 [`filter(...)`](../syntax/surface_ops_gen.md#filter), [`flatten`(...)](../syntax/surface_ops_gen.md#flatten),
 etc. from Rust iterators or from other programming languages, and these are
-also available in Hydroflow.
+also available in DFIR.
 
 In your `simple` project, replace the contents of `src/main.rs` with the following:
 
@@ -54,7 +54,7 @@ Now let's run the program:
 
 ## Rewriting with Composite Operators
 We can also express the same program with more aggressive use of composite operators like
-[`filter_map()`](../syntax/surface_ops_gen.md#filtermap) and [`flat_map()`](../syntax/surface_ops_gen.md#flat_map). Hydroflow will compile these down to the same
+[`filter_map()`](../syntax/surface_ops_gen.md#filtermap) and [`flat_map()`](../syntax/surface_ops_gen.md#flat_map). DFIR will compile these down to the same
 machine code.
 
 Replace the contents of `src/main.rs` with the following:

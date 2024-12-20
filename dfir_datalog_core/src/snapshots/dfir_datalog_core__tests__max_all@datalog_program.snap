@@ -163,7 +163,7 @@ fn main() {
                     };
                     #[allow(
                         clippy::map_clone,
-                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                        reason = "dfir has no explicit `cloned`/`copied` operator"
                     )]
                     let op_9v1 = op_2v1.map(|row: (_, _)| ((), (row.0, row.1)));
                     let op_9v1 = {
@@ -303,7 +303,7 @@ fn main() {
                     };
                     #[allow(
                         clippy::map_clone,
-                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                        reason = "dfir has no explicit `cloned`/`copied` operator"
                     )]
                     let op_11v1 = op_10v1
                         .map(|(g, a): ((), _)| (a.0.unwrap(), a.1.unwrap()));

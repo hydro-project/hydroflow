@@ -3,7 +3,7 @@ sidebar_position: 3
 ---
 
 # Streaming, Blocking and Stratification
-Many Hydroflow operators (e.g. `map`, `filter` and `join`) work in a streaming fashion. Streaming operators process data as it arrives, generating outputs in the midst of processing inputs. If you restrict yourself to operators that work in this streaming fashion, then your transducer may start sending data across the network mid-tick, even while it is still consuming the data in the input batch.
+Many DFIR operators (e.g. `map`, `filter` and `join`) work in a streaming fashion. Streaming operators process data as it arrives, generating outputs in the midst of processing inputs. If you restrict yourself to operators that work in this streaming fashion, then your transducer may start sending data across the network mid-tick, even while it is still consuming the data in the input batch.
 
 But some operators are blocking, and must wait for all their input data to arrive before they can produce any output data. For example, a `sort` operator must wait for all its input data to arrive before it can produce a single output value. After all, the lowest value may be the last to arrive!
 
@@ -38,7 +38,7 @@ end
 4v1===o2v1
 ```
 
-At compile time, the Hydroflow spec is *stratified*: partitioned into subflows, where each subflow is assigned a stratum number. Subsequently at runtime, each tick executes the strata one-by-one in ascending order of stratum number. In the example above, the `source_stream` operator is in stratum 0, and the `sort` and `for_each` operators are in stratum 1. The runtime executes the `source_stream` operator first, buffering output in the Handoff. The `sort` operator will not receive any data until the `source_stream` operator has finished executing. When stratum 0 is complete, the subflow in stratum 1 is scheduled and executes the `sort` and `for_each` operators to complete the tick.
+At compile time, the DFIR spec is *stratified*: partitioned into subflows, where each subflow is assigned a stratum number. Subsequently at runtime, each tick executes the strata one-by-one in ascending order of stratum number. In the example above, the `source_stream` operator is in stratum 0, and the `sort` and `for_each` operators are in stratum 1. The runtime executes the `source_stream` operator first, buffering output in the Handoff. The `sort` operator will not receive any data until the `source_stream` operator has finished executing. When stratum 0 is complete, the subflow in stratum 1 is scheduled and executes the `sort` and `for_each` operators to complete the tick.
 
 Let's look back at the [`difference`](../syntax/surface_ops_gen.md#difference) operator as used in the [Graph Unreachability example](../quickstart/example_6_unreachability).
 ```mermaid
@@ -59,7 +59,7 @@ end
 The `difference` operators is one with inputs of two different types. It is supposed to output all the items from its `pos` input that do not appear in its `neg` input. To achieve that, the `neg` input must be blocking, but the `pos` input can stream. Blocking on the `neg` input ensures that if the operator streams an output from the `pos` input, it will never need to retract that output.
 
 
-Given these examples, we can refine our diagram of the Hydroflow transducer loop to account for stratified execution within each tick:
+Given these examples, we can refine our diagram of the DFIR transducer loop to account for stratified execution within each tick:
 ```mermaid
 %%{init: {'theme':'neutral'}}%%
 flowchart LR
@@ -79,16 +79,16 @@ flowchart LR
 
 
 ## Technical Details
-The concept of stratification is taken directly from stratified negation in the [Datalog](https://en.wikipedia.org/wiki/Datalog) language. Hydroflow identifies a stratum boundary at any blocking input to an operator, where classical Datalog only stratifies its negation operator.
+The concept of stratification is taken directly from stratified negation in the [Datalog](https://en.wikipedia.org/wiki/Datalog) language. DFIR identifies a stratum boundary at any blocking input to an operator, where classical Datalog only stratifies its negation operator.
 
-The Hydroflow compiler performs stratification via static analysis of the Hydroflow spec. The analysis is based on the following rules:
+The DFIR compiler performs stratification via static analysis of the DFIR spec. The analysis is based on the following rules:
 - A Handoff is interposed in front of any blocking input to an operator (as documented in the [operator definitions](../syntax/surface_ops_gen.md)).
 - The flow is partitioned at the Handoffs into subflows called "strata".
 - The resulting graph of strata and Handoffs is tested to ensure that it's acyclic. (Cycles through blocking operators are forbidden as they not have well-defined behavior—note that the blocking operators in a cycle would deadlock waiting for each other.)
 
-Given the acyclicity test, any legal Hydroflow program consists of a directed acyclic graph (DAG) of strata and handoffs. The strata are numbered in ascending order by assigning stratum number 0 to the "leaves" of the DAG (strata with no upstream operators), and then ensuring that each stratum is assigned a number that is one larger than any of its upstream strata.
+Given the acyclicity test, any legal DFIR program consists of a directed acyclic graph (DAG) of strata and handoffs. The strata are numbered in ascending order by assigning stratum number 0 to the "leaves" of the DAG (strata with no upstream operators), and then ensuring that each stratum is assigned a number that is one larger than any of its upstream strata.
 
-As a Hydroflow operator executes, it is running on a particular transducer, in a particular tick, in a particular stratum. 
+As a DFIR operator executes, it is running on a particular transducer, in a particular tick, in a particular stratum. 
 
 
 ### Determining whether an operator should block: Monotonicity
@@ -100,8 +100,8 @@ Mathematically, we can think of a dataflow operator as a function *f(in) → out
 
 By contrast, consider the output of a blocking operator like `difference`. The output of `difference` is a function of both its inputs, but it is *non-monotone* with respect to its `neg` input. That is, it is *not* the case that *(A — B) ⊆ (A — C)* whenever *B ⊆ C*. 
 
-Hydroflow is designed to use the monotonicity property to determine whether an operator should block. If an operator is monotone with respect to an input, that input is streaming. If an operator is non-monotone, it is blocking.
+DFIR is designed to use the monotonicity property to determine whether an operator should block. If an operator is monotone with respect to an input, that input is streaming. If an operator is non-monotone, it is blocking.
 
 Monotonicity turns out to be particularly important for distributed systems. In particular, if all your transducers are fully monotone across ticks, then they can run in parallel without any coordination—they will always stream correct prefixes of the final outputs, and eventually will deliver the complete output. This is the positive direction of the [CALM Theorem](https://cacm.acm.org/magazines/2020/9/246941-keeping-calm/fulltext).
 
-> In future versions of Hydroflow, the type system will represent monotonicity explicitly and reason about it automatically.
+> In future versions of DFIR, the type system will represent monotonicity explicitly and reason about it automatically.

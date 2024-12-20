@@ -50,10 +50,10 @@ a yellow pivot. And if red push -> green pull that becomes a blue handoff node,
 and this is a division between subgraphs. Note that a subgraph can have a
 handoff with itself; this forms a loop.
 
-||
-| :---: |
-| ![The graph above converted and partitioned into two in-out trees.](../img/in-out_partition.png) |
-| The graph above converted and partitioned into two in-out trees. One is outlined in yellow and the other in red. For the corresponding Hydroflow graph, green nodes are _pull_, red nodes are _push_, yellow are _pivots_, and blue are _handoffs_. |
+|                                                                                                                                                                                                                                                |
+|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+|                                                                        ![The graph above converted and partitioned into two in-out trees.](../img/in-out_partition.png)                                                                        |
+| The graph above converted and partitioned into two in-out trees. One is outlined in yellow and the other in red. For the corresponding DFIR graph, green nodes are _pull_, red nodes are _push_, yellow are _pivots_, and blue are _handoffs_. |
 
 In the example partitioning above, some nodes have been split into multiple and
 labelled with suffixes to make the pivots and handoffs more explicit.

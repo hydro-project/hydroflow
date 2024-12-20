@@ -294,7 +294,7 @@ fn main() {
                     };
                     #[allow(
                         clippy::map_clone,
-                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                        reason = "dfir has no explicit `cloned`/`copied` operator"
                     )]
                     let op_15v1 = op_2v1.map(|_v: (_,)| ((), (_v.0,)));
                     let op_15v1 = {
@@ -331,7 +331,7 @@ fn main() {
                     };
                     #[allow(
                         clippy::map_clone,
-                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                        reason = "dfir has no explicit `cloned`/`copied` operator"
                     )]
                     let op_16v1 = op_5v1.map(|_v: (_,)| ((), (_v.0,)));
                     let op_16v1 = {
@@ -446,7 +446,7 @@ fn main() {
                     };
                     #[allow(
                         clippy::map_clone,
-                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                        reason = "dfir has no explicit `cloned`/`copied` operator"
                     )]
                     let op_14v1 = op_13v1
                         .map(|kv: ((), ((_,), (_,)))| (kv.1.0.0, kv.1.1.0));
@@ -484,7 +484,7 @@ fn main() {
                     };
                     #[allow(
                         clippy::map_clone,
-                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                        reason = "dfir has no explicit `cloned`/`copied` operator"
                     )]
                     let op_17v1 = op_14v1.map(|row: (_, _)| ((), ((row.0, row.1),)));
                     let op_17v1 = {
@@ -629,7 +629,7 @@ fn main() {
                     };
                     #[allow(
                         clippy::map_clone,
-                        reason = "hydroflow has no explicit `cloned`/`copied` operator"
+                        reason = "dfir has no explicit `cloned`/`copied` operator"
                     )]
                     let op_19v1 = op_18v1
                         .map(|(g, a): ((), _)| (
