@@ -23,7 +23,6 @@ debugging = [ "dfir_lang/debugging" ]
 
 [[example]]
 name = "kvs_bench"
-required-features = [ "nightly" ]
 
 [[example]]
 name = "python_udf"
