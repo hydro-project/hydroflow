@@ -24,7 +24,7 @@ Hydro provides a high-level language for the majority of developers called [Hydr
 
 ## Development Setup
 
-See the [quickstart section of the Hydroflow+ book](https://hydro.run/docs/hydroflow_plus/quickstart/) for instructions on installing Rust and getting started with the Hydroflow+ template.
+See the [quickstart section of the Hydroflow+ book](https://hydro.run/docs/hydro/quickstart/) for instructions on installing Rust and getting started with the Hydroflow+ template.
 
 # A New Approach to Distributed Programming
 There have been many frameworks and platforms for distributed programming over the years, with significant tradeoffs. These include:
