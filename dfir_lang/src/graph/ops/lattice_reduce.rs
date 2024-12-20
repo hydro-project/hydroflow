@@ -9,7 +9,7 @@ use super::{
 /// > 1 input stream, 1 output stream
 ///
 /// A specialized operator for merging lattices together into an accumulated value. Like [`reduce()`](#reduce)
-/// but specialized for lattice types. `lattice_reduce()` is equivalent to `reduce(hydroflow::lattices::Merge::merge)`.
+/// but specialized for lattice types. `lattice_reduce()` is equivalent to `reduce(dfir_rs::lattices::Merge::merge)`.
 ///
 /// `lattice_reduce` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
@@ -21,7 +21,7 @@ use super::{
 /// But it also means that the accumulating function inputs and the accumulating type must be the same.
 ///
 /// ```hydroflow
-/// use hydroflow::lattices::Max;
+/// use dfir_rs::lattices::Max;
 ///
 /// source_iter([1, 2, 3, 4, 5])
 ///     -> map(Max::new)

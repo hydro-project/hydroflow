@@ -7,6 +7,9 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use dfir_lang::graph::HydroflowGraph;
+use dfir_rs::bytes::Bytes;
+use dfir_rs::futures::{Sink, SinkExt, Stream, StreamExt};
+use dfir_rs::util::deploy::{ConnectedSink, ConnectedSource};
 use hydro_deploy::custom_service::CustomClientPort;
 use hydro_deploy::hydroflow_crate::ports::{
     DemuxSink, HydroflowSink, HydroflowSource, TaggedSource,
@@ -14,9 +17,6 @@ use hydro_deploy::hydroflow_crate::ports::{
 use hydro_deploy::hydroflow_crate::tracing_options::TracingOptions;
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{CustomService, Deployment, Host, HydroflowCrate};
-use hydroflow::bytes::Bytes;
-use hydroflow::futures::{Sink, SinkExt, Stream, StreamExt};
-use hydroflow::util::deploy::{ConnectedSink, ConnectedSource};
 use nameof::name_of;
 use serde::de::DeserializeOwned;
 use serde::Serialize;

@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use dfir_lang::graph::{partition_graph, HydroflowGraph};
-use hydroflow::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Hydroflow;
 use proc_macro2::TokenStream;
 use quote::quote;
 use stageleft::runtime_support::FreeVariableWithContext;
@@ -34,10 +34,10 @@ impl<'a> CompiledFlow<'a, usize> {
         let hydroflow_crate = proc_macro_crate::crate_name("hydro_lang")
             .expect("hydro_lang should be present in `Cargo.toml`");
         let root = match hydroflow_crate {
-            proc_macro_crate::FoundCrate::Itself => quote! { hydro_lang::hydroflow },
+            proc_macro_crate::FoundCrate::Itself => quote! { hydro_lang::dfir_rs },
             proc_macro_crate::FoundCrate::Name(name) => {
                 let ident = syn::Ident::new(&name, proc_macro2::Span::call_site());
-                quote! { #ident::hydroflow }
+                quote! { #ident::dfir_rs }
             }
         };
 
@@ -94,10 +94,10 @@ impl<'a, Ctx> FreeVariableWithContext<Ctx> for CompiledFlow<'a, ()> {
         let hydroflow_crate = proc_macro_crate::crate_name("hydro_lang")
             .expect("hydro_lang should be present in `Cargo.toml`");
         let root = match hydroflow_crate {
-            proc_macro_crate::FoundCrate::Itself => quote! { hydro_lang::hydroflow },
+            proc_macro_crate::FoundCrate::Itself => quote! { hydro_lang::dfir_rs },
             proc_macro_crate::FoundCrate::Name(name) => {
                 let ident = syn::Ident::new(&name, proc_macro2::Span::call_site());
-                quote! { #ident::hydroflow }
+                quote! { #ident::dfir_rs }
             }
         };
 

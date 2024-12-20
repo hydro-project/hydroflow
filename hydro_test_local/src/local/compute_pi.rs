@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use hydro_lang::deploy::SingleProcessGraph;
-use hydro_lang::hydroflow::scheduled::graph::Hydroflow;
+use hydro_lang::dfir_rs::scheduled::graph::Hydroflow;
 use hydro_lang::*;
 use stageleft::{Quoted, RuntimeData};
 

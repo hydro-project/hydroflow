@@ -30,7 +30,7 @@ More commonly, a flow should handle external data coming in asynchronously from 
 One way to do this is with _channels_ that allow Rust code to send data into Hydroflow via the [`source_stream()`](./surface_ops_gen.md#source_stream) operator.
 The code below creates a channel for data of (Rust) type `(usize, usize)`:
 ```rust,ignore
-    let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (input_send, input_recv) = dfir_rs::util::unbounded_channel::<(usize, usize)>();
 ```
 Under the hood this uses [Tokio unbounded channels](https://docs.rs/tokio/latest/tokio/sync/mpsc/fn.unbounded_channel.html).
 Now in Rust we can now push data into the channel. E.g. for testing we can do

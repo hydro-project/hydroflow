@@ -15,8 +15,8 @@ use super::{
 /// elements it receives downstream.
 ///
 /// ```rustbook
-/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<&str>();
-/// let mut flow = hydroflow::dfir_syntax! {
+/// let (input_send, input_recv) = dfir_rs::util::unbounded_channel::<&str>();
+/// let mut flow = dfir_rs::dfir_syntax! {
 ///     source_stream(input_recv) -> map(|x| x.to_uppercase())
 ///         -> for_each(|x| println!("{}", x));
 /// };

@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use std::sync::LazyLock;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use hydroflow::dfir_syntax;
-use hydroflow::itertools::Itertools;
+use dfir_rs::dfir_syntax;
+use dfir_rs::itertools::Itertools;
 use nameof::name_of;
 
 const OUTPUT: usize = 5_123_595;

@@ -1,8 +1,8 @@
 use clap::{Parser, ValueEnum};
 use client::run_client;
-use hydroflow::lang::graph::{WriteConfig, WriteGraphType};
-use hydroflow::tokio;
-use hydroflow::util::ipv4_resolve;
+use dfir_rs::lang::graph::{WriteConfig, WriteGraphType};
+use dfir_rs::tokio;
+use dfir_rs::util::ipv4_resolve;
 use server::run_server;
 use std::net::SocketAddr;
 
@@ -42,7 +42,7 @@ struct Opts {
     write_config: Option<WriteConfig>,
 }
 
-#[hydroflow::main]
+#[dfir_rs::main]
 /// This is the main entry-point for both `Client` and `Server`.
 async fn main() {
     // Parse command line arguments

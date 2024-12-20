@@ -135,7 +135,7 @@ const papers = [
   },
   {
     title: "Hydroflow: A Model and Runtime for Distributed Systems Programming",
-    pdf: "pathname:///papers/hydroflow-thesis.pdf",
+    pdf: "pathname:///papers/dfir_rs-thesis.pdf",
     thumb: require("./img/papers/hydroflow-thesis.png"),
     authors: <>Mingwei Samuel, Alvin Cheung, Joseph M. Hellerstein</>,
     description: [

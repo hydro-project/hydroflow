@@ -16,7 +16,7 @@ use super::{
 ///
 /// ```rustbook
 /// pub fn main() {
-///     let mut df = hydroflow::dfir_syntax! {
+///     let mut df = dfir_rs::dfir_syntax! {
 ///         source_iter(vec!(true))
 ///                 -> state;
 ///         state = union()
@@ -39,8 +39,8 @@ use super::{
 /// tick.
 /// ```rustbook
 /// // Outputs 1 2 3 4 5 6 (on separate lines).
-/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<usize>();
-/// let mut flow = hydroflow::dfir_syntax! {
+/// let (input_send, input_recv) = dfir_rs::util::unbounded_channel::<usize>();
+/// let mut flow = dfir_rs::dfir_syntax! {
 ///     inp = source_stream(input_recv) -> tee();
 ///     inp -> [pos]diff;
 ///     inp -> defer_tick() -> [neg]diff;

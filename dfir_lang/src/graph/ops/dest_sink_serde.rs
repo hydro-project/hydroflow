@@ -13,10 +13,10 @@ use super::{
 /// Note this operator must be used within a Tokio runtime.
 /// ```rustbook
 /// async fn serde_out() {
-///     let addr = hydroflow::util::ipv4_resolve("localhost:9000".into()).unwrap();
-///     let (outbound, inbound, _) = hydroflow::util::bind_udp_bytes(addr).await;
-///     let remote = hydroflow::util::ipv4_resolve("localhost:9001".into()).unwrap();
-///     let mut flow = hydroflow::dfir_syntax! {
+///     let addr = dfir_rs::util::ipv4_resolve("localhost:9000".into()).unwrap();
+///     let (outbound, inbound, _) = dfir_rs::util::bind_udp_bytes(addr).await;
+///     let remote = dfir_rs::util::ipv4_resolve("localhost:9001".into()).unwrap();
+///     let mut flow = dfir_rs::dfir_syntax! {
 ///         source_iter(vec![("hello".to_string(), 1), ("world".to_string(), 2)])
 ///             -> map (|m| (m, remote)) -> dest_sink_serde(outbound);
 ///     };

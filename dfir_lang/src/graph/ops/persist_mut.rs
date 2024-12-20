@@ -13,7 +13,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// For example, `[Persist(1), Delete(1), Persist(1)]` will result in a a single `1` value being stored.
 ///
 /// ```hydroflow
-/// use hydroflow::util::Persistence;
+/// use dfir_rs::util::Persistence;
 ///
 /// source_iter([
 ///         Persistence::Persist(1),

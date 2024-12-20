@@ -27,11 +27,11 @@ expression: flat_graph_ref.surface_syntax_string()
 38v1 = for_each (| v | result2 . send (v) . unwrap ());
 39v1 = for_each (| v | result3 . send (v) . unwrap ());
 40v1 = for_each (| v | result4 . send (v) . unwrap ());
-41v1 = join :: < 'static , 'static , hydroflow :: compiled :: pull :: HalfMultisetJoinState > ();
+41v1 = join :: < 'static , 'static , dfir_rs :: compiled :: pull :: HalfMultisetJoinState > ();
 42v1 = map (| kv : (() , ((_ ,) , (_ ,))) | (kv . 1 . 0 . 0 , kv . 1 . 1 . 0 ,));
 43v1 = map (| _v : (_ ,) | (() , (_v . 0 ,)));
 44v1 = map (| _v : (_ ,) | (() , (_v . 0 ,)));
-45v1 = join :: < 'static , 'tick , hydroflow :: compiled :: pull :: HalfMultisetJoinState > ();
+45v1 = join :: < 'static , 'tick , dfir_rs :: compiled :: pull :: HalfMultisetJoinState > ();
 46v1 = map (| kv : (() , ((_ , _ ,) , (_ ,))) | (kv . 1 . 0 . 0 , kv . 1 . 0 . 1 , kv . 1 . 1 . 0 ,));
 47v1 = map (| _v : (_ , _ ,) | (() , (_v . 0 , _v . 1 ,)));
 48v1 = map (| _v : (_ ,) | (() , (_v . 0 ,)));

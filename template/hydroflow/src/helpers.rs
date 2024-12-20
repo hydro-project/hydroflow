@@ -1,5 +1,5 @@
-use hydroflow::lang::graph::{WriteConfig, WriteGraphType};
-use hydroflow::scheduled::graph::Hydroflow;
+use dfir_rs::lang::graph::{WriteConfig, WriteGraphType};
+use dfir_rs::scheduled::graph::Hydroflow;
 
 pub fn print_graph(flow: &Hydroflow, graph: WriteGraphType, write_config: Option<WriteConfig>) {
     let serde_graph = flow

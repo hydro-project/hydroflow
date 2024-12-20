@@ -46,8 +46,8 @@ use super::{
 /// ### Examples
 ///
 /// ```hydroflow
-/// use hydroflow::lattices::Min;
-/// use hydroflow::lattices::Max;
+/// use dfir_rs::lattices::Min;
+/// use dfir_rs::lattices::Max;
 ///
 /// source_iter([("key", Min::new(1)), ("key", Min::new(2))]) -> [0]my_join;
 /// source_iter([("key", Max::new(1)), ("key", Max::new(2))]) -> [1]my_join;
@@ -61,8 +61,8 @@ use super::{
 /// ```
 ///
 /// ```hydroflow
-/// use hydroflow::lattices::set_union::SetUnionSingletonSet;
-/// use hydroflow::lattices::set_union::SetUnionHashSet;
+/// use dfir_rs::lattices::set_union::SetUnionSingletonSet;
+/// use dfir_rs::lattices::set_union::SetUnionHashSet;
 ///
 /// source_iter([("key", SetUnionSingletonSet::new_from(0)), ("key", SetUnionSingletonSet::new_from(1))]) -> [0]my_join;
 /// source_iter([("key", SetUnionHashSet::new_from([0])), ("key", SetUnionHashSet::new_from([1]))]) -> [1]my_join;

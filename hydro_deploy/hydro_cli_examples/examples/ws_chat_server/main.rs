@@ -1,7 +1,7 @@
-use hydroflow::compiled::pull::HalfMultisetJoinState;
-use hydroflow::dfir_syntax;
-use hydroflow::util::deploy::{ConnectedSink, ConnectedSource};
-use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
+use dfir_rs::compiled::pull::HalfMultisetJoinState;
+use dfir_rs::dfir_syntax;
+use dfir_rs::util::deploy::{ConnectedSink, ConnectedSource};
+use dfir_rs::util::{deserialize_from_bytes, serialize_to_bytes};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
 
@@ -27,19 +27,19 @@ struct ChatMessage {
     text: String,
 }
 
-#[hydroflow::main]
+#[dfir_rs::main]
 async fn main() {
-    let ports = hydroflow::util::deploy::init::<()>().await;
+    let ports = dfir_rs::util::deploy::init::<()>().await;
 
     let from_peer = ports
         .port("from_peer")
-        .connect::<hydroflow::util::deploy::ConnectedDirect>()
+        .connect::<dfir_rs::util::deploy::ConnectedDirect>()
         .await
         .into_source();
 
     let to_peer = ports
         .port("to_peer")
-        .connect::<hydroflow::util::deploy::ConnectedDemux<hydroflow::util::deploy::ConnectedDirect>>()
+        .connect::<dfir_rs::util::deploy::ConnectedDemux<dfir_rs::util::deploy::ConnectedDirect>>()
         .await
         .into_sink();
 
@@ -116,5 +116,5 @@ async fn main() {
         all_messages -> [1]broadcast_clients;
     };
 
-    hydroflow::util::deploy::launch_flow(df).await;
+    dfir_rs::util::deploy::launch_flow(df).await;
 }

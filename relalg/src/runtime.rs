@@ -1,10 +1,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow::scheduled::graph_ext::GraphExt;
-use hydroflow::scheduled::handoff::{Iter, VecHandoff};
-use hydroflow::scheduled::port::RecvPort;
+use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph_ext::GraphExt;
+use dfir_rs::scheduled::handoff::{Iter, VecHandoff};
+use dfir_rs::scheduled::port::RecvPort;
 
 use crate::{Datum, RelExpr};
 

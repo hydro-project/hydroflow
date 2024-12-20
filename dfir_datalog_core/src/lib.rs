@@ -744,8 +744,8 @@ fn apply_aggregations(
                     }
                     Aggregation::CountUnique(..) => {
                         parse_quote!({
-                            let prev: (hydroflow::rustc_hash::FxHashSet<_>, _) = prev;
-                            let mut set: hydroflow::rustc_hash::FxHashSet<_> = prev.0;
+                            let prev: (dfir_rs::rustc_hash::FxHashSet<_>, _) = prev;
+                            let mut set: dfir_rs::rustc_hash::FxHashSet<_> = prev.0;
                             if set.insert(#val_at_index) {
                                 (set, prev.1 + 1)
                             } else {
@@ -755,7 +755,7 @@ fn apply_aggregations(
                     }
                     Aggregation::CollectVec(..) => {
                         parse_quote!({
-                            let mut set: hydroflow::rustc_hash::FxHashSet<_> = prev;
+                            let mut set: dfir_rs::rustc_hash::FxHashSet<_> = prev;
                             set.insert(#val_at_index);
                             set
                         })
@@ -777,14 +777,14 @@ fn apply_aggregations(
                     }
                     Aggregation::CountUnique(..) => {
                         parse_quote!({
-                            let mut set = hydroflow::rustc_hash::FxHashSet::<_>::default();
+                            let mut set = dfir_rs::rustc_hash::FxHashSet::<_>::default();
                             set.insert(#val_at_index);
                             (set, 1)
                         })
                     }
                     Aggregation::CollectVec(..) => {
                         parse_quote!({
-                            let mut set = hydroflow::rustc_hash::FxHashSet::<_>::default();
+                            let mut set = dfir_rs::rustc_hash::FxHashSet::<_>::default();
                             set.insert(#val_at_index);
                             set
                         })

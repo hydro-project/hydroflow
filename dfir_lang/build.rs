@@ -132,9 +132,9 @@ fn generate_op_docs() -> Result<()> {
 
 const DOCTEST_HYDROFLOW_PREFIX: &str = "\
 # {
-# let __rt = ::hydroflow::tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-# __rt.block_on(async { ::hydroflow::tokio::task::LocalSet::new().run_until(async {
-# let mut __hf = ::hydroflow::dfir_syntax! {";
+# let __rt = ::dfir_rs::tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+# __rt.block_on(async { ::dfir_rs::tokio::task::LocalSet::new().run_until(async {
+# let mut __hf = ::dfir_rs::dfir_syntax! {";
 const DOCTEST_HYDROFLOW_SUFFIX: &str = "\
 # };
 # __hf.run_available();

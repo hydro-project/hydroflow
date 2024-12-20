@@ -35,19 +35,19 @@ pub fn dfir_syntax_noemit(input: proc_macro::TokenStream) -> proc_macro::TokenSt
 fn root() -> proc_macro2::TokenStream {
     use std::env::{var as env_var, VarError};
 
-    let hydroflow_crate = proc_macro_crate::crate_name("hydroflow")
-        .expect("hydroflow should be present in `Cargo.toml`");
+    let hydroflow_crate =
+        proc_macro_crate::crate_name("dfir_rs").expect("dfir_rs should be present in `Cargo.toml`");
     match hydroflow_crate {
         proc_macro_crate::FoundCrate::Itself => {
             if Err(VarError::NotPresent) == env_var("CARGO_BIN_NAME")
                 && Err(VarError::NotPresent) != env_var("CARGO_PRIMARY_PACKAGE")
-                && Ok("hydroflow") == env_var("CARGO_CRATE_NAME").as_deref()
+                && Ok("dfir_rs") == env_var("CARGO_CRATE_NAME").as_deref()
             {
                 // In the crate itself, including unit tests.
                 quote! { crate }
             } else {
                 // In an integration test, example, bench, etc.
-                quote! { ::hydroflow }
+                quote! { ::dfir_rs }
             }
         }
         proc_macro_crate::FoundCrate::Name(name) => {

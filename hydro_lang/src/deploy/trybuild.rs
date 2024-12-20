@@ -93,7 +93,7 @@ pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>
 
     let mut diagnostics = Vec::new();
     let tokens = partitioned_graph.as_code(
-        &quote! { hydro_lang::hydroflow },
+        &quote! { hydro_lang::dfir_rs },
         true,
         quote!(),
         &mut diagnostics,
@@ -104,17 +104,17 @@ pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>
         use hydro_lang::*;
 
         #[allow(unused)]
-        fn __hydro_runtime<'a>(__hydro_lang_trybuild_cli: &'a hydro_lang::hydroflow::util::deploy::DeployPorts<hydro_lang::deploy_runtime::HydroflowPlusMeta>) -> hydro_lang::hydroflow::scheduled::graph::Hydroflow<'a> {
+        fn __hydro_runtime<'a>(__hydro_lang_trybuild_cli: &'a hydro_lang::dfir_rs::util::deploy::DeployPorts<hydro_lang::deploy_runtime::HydroflowPlusMeta>) -> hydro_lang::dfir_rs::scheduled::graph::Hydroflow<'a> {
             #(#extra_stmts)*
             #tokens
         }
 
         #[tokio::main]
         async fn main() {
-            let ports = hydro_lang::hydroflow::util::deploy::init_no_ack_start().await;
+            let ports = hydro_lang::dfir_rs::util::deploy::init_no_ack_start().await;
             let flow = __hydro_runtime(&ports);
             println!("ack start");
-            hydro_lang::hydroflow::util::deploy::launch_flow(flow).await;
+            hydro_lang::dfir_rs::util::deploy::launch_flow(flow).await;
         }
     };
     source_ast

@@ -18,8 +18,8 @@ use super::{OperatorCategory, OperatorConstraints, WriteContextArgs, RANGE_1};
 /// in the same way as [`join`](#join), see [`join`'s documentation](#join) for more info.
 ///
 /// ```rustbook
-/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<&str>();
-/// let mut flow = hydroflow::dfir_syntax! {
+/// let (input_send, input_recv) = dfir_rs::util::unbounded_channel::<&str>();
+/// let mut flow = dfir_rs::dfir_syntax! {
 ///     my_join = cross_join::<'tick>();
 ///     source_iter(["hello", "bye"]) -> [0]my_join;
 ///     source_stream(input_recv) -> [1]my_join;

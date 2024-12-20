@@ -14,10 +14,10 @@ use super::{
 /// Note this operator must be used within a Tokio runtime, and the Hydroflow program must be launched with `run_async`.
 ///
 /// ```rustbook
-/// # #[hydroflow::main]
+/// # #[dfir_rs::main]
 /// # async fn main() {
 /// // In this example we use a _bounded_ channel for our `Sink`. This is for demonstration only,
-/// // instead you should use [`hydroflow::util::unbounded_channel`]. A bounded channel results in
+/// // instead you should use [`dfir_rs::util::unbounded_channel`]. A bounded channel results in
 /// // `Hydroflow` buffering items internally instead of within the channel. (We can't use
 /// // unbounded here since unbounded channels are synchonous to write to and therefore not
 /// // `Sink`s.)
@@ -25,7 +25,7 @@ use super::{
 /// // `PollSender` adapts the send half of the bounded channel into a `Sink`.
 /// let send = tokio_util::sync::PollSender::new(send);
 ///
-/// let mut flow = hydroflow::dfir_syntax! {
+/// let mut flow = dfir_rs::dfir_syntax! {
 ///     source_iter(0..10) -> dest_sink(send);
 /// };
 /// // Call `run_async()` to allow async events to propagate, run for one second.
@@ -37,7 +37,7 @@ use super::{
 /// // Only 5 elements received due to buffer size.
 /// // (Note that if we were using a multi-threaded executor instead of `current_thread` it would
 /// // be possible for more items to be added as they're removed, resulting in >5 collected.)
-/// let out: Vec<_> = hydroflow::util::ready_iter(&mut recv).collect();
+/// let out: Vec<_> = dfir_rs::util::ready_iter(&mut recv).collect();
 /// assert_eq!(&[0, 1, 2, 3, 4], &*out);
 /// # }
 /// ```
@@ -56,7 +56,7 @@ use super::{
 /// `BytesCodec`.
 ///
 /// ```rustbook
-/// # #[hydroflow::main]
+/// # #[dfir_rs::main]
 /// # async fn main() {
 /// use bytes::Bytes;
 /// use tokio::io::AsyncReadExt;
@@ -66,7 +66,7 @@ use super::{
 /// // Now instead handle discrete byte strings by length-encoding them.
 /// let sink = tokio_util::codec::FramedWrite::new(asyncwrite, tokio_util::codec::BytesCodec::new());
 ///
-/// let mut flow = hydroflow::dfir_syntax! {
+/// let mut flow = dfir_rs::dfir_syntax! {
 ///     source_iter([
 ///         Bytes::from_static(b"hello"),
 ///         Bytes::from_static(b"world"),

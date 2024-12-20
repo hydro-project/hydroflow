@@ -8,7 +8,7 @@ use super::{
 /// > 1 input stream, 1 output stream
 ///
 /// A specialized operator for merging lattices together into a accumulated value. Like [`fold()`](#fold)
-/// but specialized for lattice types. `lattice_fold(MyLattice::default)` is equivalent to `fold(MyLattice::default, hydroflow::lattices::Merge::merge)`.
+/// but specialized for lattice types. `lattice_fold(MyLattice::default)` is equivalent to `fold(MyLattice::default, dfir_rs::lattices::Merge::merge)`.
 ///
 /// `lattice_fold` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
@@ -20,8 +20,8 @@ use super::{
 /// But it also means that the accumulating type must have a sensible default value
 ///
 /// ```hydroflow
-/// use hydroflow::lattices::set_union::SetUnionSingletonSet;
-/// use hydroflow::lattices::set_union::SetUnionHashSet;
+/// use dfir_rs::lattices::set_union::SetUnionSingletonSet;
+/// use dfir_rs::lattices::set_union::SetUnionHashSet;
 ///
 /// source_iter([SetUnionSingletonSet::new_from(7)])
 ///     -> lattice_fold(SetUnionHashSet::<usize>::default)

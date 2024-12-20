@@ -3,8 +3,8 @@ use std::io::Error;
 use std::pin::Pin;
 
 use dfir_lang::graph::HydroflowGraph;
-use hydroflow::bytes::Bytes;
-use hydroflow::futures::{Sink, Stream};
+use dfir_rs::bytes::Bytes;
+use dfir_rs::futures::{Sink, Stream};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use stageleft::QuotedWithContext;

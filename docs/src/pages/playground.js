@@ -216,7 +216,7 @@ export function EditorDemo({ compileFn, examples, mermaidId }) {
   useEffect(() => {
     if (editorAndMonaco) {
       const { editor, monaco } = editorAndMonaco;
-      monaco.editor.setModelMarkers(editor.getModel(), "hydroflow", diagnostics.map(d => {
+      monaco.editor.setModelMarkers(editor.getModel(), "dfir_rs", diagnostics.map(d => {
         return {
           startLineNumber: d.span.start.line,
           startColumn: d.span.start.column + 1,

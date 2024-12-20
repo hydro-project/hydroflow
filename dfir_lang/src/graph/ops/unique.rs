@@ -22,8 +22,8 @@ use crate::diagnostic::{Diagnostic, Level};
 /// With `'static`, values will be remembered across ticks and no duplicates will ever be emitted.
 ///
 /// ```rustbook
-/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<usize>();
-/// let mut flow = hydroflow::dfir_syntax! {
+/// let (input_send, input_recv) = dfir_rs::util::unbounded_channel::<usize>();
+/// let mut flow = dfir_rs::dfir_syntax! {
 ///     source_stream(input_recv)
 ///         -> unique::<'tick>()
 ///         -> for_each(|n| println!("{}", n));

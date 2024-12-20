@@ -8,7 +8,7 @@ members = [
     "hydro_deploy/hydro_cli",
     "hydro_deploy/hydro_cli_examples",
     "hydro_deploy/hydroflow_deploy_integration",
-    "hydroflow",
+    "dfir_rs",
     "dfir_datalog",
     "dfir_datalog_core",
     "dfir_lang",

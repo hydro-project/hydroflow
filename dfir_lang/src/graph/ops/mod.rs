@@ -340,10 +340,10 @@ pub struct WriteContextArgs<'a> {
     /// `hydroflow` crate name for `use #root::something`.
     pub root: &'a TokenStream,
     /// `context` ident, the name of the provided
-    /// [`hydroflow::scheduled::Context`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/context/struct.Context.html).
+    /// [`dfir_rs::scheduled::Context`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/context/struct.Context.html).
     pub context: &'a Ident,
     /// `df` ident, the name of the
-    /// [`hydroflow::scheduled::graph::Hydroflow`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html)
+    /// [`dfir_rs::scheduled::graph::Hydroflow`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html)
     /// instance.
     pub hydroflow: &'a Ident,
     /// Subgraph ID in which this operator is contained.
@@ -474,7 +474,7 @@ pub enum Persistence {
 
 /// Helper which creates a error message string literal for when the Tokio runtime is not found.
 fn make_missing_runtime_msg(op_name: &str) -> Literal {
-    Literal::string(&format!("`{}()` must be used within a Tokio runtime. For example, use `#[hydroflow::main]` on your main method.", op_name))
+    Literal::string(&format!("`{}()` must be used within a Tokio runtime. For example, use `#[dfir_rs::main]` on your main method.", op_name))
 }
 
 /// Operator categories, for docs.

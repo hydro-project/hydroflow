@@ -4,9 +4,9 @@ use std::pin::Pin;
 use std::rc::Rc;
 
 use dfir_lang::graph::HydroflowGraph;
-use hydroflow::bytes::Bytes;
-use hydroflow::futures::{Sink, Stream};
-use hydroflow::util::deploy::DeployPorts;
+use dfir_rs::bytes::Bytes;
+use dfir_rs::futures::{Sink, Stream};
+use dfir_rs::util::deploy::DeployPorts;
 use stageleft::{QuotedWithContext, RuntimeData};
 
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};

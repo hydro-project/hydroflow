@@ -38,8 +38,8 @@ use crate::diagnostic::{Diagnostic, Level};
 ///
 /// Example using `'tick` persistence and type arguments:
 /// ```rustbook
-/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
-/// let mut flow = hydroflow::dfir_syntax! {
+/// let (input_send, input_recv) = dfir_rs::util::unbounded_channel::<(&str, &str)>();
+/// let mut flow = dfir_rs::dfir_syntax! {
 ///     source_stream(input_recv)
 ///         -> reduce_keyed::<'tick, &str>(|old: &mut _, val| *old = std::cmp::max(*old, val))
 ///         -> for_each(|(k, v)| println!("({:?}, {:?})", k, v));

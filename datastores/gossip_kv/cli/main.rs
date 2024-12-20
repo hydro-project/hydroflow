@@ -1,9 +1,9 @@
 use std::net::SocketAddr;
 
 use clap::{CommandFactory, Parser, Subcommand};
+use dfir_rs::util::{bind_udp_bytes, ipv4_resolve};
+use dfir_rs::{dfir_syntax, tokio, DemuxEnum};
 use gossip_kv::{ClientRequest, ClientResponse, Key};
-use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
-use hydroflow::{dfir_syntax, tokio, DemuxEnum};
 use tracing::error;
 
 /// CLI program to interact with Layer 0 gossip store.
@@ -80,7 +80,7 @@ fn parse_command(line: String) -> Option<InteractiveCommands> {
     }
 }
 
-#[hydroflow::main]
+#[dfir_rs::main]
 async fn main() {
     tracing_subscriber::fmt::init();
 

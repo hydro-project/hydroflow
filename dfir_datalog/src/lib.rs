@@ -16,8 +16,8 @@ pub fn datalog(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
         #item
     };
 
-    let hydroflow_crate = proc_macro_crate::crate_name("hydroflow")
-        .expect("hydroflow should be present in `Cargo.toml`");
+    let hydroflow_crate =
+        proc_macro_crate::crate_name("dfir_rs").expect("dfir_rs should be present in `Cargo.toml`");
     let root = match hydroflow_crate {
         proc_macro_crate::FoundCrate::Itself => quote! { hydroflow },
         proc_macro_crate::FoundCrate::Name(name) => {
@@ -38,7 +38,7 @@ pub fn datalog(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
             proc_macro::TokenStream::from(quote! {
                 {
                     #diagnostic_tokens
-                    hydroflow::scheduled::graph::Hydroflow::new()
+                    dfir_rs::scheduled::graph::Hydroflow::new()
                 }
             })
         }

@@ -14,15 +14,15 @@ use super::{
 /// be scheduled as soon as possible.
 ///
 /// Note that this requires the hydroflow instance be run within a [Tokio `Runtime`](https://docs.rs/tokio/1/tokio/runtime/struct.Runtime.html).
-/// The easiest way to do this is with a [`#[hydroflow::main]`](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.hydroflow_main.html)
+/// The easiest way to do this is with a [`#[dfir_rs::main]`](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.hydroflow_main.html)
 /// annotation on `async fn main() { ... }` as in the example below.
 ///
 /// ```rustbook
 /// use std::time::Duration;
 /// use std::time::Instant;
-///use hydroflow::dfir_syntax;
+///use dfir_rs::dfir_syntax;
 ///
-/// #[hydroflow::main]
+/// #[dfir_rs::main]
 /// async fn main() {
 ///     let mut hf = dfir_syntax! {
 ///         source_interval(Duration::from_secs(1))

@@ -1,11 +1,11 @@
 use dfir_datalog::datalog;
-use hydroflow::tokio_stream::wrappers::IntervalStream;
-use hydroflow::util::deploy::{ConnectedDemux, ConnectedDirect, ConnectedSink};
-use hydroflow::util::serialize_to_bytes;
+use dfir_rs::tokio_stream::wrappers::IntervalStream;
+use dfir_rs::util::deploy::{ConnectedDemux, ConnectedDirect, ConnectedSink};
+use dfir_rs::util::serialize_to_bytes;
 
-#[hydroflow::main]
+#[dfir_rs::main]
 async fn main() {
-    let ports = hydroflow::util::deploy::init::<()>().await;
+    let ports = dfir_rs::util::deploy::init::<()>().await;
     let broadcast_port = ports
         .port("broadcast")
         .connect::<ConnectedDemux<ConnectedDirect>>()
@@ -32,5 +32,5 @@ async fn main() {
     "#
     );
 
-    hydroflow::util::deploy::launch_flow(df).await;
+    dfir_rs::util::deploy::launch_flow(df).await;
 }
