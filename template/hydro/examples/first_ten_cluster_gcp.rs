@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use hydro_deploy::gcp::GcpNetwork;
 use hydro_deploy::Deployment;
-use hydroflow_lang::deploy::TrybuildHost;
+use hydro_lang::deploy::TrybuildHost;
 use tokio::sync::RwLock;
 
 static RELEASE_RUSTFLAGS: &str =
