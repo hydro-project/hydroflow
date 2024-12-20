@@ -282,6 +282,7 @@ impl<'a> Hydroflow<'a> {
             }
 
             let sg_data = &self.subgraphs[sg_id.0];
+            debug_assert_eq!(self.context.current_stratum, sg_data.stratum);
             for &handoff_id in sg_data.succs.iter() {
                 let handoff = &self.handoffs[handoff_id.0];
                 if !handoff.handoff.is_bottom() {
@@ -296,6 +297,14 @@ impl<'a> Hydroflow<'a> {
                             self.context.stratum_queues[succ_sg_data.stratum].push_back(succ_id);
                         }
                     }
+                }
+            }
+
+            // Check if subgraph wants rescheduling
+            if self.context.reschedule_current_subgraph.take() {
+                // Add subgraph to stratum queue if it is not already scheduled.
+                if !sg_data.is_scheduled.replace(true) {
+                    self.context.stratum_queues[sg_data.stratum].push_back(sg_id);
                 }
             }
         }
