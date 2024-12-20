@@ -1,4 +1,4 @@
-use hydroflow_lang::graph::HydroflowGraph;
+use dfir_lang::graph::HydroflowGraph;
 
 use super::{LocalDeploy, Node, ProcessSpec};
 

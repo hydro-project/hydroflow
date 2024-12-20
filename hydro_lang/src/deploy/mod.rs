@@ -2,9 +2,9 @@ use std::future::Future;
 use std::io::Error;
 use std::pin::Pin;
 
+use dfir_lang::graph::HydroflowGraph;
 use hydroflow::bytes::Bytes;
 use hydroflow::futures::{Sink, Stream};
-use hydroflow_lang::graph::HydroflowGraph;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use stageleft::QuotedWithContext;

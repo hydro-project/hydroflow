@@ -7,9 +7,9 @@ use std::future::Future;
 use std::marker::PhantomData;
 
 #[cfg(feature = "meta")]
-use hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
+use dfir_lang::diagnostic::{Diagnostic, SerdeSpan};
 #[cfg(feature = "meta")]
-use hydroflow_lang::graph::HydroflowGraph;
+use dfir_lang::graph::HydroflowGraph;
 use ref_cast::RefCast;
 use smallvec::SmallVec;
 use web_time::SystemTime;

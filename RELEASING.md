@@ -28,7 +28,7 @@ To (dry) run the command locally to spot-check for errors and warnings:
 cargo smart-release --update-crates-index \
    --no-changelog-preview --allow-fully-generated-changelogs \
    --bump-dependencies auto --bump minor \ # or `patch`, `major`, `keep`, `auto`
-   hydroflow hydroflow_lang dfir_macro hydro_lang \
+   hydroflow dfir_lang dfir_macro hydro_lang \
    dfir_datalog dfir_datalog_core \
    hydro_deploy hydro_cli hydroflow_cli_integration \
    hydroflow_plus_cli_integration \
@@ -60,18 +60,18 @@ showing that all the changelogs can be modified. Make sure the version bumps loo
 [INFO ] Updating crates-io index
 [WARN ] Refused to publish 'hydroflow_deploy_integration' as as it didn't change.
 [INFO ] Will not publish or alter 3 dependent crates: unchanged = 'hydroflow_deploy_integration', 'variadics', 'pusherator'
-[INFO ] WOULD auto-bump dependent package 'hydroflow_lang' from 0.4.0 to 0.5.0 for publishing
-[INFO ] WOULD auto-bump dependent package 'dfir_datalog_core' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'hydroflow_lang'
+[INFO ] WOULD auto-bump dependent package 'dfir_lang' from 0.4.0 to 0.5.0 for publishing
+[INFO ] WOULD auto-bump dependent package 'dfir_datalog_core' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'dfir_lang'
 [INFO ] WOULD auto-bump dependent package 'dfir_datalog' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'dfir_datalog_core'
-[INFO ] WOULD auto-bump dependent package 'hydroflow_macro' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'hydroflow_lang'
+[INFO ] WOULD auto-bump dependent package 'hydroflow_macro' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'dfir_lang'
 [INFO ] WOULD auto-bump dependent package 'lattices' from 0.4.0 to 0.5.0 for publishing
 [INFO ] WOULD minor-bump provided package 'hydroflow' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'dfir_datalog'
 [INFO ] WOULD minor-bump provided package 'hydro_cli' from 0.4.0 to 0.5.0 for publishing
-[INFO ] WOULD adjust 2 manifest versions due to breaking change in 'hydroflow_lang': 'dfir_datalog_core' 0.4.0 ➡ 0.5.0, 'hydroflow_macro' 0.4.0 ➡ 0.5.0
+[INFO ] WOULD adjust 2 manifest versions due to breaking change in 'dfir_lang': 'dfir_datalog_core' 0.4.0 ➡ 0.5.0, 'hydroflow_macro' 0.4.0 ➡ 0.5.0
 [INFO ] WOULD adjust 1 manifest version due to breaking change in 'dfir_datalog_core': 'dfir_datalog' 0.4.0 ➡ 0.5.0
 [INFO ] WOULD adjust 1 manifest version due to breaking change in 'dfir_datalog': 'hydroflow' 0.4.0 ➡ 0.5.0
 [INFO ] WOULD adjust version constraints in manifests of 2 packages as direct dependencies are changing: relalg, website_playground
-[INFO ] WOULD modify existing changelog for 'hydroflow_lang'.
+[INFO ] WOULD modify existing changelog for 'dfir_lang'.
 [INFO ] WOULD modify existing changelog for 'dfir_datalog_core'.
 [INFO ] WOULD modify existing changelog for 'dfir_datalog'.
 [INFO ] WOULD modify existing changelog for 'hydroflow_macro'.

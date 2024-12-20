@@ -116,11 +116,11 @@ jobs:
           target: wasm32-unknown-unknown
           override: ${{ matrix.rust_release == 'latest-stable' }}
 
-      - name: Check hydroflow_lang
+      - name: Check dfir_lang
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: -p hydroflow_lang --target wasm32-unknown-unknown
+          args: -p dfir_lang --target wasm32-unknown-unknown
 
   test:
     name: Test Suite

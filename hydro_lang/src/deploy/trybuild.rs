@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use hydroflow_lang::graph::{partition_graph, HydroflowGraph};
+use dfir_lang::graph::{partition_graph, HydroflowGraph};
 use sha2::{Digest, Sha256};
 use stageleft::internal::quote;
 use syn::visit_mut::VisitMut;

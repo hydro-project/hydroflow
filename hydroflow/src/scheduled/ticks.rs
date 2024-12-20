@@ -82,7 +82,7 @@ impl TickDuration {
     ///
     /// ```
     /// # use hydroflow::scheduled::ticks::{TickDuration, TickInstant};
-    /// # use hydroflow_lang::graph::ops::DelayType::Tick;
+    /// # use dfir_lang::graph::ops::DelayType::Tick;
     /// let ticks = TickInstant::new(100);
     /// assert_eq!(ticks + TickDuration::ZERO, ticks);
     /// assert_eq!(ticks - TickDuration::ZERO, ticks);

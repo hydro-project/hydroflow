@@ -1,11 +1,11 @@
 [package]
-name = "hydroflow_lang"
+name = "dfir_lang"
 publish = true
 version = "0.10.0"
 edition = "2021"
 license = "Apache-2.0"
-documentation = "https://docs.rs/hydroflow_lang/"
-description = "Hydroflow's Surface Syntax implementation"
+documentation = "https://docs.rs/dfir_lang/"
+description = "Hydro's Data Flow Intermediate Representation (DFIR) implementation"
 
 [lints]
 workspace = true

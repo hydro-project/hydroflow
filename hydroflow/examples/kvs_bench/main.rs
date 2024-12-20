@@ -10,8 +10,8 @@ use std::time::{Duration, Instant};
 
 use bytes::Bytes;
 use clap::{command, Parser, Subcommand};
+use dfir_lang::graph::{WriteConfig, WriteGraphType};
 use futures::Stream;
-use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::StreamExt;
 

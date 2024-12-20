@@ -2,8 +2,8 @@ use std::net::SocketAddr;
 
 use clap::{Parser, ValueEnum};
 use client::run_client;
+use dfir_lang::graph::{WriteConfig, WriteGraphType};
 use hydroflow::util::ipv4_resolve;
-use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 use server::run_server;
 
 use crate::randomized_gossiping_server::run_gossiping_server;

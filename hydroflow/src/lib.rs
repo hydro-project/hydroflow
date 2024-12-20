@@ -21,7 +21,7 @@ pub mod scheduled;
 pub mod util;
 
 #[cfg(feature = "meta")]
-pub use hydroflow_lang as lang;
+pub use dfir_lang as lang;
 #[cfg(feature = "python")]
 pub use pyo3;
 pub use variadics::{self, var_args, var_expr, var_type};

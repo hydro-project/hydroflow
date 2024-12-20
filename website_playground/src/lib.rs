@@ -5,10 +5,10 @@ use std::task::{Context, Poll};
 use std::thread_local;
 
 use dfir_datalog_core::gen_hydroflow_graph;
+use dfir_lang::diagnostic::{Diagnostic, Level};
+use dfir_lang::graph::{build_hfcode, partition_graph, WriteConfig};
 use hydroflow::datalog;
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow_lang::diagnostic::{Diagnostic, Level};
-use hydroflow_lang::graph::{build_hfcode, partition_graph, WriteConfig};
 use proc_macro2::{LineColumn, Span};
 use quote::quote;
 use serde::{Deserialize, Serialize};

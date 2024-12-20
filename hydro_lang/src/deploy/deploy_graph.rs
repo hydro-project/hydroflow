@@ -6,6 +6,7 @@ use std::pin::Pin;
 use std::rc::Rc;
 use std::sync::Arc;
 
+use dfir_lang::graph::HydroflowGraph;
 use hydro_deploy::custom_service::CustomClientPort;
 use hydro_deploy::hydroflow_crate::ports::{
     DemuxSink, HydroflowSink, HydroflowSource, TaggedSource,
@@ -16,7 +17,6 @@ use hydro_deploy::{CustomService, Deployment, Host, HydroflowCrate};
 use hydroflow::bytes::Bytes;
 use hydroflow::futures::{Sink, SinkExt, Stream, StreamExt};
 use hydroflow::util::deploy::{ConnectedSink, ConnectedSource};
-use hydroflow_lang::graph::HydroflowGraph;
 use nameof::name_of;
 use serde::de::DeserializeOwned;
 use serde::Serialize;

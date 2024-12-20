@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 
-use hydroflow_lang::graph::{eliminate_extra_unions_tees, HydroflowGraph};
+use dfir_lang::graph::{eliminate_extra_unions_tees, HydroflowGraph};
 
 use super::compiled::CompiledFlow;
 use super::deploy::{DeployFlow, DeployResult};

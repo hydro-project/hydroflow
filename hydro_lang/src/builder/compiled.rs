@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
+use dfir_lang::graph::{partition_graph, HydroflowGraph};
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow_lang::graph::{partition_graph, HydroflowGraph};
 use proc_macro2::TokenStream;
 use quote::quote;
 use stageleft::runtime_support::FreeVariableWithContext;

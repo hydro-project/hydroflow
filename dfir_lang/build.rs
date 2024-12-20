@@ -24,7 +24,7 @@ fn main() {
 
     if Err(VarError::NotPresent) != var("CARGO_CFG_HYDROFLOW_GENERATE_DOCS") {
         if let Err(err) = generate_op_docs() {
-            eprintln!("hydroflow_lang/build.rs error: {:?}", err);
+            eprintln!("dfir_lang/build.rs error: {:?}", err);
         }
     }
 }
@@ -74,7 +74,7 @@ fn generate_op_docs() -> Result<()> {
             ]);
             eprintln!("{:?}", docgen_path);
             let mut docgen_write = BufWriter::new(File::create(docgen_path)?);
-            writeln!(docgen_write, "<!-- GENERATED hydroflow_lang/build.rs -->")?;
+            writeln!(docgen_write, "<!-- GENERATED dfir_lang/build.rs -->")?;
 
             let mut in_hf_doctest = false;
             for attr in item_const.attrs.iter() {

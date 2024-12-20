@@ -3,9 +3,9 @@
     feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)
 )]
 
-use hydroflow_lang::diagnostic::{Diagnostic, Level};
-use hydroflow_lang::graph::{build_hfcode, partition_graph, FlatGraphBuilder};
-use hydroflow_lang::parse::HfCode;
+use dfir_lang::diagnostic::{Diagnostic, Level};
+use dfir_lang::graph::{build_hfcode, partition_graph, FlatGraphBuilder};
+use dfir_lang::parse::HfCode;
 use proc_macro2::{Ident, Literal, Span};
 use quote::{format_ident, quote};
 use syn::{
@@ -124,7 +124,7 @@ pub fn dfir_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 #[proc_macro]
 pub fn surface_booktest_operators(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     assert!(input.is_empty(), "Input must be empty");
-    let each = hydroflow_lang::graph::ops::OPERATORS.iter().map(|op| {
+    let each = dfir_lang::graph::ops::OPERATORS.iter().map(|op| {
         let op_ident = Ident::new(op.name, Span::call_site());
         let op_filename = format!("../../docs/docgen/{}.md", op.name);
         let lit_filename = LitStr::new(&op_filename, Span::call_site());

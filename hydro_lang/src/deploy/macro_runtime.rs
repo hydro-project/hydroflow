@@ -3,10 +3,10 @@ use std::future::Future;
 use std::pin::Pin;
 use std::rc::Rc;
 
+use dfir_lang::graph::HydroflowGraph;
 use hydroflow::bytes::Bytes;
 use hydroflow::futures::{Sink, Stream};
 use hydroflow::util::deploy::DeployPorts;
-use hydroflow_lang::graph::HydroflowGraph;
 use stageleft::{QuotedWithContext, RuntimeData};
 
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};

@@ -1,6 +1,6 @@
 use clap::Parser;
+use dfir_lang::graph::{WriteConfig, WriteGraphType};
 use hydroflow::dfir_syntax;
-use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 
 // This example detects size three cliques in a graph. Size three cliques are also known as triangles.
 // The equivalent datalog program would be Triangle(x,y,z) := Edge(x,y), Edge(y,z), Edge(z,x)

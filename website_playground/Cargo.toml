@@ -16,7 +16,7 @@ default = ["console_error_panic_hook"]
 [dependencies]
 futures = "0.3.0"
 dfir_datalog_core = { path = "../dfir_datalog_core" }
-hydroflow_lang = { path = "../hydroflow_lang" }
+dfir_lang = { path = "../dfir_lang" }
 hydroflow = { path = "../hydroflow" }
 prettyplease = { version = "0.2.0", features = [ "verbatim" ] }
 proc-macro2 = "1.0.74"

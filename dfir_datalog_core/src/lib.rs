@@ -1,12 +1,12 @@
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 
-pub use hydroflow_lang::diagnostic;
-use hydroflow_lang::diagnostic::{Diagnostic, Level};
-use hydroflow_lang::graph::{
+pub use dfir_lang::diagnostic;
+use dfir_lang::diagnostic::{Diagnostic, Level};
+use dfir_lang::graph::{
     eliminate_extra_unions_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,
 };
-use hydroflow_lang::parse::{
+use dfir_lang::parse::{
     HfStatement, IndexInt, Indexing, Pipeline, PipelineLink, PipelineStatement, PortIndex,
 };
 use proc_macro2::{Span, TokenStream};

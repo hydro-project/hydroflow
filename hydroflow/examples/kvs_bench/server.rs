@@ -5,11 +5,11 @@ use std::time::Duration;
 
 use bincode::options;
 use bytes::{BufMut, Bytes, BytesMut};
+use dfir_lang::graph::{WriteConfig, WriteGraphType};
 use futures::Stream;
 use hydroflow::compiled::pull::HalfMultisetJoinState;
 use hydroflow::dfir_syntax;
 use hydroflow::scheduled::ticks::TickInstant;
-use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 use lattices::map_union::{MapUnionHashMap, MapUnionSingletonMap};
 use lattices::set_union::SetUnionSingletonSet;
 use lattices::{Max, Point, WithBot};

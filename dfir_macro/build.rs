@@ -6,8 +6,8 @@ use std::fs::File;
 use std::io::{BufWriter, Read, Result, Write};
 use std::path::{Path, PathBuf};
 
-use hydroflow_lang::graph::ops::{PortListSpec, OPERATORS};
-use hydroflow_lang::graph::PortIndexValue;
+use dfir_lang::graph::ops::{PortListSpec, OPERATORS};
+use dfir_lang::graph::PortIndexValue;
 use itertools::Itertools;
 use quote::ToTokens;
 use rustc_version::{version_meta, Channel};

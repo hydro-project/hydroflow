@@ -1,8 +1,8 @@
 // Test harness for the various implementations of shopping carts.
 
 use clap::{Parser, ValueEnum};
+use dfir_lang::graph::{WriteConfig, WriteGraphType};
 use driver::run_driver;
-use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 
 mod driver;
 mod flows;

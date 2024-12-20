@@ -886,7 +886,7 @@ dependencies = [
 name = "dfir_datalog_core"
 version = "0.10.0"
 dependencies = [
- "hydroflow_lang",
+ "dfir_lang",
  "insta",
  "prettyplease",
  "proc-macro2",
@@ -899,10 +899,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "dfir_lang"
+version = "0.10.0"
+dependencies = [
+ "auto_impl",
+ "clap",
+ "data-encoding",
+ "itertools",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "rustc_version 0.4.1",
+ "serde",
+ "serde_json",
+ "slotmap",
+ "syn 2.0.75",
+ "webbrowser",
+]
+
+[[package]]
 name = "dfir_macro"
 version = "0.10.0"
 dependencies = [
- "hydroflow_lang",
+ "dfir_lang",
  "itertools",
  "proc-macro-crate",
  "proc-macro2",
@@ -1506,9 +1525,9 @@ dependencies = [
  "async-ssh2-lite",
  "bincode",
  "ctor",
+ "dfir_lang",
  "hydro_deploy",
  "hydroflow",
- "hydroflow_lang",
  "insta",
  "match_box",
  "nameof",
@@ -1594,11 +1613,11 @@ dependencies = [
  "colored",
  "criterion",
  "dfir_datalog",
+ "dfir_lang",
  "dfir_macro",
  "futures",
  "getrandom",
  "hydroflow_deploy_integration",
- "hydroflow_lang",
  "insta",
  "itertools",
  "lattices",
@@ -1643,25 +1662,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util",
-]
-
-[[package]]
-name = "hydroflow_lang"
-version = "0.10.0"
-dependencies = [
- "auto_impl",
- "clap",
- "data-encoding",
- "itertools",
- "prettyplease",
- "proc-macro2",
- "quote",
- "rustc_version 0.4.1",
- "serde",
- "serde_json",
- "slotmap",
- "syn 2.0.75",
- "webbrowser",
 ]
 
 [[package]]
@@ -4344,9 +4344,9 @@ version = "0.0.0"
 dependencies = [
  "console_error_panic_hook",
  "dfir_datalog_core",
+ "dfir_lang",
  "futures",
  "hydroflow",
- "hydroflow_lang",
  "prettyplease",
  "proc-macro2",
  "quote",

@@ -3,8 +3,8 @@ use std::path::Path;
 
 use clap::{Parser, ValueEnum};
 use coordinator::run_coordinator;
+use dfir_lang::graph::{WriteConfig, WriteGraphType};
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
-use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 use serde::Deserialize;
 use subordinate::run_subordinate;
 
