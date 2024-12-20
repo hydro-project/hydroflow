@@ -19,7 +19,7 @@ use super::{
 /// `lattice_fold` is differentiated from `lattice_reduce` in that `lattice_fold` can accumulate into a different type from its input.
 /// But it also means that the accumulating type must have a sensible default value
 ///
-/// ```hydroflow
+/// ```dfir
 /// use dfir_rs::lattices::set_union::SetUnionSingletonSet;
 /// use dfir_rs::lattices::set_union::SetUnionHashSet;
 ///

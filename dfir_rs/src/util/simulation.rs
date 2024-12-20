@@ -81,7 +81,7 @@ use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::Stream;
 use tracing::trace;
 
-use crate::scheduled::graph::Hydroflow;
+use crate::scheduled::graph::Dfir;
 use crate::util::{collect_ready_async, unbounded_channel};
 
 /// A hostname is a unique identifier for a host in the simulation. It is used to address messages
@@ -143,7 +143,7 @@ pub struct Outbox {
 /// and outboxes.
 pub struct Host {
     name: Hostname,
-    transducer: Hydroflow<'static>,
+    transducer: Dfir<'static>,
     inputs: HashMap<InterfaceName, Inbox>,
     output: HashMap<InterfaceName, Outbox>,
 }
@@ -159,7 +159,7 @@ impl Host {
 /// A builder for constructing a host in the simulation.
 pub struct HostBuilder {
     name: Hostname,
-    transducer: Option<Hydroflow<'static>>,
+    transducer: Option<Dfir<'static>>,
     inboxes: HashMap<InterfaceName, Inbox>,
     outboxes: HashMap<InterfaceName, Outbox>,
 }
@@ -179,7 +179,7 @@ fn sink_from_fn<T>(mut f: impl FnMut(T)) -> impl Sink<T, Error = Infallible> {
 
 impl TransducerBuilderContext<'_> {
     /// Create a new inbox on the host with the given interface name. Returns a stream that can
-    /// be read by the transducer using the source_stream hydroflow operator.
+    /// be read by the transducer using the source_stream dfir operator.
     pub fn new_inbox<T: 'static>(
         &mut self,
         interface: InterfaceName,
@@ -195,7 +195,7 @@ impl TransducerBuilderContext<'_> {
     }
 
     /// Creates a new outbox on the host with the given interface name. Returns a sink that can
-    /// be written to by the transducer using the dest_sink hydroflow operator.
+    /// be written to by the transducer using the dest_sink dfir operator.
     pub fn new_outbox<T: 'static>(
         &mut self,
         interface: InterfaceName,
@@ -229,7 +229,7 @@ impl HostBuilder {
     /// Supplies the (mandatory) transducer that runs on this host.
     pub fn with_transducer<F>(mut self, builder: F) -> Self
     where
-        F: FnOnce(&mut TransducerBuilderContext) -> Hydroflow<'static>,
+        F: FnOnce(&mut TransducerBuilderContext) -> Dfir<'static>,
     {
         let mut context = TransducerBuilderContext {
             inboxes: &mut self.inboxes,
@@ -272,7 +272,7 @@ impl Fleet {
     /// Adds a new host to the fleet with the given name and transducer.
     pub fn add_host<F>(&mut self, name: String, transducer_builder: F) -> &Host
     where
-        F: FnOnce(&mut TransducerBuilderContext) -> Hydroflow<'static>,
+        F: FnOnce(&mut TransducerBuilderContext) -> Dfir<'static>,
     {
         let host = HostBuilder::new(name.clone())
             .with_transducer(transducer_builder)

@@ -2,7 +2,7 @@ use std::future::Future;
 use std::io::Error;
 use std::pin::Pin;
 
-use dfir_lang::graph::HydroflowGraph;
+use dfir_lang::graph::DfirGraph;
 use dfir_rs::bytes::Bytes;
 use dfir_rs::futures::{Sink, Stream};
 use serde::de::DeserializeOwned;
@@ -240,7 +240,7 @@ pub trait Node {
         &self,
         env: &mut Self::InstantiateEnv,
         meta: &mut Self::Meta,
-        graph: HydroflowGraph,
+        graph: DfirGraph,
         extra_stmts: Vec<syn::Stmt>,
     );
 }

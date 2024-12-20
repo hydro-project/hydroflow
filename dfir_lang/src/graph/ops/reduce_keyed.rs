@@ -30,7 +30,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// `reduce_keyed` can also be provided with two type arguments, the key and value type. This is
 /// required when using `'static` persistence if the compiler cannot infer the types.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
 ///     -> reduce_keyed(|old: &mut u32, val: u32| *old += val)
 ///     -> assert_eq([("toy", 3), ("shoe", 46), ("haberdashery", 7)]);

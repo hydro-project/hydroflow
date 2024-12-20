@@ -8,7 +8,7 @@ use dfir_rs::itertools::Itertools;
 use dfir_rs::lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap};
 use dfir_rs::lattices::set_union::SetUnionHashSet;
 use dfir_rs::lattices::{Lattice, PairBimorphism};
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use lattices::set_union::SetUnion;
 use lattices::{IsTop, Max, Pair};
 use lazy_static::lazy_static;
@@ -82,7 +82,7 @@ pub fn server<
     member_info: MemberData<Addr>,
     seed_nodes: Vec<SeedNode<Addr>>,
     seed_node_stream: SeedNodeStream,
-) -> Hydroflow<'static>
+) -> Dfir<'static>
 where
     ClientInput: Stream<Item = (ClientRequest, Addr)> + Unpin + 'static,
     ClientOutput: Sink<(ClientResponse, Addr), Error = ClientOutputError> + Unpin + 'static,

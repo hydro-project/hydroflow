@@ -24,7 +24,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// items are aggregated with items arriving in later ticks. When not explicitly specified
 /// persistence defaults to `'tick`.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter([1,2,3,4,5])
 ///     -> reduce::<'tick>(|accum: &mut _, elem| {
 ///         *accum *= elem;

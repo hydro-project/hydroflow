@@ -5,8 +5,8 @@ use std::marker::PhantomData;
 
 use super::StateId;
 
-/// A handle into a particular [`Hydroflow`](super::graph::Hydroflow) instance, referring to data
-/// inserted by [`add_state`](super::graph::Hydroflow::add_state).
+/// A handle into a particular [`Hydroflow`](super::graph::Dfir) instance, referring to data
+/// inserted by [`add_state`](super::graph::Dfir::add_state).
 ///
 /// If you need to store state handles in a data structure see [`StateHandleErased`] which hides
 /// the generic type parameter.

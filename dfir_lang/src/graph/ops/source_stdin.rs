@@ -12,7 +12,7 @@ use super::{
 /// `source_stdin` receives a Stream of lines from stdin
 /// and emits each of the elements it receives downstream.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_stdin()
 ///     -> map(|x| x.unwrap().to_uppercase())
 ///     -> for_each(|x| println!("{}", x));

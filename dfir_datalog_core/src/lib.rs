@@ -3,9 +3,7 @@ use std::ops::Deref;
 
 pub use dfir_lang::diagnostic;
 use dfir_lang::diagnostic::{Diagnostic, Level};
-use dfir_lang::graph::{
-    eliminate_extra_unions_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,
-};
+use dfir_lang::graph::{eliminate_extra_unions_tees, partition_graph, DfirGraph, FlatGraphBuilder};
 use dfir_lang::parse::{
     HfStatement, IndexInt, Indexing, Pipeline, PipelineLink, PipelineStatement, PortIndex,
 };
@@ -55,9 +53,7 @@ pub fn parse_static(
         })
 }
 
-pub fn gen_hydroflow_graph(
-    literal: proc_macro2::Literal,
-) -> Result<HydroflowGraph, Vec<Diagnostic>> {
+pub fn gen_hydroflow_graph(literal: proc_macro2::Literal) -> Result<DfirGraph, Vec<Diagnostic>> {
     let offset = {
         // This includes the quotes, i.e. 'r#"my test"#' or '"hello\nworld"'.
         let source_str = literal.to_string();
@@ -325,7 +321,7 @@ fn handle_errors(
     diagnostics
 }
 
-pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -> TokenStream {
+pub fn hydroflow_graph_to_program(flat_graph: DfirGraph, root: TokenStream) -> TokenStream {
     let partitioned_graph =
         partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
 

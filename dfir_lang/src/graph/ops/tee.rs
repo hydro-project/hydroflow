@@ -10,7 +10,7 @@ use super::{
 /// Takes the input stream and delivers a copy of each item to each output.
 /// > Note: Downstream operators may need explicit type annotations.
 ///
-/// ```hydroflow
+/// ```dfir
 /// my_tee = source_iter(vec!["Hello", "World"]) -> tee();
 /// my_tee -> map(|x: &str| x.to_uppercase()) -> assert_eq(["HELLO", "WORLD"]);
 /// my_tee -> map(|x: &str| x.to_lowercase()) -> assert_eq(["hello", "world"]);

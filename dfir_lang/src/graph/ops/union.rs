@@ -12,7 +12,7 @@ use super::{
 /// Since `union` has multiple input streams, it needs to be assigned to
 /// a variable to reference its multiple input ports across statements.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec!["hello", "world"]) -> my_union;
 /// source_iter(vec!["stay", "gold"]) -> my_union;
 /// source_iter(vec!["don't", "give", "up"]) -> my_union;

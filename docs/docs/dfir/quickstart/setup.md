@@ -129,11 +129,11 @@ You can then open the repo in VS Code or IDE of your choice. In VS Code, `rust-a
 will provide inline type and error messages, code completion, etc.
 
 To work with the repository, it's best to start with an "example", found in the
-[`hydroflow/examples` folder](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples).
+[`hydroflow/examples` folder](https://github.com/hydro-project/hydroflow/tree/main/dfir_rs/examples).
 The simplest example is the
-['hello world'](https://github.com/hydro-project/hydroflow/blob/main/hydroflow/examples/hello_world/main.rs) example;
+['hello world'](https://github.com/hydro-project/hydroflow/blob/main/dfir_rs/examples/hello_world/main.rs) example;
 the simplest example with networking is the
-[`echo server`](https://github.com/hydro-project/hydroflow/blob/main/hydroflow/examples/echoserver/main.rs).
+[`echo server`](https://github.com/hydro-project/hydroflow/blob/main/dfir_rs/examples/echoserver/main.rs).
 
 The Hydroflow repository is set up as a [workspace](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html),
 i.e. a repo containing a bunch of separate packages, `hydroflow` is just the

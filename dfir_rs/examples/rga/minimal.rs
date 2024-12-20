@@ -1,5 +1,5 @@
 use dfir_rs::dfir_syntax;
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
@@ -9,7 +9,7 @@ pub(crate) fn rga_minimal(
     input_recv: UnboundedReceiverStream<(Token, Timestamp)>,
     rga_send: UnboundedSender<(Token, Timestamp)>,
     _list_send: UnboundedSender<(Timestamp, Timestamp)>,
-) -> Hydroflow<'static> {
+) -> Dfir<'static> {
     dfir_syntax! {
         insertAfter = source_stream(input_recv);
 

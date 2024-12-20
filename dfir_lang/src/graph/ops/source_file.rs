@@ -15,7 +15,7 @@ use super::{
 ///
 /// Will panic if the file could not be read, or if the file contains bytes that are not valid UTF-8.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_file("Cargo.toml") -> for_each(|line| println!("{}", line));
 /// ```
 pub const SOURCE_FILE: OperatorConstraints = OperatorConstraints {

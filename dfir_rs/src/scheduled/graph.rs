@@ -1,4 +1,4 @@
-//! Module for the [`Hydroflow`] struct and helper items.
+//! Module for the [`Dfir`] struct and helper items.
 
 use std::any::Any;
 use std::borrow::Cow;
@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 #[cfg(feature = "meta")]
 use dfir_lang::diagnostic::{Diagnostic, SerdeSpan};
 #[cfg(feature = "meta")]
-use dfir_lang::graph::HydroflowGraph;
+use dfir_lang::graph::DfirGraph;
 use ref_cast::RefCast;
 use smallvec::SmallVec;
 use web_time::SystemTime;
@@ -25,9 +25,9 @@ use super::{HandoffId, SubgraphId};
 use crate::scheduled::ticks::{TickDuration, TickInstant};
 use crate::Never;
 
-/// A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
+/// A DFIR graph. Owns, schedules, and runs the compiled subgraphs.
 #[derive(Default)]
-pub struct Hydroflow<'a> {
+pub struct Dfir<'a> {
     pub(super) subgraphs: Vec<SubgraphData<'a>>,
     pub(super) context: Context,
 
@@ -35,7 +35,7 @@ pub struct Hydroflow<'a> {
 
     #[cfg(feature = "meta")]
     /// See [`Self::meta_graph()`].
-    meta_graph: Option<HydroflowGraph>,
+    meta_graph: Option<DfirGraph>,
 
     #[cfg(feature = "meta")]
     /// See [`Self::diagnostics()`].
@@ -43,7 +43,7 @@ pub struct Hydroflow<'a> {
 }
 
 /// Methods for [`TeeingHandoff`] teeing and dropping.
-impl Hydroflow<'_> {
+impl Dfir<'_> {
     /// Tees a [`TeeingHandoff`].
     pub fn teeing_handoff_tee<T>(
         &mut self,
@@ -128,7 +128,7 @@ impl Hydroflow<'_> {
     }
 }
 
-impl<'a> Hydroflow<'a> {
+impl<'a> Dfir<'a> {
     /// Create a new empty Hydroflow graph.
     pub fn new() -> Self {
         Default::default()
@@ -139,7 +139,7 @@ impl<'a> Hydroflow<'a> {
     pub fn __assign_meta_graph(&mut self, _meta_graph_json: &str) {
         #[cfg(feature = "meta")]
         {
-            let mut meta_graph: HydroflowGraph =
+            let mut meta_graph: DfirGraph =
                 serde_json::from_str(_meta_graph_json).expect("Failed to deserialize graph.");
 
             let mut op_inst_diagnostics = Vec::new();
@@ -169,7 +169,7 @@ impl<'a> Hydroflow<'a> {
     /// Return a handle to the meta `HydroflowGraph` if set. The `HydroflowGraph is a
     /// representation of all the operators, subgraphs, and handoffs in this `Hydroflow` instance.
     /// Will only be set if this graph was constructed using a surface syntax macro.
-    pub fn meta_graph(&self) -> Option<&HydroflowGraph> {
+    pub fn meta_graph(&self) -> Option<&DfirGraph> {
         self.meta_graph.as_ref()
     }
 
@@ -253,7 +253,7 @@ impl<'a> Hydroflow<'a> {
     /// Returns true if any work was done.
     #[tracing::instrument(level = "trace", skip(self), fields(tick = u64::from(self.context.current_tick), stratum = self.context.current_stratum), ret)]
     pub fn run_stratum(&mut self) -> bool {
-        // Make sure to spawn tasks once hydroflow is running!
+        // Make sure to spawn tasks once dfir is running!
         // This drains the task buffer, so becomes a no-op after first call.
         self.context.spawn_tasks();
 
@@ -776,7 +776,7 @@ impl<'a> Hydroflow<'a> {
     }
 }
 
-impl Hydroflow<'_> {
+impl Dfir<'_> {
     /// Alias for [`Context::request_task`].
     pub fn request_task<Fut>(&mut self, future: Fut)
     where
@@ -796,7 +796,7 @@ impl Hydroflow<'_> {
     }
 }
 
-impl Drop for Hydroflow<'_> {
+impl Drop for Dfir<'_> {
     fn drop(&mut self) {
         self.abort_tasks();
     }
@@ -804,7 +804,7 @@ impl Drop for Hydroflow<'_> {
 
 /// A handoff and its input and output [SubgraphId]s.
 ///
-/// Internal use: used to track the hydroflow graph structure.
+/// Internal use: used to track the dfir graph structure.
 ///
 /// TODO(mingwei): restructure `PortList` so this can be crate-private.
 #[doc(hidden)]
@@ -860,7 +860,7 @@ impl HandoffData {
 
 /// A subgraph along with its predecessor and successor [SubgraphId]s.
 ///
-/// Used internally by the [Hydroflow] struct to represent the dataflow graph
+/// Used internally by the [Dfir] struct to represent the dataflow graph
 /// structure and scheduled state.
 pub(super) struct SubgraphData<'a> {
     /// A friendly name for diagnostics.

@@ -15,7 +15,7 @@ use super::{
 /// lattices. You can (non-monotonically) "reveal" these as tuples if desired via [`map`](#map); see the examples below.
 ///
 /// You must specify the the accumulating lattice types, they cannot be inferred. The first type argument corresponds to the `[0]` input of the join, and the second to the `[1]` input.
-/// Type arguments are specified in hydroflow using the rust turbofish syntax `::<>`, for example `_lattice_join_fused_join::<Min<_>, Max<_>>()`
+/// Type arguments are specified in dfir using the rust turbofish syntax `::<>`, for example `_lattice_join_fused_join::<Min<_>, Max<_>>()`
 /// The accumulating lattice type is not necessarily the same type as the input, see the below example involving SetUnion for such a case.
 ///
 /// Like [`join`](#join), `_lattice_join_fused_join` can also be provided with one or two generic lifetime persistence arguments, either
@@ -31,7 +31,7 @@ use super::{
 /// It is important to specify all persistence arguments before any type arguments, otherwise the persistence arguments will be ignored.
 ///
 /// The syntax is as follows:
-/// ```hydroflow,ignore
+/// ```dfir,ignore
 /// _lattice_join_fused_join::<MaxRepr<usize>, MaxRepr<usize>>(); // Or
 /// _lattice_join_fused_join::<'static, MaxRepr<usize>, MaxRepr<usize>>();
 ///
@@ -45,7 +45,7 @@ use super::{
 ///
 /// ### Examples
 ///
-/// ```hydroflow
+/// ```dfir
 /// use dfir_rs::lattices::Min;
 /// use dfir_rs::lattices::Max;
 ///
@@ -60,7 +60,7 @@ use super::{
 ///     -> assert_eq([("key", (Min::new(1), Max::new(2)))]);
 /// ```
 ///
-/// ```hydroflow
+/// ```dfir
 /// use dfir_rs::lattices::set_union::SetUnionSingletonSet;
 /// use dfir_rs::lattices::set_union::SetUnionHashSet;
 ///

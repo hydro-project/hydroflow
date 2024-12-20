@@ -8,7 +8,7 @@ use super::{OperatorCategory, OperatorConstraints, WriteContextArgs, RANGE_1};
 /// Forms the cross-join (Cartesian product) of the items in the input streams, returning all
 /// tupled pairs.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec!["happy", "sad"]) -> [0]my_join;
 /// source_iter(vec!["dog", "cat"]) -> [1]my_join;
 /// my_join = cross_join() -> assert_eq([("happy", "dog"), ("sad", "dog"), ("happy", "cat"), ("sad", "cat")]);

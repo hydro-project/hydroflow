@@ -39,7 +39,7 @@ pub enum PortListSpec {
     Fixed(Punctuated<PortIndex, Token![,]>),
 }
 
-/// An instance of this struct represents a single hydroflow operator.
+/// An instance of this struct represents a single dfir operator.
 pub struct OperatorConstraints {
     /// Operator's name.
     pub name: &'static str,
@@ -337,13 +337,13 @@ pub fn find_op_op_constraints(operator: &Operator) -> Option<&'static OperatorCo
 /// Context arguments provided to [`OperatorConstraints::write_fn`].
 #[derive(Clone)]
 pub struct WriteContextArgs<'a> {
-    /// `hydroflow` crate name for `use #root::something`.
+    /// `dfir` crate name for `use #root::something`.
     pub root: &'a TokenStream,
     /// `context` ident, the name of the provided
     /// [`dfir_rs::scheduled::Context`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/context/struct.Context.html).
     pub context: &'a Ident,
     /// `df` ident, the name of the
-    /// [`dfir_rs::scheduled::graph::Hydroflow`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html)
+    /// [`dfir_rs::scheduled::graph::Dfir`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html)
     /// instance.
     pub hydroflow: &'a Ident,
     /// Subgraph ID in which this operator is contained.

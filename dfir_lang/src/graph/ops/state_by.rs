@@ -12,7 +12,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// of the same type as the inputs to the state_by operator and are not required to be a lattice
 /// type. This is useful receiving pass-through context information on the output side.
 ///
-/// ```hydroflow
+/// ```dfir
 /// use std::collections::HashSet;
 ///
 /// use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};

@@ -17,7 +17,7 @@ use super::{
 ///
 /// Note set semantics only for the `neg` input.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec!["dog", "cat", "elephant"]) -> [pos]diff;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
 /// diff = difference() -> assert_eq(["elephant"]);

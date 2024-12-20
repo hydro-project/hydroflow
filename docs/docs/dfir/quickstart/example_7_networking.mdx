@@ -2,8 +2,8 @@
 sidebar_position: 8
 ---
 import CodeBlock from '@theme/CodeBlock';
-import exampleCode from '!!raw-loader!../../../../hydroflow/examples/example_6_unreachability.rs';
-import exampleOutput from '!!raw-loader!../../../../hydroflow/tests/snapshots/surface_examples__example_6_unreachability.snap';
+import exampleCode from '!!raw-loader!../../../../dfir_rs/examples/example_6_unreachability.rs';
+import exampleOutput from '!!raw-loader!../../../../dfir_rs/tests/snapshots/surface_examples__example_6_unreachability.snap';
 import { getLines, extractOutput, extractMermaid } from '../../../src/util';
 
 # Networked Services
@@ -42,6 +42,6 @@ cases of these protocols can help you choose the right one for your networked se
 ## Additional Examples
 
 The Hydroflow examples directory contains additional examples that deal with networking. For example, the [Randomized
-Gossip Server](https://github.com/hydro-project/hydroflow/blob/main/hydroflow/examples/chat/randomized_gossiping_server.rs)
+Gossip Server](https://github.com/hydro-project/hydroflow/blob/main/dfir_rs/examples/chat/randomized_gossiping_server.rs)
 example extends the chat example to work with a cluster of redundant servers that use gossip for sharing chat-related
 state between themselves.

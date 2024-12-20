@@ -6,7 +6,7 @@ use proc_macro2::Span;
 use slotmap::{SecondaryMap, SparseSecondaryMap};
 use syn::parse_quote;
 
-use super::hydroflow_graph::HydroflowGraph;
+use super::hydroflow_graph::DfirGraph;
 use super::ops::{find_node_op_constraints, DelayType};
 use super::{graph_algorithms, Color, GraphEdgeId, GraphNode, GraphNodeId, GraphSubgraphId};
 use crate::diagnostic::{Diagnostic, Level};
@@ -23,7 +23,7 @@ impl BarrierCrossers {
     /// Iterate pairs of nodes that are across a barrier.
     fn iter_node_pairs<'a>(
         &'a self,
-        partitioned_graph: &'a HydroflowGraph,
+        partitioned_graph: &'a DfirGraph,
     ) -> impl 'a + Iterator<Item = ((GraphNodeId, GraphNodeId), DelayType)> {
         let edge_pairs_iter = self
             .edge_barrier_crossers
@@ -48,7 +48,7 @@ impl BarrierCrossers {
 }
 
 /// Find all the barrier crossers.
-fn find_barrier_crossers(partitioned_graph: &HydroflowGraph) -> BarrierCrossers {
+fn find_barrier_crossers(partitioned_graph: &DfirGraph) -> BarrierCrossers {
     let edge_barrier_crossers = partitioned_graph
         .edges()
         .filter_map(|(edge_id, (_src, dst))| {
@@ -75,7 +75,7 @@ fn find_barrier_crossers(partitioned_graph: &HydroflowGraph) -> BarrierCrossers 
 }
 
 fn find_subgraph_unionfind(
-    partitioned_graph: &HydroflowGraph,
+    partitioned_graph: &DfirGraph,
     barrier_crossers: &BarrierCrossers,
 ) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
     // Modality (color) of nodes, push or pull.
@@ -151,7 +151,7 @@ fn find_subgraph_unionfind(
 /// after handoffs have already been inserted to partition subgraphs.
 /// This list of nodes in each subgraph are returned in topological sort order.
 fn make_subgraph_collect(
-    partitioned_graph: &HydroflowGraph,
+    partitioned_graph: &DfirGraph,
     mut subgraph_unionfind: UnionFind<GraphNodeId>,
 ) -> SecondaryMap<GraphNodeId, Vec<GraphNodeId>> {
     // We want the nodes of each subgraph to be listed in topo-sort order.
@@ -187,7 +187,7 @@ fn make_subgraph_collect(
 /// Find subgraph and insert handoffs.
 /// Modifies barrier_crossers so that the edge OUT of an inserted handoff has
 /// the DelayType data.
-fn make_subgraphs(partitioned_graph: &mut HydroflowGraph, barrier_crossers: &mut BarrierCrossers) {
+fn make_subgraphs(partitioned_graph: &mut DfirGraph, barrier_crossers: &mut BarrierCrossers) {
     // Algorithm:
     // 1. Each node begins as its own subgraph.
     // 2. Collect edges. (Future optimization: sort so edges which should not be split across a handoff come first).
@@ -294,7 +294,7 @@ fn can_connect_colorize(
 ///
 /// Returns an error if there is a cycle thru negation.
 fn find_subgraph_strata(
-    partitioned_graph: &mut HydroflowGraph,
+    partitioned_graph: &mut DfirGraph,
     barrier_crossers: &BarrierCrossers,
 ) -> Result<(), Diagnostic> {
     // Determine subgraphs's stratum number.
@@ -466,7 +466,7 @@ fn find_subgraph_strata(
 
 /// Put `is_external_input: true` operators in separate stratum 0 subgraphs if they are not in stratum 0.
 /// By ripping them out of their subgraph/stratum if they're not already in statum 0.
-fn separate_external_inputs(partitioned_graph: &mut HydroflowGraph) {
+fn separate_external_inputs(partitioned_graph: &mut DfirGraph) {
     let external_input_nodes: Vec<_> = partitioned_graph
         .nodes()
         // Ensure node is an operator (not a handoff), get constraints spec.
@@ -510,10 +510,10 @@ fn separate_external_inputs(partitioned_graph: &mut HydroflowGraph) {
     }
 }
 
-/// Main method for this module. Partions a flat [`HydroflowGraph`] into one with subgraphs.
+/// Main method for this module. Partions a flat [`DfirGraph`] into one with subgraphs.
 ///
 /// Returns an error if a negative cycle exists in the graph. Negative cycles prevent partioning.
-pub fn partition_graph(flat_graph: HydroflowGraph) -> Result<HydroflowGraph, Diagnostic> {
+pub fn partition_graph(flat_graph: DfirGraph) -> Result<DfirGraph, Diagnostic> {
     // Pre-find barrier crossers (input edges with a `DelayType`).
     let mut barrier_crossers = find_barrier_crossers(&flat_graph);
     let mut partitioned_graph = flat_graph;

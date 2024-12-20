@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use dfir_rs::util::collect_ready;
 use dfir_rs::{assert_graphvis_snapshots, dfir_syntax};
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
@@ -10,7 +10,7 @@ use tokio_stream::wrappers::UnboundedReceiverStream;
 
 /// Check that the following tests all behave the same.
 fn check_cartesian_product_multi_tick(
-    mut df: Hydroflow,
+    mut df: Dfir,
     lhs_send: UnboundedSender<u32>,
     rhs_send: UnboundedSender<u32>,
     mut out_recv: UnboundedReceiverStream<SetUnionHashSet<(u32, u32)>>,

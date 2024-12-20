@@ -11,7 +11,7 @@ use super::{
 /// Takes the input stream of pairs and unzips each one, delivers each item to
 /// its corresponding side.
 ///
-/// ```hydroflow
+/// ```dfir
 /// my_unzip = source_iter(vec![("Hello", "Foo"), ("World", "Bar")]) -> unzip();
 /// my_unzip[0] -> assert_eq(["Hello", "World"]);
 /// my_unzip[1] -> assert_eq(["Foo", "Bar"]);

@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use dfir_rs::bytes::{Bytes, BytesMut};
 use dfir_rs::dfir_syntax;
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use dfir_rs::util::deploy::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged,
 };
@@ -42,7 +42,7 @@ fn run_topolotree(
     increment_requests: impl Stream<Item = Result<BytesMut, io::Error>> + Unpin + 'static,
     output_send: tokio::sync::mpsc::UnboundedSender<(u32, Bytes)>,
     query_send: tokio::sync::mpsc::UnboundedSender<Bytes>,
-) -> Hydroflow<'static> {
+) -> Dfir<'static> {
     fn merge(x: &mut i64, y: i64) {
         *x += y;
     }

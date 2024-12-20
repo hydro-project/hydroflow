@@ -13,7 +13,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// per-tick. Excess items are returned as `EitherOrBoth::Left(V1)` or `EitherOrBoth::Right(V2)`.
 /// If you intead want to discard the excess, use [`zip`](#zip) instead.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(0..2) -> [0]my_zip_longest;
 /// source_iter(0..3) -> [1]my_zip_longest;
 /// my_zip_longest = zip_longest()

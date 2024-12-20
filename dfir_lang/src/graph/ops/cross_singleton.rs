@@ -19,7 +19,7 @@ use crate::graph::PortIndexValue;
 /// There are two inputs to `cross_singleton`, they are `input` and `single`.
 /// `input` is the input data flow, and `single` is the singleton input.
 ///
-/// ```hydroflow
+/// ```dfir
 /// join = cross_singleton();
 ///
 /// source_iter([1, 2, 3]) -> [input]join;

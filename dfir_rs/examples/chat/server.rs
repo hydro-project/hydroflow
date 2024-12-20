@@ -1,5 +1,5 @@
 use dfir_rs::dfir_syntax;
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use dfir_rs::util::bind_udp_bytes;
 
 use crate::protocol::{Message, MessageWithAddr};
@@ -18,7 +18,7 @@ pub(crate) async fn run_server(opts: Opts) {
 
     println!("Server is live! Listening on {:?}", actual_server_addr);
 
-    let mut hf: Hydroflow = dfir_syntax! {
+    let mut hf: Dfir = dfir_syntax! {
         // Define shared inbound and outbound channels
         outbound_chan = union() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound)

@@ -9,7 +9,7 @@ use super::{
 ///
 /// If the predicate returns false for any input item then the operator will panic at runtime.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter([1, 2, 3])
 ///     -> assert(|x| *x > 0)
 ///     -> assert_eq([1, 2, 3]);

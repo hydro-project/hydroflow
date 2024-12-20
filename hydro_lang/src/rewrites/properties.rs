@@ -20,7 +20,7 @@ pub struct PropertyDatabase {
     commutative: HashSet<syn::Expr>,
 }
 
-/// Allows us to convert the hydroflow datatype for folds to a binary operation for the algebra
+/// Allows us to convert the dfir datatype for folds to a binary operation for the algebra
 /// property tests.
 #[allow(clippy::allow_attributes, dead_code, reason = "staged programming")]
 fn convert_hf_to_binary<I, A: Default, F: Fn(&mut A, I)>(f: F) -> impl Fn(I, I) -> A {

@@ -19,7 +19,7 @@ use super::{
 /// `.extract()`, see the [relevant pyo3 docs here](https://pyo3.rs/latest/conversions/traits#extract-and-the-frompyobject-trait)
 /// or the examples below.
 ///
-/// ```hydroflow
+/// ```dfir
 /// use pyo3::prelude::*;
 ///
 /// source_iter(0..10)
@@ -37,7 +37,7 @@ use super::{
 ///     -> assert_eq([0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
 /// ```
 ///
-/// ```hydroflow
+/// ```dfir
 /// use pyo3::prelude::*;
 ///
 /// source_iter([(5,1)])

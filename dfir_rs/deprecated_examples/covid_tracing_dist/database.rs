@@ -5,7 +5,7 @@ use std::time::Duration;
 use dfir_rs::compiled::pull::SymmetricHashJoin;
 use dfir_rs::lang::collections::Iter;
 use dfir_rs::pusherator::{IteratorToPusherator, PusheratorBuild};
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use dfir_rs::scheduled::graph_ext::GraphExt;
 use dfir_rs::scheduled::handoff::VecHandoff;
 use dfir_rs::scheduled::net::Message;

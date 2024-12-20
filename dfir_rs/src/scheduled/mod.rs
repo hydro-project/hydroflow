@@ -1,6 +1,6 @@
 //! Hydroflow's outer scheduled layer. Deals with inter-subgraph runtime data-passing and scheduling.
 //!
-//! The most important item is the [`Hydroflow`](graph::Hydroflow) struct. Most of the items in this
+//! The most important item is the [`Hydroflow`](graph::Dfir) struct. Most of the items in this
 //! module are supporting the implementation of the `Hydroflow` struct and its operation.
 
 use std::fmt::{Display, Formatter, Result};
@@ -21,7 +21,7 @@ pub(crate) mod subgraph;
 
 pub mod ticks;
 
-/// A subgraph's ID. Invalid if used in a different [`graph::Hydroflow`]
+/// A subgraph's ID. Invalid if used in a different [`graph::Dfir`]
 /// instance than the original that created it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[repr(transparent)]
@@ -32,7 +32,7 @@ impl Display for SubgraphId {
     }
 }
 
-/// A handoff's ID. Invalid if used in a different [`graph::Hydroflow`]
+/// A handoff's ID. Invalid if used in a different [`graph::Dfir`]
 /// instance than the original that created it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[repr(transparent)]
@@ -43,7 +43,7 @@ impl Display for HandoffId {
     }
 }
 
-/// A staten handle's ID. Invalid if used in a different [`graph::Hydroflow`]
+/// A staten handle's ID. Invalid if used in a different [`graph::Dfir`]
 /// instance than the original that created it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]

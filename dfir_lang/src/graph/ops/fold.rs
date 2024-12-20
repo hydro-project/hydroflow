@@ -25,7 +25,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// will be aggregated with items arriving in later ticks. When not explicitly specified
 /// persistence defaults to `'tick`.
 ///
-/// ```hydroflow
+/// ```dfir
 /// // should print `Reassembled vector [1,2,3,4,5]`
 /// source_iter([1,2,3,4,5])
 ///     -> fold::<'tick>(Vec::new, |accum: &mut Vec<_>, elem| {

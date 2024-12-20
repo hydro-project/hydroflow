@@ -27,7 +27,7 @@ use crate::pretty_span::PrettySpan;
 ///
 /// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
-/// ```hydroflow
+/// ```dfir
 /// my_demux = source_iter(1..=100) -> demux(|v, var_args!(fzbz, fizz, buzz, rest)|
 ///     match (v % 3, v % 5) {
 ///         (0, 0) => fzbz.give(v),

@@ -106,7 +106,7 @@ fn generate_op_docs() -> Result<()> {
                         in_hf_doctest = false;
                         writeln!(docgen_write, "{}", DOCTEST_HYDROFLOW_SUFFIX)?;
                         // Output `doc_str` below.
-                    } else if doc_str.trim() == "```hydroflow" {
+                    } else if doc_str.trim() == "```dfir" {
                         in_hf_doctest = true;
 
                         writeln!(docgen_write, "```rust")?;

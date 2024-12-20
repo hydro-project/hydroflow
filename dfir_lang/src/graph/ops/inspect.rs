@@ -14,7 +14,7 @@ use super::{
 ///
 /// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter([1, 2, 3, 4])
 ///     -> inspect(|x| println!("{}", x))
 ///     -> assert_eq([1, 2, 3, 4]);

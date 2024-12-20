@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
-use dfir_lang::graph::{partition_graph, HydroflowGraph};
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_lang::graph::{partition_graph, DfirGraph};
+use dfir_rs::scheduled::graph::Dfir;
 use proc_macro2::TokenStream;
 use quote::quote;
 use stageleft::runtime_support::FreeVariableWithContext;
@@ -11,17 +11,17 @@ use stageleft::QuotedWithContext;
 use crate::staging_util::Invariant;
 
 pub struct CompiledFlow<'a, ID> {
-    pub(super) hydroflow_ir: BTreeMap<usize, HydroflowGraph>,
+    pub(super) hydroflow_ir: BTreeMap<usize, DfirGraph>,
     pub(super) extra_stmts: BTreeMap<usize, Vec<syn::Stmt>>,
     pub(super) _phantom: Invariant<'a, ID>,
 }
 
 impl<ID> CompiledFlow<'_, ID> {
-    pub fn hydroflow_ir(&self) -> &BTreeMap<usize, HydroflowGraph> {
+    pub fn hydroflow_ir(&self) -> &BTreeMap<usize, DfirGraph> {
         &self.hydroflow_ir
     }
 
-    pub fn take_ir(self) -> BTreeMap<usize, HydroflowGraph> {
+    pub fn take_ir(self) -> BTreeMap<usize, DfirGraph> {
         self.hydroflow_ir
     }
 }
@@ -85,10 +85,10 @@ impl<'a> CompiledFlow<'a, usize> {
     }
 }
 
-impl<'a, Ctx> QuotedWithContext<'a, Hydroflow<'a>, Ctx> for CompiledFlow<'a, ()> {}
+impl<'a, Ctx> QuotedWithContext<'a, Dfir<'a>, Ctx> for CompiledFlow<'a, ()> {}
 
 impl<'a, Ctx> FreeVariableWithContext<Ctx> for CompiledFlow<'a, ()> {
-    type O = Hydroflow<'a>;
+    type O = Dfir<'a>;
 
     fn to_tokens(mut self, _ctx: &Ctx) -> (Option<TokenStream>, Option<TokenStream>) {
         let hydroflow_crate = proc_macro_crate::crate_name("hydro_lang")
@@ -121,10 +121,10 @@ pub struct CompiledFlowWithId<'a> {
     _phantom: Invariant<'a>,
 }
 
-impl<'a, Ctx> QuotedWithContext<'a, Hydroflow<'a>, Ctx> for CompiledFlowWithId<'a> {}
+impl<'a, Ctx> QuotedWithContext<'a, Dfir<'a>, Ctx> for CompiledFlowWithId<'a> {}
 
 impl<'a, Ctx> FreeVariableWithContext<Ctx> for CompiledFlowWithId<'a> {
-    type O = Hydroflow<'a>;
+    type O = Dfir<'a>;
 
     fn to_tokens(self, _ctx: &Ctx) -> (Option<TokenStream>, Option<TokenStream>) {
         (None, Some(self.tokens))

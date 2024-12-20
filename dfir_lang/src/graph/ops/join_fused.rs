@@ -16,7 +16,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// `Fold`: if the input type is different from the accumulator type, and the accumulator type has a sensible default value, and
 /// `FoldFrom`: if the input type is different from the accumulator type, and the accumulator needs to be derived from the first input value.
 /// Examples of all three configuration options are below:
-/// ```hydroflow,ignore
+/// ```dfir,ignore
 /// // Left hand side input will use fold, right hand side input will use reduce,
 /// join_fused(Fold(|| "default value", |x, y| *x += y), Reduce(|x, y| *x -= y))
 ///
@@ -25,11 +25,11 @@ use crate::diagnostic::{Diagnostic, Level};
 /// ```
 /// The three currently supported fused operator types are `Fold(Fn() -> A, Fn(A, T) -> A)`, `Reduce(Fn(A, A) -> A)`, and `FoldFrom(Fn(T) -> A, Fn(A, T) -> A)`
 ///
-/// `join_fused` first performs a fold_keyed/reduce_keyed operation on each input stream before performing joining. See `join()`. There is currently no equivalent for `FoldFrom` in hydroflow operators.
+/// `join_fused` first performs a fold_keyed/reduce_keyed operation on each input stream before performing joining. See `join()`. There is currently no equivalent for `FoldFrom` in dfir operators.
 ///
-/// For example, the following two hydroflow programs are equivalent, the former would optimize into the latter:
+/// For example, the following two dfir programs are equivalent, the former would optimize into the latter:
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec![("key", 0), ("key", 1), ("key", 2)])
 ///     -> reduce_keyed(|x: &mut _, y| *x += y)
 ///     -> [0]my_join;
@@ -40,7 +40,7 @@ use crate::diagnostic::{Diagnostic, Level};
 ///     -> assert_eq([("key", (3, 6))]);
 /// ```
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec![("key", 0), ("key", 1), ("key", 2)])
 ///     -> [0]my_join;
 /// source_iter(vec![("key", 2), ("key", 3)])
@@ -51,7 +51,7 @@ use crate::diagnostic::{Diagnostic, Level};
 ///
 /// Here is an example of using FoldFrom to derive the accumulator from the first value:
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec![("key", 0), ("key", 1), ("key", 2)])
 ///     -> [0]my_join;
 /// source_iter(vec![("key", 2), ("key", 3)])
@@ -69,7 +69,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// This means that it behaves identically to if `persist::<'static>()` were placed before the inputs and the persistence of
 /// for example, the two following examples have identical behavior:
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec![("key", 0), ("key", 1), ("key", 2)]) -> persist::<'static>() -> [0]my_join;
 /// source_iter(vec![("key", 2)]) -> my_union;
 /// source_iter(vec![("key", 3)]) -> defer_tick() -> my_union;
@@ -79,7 +79,7 @@ use crate::diagnostic::{Diagnostic, Level};
 ///     -> assert_eq([("key", (3, 2)), ("key", (3, 6))]);
 /// ```
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec![("key", 0), ("key", 1), ("key", 2)]) -> [0]my_join;
 /// source_iter(vec![("key", 2)]) -> my_union;
 /// source_iter(vec![("key", 3)]) -> defer_tick() -> my_union;

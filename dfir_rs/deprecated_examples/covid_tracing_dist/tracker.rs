@@ -4,7 +4,7 @@ use dfir_rs::compiled::pull::SymmetricHashJoin;
 use dfir_rs::lang::collections::Iter;
 use dfir_rs::pusherator::{InputBuild, IteratorToPusherator, PusheratorBuild};
 use dfir_rs::scheduled::graph_ext::GraphExt;
-use dfir_rs::scheduled::{graph::Hydroflow, handoff::VecHandoff, net::Message};
+use dfir_rs::scheduled::{graph::Dfir, handoff::VecHandoff, net::Message};
 use dfir_rs::var_expr;
 use dfir_rs::tokio::net::TcpStream;
 

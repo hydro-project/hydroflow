@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use dfir_lang::graph::{partition_graph, HydroflowGraph};
+use dfir_lang::graph::{partition_graph, DfirGraph};
 use sha2::{Digest, Sha256};
 use stageleft::internal::quote;
 use syn::visit_mut::VisitMut;
@@ -30,7 +30,7 @@ fn clean_name_hint(name_hint: &str) -> String {
 }
 
 pub fn create_graph_trybuild(
-    graph: HydroflowGraph,
+    graph: DfirGraph,
     extra_stmts: Vec<syn::Stmt>,
     name_hint: &Option<String>,
 ) -> (String, (PathBuf, PathBuf, Option<Vec<String>>)) {
@@ -88,7 +88,7 @@ pub fn create_graph_trybuild(
     (bin_name, trybuild_created)
 }
 
-pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>) -> syn::File {
+pub fn compile_graph_trybuild(graph: DfirGraph, extra_stmts: Vec<syn::Stmt>) -> syn::File {
     let partitioned_graph = partition_graph(graph).expect("Failed to partition (cycle detected).");
 
     let mut diagnostics = Vec::new();
@@ -104,7 +104,7 @@ pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>
         use hydro_lang::*;
 
         #[allow(unused)]
-        fn __hydro_runtime<'a>(__hydro_lang_trybuild_cli: &'a hydro_lang::dfir_rs::util::deploy::DeployPorts<hydro_lang::deploy_runtime::HydroflowPlusMeta>) -> hydro_lang::dfir_rs::scheduled::graph::Hydroflow<'a> {
+        fn __hydro_runtime<'a>(__hydro_lang_trybuild_cli: &'a hydro_lang::dfir_rs::util::deploy::DeployPorts<hydro_lang::deploy_runtime::HydroflowPlusMeta>) -> hydro_lang::dfir_rs::scheduled::graph::Dfir<'a> {
             #(#extra_stmts)*
             #tokens
         }

@@ -83,7 +83,7 @@ pub fn run_server<RX>(
             let outbound_networking_task = localset.run_until({
                 let lookup = topology.lookup.clone();
 
-                // TODO: Eventually this would get moved into a hydroflow operator that would return a Bytes struct and be efficient and zero copy and etc.
+                // TODO: Eventually this would get moved into a dfir operator that would return a Bytes struct and be efficient and zero copy and etc.
                 async move {
                     loop {
                         while let Some((serialized_req, node_id)) = transducer_to_peers_rx.next().await {

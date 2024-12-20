@@ -13,7 +13,7 @@ use super::{
 /// duplicates eliminated from the inputs, use the [`join`](#join) operator.
 ///
 /// For example:
-/// ```hydroflow
+/// ```dfir
 /// lhs = source_iter([("a", 0), ("a", 0)]) -> tee();
 /// rhs = source_iter([("a", "hydro")]) -> tee();
 ///

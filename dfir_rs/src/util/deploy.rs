@@ -6,7 +6,7 @@ use std::collections::HashMap;
 pub use hydroflow_deploy_integration::*;
 use serde::de::DeserializeOwned;
 
-use crate::scheduled::graph::Hydroflow;
+use crate::scheduled::graph::Dfir;
 
 #[macro_export]
 macro_rules! launch {
@@ -24,7 +24,7 @@ macro_rules! launch {
 
 pub use crate::launch;
 
-pub async fn launch_flow(mut flow: Hydroflow<'_>) {
+pub async fn launch_flow(mut flow: Dfir<'_>) {
     let stop = tokio::sync::oneshot::channel();
     tokio::task::spawn_blocking(|| {
         let mut line = String::new();

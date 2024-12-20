@@ -4,9 +4,9 @@ use std::fmt::Write;
 use std::io::Result;
 
 use super::hydroflow_graph::WriteConfig;
-use super::{HydroflowGraph, WriteGraphType};
+use super::{DfirGraph, WriteGraphType};
 
-impl HydroflowGraph {
+impl DfirGraph {
     /// Opens this as a mermaid graph in the [mermaid.live](https://mermaid.live) browser editor.
     pub fn open_mermaid(&self, write_config: &WriteConfig) -> Result<()> {
         let mermaid_src = self.to_mermaid(write_config);

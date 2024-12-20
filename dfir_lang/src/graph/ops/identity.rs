@@ -6,7 +6,7 @@ use super::{
 ///
 /// For each item passed in, pass it out without any change.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec!["hello", "world"])
 ///     -> identity()
 ///     -> assert_eq(["hello", "world"]);
@@ -15,7 +15,7 @@ use super::{
 /// You can also supply a type parameter `identity::<MyType>()` to specify what items flow through the
 /// the pipeline. This can be useful for helping the compiler infer types.
 ///
-/// ```hydroflow
+/// ```dfir
 /// // Use type parameter to ensure items are `i32`s.
 /// source_iter(0..10)
 ///     -> identity::<i32>()

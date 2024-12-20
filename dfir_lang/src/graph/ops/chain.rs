@@ -11,7 +11,7 @@ use super::{
 /// Since `chain` has multiple input streams, it needs to be assigned to
 /// a variable to reference its multiple input ports across statements.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec!["hello", "world"]) -> [0]my_chain;
 /// source_iter(vec!["stay", "gold"]) -> [1]my_chain;
 /// my_chain = chain()

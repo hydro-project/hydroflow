@@ -16,7 +16,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// This means that `join_fused_lhs` only takes one argument input, which is the reducing/folding operation for the left hand side only.
 ///
 /// For example:
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec![("key", 0), ("key", 1), ("key", 2)]) -> [0]my_join;
 /// source_iter(vec![("key", 2), ("key", 3)]) -> [1]my_join;
 /// my_join = join_fused_lhs(Reduce(|x, y| *x += y))

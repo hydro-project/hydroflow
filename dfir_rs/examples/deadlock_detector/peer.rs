@@ -2,7 +2,7 @@ use std::convert::identity;
 use std::net::SocketAddr;
 
 use dfir_rs::dfir_syntax;
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use tokio::io::AsyncBufReadExt;
 use tokio::net::UdpSocket;
 use tokio_stream::wrappers::LinesStream;
@@ -21,7 +21,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
     let stdin_lines = LinesStream::new(reader.lines());
 
     #[expect(clippy::map_identity, reason = "helps type inference?")]
-    let mut hf: Hydroflow = dfir_syntax! {
+    let mut hf: Dfir = dfir_syntax! {
         // fetch peers from file, convert ip:port to a SocketAddr, and tee
         peers = source_iter(peer_list)
             -> map(|s| s.parse::<SocketAddr>().unwrap())

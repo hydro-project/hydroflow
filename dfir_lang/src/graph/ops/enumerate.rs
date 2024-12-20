@@ -15,7 +15,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// restart at zero at the start of each tick. Otherwise `'static` will never reset
 /// and count monotonically upwards.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec!["hello", "world"])
 ///     -> enumerate()
 ///     -> assert_eq([(0, "hello"), (1, "world")]);

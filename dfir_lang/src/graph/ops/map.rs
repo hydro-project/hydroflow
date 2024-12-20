@@ -16,7 +16,7 @@ use super::{
 ///
 /// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec!["hello", "world"]) -> map(|x| x.to_uppercase())
 ///     -> assert_eq(["HELLO", "WORLD"]);
 /// ```
@@ -51,7 +51,7 @@ pub const MAP: OperatorConstraints = OperatorConstraints {
         let write_iterator = if is_pull {
             let input = &inputs[0];
             quote_spanned! {op_span=>
-                #[allow(clippy::map_clone, reason = "hydroflow has no explicit `cloned`/`copied` operator")]
+                #[allow(clippy::map_clone, reason = "dfir has no explicit `cloned`/`copied` operator")]
                 let #ident = #input.map(#func);
             }
         } else {

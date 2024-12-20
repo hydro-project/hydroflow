@@ -9,14 +9,14 @@ use super::context::Context;
 use super::graph_ext::GraphExt;
 use super::handoff::Iter;
 use super::port::{RecvPort, SendCtx};
-use crate::scheduled::graph::Hydroflow;
+use crate::scheduled::graph::Dfir;
 use crate::scheduled::handoff::VecHandoff;
 
 const QUERY_EDGE_NAME: Cow<'static, str> = Cow::Borrowed("query handoff");
 
 #[derive(Default)]
 pub struct Query<'a> {
-    df: Rc<RefCell<Hydroflow<'a>>>,
+    df: Rc<RefCell<Dfir<'a>>>,
 }
 
 impl<'a> Query<'a> {
@@ -73,7 +73,7 @@ pub struct Operator<'a, T>
 where
     T: 'static,
 {
-    df: Rc<RefCell<Hydroflow<'a>>>,
+    df: Rc<RefCell<Dfir<'a>>>,
     recv_port: RecvPort<VecHandoff<T>>,
 }
 

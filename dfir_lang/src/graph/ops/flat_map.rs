@@ -14,7 +14,7 @@ use super::{
 ///
 /// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
-/// ```hydroflow
+/// ```dfir
 /// // should print out each character of each word on a separate line
 /// source_iter(vec!["hello", "world"])
 ///     -> flat_map(|x| x.chars())

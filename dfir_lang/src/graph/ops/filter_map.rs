@@ -11,7 +11,7 @@ use super::{
 ///
 /// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec!["1", "hello", "world", "2"])
 ///     -> filter_map(|s| s.parse::<usize>().ok())
 ///     -> assert_eq([1, 2]);

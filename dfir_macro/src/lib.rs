@@ -66,7 +66,7 @@ fn dfir_syntax_internal(
     let (graph_code_opt, diagnostics) = build_hfcode(input, &root);
     let tokens = graph_code_opt
         .map(|(_graph, code)| code)
-        .unwrap_or_else(|| quote! { #root::scheduled::graph::Hydroflow::new() });
+        .unwrap_or_else(|| quote! { #root::scheduled::graph::Dfir::new() });
 
     let diagnostics = diagnostics
         .iter()

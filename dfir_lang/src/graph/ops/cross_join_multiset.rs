@@ -8,7 +8,7 @@ use super::{OperatorCategory, OperatorConstraints, WriteContextArgs, RANGE_1};
 /// Forms the multiset cross-join (Cartesian product) of the (possibly duplicated) items in the input streams, returning all
 /// tupled pairs regardless of duplicates.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec!["happy", "happy", "sad"]) -> [0]my_join;
 /// source_iter(vec!["dog", "cat", "cat"]) -> [1]my_join;
 /// my_join = cross_join_multiset() -> sort() -> assert_eq([

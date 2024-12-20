@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use bytes::Bytes;
 use dfir_rs::dfir_syntax;
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use futures::stream::SplitSink;
 use tokio_util::codec::LengthDelimitedCodec;
 use tokio_util::udp::UdpFramed;
@@ -14,7 +14,7 @@ pub(crate) async fn orig_flow(
     shopping: impl Iterator<Item = (usize, LineItem)> + 'static,
     out_addr: SocketAddr,
     out: SplitSink<UdpFramed<LengthDelimitedCodec>, (Bytes, SocketAddr)>,
-) -> Hydroflow<'static> {
+) -> Dfir<'static> {
     let client_class = client_class_iter();
 
     // This is the straightforward single-transducer sequential case.

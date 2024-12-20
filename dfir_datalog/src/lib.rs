@@ -38,7 +38,7 @@ pub fn datalog(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
             proc_macro::TokenStream::from(quote! {
                 {
                     #diagnostic_tokens
-                    dfir_rs::scheduled::graph::Hydroflow::new()
+                    dfir_rs::scheduled::graph::Dfir::new()
                 }
             })
         }

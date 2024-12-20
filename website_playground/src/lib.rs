@@ -8,7 +8,7 @@ use dfir_datalog_core::gen_hydroflow_graph;
 use dfir_lang::diagnostic::{Diagnostic, Level};
 use dfir_lang::graph::{build_hfcode, partition_graph, WriteConfig};
 use dfir_rs::datalog;
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use proc_macro2::{LineColumn, Span};
 use quote::quote;
 use serde::{Deserialize, Serialize};
@@ -226,7 +226,7 @@ pub fn compile_datalog(
 }
 
 struct HydroflowInstance<'a, In, Out> {
-    dfir: Hydroflow<'a>,
+    dfir: Dfir<'a>,
     input: tokio::sync::mpsc::UnboundedSender<In>,
     output: tokio::sync::mpsc::UnboundedReceiver<Out>,
 }

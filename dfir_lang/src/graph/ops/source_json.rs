@@ -12,7 +12,7 @@ use super::{
 ///
 /// `source_json` may take one generic type argument, the type of the value to be parsed, which must implement [`Deserialize`](https://docs.rs/serde/latest/serde/de/trait.Deserialize.html).
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_json("example.json") -> for_each(|json: dfir_rs::serde_json::Value| println!("{:#?}", json));
 /// ```
 pub const SOURCE_JSON: OperatorConstraints = OperatorConstraints {

@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use dfir_rs::dfir_syntax;
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use dfir_rs::scheduled::graph_ext::GraphExt;
 use dfir_rs::scheduled::handoff::{Iter, VecHandoff};
 use dfir_rs::scheduled::query::Query as Q;
@@ -13,7 +13,7 @@ const BRANCH_FACTOR: usize = 2;
 fn benchmark_hydroflow(c: &mut Criterion) {
     c.bench_function("fork_join/dfir_rs", |b| {
         b.iter(|| {
-            let mut df = Hydroflow::new();
+            let mut df = Dfir::new();
 
             let (start_send, start_recv) = df.make_edge::<_, VecHandoff<usize>>("start");
 

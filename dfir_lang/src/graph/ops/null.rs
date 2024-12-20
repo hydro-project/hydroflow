@@ -4,7 +4,7 @@ use super::{OperatorCategory, OperatorConstraints, NULL_WRITE_FN, RANGE_0};
 ///
 /// As a source, generates nothing. As a sink, absorbs anything with no effect.
 ///
-/// ```hydroflow
+/// ```dfir
 /// // should print `1, 2, 3, 4, 5, 6, a, b, c` across 9 lines
 /// null() -> for_each(|_: ()| panic!());
 /// source_iter([1,2,3]) -> map(|i| println!("{}", i)) -> null();

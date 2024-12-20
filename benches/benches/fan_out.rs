@@ -68,7 +68,7 @@ fn benchmark_hydroflow_surface(c: &mut Criterion) {
 }
 
 // fn benchmark_hydroflow_teer(c: &mut Criterion) {
-//     c.bench_function("fan_out/hydroflow/teer", |b| {
+//     c.bench_function("fan_out/dfir/teer", |b| {
 //         b.iter(|| {
 //             let mut df = Hydroflow::new();
 //             let output = df.add_source(|send: &SendCtx<TeeingHandoff<_>>| {

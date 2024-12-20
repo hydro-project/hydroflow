@@ -13,7 +13,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// per-tick. Excess items from one input or the other will be discarded. If you do not want to
 /// discard the excess, use [`zip_longest`](#zip_longest) instead.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(0..3) -> [0]my_zip;
 /// source_iter(0..5) -> [1]my_zip;
 /// my_zip = zip() -> assert_eq([(0, 0), (1, 1), (2, 2)]);

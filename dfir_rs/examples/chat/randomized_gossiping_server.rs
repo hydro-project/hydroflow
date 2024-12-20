@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use chrono::{DateTime, Utc};
 use dfir_macro::dfir_syntax;
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use dfir_rs::util::{bind_udp_bytes, ipv4_resolve};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -90,7 +90,7 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
         "Server is live! Listening on {:?}. Gossiping On: {:?}",
         actual_server_addr, gossip_listening_addr
     );
-    let mut hf: Hydroflow = dfir_syntax! {
+    let mut hf: Dfir = dfir_syntax! {
         // Define shared inbound and outbound channels
         client_out = union() -> dest_sink_serde(client_outbound);
         client_in = source_stream_serde(client_inbound)

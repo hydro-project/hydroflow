@@ -20,7 +20,7 @@ use super::{
 /// `lattice_reduce` is differentiated from `lattice_fold` in that `lattice_reduce` does not require the accumulating type to have a sensible default value.
 /// But it also means that the accumulating function inputs and the accumulating type must be the same.
 ///
-/// ```hydroflow
+/// ```dfir
 /// use dfir_rs::lattices::Max;
 ///
 /// source_iter([1, 2, 3, 4, 5])

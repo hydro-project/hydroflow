@@ -9,7 +9,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// Takes one stream as input and filters out any duplicate occurrences. The output
 /// contains all unique values from the input.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec![1, 1, 2, 3, 2, 1, 3])
 ///     -> unique()
 ///     -> assert_eq([1, 2, 3]);

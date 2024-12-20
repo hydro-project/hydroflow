@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use dfir_rs::scheduled::graph_ext::GraphExt;
 use dfir_rs::scheduled::handoff::{Iter, VecHandoff};
 use multiplatform_test::multiplatform_test;
@@ -92,7 +92,7 @@ const BATCH_C: &[Employee] = &[
 /// SQL: SELECT department FROM employees WHERE 20_000 <= SUM(salary) GROUP BY department
 #[multiplatform_test]
 fn fold_keyed_monotonic_core() {
-    let mut hf = Hydroflow::new();
+    let mut hf = Dfir::new();
 
     let (source_send, source_recv) = hf.make_edge::<_, VecHandoff<Employee>>("source handoff");
     let input = hf.add_input("source", source_send);

@@ -2,7 +2,7 @@ use dfir_rs::futures::stream::Stream;
 use dfir_rs::tokio::sync::mpsc::UnboundedSender;
 use dfir_rs::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydro_lang::deploy::MultiGraph;
-use hydro_lang::dfir_rs::scheduled::graph::Hydroflow;
+use hydro_lang::dfir_rs::scheduled::graph::Dfir;
 use hydro_lang::*;
 use stageleft::{Quoted, RuntimeData};
 
@@ -16,7 +16,7 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
     output: RuntimeData<&'a UnboundedSender<u32>>,
     send_twice: bool,
     subgraph_id: RuntimeData<usize>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
+) -> impl Quoted<'a, Dfir<'a>> {
     let node_zero = flow.process::<N0>();
     let node_one = flow.process::<N1>();
     let n0_tick = node_zero.tick();

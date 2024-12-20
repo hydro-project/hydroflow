@@ -6,7 +6,7 @@ use std::pin::Pin;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use dfir_lang::graph::HydroflowGraph;
+use dfir_lang::graph::DfirGraph;
 use dfir_rs::bytes::Bytes;
 use dfir_rs::futures::{Sink, SinkExt, Stream, StreamExt};
 use dfir_rs::util::deploy::{ConnectedSink, ConnectedSource};
@@ -596,7 +596,7 @@ impl Node for DeployExternal {
         &self,
         env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
-        _graph: HydroflowGraph,
+        _graph: DfirGraph,
         _extra_stmts: Vec<syn::Stmt>,
     ) {
         let service = env.CustomService(self.host.clone(), vec![]);
@@ -675,7 +675,7 @@ impl Node for DeployNode {
         &self,
         env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
-        graph: HydroflowGraph,
+        graph: DfirGraph,
         extra_stmts: Vec<syn::Stmt>,
     ) {
         let service = match self.service_spec.borrow_mut().take().unwrap() {
@@ -733,7 +733,7 @@ impl Node for DeployCluster {
         &self,
         env: &mut Self::InstantiateEnv,
         meta: &mut Self::Meta,
-        graph: HydroflowGraph,
+        graph: DfirGraph,
         extra_stmts: Vec<syn::Stmt>,
     ) {
         let has_trybuild = self

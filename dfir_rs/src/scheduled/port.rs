@@ -6,7 +6,7 @@ use ref_cast::RefCast;
 use sealed::sealed;
 
 use super::HandoffId;
-use crate::scheduled::graph::Hydroflow;
+use crate::scheduled::graph::Dfir;
 use crate::scheduled::handoff::{CanReceive, Handoff, TeeingHandoff, TryCanReceive};
 
 /// An empty trait used to denote [`Polarity`]: either **send** or **receive**.
@@ -33,7 +33,7 @@ impl Polarity for SEND {}
 impl Polarity for RECV {}
 
 /// Lightweight ID struct representing an input or output port for a [`Handoff`] added to a
-/// [`Hydroflow`] instance..
+/// [`Dfir`] instance..
 #[must_use]
 pub struct Port<S: Polarity, H>
 where
@@ -50,17 +50,17 @@ pub type RecvPort<H> = Port<RECV, H>;
 
 /// Methods for [`TeeingHandoff`] teeing and dropping.
 impl<T: Clone> RecvPort<TeeingHandoff<T>> {
-    /// Tees this [`TeeingHandoff`], given the [`Hydroflow`] instance it belongs to.
-    pub fn tee(&self, hf: &mut Hydroflow) -> RecvPort<TeeingHandoff<T>> {
+    /// Tees this [`TeeingHandoff`], given the [`Dfir`] instance it belongs to.
+    pub fn tee(&self, hf: &mut Dfir) -> RecvPort<TeeingHandoff<T>> {
         hf.teeing_handoff_tee(self)
     }
 
     /// Marks this output of a [`TeeingHandoff`] as dropped so that no more data will be sent to
-    /// it, given the [`Hydroflow`] instance it belongs to.
+    /// it, given the [`Dfir`] instance it belongs to.
     ///
     /// It is recommended to not not use this method and instead simply avoid teeing a
     /// [`TeeingHandoff`] when it is not needed.
-    pub fn drop(self, hf: &mut Hydroflow) {
+    pub fn drop(self, hf: &mut Dfir) {
         hf.teeing_handoff_drop(self)
     }
 }

@@ -14,7 +14,7 @@ use super::{
 ///
 /// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
-/// ```hydroflow
+/// ```dfir
 ///     source_iter(vec!["Hello", "World"])
 ///         -> for_each(|x| println!("{}", x));
 /// ```

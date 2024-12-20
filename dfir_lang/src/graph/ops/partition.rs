@@ -26,7 +26,7 @@ use crate::pretty_span::PrettySpan;
 /// `[port_a, port_b, port_c]`, where each name is an output port. The closure should return the
 /// name of the desired output port.
 ///
-/// ```hydroflow
+/// ```dfir
 /// my_partition = source_iter(1..=100) -> partition(|val: &usize, [fzbz, fizz, buzz, rest]|
 ///     match (val % 3, val % 5) {
 ///         (0, 0) => fzbz,
@@ -47,7 +47,7 @@ use crate::pretty_span::PrettySpan;
 /// numbered with an index, starting from zero and with no gaps. The closure returns the index of
 /// the desired output port.
 ///
-/// ```hydroflow
+/// ```dfir
 /// my_partition = source_iter(1..=100) -> partition(|val, num_outputs| val % num_outputs);
 /// my_partition[0] -> for_each(|v| println!("0: {}", v));
 /// my_partition[1] -> for_each(|v| println!("1: {}", v));

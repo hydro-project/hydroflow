@@ -12,7 +12,7 @@ use syn::{Error, Ident, ItemUse};
 
 use super::ops::defer_tick::DEFER_TICK;
 use super::ops::FloType;
-use super::{GraphEdgeId, GraphLoopId, GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
+use super::{DfirGraph, GraphEdgeId, GraphLoopId, GraphNode, GraphNodeId, PortIndexValue};
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::graph_algorithms;
 use crate::graph::ops::{PortListSpec, RangeTrait};
@@ -54,14 +54,14 @@ impl VarnameInfo {
     }
 }
 
-/// Wraper around [`HydroflowGraph`] to build a flat graph from AST code.
+/// Wraper around [`DfirGraph`] to build a flat graph from AST code.
 #[derive(Debug, Default)]
 pub struct FlatGraphBuilder {
     /// Spanned error/warning/etc diagnostics to emit.
     diagnostics: Vec<Diagnostic>,
 
     /// HydroflowGraph being built.
-    flat_graph: HydroflowGraph,
+    flat_graph: DfirGraph,
     /// Variable names, used as [`HfStatement::Named`] are added.
     varname_ends: BTreeMap<Ident, VarnameInfo>,
     /// Each (out -> inn) link inputted.
@@ -94,12 +94,12 @@ impl FlatGraphBuilder {
         }
     }
 
-    /// Build into an unpartitioned [`HydroflowGraph`], returning a tuple of a `HydroflowGraph` and
+    /// Build into an unpartitioned [`DfirGraph`], returning a tuple of a `HydroflowGraph` and
     /// any diagnostics.
     ///
     /// Even if there are errors, the `HydroflowGraph` will be returned (potentially in a invalid
     /// state). Does not call `emit` on any diagnostics.
-    pub fn build(mut self) -> (HydroflowGraph, Vec<ItemUse>, Vec<Diagnostic>) {
+    pub fn build(mut self) -> (DfirGraph, Vec<ItemUse>, Vec<Diagnostic>) {
         self.connect_operator_links();
         self.process_operator_errors();
 
@@ -370,7 +370,7 @@ impl FlatGraphBuilder {
             Span::call_site(),
             Level::Error,
             format!(
-                "Reached the recursion limit {} while resolving names. This is either a hydroflow bug or you have an absurdly long chain of names: `{}`.",
+                "Reached the recursion limit {} while resolving names. This is either a dfir bug or you have an absurdly long chain of names: `{}`.",
                 BACKUP_RECURSION_LIMIT,
                 names.iter().map(ToString::to_string).collect::<Vec<_>>().join("` -> `"),
             )

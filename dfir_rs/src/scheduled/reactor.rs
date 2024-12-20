@@ -5,7 +5,7 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use super::SubgraphId;
 
-/// A handle into a specific [super::graph::Hydroflow] instance for triggering
+/// A handle into a specific [super::graph::Dfir] instance for triggering
 /// subgraphs to run, possibly from another thread.
 ///
 /// Reactor events are considered to be external events.

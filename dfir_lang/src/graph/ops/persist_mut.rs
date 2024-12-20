@@ -12,7 +12,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// Deletions/persists happen in the order they are received in the stream.
 /// For example, `[Persist(1), Delete(1), Persist(1)]` will result in a a single `1` value being stored.
 ///
-/// ```hydroflow
+/// ```dfir
 /// use dfir_rs::util::Persistence;
 ///
 /// source_iter([

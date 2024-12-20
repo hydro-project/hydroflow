@@ -13,7 +13,7 @@ use super::{
 ///
 /// Note that all elements are emitted during the first tick.
 ///
-/// ```hydroflow
+/// ```dfir
 ///     source_iter(vec!["Hello", "World"])
 ///         -> for_each(|x| println!("{}", x));
 /// ```

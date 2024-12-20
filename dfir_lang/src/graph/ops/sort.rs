@@ -7,7 +7,7 @@ use super::{
 
 /// Takes a stream as input and produces a sorted version of the stream as output.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec![2, 3, 1])
 ///     -> sort()
 ///     -> assert_eq([1, 2, 3]);

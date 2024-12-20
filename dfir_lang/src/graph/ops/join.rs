@@ -11,7 +11,7 @@ use crate::diagnostic::{Diagnostic, Level};
 ///
 /// Forms the equijoin of the tuples in the input streams by their first (key) attribute. Note that the result nests the 2nd input field (values) into a tuple in the 2nd output field.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec![("hello", "world"), ("stay", "gold"), ("hello", "world")]) -> [0]my_join;
 /// source_iter(vec![("hello", "cleveland")]) -> [1]my_join;
 /// my_join = join()
@@ -30,7 +30,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// When no persistence arguments are applied it defaults to `'tick` for both.
 ///
 /// The syntax is as follows:
-/// ```hydroflow,ignore
+/// ```dfir,ignore
 /// join(); // Or
 /// join::<'static>();
 ///

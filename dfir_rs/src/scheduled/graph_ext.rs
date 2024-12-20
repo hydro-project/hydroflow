@@ -1,4 +1,4 @@
-//! Helper extensions for [`Hydroflow`].
+//! Helper extensions for [`Dfir`].
 
 use core::task;
 use std::borrow::Cow;
@@ -8,7 +8,7 @@ use std::task::Poll;
 use futures::Stream;
 
 use super::context::Context;
-use super::graph::Hydroflow;
+use super::graph::Dfir;
 use super::handoff::{CanReceive, Handoff};
 use super::input::Input;
 use super::port::{RecvCtx, RecvPort, SendCtx, SendPort};
@@ -126,7 +126,7 @@ pub trait GraphExt {
         W: 'static + Handoff + CanReceive<T>;
 }
 
-impl GraphExt for Hydroflow<'_> {
+impl GraphExt for Dfir<'_> {
     subgraph_ext!(impl add_subgraph_sink, (recv_port: R), ());
     subgraph_ext!(
         impl add_subgraph_2sink,

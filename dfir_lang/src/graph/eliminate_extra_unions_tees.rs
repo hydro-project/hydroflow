@@ -2,10 +2,10 @@
 
 use super::ops::tee::TEE;
 use super::ops::union::UNION;
-use super::{GraphNodeId, HydroflowGraph};
+use super::{DfirGraph, GraphNodeId};
 
 fn find_unary_ops<'a>(
-    graph: &'a HydroflowGraph,
+    graph: &'a DfirGraph,
     op_name: &'static str,
 ) -> impl 'a + Iterator<Item = GraphNodeId> {
     graph
@@ -22,7 +22,7 @@ fn find_unary_ops<'a>(
 
 /// Removes missing unions and tees. Must be applied BEFORE subgraph partitioning, i.e. on a flat
 /// graph.
-pub fn eliminate_extra_unions_tees(graph: &mut HydroflowGraph) {
+pub fn eliminate_extra_unions_tees(graph: &mut DfirGraph) {
     let extra_ops = find_unary_ops(graph, UNION.name)
         .chain(find_unary_ops(graph, TEE.name))
         .collect::<Vec<_>>();

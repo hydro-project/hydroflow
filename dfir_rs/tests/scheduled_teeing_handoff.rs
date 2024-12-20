@@ -1,14 +1,14 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use dfir_rs::scheduled::graph_ext::GraphExt;
 use dfir_rs::scheduled::handoff::TeeingHandoff;
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
 fn test_basic() {
-    let mut df = Hydroflow::new();
+    let mut df = Dfir::new();
     let mut data = vec![1, 2, 3, 4];
     let (source, sink1) = df.make_edge::<_, TeeingHandoff<i32>>("ok");
     let sink2 = sink1.tee(&mut df);
@@ -57,7 +57,7 @@ fn test_scheduling() {
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    let mut df = Hydroflow::new();
+    let mut df = Dfir::new();
     let input = Rc::new(RefCell::new(vec![1, 2, 3, 4]));
     let input_recv = Rc::clone(&input);
 
@@ -115,7 +115,7 @@ fn test_scheduling_tee_after() {
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    let mut df = Hydroflow::new();
+    let mut df = Dfir::new();
     let input = Rc::new(RefCell::new(vec![1, 2, 3, 4]));
     let input_recv = Rc::clone(&input);
 
@@ -174,7 +174,7 @@ fn test_scheduling_drop() {
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    let mut df = Hydroflow::new();
+    let mut df = Dfir::new();
     let input = Rc::new(RefCell::new(vec![1, 2, 3, 4]));
     let input_recv = Rc::clone(&input);
 

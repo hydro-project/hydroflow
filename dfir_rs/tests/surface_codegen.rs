@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use dfir_rs::scheduled::ticks::TickInstant;
 use dfir_rs::util::collect_ready;
 use dfir_rs::util::multiset::HashMultiSet;
@@ -18,7 +18,7 @@ use multiplatform_test::multiplatform_test;
 
 // TODO(joe): QOL: make a way to generate/print the mermaid graph.
 
-// TODO(mingwei): Prevent unused variable warnings when hydroflow code is not generated.
+// TODO(mingwei): Prevent unused variable warnings when dfir code is not generated.
 
 // Joe:
 // TODO(mingwei): Documentation articles.
@@ -119,7 +119,7 @@ pub fn test_basic_inspect_no_null() {
 #[multiplatform_test]
 pub fn test_large_diamond() {
     #[expect(clippy::map_identity, reason = "testing topology")]
-    let mut df: Hydroflow = dfir_syntax! {
+    let mut df: Dfir = dfir_syntax! {
         t = source_iter([1]) -> tee();
         j = union() -> for_each(|x| println!("{}", x));
         t[0] -> map(std::convert::identity) -> map(std::convert::identity) -> [0]j;
@@ -601,7 +601,7 @@ pub fn test_surface_syntax_reachability_generated() {
 
     let (out_send, mut out_recv) = dfir_rs::util::unbounded_channel::<usize>();
 
-    let mut df: Hydroflow = dfir_syntax! {
+    let mut df: Dfir = dfir_syntax! {
         reached_vertices = union() -> map(|v| (v, ()));
         source_iter(vec![0]) -> [0]reached_vertices;
 

@@ -13,11 +13,11 @@ use super::{
 ///
 /// The input stream is passed through `assert_eq` unchanged to the output stream.
 ///
-/// `assert_eq` is mainly useful for testing and documenting the behavior of hydroflow code inline.
+/// `assert_eq` is mainly useful for testing and documenting the behavior of dfir code inline.
 ///
 /// `assert_eq` will remember the stream position across ticks, see example.
 ///
-/// ```hydroflow
+/// ```dfir
 /// unioned = union();
 ///
 /// source_iter([1]) -> assert_eq([1]) -> unioned;

@@ -10,7 +10,7 @@ use super::{
 ///
 /// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec![(2, 'y'), (3, 'x'), (1, 'z')])
 ///     -> sort_by_key(|(k, _v)| k)
 ///     -> assert_eq([(1, 'z'), (2, 'y'), (3, 'x')]);

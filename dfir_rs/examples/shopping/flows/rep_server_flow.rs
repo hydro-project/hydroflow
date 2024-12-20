@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use bytes::Bytes;
 use dfir_rs::dfir_syntax;
 use dfir_rs::lattices::Merge;
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use futures::stream::SplitSink;
 use tokio_util::codec::LengthDelimitedCodec;
 use tokio_util::udp::UdpFramed;
@@ -20,7 +20,7 @@ pub(crate) async fn rep_server_flow(
     remote_addr: SocketAddr,
     gossip_addr: SocketAddr,
     server_addrs: impl Iterator<Item = SocketAddr> + 'static,
-) -> Hydroflow<'static> {
+) -> Dfir<'static> {
     let (broadcast_out, broadcast_in, _) = dfir_rs::util::bind_udp_bytes(gossip_addr).await;
     let client_class = client_class_iter();
     let ssiv_merge =

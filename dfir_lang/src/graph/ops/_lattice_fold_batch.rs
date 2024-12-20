@@ -16,7 +16,7 @@ use super::{
 /// `input` is the input data flow. Data that is delivered on this input is collected in order inside of the `_lattice_fold_batch` operator.
 /// When anything is sent to `signal` the collected data is released downstream. The entire `signal` input is consumed each tick, so sending 5 things on `signal` will not release inputs on the next 5 consecutive ticks.
 ///
-/// ```hydroflow
+/// ```dfir
 /// use lattices::set_union::SetUnionHashSet;
 /// use lattices::set_union::SetUnionSingletonSet;
 ///

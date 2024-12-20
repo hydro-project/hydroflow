@@ -1,5 +1,5 @@
 use dfir_rs::dfir_syntax;
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use dfir_rs::util::{UdpSink, UdpStream};
 
 use crate::protocol::{KvsMessage, KvsMessageWithAddr};
@@ -10,7 +10,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
 
     let peer_server = opts.server_addr;
 
-    let mut hf: Hydroflow = dfir_syntax! {
+    let mut hf: Dfir = dfir_syntax! {
         // Setup network channels.
         network_send = union() -> dest_sink_serde(outbound);
         network_recv = source_stream_serde(inbound)

@@ -18,7 +18,7 @@ use super::{
 /// Note multiset semantics here: each (possibly duplicated) item in the `pos` input
 /// that has no match in `neg` is sent to the output.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec!["cat", "cat", "elephant", "elephant"]) -> [pos]diff;
 /// source_iter(vec!["cat", "gorilla"]) -> [neg]diff;
 /// diff = difference_multiset() -> assert_eq(["elephant", "elephant"]);

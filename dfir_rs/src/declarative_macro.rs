@@ -44,9 +44,9 @@ macro_rules! assert_var_impl {
     };
 }
 
-/// Tests that the given warnings are emitted by the hydroflow macro invocation.
+/// Tests that the given warnings are emitted by the dfir macro invocation.
 ///
-/// For example usage, see `hydroflow/tests/surface_warnings.rs`.
+/// For example usage, see `dfir/tests/surface_warnings.rs`.
 #[macro_export]
 macro_rules! hydroflow_expect_warnings {
     (

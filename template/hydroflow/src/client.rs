@@ -32,7 +32,7 @@ pub(crate) async fn run_client(opts: Opts) {
         allocated_client_addr, server_addr
     );
 
-    // The skeletal hydroflow spec for a client.
+    // The skeletal DFIR spec for a client.
     let mut flow = dfir_syntax! {
 
         // Whenever a serialized message is received by the application from a particular address,

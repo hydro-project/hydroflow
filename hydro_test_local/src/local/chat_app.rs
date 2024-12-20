@@ -1,7 +1,7 @@
 use dfir_rs::tokio::sync::mpsc::UnboundedSender;
 use dfir_rs::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydro_lang::deploy::SingleProcessGraph;
-use hydro_lang::dfir_rs::scheduled::graph::Hydroflow;
+use hydro_lang::dfir_rs::scheduled::graph::Dfir;
 use hydro_lang::*;
 use stageleft::{Quoted, RuntimeData};
 
@@ -12,7 +12,7 @@ pub fn chat_app<'a>(
     messages: RuntimeData<UnboundedReceiverStream<String>>,
     output: RuntimeData<&'a UnboundedSender<(u32, String)>>,
     replay_messages: bool,
-) -> impl Quoted<'a, Hydroflow<'a>> {
+) -> impl Quoted<'a, Dfir<'a>> {
     let process = flow.process::<()>();
     let tick = process.tick();
 

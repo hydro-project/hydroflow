@@ -119,7 +119,7 @@ fn benchmark_differential(c: &mut Criterion) {
 }
 
 fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
-    use dfir_rs::scheduled::graph::Hydroflow;
+    use dfir_rs::scheduled::graph::Dfir;
     use dfir_rs::scheduled::handoff::{Iter, VecHandoff};
     use dfir_rs::{var_args, var_expr};
 
@@ -129,7 +129,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
     c.bench_function("reachability/dfir_rs/scheduled", |b| {
         b.iter(|| {
             // A dataflow that represents graph reachability.
-            let mut df = Hydroflow::new();
+            let mut df = Dfir::new();
 
             type Hoff = VecHandoff<usize>;
             let (reachable_out, union_lhs) = df.make_edge::<_, Hoff>("reachable_out -> union_lhs");
@@ -215,7 +215,7 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
 fn benchmark_hydroflow(c: &mut Criterion) {
     use dfir_rs::pusherator::for_each::ForEach;
     use dfir_rs::pusherator::{IteratorToPusherator, PusheratorBuild};
-    use dfir_rs::scheduled::graph::Hydroflow;
+    use dfir_rs::scheduled::graph::Dfir;
     use dfir_rs::scheduled::handoff::VecHandoff;
     use dfir_rs::{var_args, var_expr};
 
@@ -225,7 +225,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
     c.bench_function("reachability/dfir_rs", |b| {
         b.iter(|| {
             // A dataflow that represents graph reachability.
-            let mut df = Hydroflow::new();
+            let mut df = Dfir::new();
 
             let (reachable_out, origins_in) =
                 df.make_edge::<_, VecHandoff<usize>>("reachable -> origins");

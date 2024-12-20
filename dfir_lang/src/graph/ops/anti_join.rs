@@ -17,7 +17,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// is preserved for new elements in a given tick, but not for elements processed
 /// in a previous tick with `'static`.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec![("dog", 1), ("cat", 2), ("elephant", 3)]) -> [pos]diff;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
 /// diff = anti_join() -> assert_eq([("elephant", 3)]);

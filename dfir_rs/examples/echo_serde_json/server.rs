@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use chrono::prelude::*;
 use dfir_rs::dfir_syntax;
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use dfir_rs::util::{UdpLinesSink, UdpLinesStream};
 
 use crate::helpers::{deserialize_json, serialize_json};
@@ -11,7 +11,7 @@ use crate::protocol::EchoMsg;
 pub(crate) async fn run_server(outbound: UdpLinesSink, inbound: UdpLinesStream) {
     println!("Server live!");
 
-    let mut flow: Hydroflow = dfir_syntax! {
+    let mut flow: Dfir = dfir_syntax! {
         // Inbound channel sharing
         inbound_chan = source_stream(inbound) -> map(deserialize_json) -> tee();
 

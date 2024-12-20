@@ -1,6 +1,6 @@
 use dfir_rs::tokio::sync::mpsc::UnboundedSender;
 use hydro_lang::deploy::SingleProcessGraph;
-use hydro_lang::dfir_rs::scheduled::graph::Hydroflow;
+use hydro_lang::dfir_rs::scheduled::graph::Dfir;
 use hydro_lang::*;
 use stageleft::{Quoted, RuntimeData};
 
@@ -10,7 +10,7 @@ pub fn test_difference<'a>(
     output: RuntimeData<&'a UnboundedSender<u32>>,
     persist1: bool,
     persist2: bool,
-) -> impl Quoted<'a, Hydroflow<'a>> {
+) -> impl Quoted<'a, Dfir<'a>> {
     let process = flow.process::<()>();
     let tick = process.tick();
 
@@ -49,7 +49,7 @@ pub fn test_anti_join<'a>(
     output: RuntimeData<&'a UnboundedSender<u32>>,
     persist1: bool,
     persist2: bool,
-) -> impl Quoted<'a, Hydroflow<'a>> {
+) -> impl Quoted<'a, Dfir<'a>> {
     let process = flow.process::<()>();
     let tick = process.tick();
 

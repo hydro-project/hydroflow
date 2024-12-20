@@ -9,7 +9,7 @@ use crate::diagnostic::{Diagnostic, Level};
 
 /// Stores each item as it passes through, and replays all item every tick.
 ///
-/// ```hydroflow
+/// ```dfir
 /// // Normally `source_iter(...)` only emits once, but `persist::<'static>()` will replay the `"hello"`
 /// // on every tick.
 /// source_iter(["hello"])
@@ -19,7 +19,7 @@ use crate::diagnostic::{Diagnostic, Level};
 ///
 /// `persist()` can be used to introduce statefulness into stateless pipelines. In the example below, the
 /// join only stores data for single tick. The `persist::<'static>()` operator introduces statefulness
-/// across ticks. This can be useful for optimization transformations within the hydroflow
+/// across ticks. This can be useful for optimization transformations within the dfir
 /// compiler. Equivalently, we could specify that the join has `static` persistence (`my_join = join::<'static>()`).
 /// ```rustbook
 /// let (input_send, input_recv) = dfir_rs::util::unbounded_channel::<(&str, &str)>();

@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use chrono::prelude::*;
 use dfir_rs::dfir_syntax;
 use dfir_rs::lattices::{Max, Merge};
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use dfir_rs::util::{UdpSink, UdpStream};
 
 use crate::protocol::EchoMsg;
@@ -13,7 +13,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
     let bot: Max<usize> = Max::new(0);
     println!("Server live!");
 
-    let mut flow: Hydroflow = dfir_syntax! {
+    let mut flow: Dfir = dfir_syntax! {
         // Define a shared inbound channel
         inbound_chan = source_stream_serde(inbound) -> map(Result::unwrap) -> tee();
 

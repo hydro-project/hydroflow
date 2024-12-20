@@ -30,22 +30,22 @@ pub use di_mul_graph::DiMulGraph;
 pub use eliminate_extra_unions_tees::eliminate_extra_unions_tees;
 pub use flat_graph_builder::FlatGraphBuilder;
 pub use flat_to_partitioned::partition_graph;
-pub use hydroflow_graph::{HydroflowGraph, WriteConfig, WriteGraphType};
+pub use hydroflow_graph::{DfirGraph, WriteConfig, WriteGraphType};
 
 pub mod graph_algorithms;
 pub mod ops;
 
 new_key_type! {
-    /// ID to identify a node (operator or handoff) in [`HydroflowGraph`].
+    /// ID to identify a node (operator or handoff) in [`DfirGraph`].
     pub struct GraphNodeId;
 
     /// ID to identify an edge.
     pub struct GraphEdgeId;
 
-    /// ID to identify a subgraph in [`HydroflowGraph`].
+    /// ID to identify a subgraph in [`DfirGraph`].
     pub struct GraphSubgraphId;
 
-    /// ID to identify a loop block in [`HydroflowGraph`].
+    /// ID to identify a loop block in [`DfirGraph`].
     pub struct GraphLoopId;
 }
 
@@ -370,12 +370,12 @@ impl Display for PortIndexValue {
     }
 }
 
-/// The main function of this module. Compiles a [`HfCode`] AST into a [`HydroflowGraph`] and
+/// The main function of this module. Compiles a [`HfCode`] AST into a [`DfirGraph`] and
 /// source code, or [`Diagnostic`] errors.
 pub fn build_hfcode(
     hf_code: HfCode,
     root: &TokenStream,
-) -> (Option<(HydroflowGraph, TokenStream)>, Vec<Diagnostic>) {
+) -> (Option<(DfirGraph, TokenStream)>, Vec<Diagnostic>) {
     let flat_graph_builder = FlatGraphBuilder::from_hfcode(hf_code);
     let (mut flat_graph, uses, mut diagnostics) = flat_graph_builder.build();
     if !diagnostics.iter().any(Diagnostic::is_error) {

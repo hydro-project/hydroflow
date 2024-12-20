@@ -66,7 +66,7 @@ use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::TcpStream;
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
-use super::graph::Hydroflow;
+use super::graph::Dfir;
 use super::graph_ext::GraphExt;
 use super::handoff::VecHandoff;
 use super::port::{RecvPort, SendPort};
@@ -96,7 +96,7 @@ impl Message {
     }
 }
 
-impl Hydroflow<'_> {
+impl Dfir<'_> {
     fn register_read_tcp_stream(&mut self, reader: OwnedReadHalf) -> RecvPort<VecHandoff<Message>> {
         let reader = FramedRead::new(reader, LengthDelimitedCodec::new());
         let (send_port, recv_port) = self.make_edge("tcp ingress handoff");

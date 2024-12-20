@@ -3,7 +3,7 @@
 extern crate proc_macro;
 
 /// Helper struct which displays the span as `path:row:col` for human reading/IDE linking.
-/// Example: `hydroflow\tests\surface_syntax.rs:42:18`.
+/// Example: `dfir\tests\surface_syntax.rs:42:18`.
 pub struct PrettySpan(pub proc_macro2::Span);
 impl std::fmt::Display for PrettySpan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use dfir_rs::dfir_syntax;
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use dfir_rs::util::UdpStream;
 
 use crate::lattices::{BoundedPrefix, SealedSetOfIndexedValues};
@@ -11,7 +11,7 @@ pub(crate) async fn listener_flow(
     tuple_input: UdpStream,
     bp_input: UdpStream,
     ssiv_input: UdpStream,
-) -> Hydroflow<'static> {
+) -> Dfir<'static> {
     // Simply print what we receive.
     dfir_syntax! {
         source_stream_serde(tuple_input)

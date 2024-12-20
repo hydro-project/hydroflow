@@ -149,12 +149,12 @@ fn benchmark_hydroflow_compiled(c: &mut Criterion) {
 }
 
 fn benchmark_hydroflow(c: &mut Criterion) {
-    use dfir_rs::scheduled::graph::Hydroflow;
+    use dfir_rs::scheduled::graph::Dfir;
     use dfir_rs::scheduled::handoff::{Iter, VecHandoff};
 
     c.bench_function("identity/dfir_rs", |b| {
         b.iter(|| {
-            let mut df = Hydroflow::new();
+            let mut df = Dfir::new();
 
             let (next_send, mut next_recv) = df.make_edge::<_, VecHandoff<usize>>("end");
 

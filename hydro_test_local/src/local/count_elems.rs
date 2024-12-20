@@ -1,7 +1,7 @@
 use dfir_rs::tokio::sync::mpsc::UnboundedSender;
 use dfir_rs::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydro_lang::deploy::SingleProcessGraph;
-use hydro_lang::dfir_rs::scheduled::graph::Hydroflow;
+use hydro_lang::dfir_rs::scheduled::graph::Dfir;
 use hydro_lang::*;
 use stageleft::{Quoted, RuntimeData};
 
@@ -9,7 +9,7 @@ pub fn count_elems_generic<'a, T: 'a>(
     flow: FlowBuilder<'a>,
     input_stream: RuntimeData<UnboundedReceiverStream<T>>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
+) -> impl Quoted<'a, Dfir<'a>> {
     let process = flow.process::<()>();
     let tick = process.tick();
 
@@ -33,7 +33,7 @@ pub fn count_elems<'a>(
     flow: FlowBuilder<'a>,
     input_stream: RuntimeData<UnboundedReceiverStream<usize>>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
+) -> impl Quoted<'a, Dfir<'a>> {
     count_elems_generic(flow, input_stream, output)
 }
 

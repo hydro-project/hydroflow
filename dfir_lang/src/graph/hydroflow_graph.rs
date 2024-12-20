@@ -37,7 +37,7 @@ use crate::process_singletons;
 /// in here--those are just what was needed for the compilation algorithms. If you need another
 /// method then add it.
 #[derive(Default, Debug, Serialize, Deserialize)]
-pub struct HydroflowGraph {
+pub struct DfirGraph {
     /// Each node type (operator or handoff).
     nodes: SlotMap<GraphNodeId, GraphNode>,
 
@@ -78,7 +78,7 @@ pub struct HydroflowGraph {
 }
 
 /// Basic methods.
-impl HydroflowGraph {
+impl DfirGraph {
     /// Create a new empty `HydroflowGraph`.
     pub fn new() -> Self {
         Default::default()
@@ -86,7 +86,7 @@ impl HydroflowGraph {
 }
 
 /// Node methods.
-impl HydroflowGraph {
+impl DfirGraph {
     /// Get a node with its operator instance (if applicable).
     pub fn node(&self, node_id: GraphNodeId) -> &GraphNode {
         self.nodes.get(node_id).expect("Node not found.")
@@ -466,7 +466,7 @@ impl HydroflowGraph {
 }
 
 /// Singleton references.
-impl HydroflowGraph {
+impl DfirGraph {
     /// Set the singletons referenced for the `node_id` operator. Each reference corresponds to the
     /// same index in the [`crate::parse::Operator::singletons_referenced`] vec.
     pub fn set_node_singleton_references(
@@ -489,7 +489,7 @@ impl HydroflowGraph {
 }
 
 /// Module methods.
-impl HydroflowGraph {
+impl DfirGraph {
     /// When modules are imported into a flat graph, they come with an input and output ModuleBoundary node.
     /// The partitioner doesn't understand these nodes and will panic if it encounters them.
     /// merge_modules removes them from the graph, stitching the input and ouput sides of the ModuleBondaries based on their ports
@@ -584,7 +584,7 @@ impl HydroflowGraph {
 }
 
 /// Edge methods.
-impl HydroflowGraph {
+impl DfirGraph {
     /// Get the `src` and `dst` for an edge: `(src GraphNodeId, dst GraphNodeId)`.
     pub fn edge(&self, edge_id: GraphEdgeId) -> (GraphNodeId, GraphNodeId) {
         let (src, dst) = self.graph.edge(edge_id).expect("Edge not found.");
@@ -634,7 +634,7 @@ impl HydroflowGraph {
 }
 
 /// Subgraph methods.
-impl HydroflowGraph {
+impl DfirGraph {
     /// Nodes belonging to the given subgraph.
     pub fn subgraph(&self, subgraph_id: GraphSubgraphId) -> &Vec<GraphNodeId> {
         self.subgraph_nodes
@@ -725,7 +725,7 @@ impl HydroflowGraph {
 }
 
 /// Display/output methods.
-impl HydroflowGraph {
+impl DfirGraph {
     /// Helper to generate a deterministic `Ident` for the given node.
     fn node_as_ident(&self, node_id: GraphNodeId, is_pred: bool) -> Ident {
         let name = match &self.nodes[node_id] {
@@ -952,7 +952,7 @@ impl HydroflowGraph {
                             // has the (unhygienic) resolution we want, an ident is just solely determined by its string name,
                             // which is what you'd expect out of unhygienic proc macros like this. Meanwhile, declarative macros
                             // use `Span::mixed_site()` which is weird and I don't understand it. It turns out that if you call
-                            // the hydroflow syntax proc macro from _within_ a declarative macro then `op_span` will have the
+                            // the dfir syntax proc macro from _within_ a declarative macro then `op_span` will have the
                             // bad `Span::mixed_site()` name resolution and cause "Cannot find value `df/context`" errors. So
                             // we call `.resolved_at()` to fix resolution back to `Span::call_site()`. -Mingwei
                             let hydroflow = &Ident::new(HYDROFLOW, op_span.resolved_at(hf.span()));
@@ -1204,7 +1204,7 @@ impl HydroflowGraph {
 
                     use #root::{var_expr, var_args};
 
-                    let mut #hf = #root::scheduled::graph::Hydroflow::new();
+                    let mut #hf = #root::scheduled::graph::Dfir::new();
                     #hf.__assign_meta_graph(#meta_graph_json);
                     #hf.__assign_diagnostics(#diagnostics_json);
 
@@ -1535,7 +1535,7 @@ impl HydroflowGraph {
 }
 
 /// Loops
-impl HydroflowGraph {
+impl DfirGraph {
     /// Iterator over all loop IDs.
     pub fn loop_ids(&self) -> slotmap::basic::Keys<'_, GraphLoopId, Vec<GraphNodeId>> {
         self.loop_nodes.keys()

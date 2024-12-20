@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use std::sync::mpsc;
 
-use dfir_rs::scheduled::graph::Hydroflow;
+use dfir_rs::scheduled::graph::Dfir;
 use dfir_rs::scheduled::graph_ext::GraphExt;
 use dfir_rs::scheduled::handoff::VecHandoff;
 use dfir_rs::scheduled::port::{RecvCtx, SendCtx};
@@ -15,7 +15,7 @@ fn map_filter() {
     use dfir_rs::scheduled::handoff::VecHandoff;
 
     // A simple dataflow with one source feeding into one sink with some processing in the middle.
-    let mut df = Hydroflow::new();
+    let mut df = Dfir::new();
 
     let (source, map_in) = df.make_edge::<_, VecHandoff<i32>>("source -> map_in");
     let (map_out, filter_in) = df.make_edge::<_, VecHandoff<i32>>("map_out -> filter_in");
@@ -77,7 +77,7 @@ fn map_filter() {
 
 #[multiplatform_test]
 fn test_basic_variadic() {
-    let mut df = Hydroflow::new();
+    let mut df = Dfir::new();
     let (source_send, sink_recv) = df.make_edge::<_, VecHandoff<usize>>("handoff");
     df.add_subgraph_source("source", source_send, move |_ctx, send| {
         send.give(Some(5));
@@ -100,7 +100,7 @@ fn test_basic_variadic() {
 
 #[multiplatform_test]
 fn test_basic_n_m() {
-    let mut df = Hydroflow::new();
+    let mut df = Dfir::new();
 
     let (source_send, sink_recv) = df.make_edge::<_, VecHandoff<usize>>("handoff");
 
@@ -151,7 +151,7 @@ fn test_cycle() {
         edges.entry(from).or_default().push(to);
     }
 
-    let mut df = Hydroflow::new();
+    let mut df = Dfir::new();
 
     let (reachable, union_lhs) = df.make_edge::<_, VecHandoff<usize>>("reachable -> union_lhs");
     let (neighbors_out, union_rhs) =
@@ -246,7 +246,7 @@ fn test_input_handle() {
     use dfir_rs::scheduled::graph_ext::GraphExt;
     use dfir_rs::scheduled::handoff::VecHandoff;
 
-    let mut df = Hydroflow::new();
+    let mut df = Dfir::new();
 
     let (send_port, recv_port) = df.make_edge::<_, VecHandoff<usize>>("input handoff");
     let input = df.add_input("input", send_port);
@@ -286,7 +286,7 @@ fn test_input_handle_thread() {
     use dfir_rs::scheduled::graph_ext::GraphExt;
     use dfir_rs::scheduled::handoff::VecHandoff;
 
-    let mut df = Hydroflow::new();
+    let mut df = Dfir::new();
 
     let (send_port, recv_port) = df.make_edge::<_, VecHandoff<usize>>("channel handoff");
     let input = df.add_channel_input("channel", send_port);
@@ -343,7 +343,7 @@ fn test_input_channel() {
         std::thread::spawn(move || {
             let done = Rc::new(Cell::new(false));
             let done_inner = done.clone();
-            let mut df = Hydroflow::new();
+            let mut df = Dfir::new();
 
             let (in_chan, input) = df.make_edge("stream input handoff");
             df.add_input_from_stream::<_, _, VecHandoff<usize>, _>(

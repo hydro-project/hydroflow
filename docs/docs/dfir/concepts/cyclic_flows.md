@@ -3,8 +3,8 @@ sidebar_position: 2
 ---
 
 import CodeBlock from '@theme/CodeBlock';
-import exampleCode from '!!raw-loader!../../../../hydroflow/examples/example_5_reachability.rs';
-import exampleCode2 from '!!raw-loader!../../../../hydroflow/examples/example_naturals.rs';
+import exampleCode from '!!raw-loader!../../../../dfir_rs/examples/example_5_reachability.rs';
+import exampleCode2 from '!!raw-loader!../../../../dfir_rs/examples/example_naturals.rs';
 import { getLines, extractOutput, extractMermaid } from '../../../src/util';
 
 # Dataflow Cycles and Fixpoints

@@ -17,7 +17,7 @@ use super::{
 ///
 /// Note this operator must be used within a Tokio runtime.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(1..=10) -> map(|n| format!("Line {}", n)) -> dest_file("dest.txt", false);
 /// ```
 pub const DEST_FILE: OperatorConstraints = OperatorConstraints {

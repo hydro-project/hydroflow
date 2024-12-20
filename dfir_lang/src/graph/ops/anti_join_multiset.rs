@@ -17,7 +17,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// so duplicated positive inputs will appear in the output either 0 times (if matched in `neg`)
 /// or as many times as they appear in the input (if not matched in `neg`)
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec![("cat", 2), ("cat", 2), ("elephant", 3), ("elephant", 3)]) -> [pos]diff;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
 /// diff = anti_join_multiset() -> assert_eq([("elephant", 3), ("elephant", 3)]);

@@ -21,7 +21,7 @@ use super::{
 ///
 /// > Note: The closures have access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
 ///     -> fold_keyed(|| 0, |old: &mut u32, val: u32| *old += val)
 ///     -> assert_eq([("toy", 3), ("shoe", 46), ("haberdashery", 7)]);
@@ -37,7 +37,7 @@ use super::{
 /// output value type `V2`. This is required when using `'static` persistence if the compiler
 /// cannot infer the types.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
 ///     -> fold_keyed(|| 0, |old: &mut u32, val: u32| *old += val)
 ///     -> assert_eq([("toy", 3), ("shoe", 46), ("haberdashery", 7)]);

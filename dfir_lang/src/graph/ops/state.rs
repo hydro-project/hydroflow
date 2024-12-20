@@ -10,7 +10,7 @@ use super::{
 /// Emits both a referenceable singleton and (optionally) a pass-through stream. In the future the
 /// pass-through stream may be deduplicated.
 ///
-/// ```hydroflow
+/// ```dfir
 /// use std::collections::HashSet;
 ///
 /// use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};

@@ -8,7 +8,7 @@ use serde::Serialize;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
-use crate::scheduled::graph::Hydroflow;
+use crate::scheduled::graph::Dfir;
 use crate::scheduled::graph_ext::GraphExt;
 use crate::scheduled::handoff::VecHandoff;
 use crate::scheduled::port::{RecvPort, SendPort};
@@ -18,7 +18,7 @@ pub type Address = String;
 // These methods can't be wrapped up in a trait because async methods are not
 // allowed in traits (yet).
 
-impl Hydroflow<'_> {
+impl Dfir<'_> {
     // TODO(justin): document these, but they're derivatives of inbound_tcp_vertex_internal.
     pub async fn inbound_tcp_vertex_port<T>(&mut self, port: u16) -> RecvPort<VecHandoff<T>>
     where

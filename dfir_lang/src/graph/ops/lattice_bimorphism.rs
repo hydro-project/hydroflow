@@ -16,7 +16,7 @@ use super::{
 ///
 /// The function must be a lattice bimorphism for both `(LhsState, RhsItem)` and `(RhsState, LhsItem)`.
 ///
-/// ```hydroflow
+/// ```dfir
 /// use std::collections::HashSet;
 /// use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
 ///

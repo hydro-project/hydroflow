@@ -10,7 +10,7 @@ use super::{
 ///
 /// Emits a single unit `()` at the start of the first tick.
 ///
-/// ```hydroflow
+/// ```dfir
 /// initialize()
 ///     -> assert_eq([()]);
 /// ```

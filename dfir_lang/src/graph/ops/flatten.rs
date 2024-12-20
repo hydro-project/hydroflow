@@ -10,7 +10,7 @@ use super::{
 /// For each item `i` passed in, treat `i` as an iterator and produce its items one by one.
 /// The type of the input items must be iterable.
 ///
-/// ```hydroflow
+/// ```dfir
 /// source_iter(vec![[1, 2], [3, 4], [5, 6]])
 ///     -> flatten()
 ///     -> assert_eq([1, 2, 3, 4, 5, 6]);
