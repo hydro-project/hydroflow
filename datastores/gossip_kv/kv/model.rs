@@ -1,6 +1,6 @@
-use hydroflow::lattices::map_union::MapUnionHashMap;
-use hydroflow::lattices::set_union::SetUnionHashSet;
-use hydroflow::lattices::{DomPair, Max};
+use dfir_rs::lattices::map_union::MapUnionHashMap;
+use dfir_rs::lattices::set_union::SetUnionHashSet;
+use dfir_rs::lattices::{DomPair, Max};
 
 use crate::Namespace;
 
@@ -77,7 +77,7 @@ pub fn delete_row<C>(
 mod tests {
     use std::collections::HashSet;
 
-    use hydroflow::lattices::Merge;
+    use dfir_rs::lattices::Merge;
 
     use crate::model::{delete_row, upsert_row, Clock, Namespaces, RowKey, TableName};
     use crate::Namespace::System;

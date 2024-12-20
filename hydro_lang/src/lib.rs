@@ -1,6 +1,6 @@
 stageleft::stageleft_no_entry_crate!();
 
-pub use hydroflow;
+pub use dfir_rs;
 pub use stageleft::q;
 
 #[doc(hidden)]

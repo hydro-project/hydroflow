@@ -1,8 +1,8 @@
+use dfir_rs::tokio::sync::mpsc::UnboundedSender;
+use dfir_rs::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydro_lang::deploy::SingleProcessGraph;
-use hydro_lang::hydroflow::scheduled::graph::Hydroflow;
+use hydro_lang::dfir_rs::scheduled::graph::Dfir;
 use hydro_lang::*;
-use hydroflow::tokio::sync::mpsc::UnboundedSender;
-use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use stageleft::{Quoted, RuntimeData};
 
 #[stageleft::entry]
@@ -11,7 +11,7 @@ pub fn graph_reachability<'a>(
     roots: RuntimeData<UnboundedReceiverStream<u32>>,
     edges: RuntimeData<UnboundedReceiverStream<(u32, u32)>>,
     reached_out: RuntimeData<&'a UnboundedSender<u32>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
+) -> impl Quoted<'a, Dfir<'a>> {
     let process = flow.process::<()>();
 
     let roots = process.source_stream(roots);
@@ -47,14 +47,14 @@ pub fn graph_reachability<'a>(
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use hydroflow::assert_graphvis_snapshots;
-    use hydroflow::util::collect_ready;
+    use dfir_rs::assert_graphvis_snapshots;
+    use dfir_rs::util::collect_ready;
 
     #[test]
     pub fn test_reachability() {
-        let (roots_send, roots) = hydroflow::util::unbounded_channel();
-        let (edges_send, edges) = hydroflow::util::unbounded_channel();
-        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
+        let (roots_send, roots) = dfir_rs::util::unbounded_channel();
+        let (edges_send, edges) = dfir_rs::util::unbounded_channel();
+        let (out, mut out_recv) = dfir_rs::util::unbounded_channel();
 
         let mut reachability = super::graph_reachability!(roots, edges, &out);
         assert_graphvis_snapshots!(reachability);

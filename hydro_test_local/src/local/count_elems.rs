@@ -1,15 +1,15 @@
+use dfir_rs::tokio::sync::mpsc::UnboundedSender;
+use dfir_rs::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydro_lang::deploy::SingleProcessGraph;
-use hydro_lang::hydroflow::scheduled::graph::Hydroflow;
+use hydro_lang::dfir_rs::scheduled::graph::Dfir;
 use hydro_lang::*;
-use hydroflow::tokio::sync::mpsc::UnboundedSender;
-use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use stageleft::{Quoted, RuntimeData};
 
 pub fn count_elems_generic<'a, T: 'a>(
     flow: FlowBuilder<'a>,
     input_stream: RuntimeData<UnboundedReceiverStream<T>>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
+) -> impl Quoted<'a, Dfir<'a>> {
     let process = flow.process::<()>();
     let tick = process.tick();
 
@@ -33,20 +33,20 @@ pub fn count_elems<'a>(
     flow: FlowBuilder<'a>,
     input_stream: RuntimeData<UnboundedReceiverStream<usize>>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
+) -> impl Quoted<'a, Dfir<'a>> {
     count_elems_generic(flow, input_stream, output)
 }
 
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use hydroflow::assert_graphvis_snapshots;
-    use hydroflow::util::collect_ready;
+    use dfir_rs::assert_graphvis_snapshots;
+    use dfir_rs::util::collect_ready;
 
     #[test]
     pub fn test_count() {
-        let (in_send, input) = hydroflow::util::unbounded_channel();
-        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
+        let (in_send, input) = dfir_rs::util::unbounded_channel();
+        let (out, mut out_recv) = dfir_rs::util::unbounded_channel();
 
         let mut count = super::count_elems!(input, &out);
         assert_graphvis_snapshots!(count);

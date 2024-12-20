@@ -3,8 +3,8 @@ use std::io::Error;
 use std::marker::PhantomData;
 use std::pin::Pin;
 
-use hydroflow::bytes::Bytes;
-use hydroflow::futures::{Sink, Stream};
+use dfir_rs::bytes::Bytes;
+use dfir_rs::futures::{Sink, Stream};
 use proc_macro2::Span;
 use serde::de::DeserializeOwned;
 use serde::Serialize;

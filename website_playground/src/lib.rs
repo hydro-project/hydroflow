@@ -4,11 +4,11 @@ use std::collections::HashMap;
 use std::task::{Context, Poll};
 use std::thread_local;
 
-use hydroflow::datalog;
-use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow_datalog_core::gen_hydroflow_graph;
-use hydroflow_lang::diagnostic::{Diagnostic, Level};
-use hydroflow_lang::graph::{build_hfcode, partition_graph, WriteConfig};
+use dfir_datalog_core::gen_hydroflow_graph;
+use dfir_lang::diagnostic::{Diagnostic, Level};
+use dfir_lang::graph::{build_hfcode, partition_graph, WriteConfig};
+use dfir_rs::datalog;
+use dfir_rs::scheduled::graph::Dfir;
 use proc_macro2::{LineColumn, Span};
 use quote::quote;
 use serde::{Deserialize, Serialize};
@@ -98,7 +98,7 @@ pub struct HydroflowOutput {
 }
 
 #[wasm_bindgen]
-pub fn compile_hydroflow(
+pub fn compile_dfir(
     program: String,
     no_subgraphs: bool,
     no_varnames: bool,
@@ -226,7 +226,7 @@ pub fn compile_datalog(
 }
 
 struct HydroflowInstance<'a, In, Out> {
-    hydroflow: Hydroflow<'a>,
+    dfir: Dfir<'a>,
     input: tokio::sync::mpsc::UnboundedSender<In>,
     output: tokio::sync::mpsc::UnboundedReceiver<Out>,
 }
@@ -241,9 +241,9 @@ thread_local! {
 #[wasm_bindgen]
 pub fn init_datalog_boolean_demo(instance_name: &str) {
     DATALOG_BOOLEAN_DEMO_INSTANCES.with(|map| {
-        let (in_send, input) = hydroflow::util::unbounded_channel::<(i32,)>();
-        let (out, out_recv) = hydroflow::util::unbounded_channel::<(i32,)>();
-        let hydroflow = datalog!(
+        let (in_send, input) = dfir_rs::util::unbounded_channel::<(i32,)>();
+        let (out, out_recv) = dfir_rs::util::unbounded_channel::<(i32,)>();
+        let dfir = datalog!(
             r#"
               .input ints `source_stream(input)`
               .output result `for_each(|v| out.send(v).unwrap())`
@@ -255,7 +255,7 @@ pub fn init_datalog_boolean_demo(instance_name: &str) {
         map.borrow_mut().insert(
             instance_name.into(),
             DatalogBooleanDemoInstance {
-                hydroflow,
+                dfir,
                 input: in_send,
                 output: out_recv.into_inner(),
             },
@@ -269,7 +269,7 @@ pub fn send_datalog_boolean_demo(instance_name: &str, input: i32) -> Option<i32>
         let mut map = map.borrow_mut();
         let instance = map.get_mut(instance_name)?;
         instance.input.send((input,)).unwrap();
-        instance.hydroflow.run_tick();
+        instance.dfir.run_tick();
         match instance
             .output
             .poll_recv(&mut Context::from_waker(futures::task::noop_waker_ref()))

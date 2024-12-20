@@ -3,10 +3,10 @@ use std::future::Future;
 use std::pin::Pin;
 use std::rc::Rc;
 
-use hydroflow::bytes::Bytes;
-use hydroflow::futures::{Sink, Stream};
-use hydroflow::util::deploy::DeployPorts;
-use hydroflow_lang::graph::HydroflowGraph;
+use dfir_lang::graph::DfirGraph;
+use dfir_rs::bytes::Bytes;
+use dfir_rs::futures::{Sink, Stream};
+use dfir_rs::util::deploy::DeployPorts;
 use stageleft::{QuotedWithContext, RuntimeData};
 
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, Node, ProcessSpec, RegisterPort};
@@ -255,7 +255,7 @@ impl Node for DeployRuntimeNode {
         &self,
         _env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
-        _graph: HydroflowGraph,
+        _graph: DfirGraph,
         _extra_stmts: Vec<syn::Stmt>,
     ) {
         panic!(".deploy() cannot be called on a DeployRuntimeNode");
@@ -284,7 +284,7 @@ impl Node for DeployRuntimeCluster {
         &self,
         _env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
-        _graph: HydroflowGraph,
+        _graph: DfirGraph,
         _extra_stmts: Vec<syn::Stmt>,
     ) {
         panic!(".deploy() cannot be called on a DeployRuntimeCluster");

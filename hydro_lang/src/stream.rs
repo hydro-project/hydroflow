@@ -4,8 +4,8 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 use std::rc::Rc;
 
-use hydroflow::bytes::Bytes;
-use hydroflow::futures;
+use dfir_rs::bytes::Bytes;
+use dfir_rs::futures;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use stageleft::{q, IntoQuotedMut, QuotedWithContext};
@@ -1328,8 +1328,8 @@ impl<'a, T, L: Location<'a> + NoTick, B> Stream<T, L, B, TotalOrder> {
 
 #[cfg(test)]
 mod tests {
+    use dfir_rs::futures::StreamExt;
     use hydro_deploy::Deployment;
-    use hydroflow::futures::StreamExt;
     use serde::{Deserialize, Serialize};
     use stageleft::q;
 

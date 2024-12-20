@@ -1,8 +1,8 @@
+use dfir_rs::tokio::sync::mpsc::UnboundedSender;
+use dfir_rs::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydro_lang::deploy::SingleProcessGraph;
-use hydro_lang::hydroflow::scheduled::graph::Hydroflow;
+use hydro_lang::dfir_rs::scheduled::graph::Dfir;
 use hydro_lang::*;
-use hydroflow::tokio::sync::mpsc::UnboundedSender;
-use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use stageleft::{Quoted, RuntimeData};
 
 #[stageleft::entry]
@@ -12,7 +12,7 @@ pub fn chat_app<'a>(
     messages: RuntimeData<UnboundedReceiverStream<String>>,
     output: RuntimeData<&'a UnboundedSender<(u32, String)>>,
     replay_messages: bool,
-) -> impl Quoted<'a, Hydroflow<'a>> {
+) -> impl Quoted<'a, Dfir<'a>> {
     let process = flow.process::<()>();
     let tick = process.tick();
 
@@ -57,14 +57,14 @@ pub fn chat_app<'a>(
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use hydroflow::assert_graphvis_snapshots;
-    use hydroflow::util::collect_ready;
+    use dfir_rs::assert_graphvis_snapshots;
+    use dfir_rs::util::collect_ready;
 
     #[test]
     fn test_chat_app_no_replay() {
-        let (users_send, users) = hydroflow::util::unbounded_channel();
-        let (messages_send, messages) = hydroflow::util::unbounded_channel();
-        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
+        let (users_send, users) = dfir_rs::util::unbounded_channel();
+        let (messages_send, messages) = dfir_rs::util::unbounded_channel();
+        let (out, mut out_recv) = dfir_rs::util::unbounded_channel();
 
         let mut chat_server = super::chat_app!(users, messages, &out, false);
         assert_graphvis_snapshots!(chat_server);
@@ -105,9 +105,9 @@ mod tests {
 
     #[test]
     fn test_chat_app_replay() {
-        let (users_send, users) = hydroflow::util::unbounded_channel();
-        let (messages_send, messages) = hydroflow::util::unbounded_channel();
-        let (out, mut out_recv) = hydroflow::util::unbounded_channel();
+        let (users_send, users) = dfir_rs::util::unbounded_channel();
+        let (messages_send, messages) = dfir_rs::util::unbounded_channel();
+        let (out, mut out_recv) = dfir_rs::util::unbounded_channel();
 
         let mut chat_server = super::chat_app!(users, messages, &out, true);
         assert_graphvis_snapshots!(chat_server);

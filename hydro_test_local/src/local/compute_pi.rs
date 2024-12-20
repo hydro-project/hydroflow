@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use hydro_lang::deploy::SingleProcessGraph;
-use hydro_lang::hydroflow::scheduled::graph::Hydroflow;
+use hydro_lang::dfir_rs::scheduled::graph::Dfir;
 use hydro_lang::*;
 use stageleft::{Quoted, RuntimeData};
 
@@ -50,7 +50,7 @@ pub fn compute_pi<'a>(flow: &FlowBuilder<'a>, batch_size: RuntimeData<usize>) ->
 pub fn compute_pi_runtime<'a>(
     flow: FlowBuilder<'a>,
     batch_size: RuntimeData<usize>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
+) -> impl Quoted<'a, Dfir<'a>> {
     let _ = compute_pi(&flow, batch_size);
     flow.compile_no_network::<SingleProcessGraph>()
 }

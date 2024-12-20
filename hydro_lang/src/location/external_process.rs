@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use hydroflow::bytes::Bytes;
+use dfir_rs::bytes::Bytes;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
