@@ -14,8 +14,8 @@ workspace = true
 default = [ "macros", "debugging", "meta" ]
 
 meta = [ "dep:hydroflow_lang" ]
-macros = [ "hydroflow_macro", "hydroflow_datalog" ]
-hydroflow_macro = [ "dep:hydroflow_macro" ]
+macros = [ "dfir_macro", "hydroflow_datalog" ]
+dfir_macro = [ "dep:dfir_macro" ]
 hydroflow_datalog = [ "dep:hydroflow_datalog" ]
 deploy_integration = [ "dep:hydroflow_deploy_integration" ]
 python = [ "dep:pyo3" ]
@@ -37,7 +37,7 @@ futures = "0.3.0"
 hydroflow_deploy_integration = { optional = true, path = "../hydro_deploy/hydroflow_deploy_integration", version = "^0.10.0" }
 hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "^0.10.0" }
 hydroflow_lang = { path = "../hydroflow_lang", version = "^0.10.0", optional = true }
-hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "^0.10.0" }
+dfir_macro = { optional = true, path = "../dfir_macro", version = "^0.10.0" }
 itertools = "0.10.0"
 lattices = { path = "../lattices", version = "^0.5.8", features = [ "serde" ] }
 pusherator = { path = "../pusherator", version = "^0.0.9" }

@@ -1,9 +1,9 @@
 #![expect(unused_mut, unused_variables, reason = "example code")]
 
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 fn main() {
-    let mut flow = hydroflow_syntax! {
+    let mut flow = dfir_syntax! {
         // Hydroflow Surface Syntax goes here
     };
 }

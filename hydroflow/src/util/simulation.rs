@@ -370,15 +370,15 @@ impl Default for Fleet {
 
 #[cfg(test)]
 mod tests {
+    use dfir_macro::{dfir_syntax, dfir_test};
     use futures::StreamExt;
-    use hydroflow_macro::{hydroflow_syntax, hydroflow_test};
 
     use crate::util::simulation::{Address, Fleet, Hostname};
     use crate::util::unbounded_channel;
 
     /// A simple test to demonstrate use of the simulation framework. Implements an echo server
     /// and client.
-    #[hydroflow_test]
+    #[dfir_test]
     async fn test_echo() {
         let mut fleet = Fleet::new();
 
@@ -395,7 +395,7 @@ mod tests {
         fleet.add_host(server.clone(), |ctx| {
             let network_input = ctx.new_inbox::<String>(interface.clone());
             let network_output = ctx.new_outbox::<String>(interface.clone());
-            hydroflow_syntax! {
+            dfir_syntax! {
                 out = dest_sink(network_output);
 
                 source_stream(network_input)
@@ -413,7 +413,7 @@ mod tests {
             let network_out = ctx.new_outbox::<String>(interface.clone());
             let network_in = ctx.new_inbox::<String>(interface.clone());
 
-            hydroflow_syntax! {
+            dfir_syntax! {
                 out = dest_sink(network_out);
 
                 source_stream(client_trigger_rx)

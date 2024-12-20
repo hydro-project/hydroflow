@@ -1,4 +1,4 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::util::collect_ready;
 use multiplatform_test::multiplatform_test;
 
@@ -7,7 +7,7 @@ pub fn test_zip_basic() {
     let (result_send, mut result_recv) =
         hydroflow::util::unbounded_channel::<(usize, &'static str)>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter(0..5) -> [0]my_zip;
         source_iter(["Hello", "World"]) -> [1]my_zip;
         my_zip = zip() -> for_each(|pair| result_send.send(pair).unwrap());
@@ -22,7 +22,7 @@ pub fn test_zip_basic() {
 pub fn test_zip_loop() {
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<(char, usize)>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter("Hello World".chars()) -> [0]my_zip;
         source_iter(0..5) -> rhs;
 
@@ -60,7 +60,7 @@ pub fn test_zip_longest_basic() {
     let (result_send, mut result_recv) =
         hydroflow::util::unbounded_channel::<EitherOrBoth<usize, &'static str>>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter(0..5) -> [0]my_zip_longest;
         source_iter(["Hello", "World"]) -> [1]my_zip_longest;
         my_zip_longest = zip_longest() -> for_each(|pair| result_send.send(pair).unwrap());
@@ -84,7 +84,7 @@ pub fn test_zip_longest_basic() {
 pub fn test_unzip_basic() {
     let (send0, mut recv0) = hydroflow::util::unbounded_channel::<&'static str>();
     let (send1, mut recv1) = hydroflow::util::unbounded_channel::<&'static str>();
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         my_unzip = source_iter(vec![("Hello", "Foo"), ("World", "Bar")]) -> unzip();
         my_unzip[0] -> for_each(|v| send0.send(v).unwrap());
         my_unzip[1] -> for_each(|v| send1.send(v).unwrap());

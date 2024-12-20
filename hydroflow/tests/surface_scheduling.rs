@@ -2,7 +2,7 @@ use std::error::Error;
 use std::time::Duration;
 
 use hydroflow::scheduled::ticks::{TickDuration, TickInstant};
-use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax, rassert_eq};
+use hydroflow::{assert_graphvis_snapshots, dfir_syntax, rassert_eq};
 use multiplatform_test::multiplatform_test;
 use tokio::time::timeout;
 
@@ -10,7 +10,7 @@ use tokio::time::timeout;
 pub fn test_stratum_loop() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<TickInstant>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([TickInstant::new(0)]) -> union_tee;
         union_tee = union() -> tee();
         union_tee -> map(|n| n + TickDuration::SINGLE_TICK) -> filter(|&n| n < TickInstant::new(10)) -> next_stratum() -> defer_tick() -> union_tee;
@@ -44,7 +44,7 @@ pub fn test_stratum_loop() {
 pub fn test_tick_loop() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<TickInstant>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([TickInstant::new(0)]) -> union_tee;
         union_tee = union() -> tee();
         union_tee -> map(|n| n + TickDuration::SINGLE_TICK) -> filter(|&n| n < TickInstant::new(10)) -> defer_tick() -> union_tee;
@@ -78,7 +78,7 @@ pub fn test_tick_loop() {
 async fn test_persist_stratum_run_available() -> Result<(), Box<dyn Error>> {
     let (out_send, out_recv) = hydroflow::util::unbounded_channel();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         a = source_iter([0])
             -> persist::<'static>()
             -> next_stratum()
@@ -102,7 +102,7 @@ async fn test_persist_stratum_run_available() -> Result<(), Box<dyn Error>> {
 async fn test_persist_stratum_run_async() -> Result<(), Box<dyn Error>> {
     let (out_send, out_recv) = hydroflow::util::unbounded_channel();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([0])
             -> persist::<'static>()
             -> next_stratum()
@@ -127,7 +127,7 @@ async fn test_persist_stratum_run_async() -> Result<(), Box<dyn Error>> {
 
 #[multiplatform_test(test, wasm, env_tracing)]
 pub fn test_issue_800_1050_persist() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         in1 = source_iter(0..10) -> map(|i| (i, i));
         in1 -> persist::<'static>() -> my_union_tee;
 
@@ -141,7 +141,7 @@ pub fn test_issue_800_1050_persist() {
 
 #[multiplatform_test(test, wasm, env_tracing)]
 pub fn test_issue_800_1050_fold_keyed() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         in1 = source_iter(0..10) -> map(|i| (i, i));
         in1 -> fold_keyed::<'static>(Vec::new, Vec::push) -> my_union_tee;
 
@@ -155,7 +155,7 @@ pub fn test_issue_800_1050_fold_keyed() {
 
 #[multiplatform_test(test, wasm, env_tracing)]
 pub fn test_issue_800_1050_reduce_keyed() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         in1 = source_iter(0..10) -> map(|i| (i, i));
         in1 -> reduce_keyed::<'static>(std::ops::AddAssign::add_assign) -> my_union_tee;
 
@@ -169,7 +169,7 @@ pub fn test_issue_800_1050_reduce_keyed() {
 
 #[multiplatform_test(hydroflow, env_tracing)]
 async fn test_nospin_issue_961() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([1])
             -> next_stratum()
             -> persist::<'static>()
@@ -185,7 +185,7 @@ async fn test_nospin_issue_961() {
 
 #[multiplatform_test(hydroflow, env_tracing)]
 async fn test_nospin_issue_961_complicated() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([1]) -> items;
         items = union();
 

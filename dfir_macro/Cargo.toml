@@ -1,11 +1,11 @@
 [package]
-name = "hydroflow_macro"
+name = "dfir_macro"
 publish = true
 version = "0.10.0"
 edition = "2021"
 license = "Apache-2.0"
-documentation = "https://docs.rs/hydroflow_macro/"
-description = "Macro for using Hydroflow's Surface Syntax"
+documentation = "https://docs.rs/dfir_macro/"
+description = "Macro for using Hydro's Data Flow Intermediate Representation (DFIR)."
 
 [lints]
 workspace = true

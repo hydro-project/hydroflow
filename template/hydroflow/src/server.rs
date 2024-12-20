@@ -2,7 +2,7 @@ use crate::helpers::print_graph;
 use crate::protocol::Message;
 use crate::DEFAULT_SERVER_ADDRESS;
 use chrono::prelude::*;
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use std::net::SocketAddr;
@@ -30,7 +30,7 @@ pub(crate) async fn run_server(opts: crate::Opts) {
     println!("Server is live! Listening on {:?}", actual_server_addr);
 
     // The skeletal hydroflow spec for a server.
-    let mut flow: Hydroflow = hydroflow_syntax! {
+    let mut flow: Hydroflow = dfir_syntax! {
 
         // Whenever a serialized message is received by the application from a particular address,
         // a (serialized_payload, address_of_sender) pair is emitted by the `inbound` stream.

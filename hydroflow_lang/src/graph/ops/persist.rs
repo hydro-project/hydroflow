@@ -23,7 +23,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// compiler. Equivalently, we could specify that the join has `static` persistence (`my_join = join::<'static>()`).
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
-/// let mut flow = hydroflow::hydroflow_syntax! {
+/// let mut flow = hydroflow::dfir_syntax! {
 ///     source_iter([("hello", "world")]) -> persist::<'static>() -> [0]my_join;
 ///     source_stream(input_recv) -> persist::<'static>() -> [1]my_join;
 ///     my_join = join::<'tick>() -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));

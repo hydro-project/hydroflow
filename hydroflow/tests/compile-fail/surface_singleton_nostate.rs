@@ -1,6 +1,6 @@
 /// Reference an operator that doesn't have singleton state.
 pub fn main() {
-    let mut df = hydroflow::hydroflow_syntax! {
+    let mut df = hydroflow::dfir_syntax! {
         my_ref = source_iter(15..=25) -> null();
         source_iter(10..=30)
             -> persist::<'static>()

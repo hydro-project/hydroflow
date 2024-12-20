@@ -17,7 +17,7 @@ use super::{
 /// async fn serde_in() {
 ///     let addr = hydroflow::util::ipv4_resolve("localhost:9000".into()).unwrap();
 ///     let (outbound, inbound, _) = hydroflow::util::bind_udp_bytes(addr).await;
-///     let mut flow = hydroflow::hydroflow_syntax! {
+///     let mut flow = hydroflow::dfir_syntax! {
 ///         source_stream_serde(inbound) -> map(Result::unwrap) -> map(|(x, a): (String, std::net::SocketAddr)| x.to_uppercase())
 ///             -> for_each(|x| println!("{}", x));
 ///     };

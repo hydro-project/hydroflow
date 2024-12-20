@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use chrono::prelude::*;
-use hydroflow_macro::DemuxEnum;
+use dfir_macro::DemuxEnum;
 use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, DemuxEnum)]

@@ -1,10 +1,10 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
-    let mut flow = hydroflow_syntax! {
+    let mut flow = dfir_syntax! {
         // inputs: the origin vertex (vertex 0) and stream of input edges
         origin = source_iter(vec![0]);
         stream_of_edges = source_stream(pairs_recv) -> tee();

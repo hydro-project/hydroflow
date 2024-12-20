@@ -1,10 +1,10 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::lattices::{IsTop, Max, Merge};
 use hydroflow::util::collect_ready;
 
 #[test]
 fn test_basic() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([1,2,3,4,5])
             -> map(Max::new)
             -> lattice_fold::<'static>(|| Max::<u32>::new(0))
@@ -16,7 +16,7 @@ fn test_basic() {
 #[test]
 fn test_fold_loop() {
     let (output_send, output_recv) = hydroflow::util::unbounded_channel::<u8>();
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         start = source_iter([1])
             -> map(Max::new)
             -> folder;
@@ -36,7 +36,7 @@ fn test_fold_loop() {
 #[test]
 fn test_lattice_fold_loop() {
     let (output_send, output_recv) = hydroflow::util::unbounded_channel::<u8>();
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         start = source_iter([1])
             -> map(Max::<u8>::new)
             -> folder;

@@ -1,9 +1,9 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::lattices::Max;
 
 #[test]
 fn test_basic() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([1,2,3,4,5])
             -> map(Max::new)
             -> lattice_reduce()

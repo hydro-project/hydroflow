@@ -1,4 +1,4 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::bind_udp_bytes;
 
@@ -18,7 +18,7 @@ pub(crate) async fn run_server(opts: Opts) {
 
     println!("Server is live! Listening on {:?}", actual_server_addr);
 
-    let mut hf: Hydroflow = hydroflow_syntax! {
+    let mut hf: Hydroflow = dfir_syntax! {
         // Define shared inbound and outbound channels
         outbound_chan = union() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound)

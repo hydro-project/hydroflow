@@ -1,7 +1,7 @@
-use hydroflow::{hydroflow_syntax, var_args};
+use hydroflow::{dfir_syntax, var_args};
 
 fn main() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         my_demux = source_iter(0..10) -> demux(|item, var_args!(a, b, c)| {
             match item % 3 {
                 0 => a.give(item),

@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use chrono::prelude::*;
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::lattices::{Max, Merge};
 use hydroflow::util::{UdpSink, UdpStream};
 
@@ -15,7 +15,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
 
     println!("Client live!");
 
-    let mut flow = hydroflow_syntax! {
+    let mut flow = dfir_syntax! {
         // Define shared inbound and outbound channels
         inbound_chan = source_stream_serde(inbound) -> map(Result::unwrap) -> tee();
         outbound_chan = // union() ->  // commented out since we only use this once in the client template

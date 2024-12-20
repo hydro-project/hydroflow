@@ -20,16 +20,16 @@ use syn::{
 /// in the [Hydroflow repo](https://github.com/hydro-project/hydroflow).
 // TODO(mingwei): rustdoc examples inline.
 #[proc_macro]
-pub fn hydroflow_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    hydroflow_syntax_internal(input, Some(Level::Help))
+pub fn dfir_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    dfir_syntax_internal(input, Some(Level::Help))
 }
 
-/// [`hydroflow_syntax!`] but will not emit any diagnostics (errors, warnings, etc.).
+/// [`dfir_syntax!`] but will not emit any diagnostics (errors, warnings, etc.).
 ///
-/// Used for testing, users will want to use [`hydroflow_syntax!`] instead.
+/// Used for testing, users will want to use [`dfir_syntax!`] instead.
 #[proc_macro]
-pub fn hydroflow_syntax_noemit(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    hydroflow_syntax_internal(input, None)
+pub fn dfir_syntax_noemit(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    dfir_syntax_internal(input, None)
 }
 
 fn root() -> proc_macro2::TokenStream {
@@ -57,7 +57,7 @@ fn root() -> proc_macro2::TokenStream {
     }
 }
 
-fn hydroflow_syntax_internal(
+fn dfir_syntax_internal(
     input: proc_macro::TokenStream,
     min_diagnostic_level: Option<Level>,
 ) -> proc_macro::TokenStream {
@@ -86,9 +86,9 @@ fn hydroflow_syntax_internal(
 
 /// Parse Hydroflow "surface syntax" without emitting code.
 ///
-/// Used for testing, users will want to use [`hydroflow_syntax!`] instead.
+/// Used for testing, users will want to use [`dfir_syntax!`] instead.
 #[proc_macro]
-pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn dfir_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as HfCode);
 
     let flat_graph_builder = FlatGraphBuilder::from_hfcode(input);
@@ -177,7 +177,7 @@ pub fn monotonic_fn(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn hydroflow_test(
+pub fn dfir_test(
     args: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
@@ -193,7 +193,7 @@ pub fn hydroflow_test(
 }
 
 #[proc_macro_attribute]
-pub fn hydroflow_main(
+pub fn dfir_main(
     _: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {

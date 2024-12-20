@@ -1,7 +1,7 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 fn main() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         out_1 -> inn_1;
         out_0[0] -> inn_0; // Error: `pivot[0][0]`
 

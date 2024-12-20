@@ -1,4 +1,4 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::util::collect_ready;
 use multiplatform_test::multiplatform_test;
 
@@ -12,7 +12,7 @@ pub fn test_demux_1() {
 
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<u32>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         my_demux = source_iter([
             Shape::Circle(5.0),
             Shape::Rectangle { width: 10.0, height: 8.0 },
@@ -40,7 +40,7 @@ pub fn test_demux_1() {
 
 #[multiplatform_test]
 pub fn test_demux_fizzbuzz_1() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         my_demux = source_iter(1..=100)
             -> demux(|v, var_args!(fzbz, fizz, buzz, vals)|
                 match v {
@@ -60,7 +60,7 @@ pub fn test_demux_fizzbuzz_1() {
 
 #[multiplatform_test]
 pub fn test_demux_fizzbuzz_2() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         my_demux = source_iter(1..=100)
         -> demux(|v, var_args!(fzbz, fizz, buzz, vals)|
             match (v % 3, v % 5) {
@@ -80,7 +80,7 @@ pub fn test_demux_fizzbuzz_2() {
 
 #[multiplatform_test]
 pub fn test_partition_fizzbuzz() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         my_partition = source_iter(1..=100)
             -> partition(|&v, [fzbz, fizz, buzz, vals]|
                 match (v % 3, v % 5) {
@@ -100,7 +100,7 @@ pub fn test_partition_fizzbuzz() {
 
 #[multiplatform_test]
 pub fn test_partition_round() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         my_partition = source_iter(0..100)
             -> partition(|v, len| v % len);
         my_partition[2] -> for_each(|x| println!("{} 2", x));

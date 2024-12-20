@@ -1,7 +1,7 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 fn main() {
-    let mut df = hydroflow::hydroflow_syntax! {
+    let mut df = hydroflow::dfir_syntax! {
         source_iter(["hello", "world"])
             -> fold_keyed::<'tick, &str, String, ()>(String::new, |old: &mut _, val| {
                 *old += val;

@@ -1,4 +1,4 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::scheduled::ticks::TickInstant;
 use hydroflow::util::collect_ready;
 use multiplatform_test::multiplatform_test;
@@ -7,7 +7,7 @@ use multiplatform_test::multiplatform_test;
 pub fn test_repeat_iter() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([1]) -> persist::<'static>() -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_eq!(
@@ -39,7 +39,7 @@ pub fn test_repeat_iter() {
 pub fn test_fold_tick() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([1]) -> fold::<'tick>(|| 0, |accum: &mut _, elem| *accum += elem) -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_eq!(
@@ -71,7 +71,7 @@ pub fn test_fold_tick() {
 pub fn test_fold_static() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([1]) -> fold::<'static>(|| 0, |accum: &mut _, elem| *accum += elem) -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_eq!(
@@ -103,7 +103,7 @@ pub fn test_fold_static() {
 pub fn test_reduce_tick() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([1]) -> reduce::<'tick>(|a: &mut _, b| *a += b) -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_eq!(
@@ -135,7 +135,7 @@ pub fn test_reduce_tick() {
 pub fn test_reduce_static() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([1]) -> reduce::<'static>(|a: &mut _, b| *a += b) -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_eq!(
@@ -167,7 +167,7 @@ pub fn test_reduce_static() {
 pub fn test_fold_keyed_tick() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(char, usize)>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([('a', 1), ('a', 2)]) -> fold_keyed::<'tick>(|| 0, |acc: &mut usize, item| { *acc += item; }) -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_eq!(
@@ -199,7 +199,7 @@ pub fn test_fold_keyed_tick() {
 pub fn test_fold_keyed_static() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(char, usize)>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([('a', 1), ('a', 2)]) -> fold_keyed::<'static>(|| 0, |acc: &mut usize, item| { *acc += item; }) -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_eq!(
@@ -237,7 +237,7 @@ pub fn test_resume_external_event() {
     let (in_send, in_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_stream(in_recv) -> fold::<'static>(|| 0, |a: &mut _, b| *a += b) -> for_each(|v| out_send.send(v).unwrap());
     };
 

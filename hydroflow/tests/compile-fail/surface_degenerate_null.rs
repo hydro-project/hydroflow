@@ -1,8 +1,8 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 /// Technically this should/could compile, but it is a completely useless edge case.
 fn main() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         null();
     };
     df.run_available();

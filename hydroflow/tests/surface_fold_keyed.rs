@@ -13,7 +13,7 @@ pub fn test_fold_keyed_infer_basic() {
     let (result_send, mut result_recv) =
         hydroflow::util::unbounded_channel::<(&'static str, u32)>();
 
-    let mut df = hydroflow::hydroflow_syntax! {
+    let mut df = hydroflow::dfir_syntax! {
         source_iter([
             SubordResponse { xid: "123", mtype: 33 },
             SubordResponse { xid: "123", mtype: 52 },
@@ -49,7 +49,7 @@ pub fn test_fold_keyed_tick() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
 
-    let mut df = hydroflow::hydroflow_syntax! {
+    let mut df = hydroflow::dfir_syntax! {
         source_stream(items_recv)
             -> fold_keyed::<'tick>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
             -> for_each(|v| result_send.send(v).unwrap());
@@ -107,7 +107,7 @@ pub fn test_fold_keyed_static() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
 
-    let mut df = hydroflow::hydroflow_syntax! {
+    let mut df = hydroflow::dfir_syntax! {
         source_stream(items_recv)
             -> fold_keyed::<'static>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
             -> for_each(|v| result_send.send(v).unwrap());

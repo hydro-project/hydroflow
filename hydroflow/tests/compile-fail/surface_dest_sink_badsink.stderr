@@ -20,9 +20,9 @@ error[E0277]: the trait bound `&str: hydroflow::futures::Sink<_>` is not satisfi
 note: required by a bound in `sink_feed_flush`
  --> tests/compile-fail/surface_dest_sink_badsink.rs:5:18
   |
-5 |       let mut df = hydroflow_syntax! {
+5 |       let mut df = dfir_syntax! {
   |  __________________^
 6 | |         source_iter(0..10) -> dest_sink(sink);
 7 | |     };
   | |_____^ required by this bound in `sink_feed_flush`
-  = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the macro `dfir_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)

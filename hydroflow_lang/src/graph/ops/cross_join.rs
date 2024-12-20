@@ -19,7 +19,7 @@ use super::{OperatorCategory, OperatorConstraints, WriteContextArgs, RANGE_1};
 ///
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<&str>();
-/// let mut flow = hydroflow::hydroflow_syntax! {
+/// let mut flow = hydroflow::dfir_syntax! {
 ///     my_join = cross_join::<'tick>();
 ///     source_iter(["hello", "bye"]) -> [0]my_join;
 ///     source_stream(input_recv) -> [1]my_join;

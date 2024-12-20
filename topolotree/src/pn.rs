@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::rc::Rc;
 
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::scheduled::ticks::TickInstant;
 use hydroflow::serde::{Deserialize, Serialize};
 use hydroflow::util::deploy::{
@@ -65,7 +65,7 @@ async fn main() {
         }
     };
 
-    let df = hydroflow_syntax! {
+    let df = dfir_syntax! {
         next_state = union()
             -> fold::<'static>(|| (HashMap::<u64, Rc<RefCell<(Vec<u64>, Vec<u64>)>>>::new(), HashSet::new(), TickInstant::default()), |(cur_state, modified_tweets, last_tick): &mut (HashMap<_, _>, HashSet<_>, _), goi| {
                 if context.current_tick() != *last_tick {

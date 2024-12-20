@@ -1,7 +1,7 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 pub fn main() {
-    let mut _flow = hydroflow_syntax! {
+    let mut _flow = dfir_syntax! {
         base = source_iter(vec![1]) -> cycle;
         cycle = union()
                 -> map(|i| i + 1)

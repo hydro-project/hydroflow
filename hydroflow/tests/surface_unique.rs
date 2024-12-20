@@ -1,12 +1,12 @@
 use hydroflow::util::collect_ready;
-use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
+use hydroflow::{assert_graphvis_snapshots, dfir_syntax};
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
 pub fn test_unique() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_stream(items_recv)
             -> unique()
             -> for_each(|v| print!("{:?}, ", v));
@@ -37,7 +37,7 @@ pub fn test_unique() {
 pub fn test_unique_tick_pull() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter(0..10) -> persist::<'static>() -> m1;
         source_iter(5..15) -> persist::<'static>() -> m1;
         m1 = union() -> unique::<'tick>() -> m2;
@@ -60,7 +60,7 @@ pub fn test_unique_tick_pull() {
 pub fn test_unique_static_pull() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter(0..10) -> persist::<'static>() -> m1;
         source_iter(5..15) -> persist::<'static>() -> m1;
         m1 = union() -> unique::<'static>() -> m2;
@@ -83,7 +83,7 @@ pub fn test_unique_static_pull() {
 pub fn test_unique_tick_push() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter(0..10) -> persist::<'static>() -> pivot;
         source_iter(5..15) -> persist::<'static>() -> pivot;
         pivot = union() -> tee();
@@ -106,7 +106,7 @@ pub fn test_unique_tick_push() {
 pub fn test_unique_static_push() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter(0..10) -> persist::<'static>() -> pivot;
         source_iter(5..15) -> persist::<'static>() -> pivot;
         pivot = union() -> tee();

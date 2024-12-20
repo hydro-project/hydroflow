@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use hydroflow_macro::DemuxEnum;
+use dfir_macro::DemuxEnum;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, DemuxEnum)]

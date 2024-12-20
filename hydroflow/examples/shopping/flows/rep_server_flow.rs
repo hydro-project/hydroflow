@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use bytes::Bytes;
 use futures::stream::SplitSink;
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::lattices::Merge;
 use hydroflow::scheduled::graph::Hydroflow;
 use tokio_util::codec::LengthDelimitedCodec;
@@ -31,7 +31,7 @@ pub(crate) async fn rep_server_flow(
     // Set up the Udp socket for proxy-server communication
     let (reqs_out, reqs_in, _) = hydroflow::util::bind_udp_bytes(local_addr).await;
 
-    hydroflow_syntax! {
+    dfir_syntax! {
         // Client Proxy
         source_iter(shopping_ssiv)
           -> map(|pair| (pair, remote_addr)) -> dest_sink_serde(reqs_out);

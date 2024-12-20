@@ -1,5 +1,5 @@
 use hydroflow::compiled::pull::HalfMultisetJoinState;
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::util::deploy::{ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 use serde::{Deserialize, Serialize};
@@ -53,7 +53,7 @@ async fn main() {
     let (clients_connect, clients_disconnect, from_client, to_client) =
         util::ws_server(ws_port).await;
 
-    let df = hydroflow_syntax! {
+    let df = dfir_syntax! {
         all_peers = source_iter((0..number_of_nodes).filter(move |&i| i != self_node_id)) -> persist::<'static>();
 
         // networking

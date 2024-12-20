@@ -3,14 +3,14 @@ use std::collections::HashSet;
 use hydroflow::compiled::pull::HalfMultisetJoinState;
 use hydroflow::scheduled::ticks::TickInstant;
 use hydroflow::util::collect_ready;
-use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
+use hydroflow::{assert_graphvis_snapshots, dfir_syntax};
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
 pub fn test_persist_basic() {
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<u32>();
 
-    let mut hf = hydroflow_syntax! {
+    let mut hf = dfir_syntax! {
         source_iter([1])
             -> persist::<'static>()
             -> persist::<'static>()
@@ -33,7 +33,7 @@ pub fn test_persist_basic() {
 pub fn test_persist_pull() {
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<u32>();
 
-    let mut hf = hydroflow_syntax! {
+    let mut hf = dfir_syntax! {
         // Structured to ensure `persist::<'static>()` is pull-based.
         source_iter([1]) -> persist::<'static>() -> m0;
         null() -> m0;
@@ -59,7 +59,7 @@ pub fn test_persist_pull() {
 pub fn test_persist_push() {
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<u32>();
 
-    let mut hf = hydroflow_syntax! {
+    let mut hf = dfir_syntax! {
         t0 = source_iter([1]) -> persist::<'static>() -> tee();
         t0 -> null();
         t1 = t0 -> persist::<'static>() -> tee();
@@ -81,7 +81,7 @@ pub fn test_persist_push() {
 #[multiplatform_test]
 pub fn test_persist_join() {
     let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
-    let mut flow = hydroflow::hydroflow_syntax! {
+    let mut flow = hydroflow::dfir_syntax! {
         source_iter([("hello", "world")]) -> persist::<'static>() -> [0]my_join;
         source_stream(input_recv) -> persist::<'static>() -> [1]my_join;
         my_join = join::<'tick>() -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
@@ -98,7 +98,7 @@ pub fn test_persist_replay_join() {
     let (other_input_send, other_input) = hydroflow::util::unbounded_channel::<u32>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<(u32, u32)>();
 
-    let mut hf = hydroflow_syntax! {
+    let mut hf = dfir_syntax! {
         source_stream(persist_input)
             -> persist::<'static>()
             -> fold::<'tick>(|| 0, |a: &mut _, b| *a += b)
@@ -131,7 +131,7 @@ pub fn test_persist_double_handoff() {
     let (input_send, input_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (input_2_send, input_2_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (output_send, mut output_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-    let mut flow = hydroflow::hydroflow_syntax! {
+    let mut flow = hydroflow::dfir_syntax! {
         teed_first_sg = source_stream(input_2_recv) -> tee();
         teed_first_sg -> [0] joined_second_sg;
         teed_first_sg -> [1] joined_second_sg;
@@ -160,7 +160,7 @@ pub fn test_persist_single_handoff() {
     let (input_send, input_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (input_2_send, input_2_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (output_send, mut output_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-    let mut flow = hydroflow::hydroflow_syntax! {
+    let mut flow = hydroflow::dfir_syntax! {
         teed_first_sg = source_stream(input_2_recv) -> tee();
         teed_first_sg [0] -> null();
         teed_first_sg [1] -> joined_second_sg;
@@ -190,7 +190,7 @@ pub fn test_persist_single_subgraph() {
     let (input_send, input_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (input_2_send, input_2_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (output_send, mut output_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-    let mut flow = hydroflow::hydroflow_syntax! {
+    let mut flow = hydroflow::dfir_syntax! {
         source_stream(input_2_recv) -> joined_second_sg;
 
         source_stream(input_recv) -> persist::<'static>()
@@ -216,7 +216,7 @@ pub fn test_persist() {
     let (pull_tx, mut pull_rx) = hydroflow::util::unbounded_channel::<usize>();
     let (push_tx, mut push_rx) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
 
         my_tee = source_iter([1, 2, 3])
             -> persist::<'static>() // pull
@@ -243,7 +243,7 @@ pub fn test_persist_mut() {
     let (pull_tx, mut pull_rx) = hydroflow::util::unbounded_channel::<usize>();
     let (push_tx, mut push_rx) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
 
         my_tee = source_iter([Persist(1), Persist(2), Persist(3), Persist(4), Delete(2)])
             -> persist_mut::<'static>() // pull
@@ -271,7 +271,7 @@ pub fn test_persist_mut_keyed() {
     let (pull_tx, mut pull_rx) = hydroflow::util::unbounded_channel::<usize>();
     let (push_tx, mut push_rx) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
 
         my_tee = source_iter([Persist(1, 1), Persist(2, 2), Persist(3, 3), Persist(4, 4), Delete(2)])
             -> persist_mut_keyed::<'static>() // pull

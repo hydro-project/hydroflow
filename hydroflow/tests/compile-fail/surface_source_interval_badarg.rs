@@ -1,8 +1,8 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 #[hydroflow::main]
 async fn main() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         // Should be a `Duration`.
         source_interval(5) -> for_each(std::mem::drop);
     };

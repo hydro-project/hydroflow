@@ -10,7 +10,7 @@ use super::{
 ///
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<u32>();
-/// let mut flow = hydroflow::hydroflow_syntax! {
+/// let mut flow = hydroflow::dfir_syntax! {
 ///     source_stream(input_recv)
 ///         -> multiset_delta()
 ///         -> for_each(|n| println!("{}", n));

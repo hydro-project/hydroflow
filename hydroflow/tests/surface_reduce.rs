@@ -1,5 +1,5 @@
 use hydroflow::scheduled::ticks::TickInstant;
-use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
+use hydroflow::{assert_graphvis_snapshots, dfir_syntax};
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
@@ -7,7 +7,7 @@ pub fn test_reduce_tick() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<u32>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<u32>();
 
-    let mut df = hydroflow::hydroflow_syntax! {
+    let mut df = hydroflow::dfir_syntax! {
         source_stream(items_recv)
             -> reduce::<'tick>(|acc: &mut u32, next: u32| *acc += next)
             -> for_each(|v| result_send.send(v).unwrap());
@@ -50,7 +50,7 @@ pub fn test_reduce_static() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<u32>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<u32>();
 
-    let mut df = hydroflow::hydroflow_syntax! {
+    let mut df = hydroflow::dfir_syntax! {
         source_stream(items_recv)
             -> reduce::<'static>(|acc: &mut u32, next: u32| *acc += next)
             -> for_each(|v| result_send.send(v).unwrap());
@@ -92,7 +92,7 @@ pub fn test_reduce_static() {
 pub fn test_reduce_sum() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_stream(items_recv)
             -> reduce(|a: &mut _, b| *a += b)
             -> for_each(|v| print!("{:?}", v));
@@ -142,7 +142,7 @@ pub fn test_reduce() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         reached_vertices = union() -> map(|v| (v, ()));
         source_iter(vec![0]) -> [0]reached_vertices;
 

@@ -1,4 +1,4 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::wrappers::UnboundedReceiverStream;
@@ -10,7 +10,7 @@ pub(crate) fn rga_datalog(
     rga_send: UnboundedSender<(Token, Timestamp)>,
     list_send: UnboundedSender<(Timestamp, Timestamp)>,
 ) -> Hydroflow<'static> {
-    hydroflow_syntax! {
+    dfir_syntax! {
         edges = source_stream(input_recv) -> tee();
         insertAfter = edges -> map(|(c, p): (Token, Timestamp) | (c.ts, p)) -> tee();
 

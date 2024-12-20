@@ -5,9 +5,9 @@ error: `demux(..)` closure argument `c` missing corresponding output port.
   |                                                                       ^
 
 warning: unused import: `var_args`
- --> tests/compile-fail/surface_demux_port_missing.rs:1:35
+ --> tests/compile-fail/surface_demux_port_missing.rs:1:30
   |
-1 | use hydroflow::{hydroflow_syntax, var_args};
-  |                                   ^^^^^^^^
+1 | use hydroflow::{dfir_syntax, var_args};
+  |                              ^^^^^^^^
   |
   = note: `#[warn(unused_imports)]` on by default

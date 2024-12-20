@@ -7,7 +7,7 @@ use std::sync::LazyLock;
 use criterion::{criterion_group, criterion_main, Criterion};
 use differential_dataflow::input::Input;
 use differential_dataflow::operators::{Iterate, Join, Threshold};
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::scheduled::graph_ext::GraphExt;
 
 static EDGES: LazyLock<HashMap<usize, Vec<usize>>> = LazyLock::new(|| {
@@ -298,7 +298,7 @@ fn benchmark_hydroflow_surface_cheating(c: &mut Criterion) {
                 let df = {
                     let reachable_inner = reachable_verts.clone();
 
-                    hydroflow_syntax! {
+                    dfir_syntax! {
                         origin = source_iter([1]);
                         reached_vertices = union();
                         origin -> reached_vertices;
@@ -334,7 +334,7 @@ fn benchmark_hydroflow_surface(c: &mut Criterion) {
                     let edges = edges.clone();
                     let reachable_inner = reachable_verts.clone();
 
-                    hydroflow_syntax! {
+                    dfir_syntax! {
                         origin = source_iter(vec![1]);
                         stream_of_edges = source_iter(edges);
                         reached_vertices = union();

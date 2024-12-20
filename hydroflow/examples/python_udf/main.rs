@@ -1,4 +1,4 @@
-use hydroflow_macro::hydroflow_syntax;
+use dfir_macro::dfir_syntax;
 use pyo3::{Py, PyAny, PyResult, Python};
 
 #[hydroflow::main]
@@ -7,7 +7,7 @@ async fn main() {
 
     let v = vec![1, 2, 3, 4, 5];
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter(v) -> inspect(
             |x| println!("input:\t{:?}", x)
         )

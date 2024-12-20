@@ -3,9 +3,9 @@ use std::net::SocketAddr;
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
+use dfir_macro::dfir_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
-use hydroflow_macro::hydroflow_syntax;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use serde::{Deserialize, Serialize};
@@ -90,7 +90,7 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
         "Server is live! Listening on {:?}. Gossiping On: {:?}",
         actual_server_addr, gossip_listening_addr
     );
-    let mut hf: Hydroflow = hydroflow_syntax! {
+    let mut hf: Hydroflow = dfir_syntax! {
         // Define shared inbound and outbound channels
         client_out = union() -> dest_sink_serde(client_outbound);
         client_in = source_stream_serde(client_inbound)

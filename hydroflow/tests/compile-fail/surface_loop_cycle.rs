@@ -1,5 +1,5 @@
 fn main() {
-    let mut df = hydroflow::hydroflow_syntax! {
+    let mut df = hydroflow::dfir_syntax! {
         loop {
             a = identity() -> identity() -> identity() -> identity();
             a -> a;

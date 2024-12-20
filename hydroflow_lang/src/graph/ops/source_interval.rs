@@ -20,11 +20,11 @@ use super::{
 /// ```rustbook
 /// use std::time::Duration;
 /// use std::time::Instant;
-/// use hydroflow::hydroflow_syntax;
+///use hydroflow::dfir_syntax;
 ///
 /// #[hydroflow::main]
 /// async fn main() {
-///     let mut hf = hydroflow_syntax! {
+///     let mut hf = dfir_syntax! {
 ///         source_interval(Duration::from_secs(1))
 ///             -> map(|_| { Instant::now() } )
 ///             -> for_each(|time| println!("This runs every second: {:?}", time));

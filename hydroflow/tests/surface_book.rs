@@ -4,7 +4,7 @@ use tokio::time::Instant;
 
 #[multiplatform_test]
 fn test_surface_flows_1() {
-    let mut df = hydroflow::hydroflow_syntax! {
+    let mut df = hydroflow::dfir_syntax! {
         my_tee = source_iter(vec!["Hello", "world"]) -> tee();
         my_tee[0] -> map(|x| x.to_uppercase()) -> [0]my_union;
         my_tee[1] -> map(|x| x.to_lowercase()) -> [1]my_union;
@@ -18,9 +18,9 @@ fn test_surface_flows_1() {
 async fn test_source_interval() {
     use std::time::Duration;
 
-    use hydroflow::hydroflow_syntax;
+    use hydroflow::dfir_syntax;
 
-    let mut hf = hydroflow_syntax! {
+    let mut hf = dfir_syntax! {
         source_interval(Duration::from_secs(1))
             -> map(|_| { Instant::now() } )
             -> for_each(|time| println!("This runs every second: {:?}", time));

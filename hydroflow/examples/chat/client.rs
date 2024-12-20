@@ -1,6 +1,6 @@
 use chrono::prelude::*;
 use colored::Colorize;
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 
 use crate::protocol::Message;
@@ -34,7 +34,7 @@ pub(crate) async fn run_client(opts: Opts) {
         allocated_client_addr, server_addr
     );
 
-    let mut hf = hydroflow_syntax! {
+    let mut hf = dfir_syntax! {
         // set up channels
         outbound_chan = union() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound)

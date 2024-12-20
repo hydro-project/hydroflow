@@ -1,7 +1,7 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 pub fn main() {
-    let mut flow = hydroflow_syntax! {
+    let mut flow = dfir_syntax! {
         my_tee = source_iter(vec!["Hello", "world"]) -> tee();
         my_tee -> map(|x| x.to_uppercase()) -> [low_road]my_union;
         my_tee -> map(|x| x.to_lowercase()) -> [high_road]my_union;

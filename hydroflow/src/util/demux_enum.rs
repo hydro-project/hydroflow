@@ -1,6 +1,6 @@
 //! Trait for the `demux_enum` derive and operator.
 
-pub use hydroflow_macro::DemuxEnum;
+pub use dfir_macro::DemuxEnum;
 
 /// Trait for use with the `demux_enum` operator.
 ///

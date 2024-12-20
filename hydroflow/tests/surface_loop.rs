@@ -1,10 +1,10 @@
 use hydroflow::util::iter_batches_stream;
-use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
+use hydroflow::{assert_graphvis_snapshots, dfir_syntax};
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
 pub fn test_flo_syntax() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         users = source_iter(["alice", "bob"]);
         messages = source_stream(iter_batches_stream(0..12, 3));
         loop {
@@ -20,7 +20,7 @@ pub fn test_flo_syntax() {
 
 #[multiplatform_test]
 pub fn test_flo_nested() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         users = source_iter(["alice", "bob"]);
         messages = source_stream(iter_batches_stream(0..12, 3));
         loop {

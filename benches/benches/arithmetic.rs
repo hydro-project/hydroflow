@@ -2,7 +2,7 @@ use std::sync::mpsc::channel;
 use std::thread;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use static_assertions::const_assert;
 use timely::dataflow::operators::{Inspect, Map, ToStream};
 
@@ -172,7 +172,7 @@ fn benchmark_hydroflow_surface(c: &mut Criterion) {
     c.bench_function("arithmetic/hydroflow/surface", |b| {
         b.iter_batched(
             || {
-                hydroflow_syntax! {
+                dfir_syntax! {
                     source_iter(black_box(0..NUM_INTS))
 
                     -> map(|x| black_box(x + 1))

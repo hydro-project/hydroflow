@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::UdpStream;
 
@@ -13,7 +13,7 @@ pub(crate) async fn listener_flow(
     ssiv_input: UdpStream,
 ) -> Hydroflow<'static> {
     // Simply print what we receive.
-    hydroflow_syntax! {
+    dfir_syntax! {
         source_stream_serde(tuple_input)
             -> map(Result::unwrap)
             -> for_each(|(cart, _): (((usize, ClientClass), Vec<LineItem>), SocketAddr)| println!("{:?}", cart));

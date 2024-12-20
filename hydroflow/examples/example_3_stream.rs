@@ -1,10 +1,10 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 pub fn main() {
     // Create our channel input
     let (input_example, example_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut flow = hydroflow_syntax! {
+    let mut flow = dfir_syntax! {
          source_stream(example_recv)
         -> filter_map(|n: usize| {
             let n2 = n * n;

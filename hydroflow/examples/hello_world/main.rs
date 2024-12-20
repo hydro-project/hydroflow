@@ -1,7 +1,7 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 pub fn main() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter(["Hello World"])
             -> assert_eq(["Hello World"]);
     };

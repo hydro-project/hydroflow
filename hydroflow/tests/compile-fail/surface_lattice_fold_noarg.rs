@@ -1,7 +1,7 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 fn main() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([1,2,3,4,5])
             -> lattice_fold::<hydroflow::lattices::set_union::SetUnionHashSet<u32>>()
             -> for_each(|x| println!("Least upper bound: {:?}", x));

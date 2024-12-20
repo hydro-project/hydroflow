@@ -872,6 +872,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "dfir_macro"
+version = "0.10.0"
+dependencies = [
+ "hydroflow_lang",
+ "itertools",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "rustc_version 0.4.1",
+ "syn 2.0.75",
+]
+
+[[package]]
 name = "differential-dataflow-master"
 version = "0.13.0-dev.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1553,12 +1566,12 @@ dependencies = [
  "clap",
  "colored",
  "criterion",
+ "dfir_macro",
  "futures",
  "getrandom",
  "hydroflow_datalog",
  "hydroflow_deploy_integration",
  "hydroflow_lang",
- "hydroflow_macro",
  "insta",
  "itertools",
  "lattices",
@@ -1649,19 +1662,6 @@ dependencies = [
  "slotmap",
  "syn 2.0.75",
  "webbrowser",
-]
-
-[[package]]
-name = "hydroflow_macro"
-version = "0.10.0"
-dependencies = [
- "hydroflow_lang",
- "itertools",
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "rustc_version 0.4.1",
- "syn 2.0.75",
 ]
 
 [[package]]

@@ -1,7 +1,7 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 fn main() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         // Due to the TODO the `usize` is not caught, but that is ok.
         source_iter(0..10) -> identity::<'a, usize>() -> for_each(std::mem::drop);
     };

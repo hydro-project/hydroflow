@@ -10,7 +10,7 @@ use super::{
 /// so in the example below we illustrate running manually for 100 ticks.
 ///
 /// ```rustbook
-/// let mut flow = hydroflow::hydroflow_syntax! {
+/// let mut flow = hydroflow::dfir_syntax! {
 ///     spin() -> for_each(|x| println!("tick {}: {:?}", context.current_tick(), x));
 /// };
 /// for _ in 1..100 {

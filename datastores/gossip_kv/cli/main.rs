@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use clap::{CommandFactory, Parser, Subcommand};
 use gossip_kv::{ClientRequest, ClientResponse, Key};
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
-use hydroflow::{hydroflow_syntax, tokio, DemuxEnum};
+use hydroflow::{dfir_syntax, tokio, DemuxEnum};
 use tracing::error;
 
 /// CLI program to interact with Layer 0 gossip store.
@@ -98,7 +98,7 @@ async fn main() {
     // Setup UDP sockets for communication.
     let (outbound, inbound, _) = bind_udp_bytes(address).await;
 
-    let mut cli = hydroflow_syntax! {
+    let mut cli = dfir_syntax! {
         inbound_messages = source_stream_serde(inbound) -> map(Result::unwrap) -> for_each(|(response, _addr): (ClientResponse, SocketAddr)| println!("{:?}", response));
 
         outbound_messages = union() -> dest_sink_serde(outbound);

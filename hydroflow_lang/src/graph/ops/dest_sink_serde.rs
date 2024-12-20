@@ -16,7 +16,7 @@ use super::{
 ///     let addr = hydroflow::util::ipv4_resolve("localhost:9000".into()).unwrap();
 ///     let (outbound, inbound, _) = hydroflow::util::bind_udp_bytes(addr).await;
 ///     let remote = hydroflow::util::ipv4_resolve("localhost:9001".into()).unwrap();
-///     let mut flow = hydroflow::hydroflow_syntax! {
+///     let mut flow = hydroflow::dfir_syntax! {
 ///         source_iter(vec![("hello".to_string(), 1), ("world".to_string(), 2)])
 ///             -> map (|m| (m, remote)) -> dest_sink_serde(outbound);
 ///     };

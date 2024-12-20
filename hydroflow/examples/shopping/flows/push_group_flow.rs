@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use bytes::Bytes;
 use futures::stream::SplitSink;
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::lattices::Merge;
 use hydroflow::scheduled::graph::Hydroflow;
 use tokio_util::codec::LengthDelimitedCodec;
@@ -29,7 +29,7 @@ pub(crate) async fn push_group_flow(
     // For each Request in "shopping_ssiv" we group by client, and for each client
     // we grow a SSIV lattice. Then for each SSIV lattice we look up its client_class
     // (basic or prime) via a join operator, and generate the output.
-    hydroflow_syntax! {
+    dfir_syntax! {
         // push fold_keyed through join
         source_iter(shopping_ssiv) -> fold_keyed::<'static>(SSIV_BOT, ssiv_merge) -> [0]lookup_class;
         source_iter(client_class) -> [1]lookup_class;

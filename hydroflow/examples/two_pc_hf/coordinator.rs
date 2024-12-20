@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 
@@ -12,7 +12,7 @@ pub(crate) async fn run_coordinator(outbound: UdpSink, inbound: UdpStream, opts:
     println!("Coordinator live!");
 
     let path = opts.path();
-    let mut df: Hydroflow = hydroflow_syntax! {
+    let mut df: Hydroflow = dfir_syntax! {
         // fetch subordinates from file, convert ip:port to a SocketAddr, and tee
         subords = source_json(path)
             -> flat_map(|json: Addresses| json.subordinates)

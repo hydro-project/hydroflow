@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::collect_ready;
-use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
+use hydroflow::{assert_graphvis_snapshots, dfir_syntax};
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
 use multiplatform_test::multiplatform_test;
 use tokio::sync::mpsc::UnboundedSender;
@@ -47,7 +47,7 @@ pub fn test_cartesian_product_multi_tick() {
     let (rhs_send, rhs_recv) = hydroflow::util::unbounded_channel::<_>();
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
-    let df = hydroflow_syntax! {
+    let df = dfir_syntax! {
         lhs = source_stream(lhs_recv)
             -> map(SetUnionSingletonSet::new_from)
             -> state::<'static, SetUnionHashSet<u32>>();
@@ -73,7 +73,7 @@ pub fn test_cartesian_product_multi_tick_tee() {
     let (rhs_send, rhs_recv) = hydroflow::util::unbounded_channel::<_>();
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
-    let df = hydroflow_syntax! {
+    let df = dfir_syntax! {
         lhs = source_stream(lhs_recv)
             -> map(SetUnionSingletonSet::new_from)
             -> state::<'static, SetUnionHashSet<u32>>();
@@ -101,7 +101,7 @@ pub fn test_cartesian_product_multi_tick_identity() {
     let (rhs_send, rhs_recv) = hydroflow::util::unbounded_channel::<_>();
     let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
-    let df = hydroflow_syntax! {
+    let df = dfir_syntax! {
         lhs = source_stream(lhs_recv)
             -> map(SetUnionSingletonSet::new_from)
             -> state::<'static, SetUnionHashSet<u32>>();

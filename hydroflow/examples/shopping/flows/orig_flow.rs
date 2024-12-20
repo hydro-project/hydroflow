@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use bytes::Bytes;
 use futures::stream::SplitSink;
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use tokio_util::codec::LengthDelimitedCodec;
 use tokio_util::udp::UdpFramed;
@@ -21,7 +21,7 @@ pub(crate) async fn orig_flow(
     // For each Request in "shopping" we look up its "client_class" (basic or prime)
     // via a join operator, then we group by (client, class), and for each such pair
     // we grow a separate vector of ClLineItems. No seal is needed in the sequential case.
-    hydroflow_syntax! {
+    dfir_syntax! {
         // the original flow
         source_iter(shopping) -> [0]lookup_class;
         source_iter(client_class) -> [1]lookup_class;

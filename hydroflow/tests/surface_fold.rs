@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow::scheduled::ticks::TickInstant;
 use hydroflow::util::collect_ready;
-use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
+use hydroflow::{assert_graphvis_snapshots, dfir_syntax};
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
@@ -10,7 +10,7 @@ pub fn test_fold_tick() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<Vec<u32>>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<Vec<u32>>();
 
-    let mut df = hydroflow::hydroflow_syntax! {
+    let mut df = hydroflow::dfir_syntax! {
         source_stream(items_recv)
             -> fold::<'tick>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| { old.append(&mut x); })
             -> for_each(|v| result_send.send(v).unwrap());
@@ -56,7 +56,7 @@ pub fn test_fold_static() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<Vec<u32>>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<Vec<u32>>();
 
-    let mut df = hydroflow::hydroflow_syntax! {
+    let mut df = hydroflow::dfir_syntax! {
         source_stream(items_recv)
             -> fold::<'static>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| { old.append(&mut x); })
             -> for_each(|v| result_send.send(v).unwrap());
@@ -102,7 +102,7 @@ pub fn test_fold_static_join() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
-    let mut df = hydroflow::hydroflow_syntax! {
+    let mut df = hydroflow::dfir_syntax! {
         teed_fold = source_iter(Vec::<usize>::new())
             -> fold::<'tick>(|| 0, |old: &mut usize, _: usize| { *old += 1; })
             -> tee();
@@ -144,7 +144,7 @@ pub fn test_fold_static_join() {
 pub fn test_fold_flatten() {
     // test pull
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(u8, u8)>();
-    let mut df_pull = hydroflow_syntax! {
+    let mut df_pull = dfir_syntax! {
         source_iter([(1,1), (1,2), (2,3), (2,4)])
             -> fold::<'tick>(HashMap::<u8, u8>::new, |ht: &mut HashMap<u8, u8>, t: (u8,u8)| {
                     let e = ht.entry(t.0).or_insert(0);
@@ -171,7 +171,7 @@ pub fn test_fold_flatten() {
 
     // test push
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(u8, u8)>();
-    let mut df_push = hydroflow_syntax! {
+    let mut df_push = dfir_syntax! {
         datagen = source_iter([(1,2), (1,2), (2,4), (2,4)]) -> tee();
         datagen[0] -> fold::<'tick>(HashMap::<u8, u8>::new, |ht: &mut HashMap<u8, u8>, t:(u8,u8)| {
                 let e = ht.entry(t.0).or_insert(0);
@@ -204,7 +204,7 @@ pub fn test_fold_flatten() {
 pub fn test_fold_sort() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_stream(items_recv)
             -> fold::<'tick>(Vec::new, Vec::push)
             -> flat_map(|mut vec| { vec.sort(); vec })
@@ -254,7 +254,7 @@ pub fn test_fold_sort() {
 pub fn test_fold_inference() {
     let (_items_send, items_recv) = hydroflow::util::unbounded_channel::<String>();
 
-    let _ = hydroflow::hydroflow_syntax! {
+    let _ = hydroflow::dfir_syntax! {
         source_stream(items_recv)
             -> fold::<'tick>(|| 0, |old, s| { *old += s.len() })
             -> for_each(|_| {});

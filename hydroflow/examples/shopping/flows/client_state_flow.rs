@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use bytes::Bytes;
 use futures::stream::SplitSink;
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::lattices::Merge;
 use hydroflow::scheduled::graph::Hydroflow;
 use tokio_util::codec::LengthDelimitedCodec;
@@ -32,7 +32,7 @@ pub(crate) async fn client_state_flow(
     // This is like server_state_flow, but we split it into two transducers at a different spot.
     // Here, the first transducer takes in shopping_ssiv requests and runs a stateful fold_keyed, persisting all the shopping requests in ssiv's.
     // The second transducer listens on reqs_in and runs the lookup join.
-    hydroflow_syntax! {
+    dfir_syntax! {
         source_iter(shopping_ssiv)
           -> fold_keyed::<'static>(SSIV_BOT, ssiv_merge)
           -> map(|pair| (pair, remote_addr)) -> dest_sink_serde(carts_out);

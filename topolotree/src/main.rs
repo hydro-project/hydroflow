@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use futures::{SinkExt, Stream};
 use hydroflow::bytes::{Bytes, BytesMut};
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::deploy::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged,
@@ -58,7 +58,7 @@ fn run_topolotree(
 
     // we use current tick to keep track of which *keys* have been modified
 
-    hydroflow_syntax! {
+    dfir_syntax! {
         parsed_input = source_stream(input_recv)
             -> map(Result::unwrap)
             -> map(|(src, x)| (NodeId(src), deserialize_from_bytes::<TopolotreeMessage>(&x).unwrap()))

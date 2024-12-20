@@ -12,7 +12,7 @@ members = [
     "hydroflow_datalog",
     "hydroflow_datalog_core",
     "hydroflow_lang",
-    "hydroflow_macro",
+    "dfir_macro",
     "hydro_lang",
     "hydro_std",
     "hydro_test",

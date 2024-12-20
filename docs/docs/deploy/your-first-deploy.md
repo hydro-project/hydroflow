@@ -78,7 +78,7 @@ Returning briefly to our Hydroflow code, we can then load these ports and use th
 
 ```rust
 use hydroflow_deploy_integration::ConnectedDirect;
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 #[hydroflow::main]
 async fn main() {
@@ -97,7 +97,7 @@ async fn main() {
         .await
         .into_sink();
 
-    hydroflow::util::deploy::launch_flow(hydroflow_syntax! {
+    hydroflow::util::deploy::launch_flow(dfir_syntax! {
         source_iter(["hello".to_string()]) -> dest_sink(output_send);
         input = source_stream(input_recv) -> tee();
         input -> dest_sink(output_send);

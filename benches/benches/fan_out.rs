@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::scheduled::handoff::Iter;
 use hydroflow::scheduled::query::Query as Q;
 use static_assertions::const_assert;
@@ -32,7 +32,7 @@ fn benchmark_hydroflow_surface(c: &mut Criterion) {
     const_assert!(NUM_OPS == 20); // This benchmark is hardcoded for 20 ops, so assert that NUM_OPS is 20.
     c.bench_function("fan_out/hydroflow/surface", |b| {
         b.iter(|| {
-            let mut df = hydroflow_syntax! {
+            let mut df = dfir_syntax! {
                 my_tee = tee();
 
                 source_iter(black_box(0..NUM_INTS)) -> my_tee;

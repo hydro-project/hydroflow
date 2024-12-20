@@ -65,7 +65,7 @@ macro_rules! hydroflow_expect_warnings {
 
             let __file = ::std::file!();
             let __line = ::std::line!() as usize;
-            let __hf = $crate::hydroflow_syntax_noemit! $hf;
+            let __hf = $crate::dfir_syntax_noemit! $hf;
 
             let actuals = __hf.diagnostics().expect("Expected `diagnostics()` to be set.");
             let actuals_len = actuals.len();

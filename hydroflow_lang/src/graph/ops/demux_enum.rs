@@ -23,7 +23,7 @@ use crate::graph::change_spans;
 ///     Triangle { w: f64, h: f64 }
 /// }
 ///
-/// let mut df = hydroflow_syntax! {
+/// let mut df = dfir_syntax! {
 ///     my_demux = source_iter([
 ///         Shape::Square(9.0),
 ///         Shape::Rectangle(10.0, 8.0),

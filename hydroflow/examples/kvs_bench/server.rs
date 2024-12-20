@@ -7,7 +7,7 @@ use bincode::options;
 use bytes::{BufMut, Bytes, BytesMut};
 use futures::Stream;
 use hydroflow::compiled::pull::HalfMultisetJoinState;
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::scheduled::ticks::TickInstant;
 use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 use lattices::map_union::{MapUnionHashMap, MapUnionSingletonMap};
@@ -138,7 +138,7 @@ pub fn run_server<RX>(
 
             let mut throughput_internal = 0usize;
 
-            let mut df = hydroflow_syntax! {
+            let mut df = dfir_syntax! {
 
                 simulated_put_requests = spin() -> flat_map(|_| {
                     let buffer_pool = buffer_pool.clone();

@@ -25,7 +25,7 @@ use super::{
 /// // `PollSender` adapts the send half of the bounded channel into a `Sink`.
 /// let send = tokio_util::sync::PollSender::new(send);
 ///
-/// let mut flow = hydroflow::hydroflow_syntax! {
+/// let mut flow = hydroflow::dfir_syntax! {
 ///     source_iter(0..10) -> dest_sink(send);
 /// };
 /// // Call `run_async()` to allow async events to propagate, run for one second.
@@ -66,7 +66,7 @@ use super::{
 /// // Now instead handle discrete byte strings by length-encoding them.
 /// let sink = tokio_util::codec::FramedWrite::new(asyncwrite, tokio_util::codec::BytesCodec::new());
 ///
-/// let mut flow = hydroflow::hydroflow_syntax! {
+/// let mut flow = hydroflow::dfir_syntax! {
 ///     source_iter([
 ///         Bytes::from_static(b"hello"),
 ///         Bytes::from_static(b"world"),

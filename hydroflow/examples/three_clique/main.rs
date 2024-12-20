@@ -1,5 +1,5 @@
 use clap::Parser;
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 
 // This example detects size three cliques in a graph. Size three cliques are also known as triangles.
@@ -19,7 +19,7 @@ pub fn main() {
     let (edges_send, edges_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     #[expect(clippy::map_identity, reason = "code symmetry")]
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         edges = source_stream(edges_recv) -> tee();
 
         // set up the two joins

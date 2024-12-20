@@ -4,11 +4,11 @@
 //!
 //! The primary item in this crate is the [`Hydroflow`](crate::scheduled::graph::Hydroflow) struct,
 //! representing a Hydroflow dataflow graph. Although this graph can be manually constructed, the
-//! easiest way to instantiate a `Hydroflow` instance is with the [`hydroflow_syntax!`] macro using
+//! easiest way to instantiate a `Hydroflow` instance is with the [`dfir_syntax!`] macro using
 //! Hydroflow's custom "surface syntax."
 //!
 //! ```rust
-//! let mut hf = hydroflow::hydroflow_syntax! {
+//! let mut hf = hydroflow::dfir_syntax! {
 //!     source_iter(["hello", "world"]) -> for_each(|s| println!("{}", s));
 //! };
 //! hf.run_available();
@@ -32,13 +32,13 @@ pub use {
 
 /// `#[macro_use]` automagically brings the declarative macro export to the crate-level.
 mod declarative_macro;
+#[cfg(feature = "dfir_macro")]
+pub use dfir_macro::{
+    dfir_main as main, dfir_parser, dfir_syntax, dfir_syntax_noemit, dfir_test as test,
+    monotonic_fn, morphism, DemuxEnum,
+};
 #[cfg(feature = "hydroflow_datalog")]
 pub use hydroflow_datalog::*;
-#[cfg(feature = "hydroflow_macro")]
-pub use hydroflow_macro::{
-    hydroflow_main as main, hydroflow_parser, hydroflow_syntax, hydroflow_syntax_noemit,
-    hydroflow_test as test, monotonic_fn, morphism, DemuxEnum,
-};
 
 // TODO(mingwei): Use the [nightly "never" type `!`](https://doc.rust-lang.org/std/primitive.never.html)
 /// Stand-in for the [nightly "never" type `!`](https://doc.rust-lang.org/std/primitive.never.html)
@@ -47,6 +47,6 @@ pub type Never = std::convert::Infallible;
 #[cfg(doctest)]
 mod booktest {
     mod surface_ops {
-        hydroflow_macro::surface_booktest_operators!();
+        dfir_macro::surface_booktest_operators!();
     }
 }

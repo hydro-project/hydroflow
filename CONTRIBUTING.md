@@ -10,7 +10,7 @@ The Hydroflow repo is set up as a monorepo and [Cargo workspace](https://doc.rus
 Relative to the repository root:
 
 * `hydroflow` is the main Hydroflow package, containing the Hydroflow runtime. It re-exports the
-  surface syntax macros in `hydroflow_macro` and `hydroflow_lang`. The runtime is the "scheduled
+  surface syntax macros in `dfir_macro` and `hydroflow_lang`. The runtime is the "scheduled
   layer" while the surface syntax compiler is the "compiled layer".
 * `hydro_lang` and related (hydro_*) packages contain Hydro, which is a functional syntax built on
   top of `hydroflow`.

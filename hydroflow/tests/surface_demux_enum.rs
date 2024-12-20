@@ -1,4 +1,4 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::util::demux_enum::{DemuxEnum, DemuxEnumBase};
 use multiplatform_test::multiplatform_test;
 use pusherator::for_each::ForEach;
@@ -76,7 +76,7 @@ pub fn test_demux_enum() {
         Circle { r: f64 },
     }
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         my_demux = source_iter([
             Shape::Square(9.0),
             Shape::Rectangle { w: 10.0, h: 8.0 },
@@ -105,7 +105,7 @@ pub fn test_demux_enum_generic() {
     where
         N: 'static + Into<f64>,
     {
-        let mut df = hydroflow_syntax! {
+        let mut df = dfir_syntax! {
             my_demux = source_iter([
                 Shape::Square(s),
                 Shape::Rectangle { w, h },
@@ -130,7 +130,7 @@ fn test_zero_variants() {
     enum Never {}
     let (_tx, rx) = hydroflow::util::unbounded_channel::<Never>();
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_stream(rx)
             -> demux_enum::<Never>();
     };
@@ -144,7 +144,7 @@ fn test_one_variant() {
         OnlyMessage(T),
     }
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         input = source_iter([Request::OnlyMessage("hi")]) -> demux_enum::<Request<&'static str>>();
         input[OnlyMessage] -> assert_eq([("hi",)]);
     };

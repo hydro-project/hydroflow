@@ -1,7 +1,7 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 fn main() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         j = join() -> for_each(std::mem::drop);
         source_iter(0..10) -> map(|x| (x, x)) -> [0]j;
         source_iter(0..10) -> [1]j;

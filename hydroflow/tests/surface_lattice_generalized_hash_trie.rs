@@ -1,4 +1,4 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::lattices::ght::lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
 use hydroflow::lattices::ght::GeneralizedHashTrieNode;
 use hydroflow::lattices::GhtType;
@@ -21,7 +21,7 @@ fn test_basic() {
         merged.insert(i);
     }
     println!("merged: {:?}", merged);
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter(input)
             -> map(|t| MyGht::new_from(vec![t]))
             -> lattice_fold::<'static>(MyGht::default)
@@ -51,7 +51,7 @@ fn test_join() {
     >>::DeepJoinLatticeBimorphism;
     type MyBim = GhtBimorphism<MyNodeBim>;
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         R = source_iter(r)
             -> map(|t| MyGht::new_from([t]))
             -> state::<MyGht>();

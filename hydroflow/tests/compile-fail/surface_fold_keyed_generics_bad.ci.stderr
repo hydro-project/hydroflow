@@ -1,7 +1,7 @@
-warning: unused import: `hydroflow::hydroflow_syntax`
+warning: unused import: `hydroflow::dfir_syntax`
   --> tests/compile-fail/surface_fold_keyed_generics_bad.rs:1:5
   |
-1 | use hydroflow::hydroflow_syntax;
+1 |use hydroflow::dfir_syntax;
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: `#[warn(unused_imports)]` on by default

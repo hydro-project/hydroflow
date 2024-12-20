@@ -218,7 +218,7 @@ fn main() {
 
     if Err(VarError::NotPresent) != std::env::var("CARGO_CFG_HYDROFLOW_GENERATE_DOCS") {
         if let Err(err) = update_book() {
-            eprintln!("hydroflow_macro/build.rs error: {:?}", err);
+            eprintln!("dfir_macro/build.rs error: {:?}", err);
         }
     }
 }

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use hydroflow::scheduled::ticks::TickInstant;
-use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
+use hydroflow::{assert_graphvis_snapshots, dfir_syntax};
 use multiplatform_test::multiplatform_test;
 
 macro_rules! assert_contains_each_by_tick {
@@ -27,7 +27,7 @@ pub fn tick_tick() {
     let results = Rc::new(RefCell::new(HashMap::<TickInstant, Vec<_>>::new()));
     let results_inner = Rc::clone(&results);
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([(7, 1), (7, 2)])
             -> [0]my_join;
 
@@ -52,7 +52,7 @@ pub fn tick_static() {
     let results = Rc::new(RefCell::new(HashMap::<TickInstant, Vec<_>>::new()));
     let results_inner = Rc::clone(&results);
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([(7, 1), (7, 2)])
             -> [0]my_join;
 
@@ -77,7 +77,7 @@ pub fn static_tick() {
     let results = Rc::new(RefCell::new(HashMap::<TickInstant, Vec<_>>::new()));
     let results_inner = Rc::clone(&results);
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([(7, 1), (7, 2)])
             -> [0]my_join;
 
@@ -104,7 +104,7 @@ pub fn static_static() {
     let results = Rc::new(RefCell::new(HashMap::<TickInstant, Vec<_>>::new()));
     let results_inner = Rc::clone(&results);
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([(7, 1), (7, 2)])
             -> [0]my_join;
 
@@ -134,7 +134,7 @@ pub fn replay_static() {
     let results = Rc::new(RefCell::new(HashMap::<TickInstant, Vec<_>>::new()));
     let results_inner = Rc::clone(&results);
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([(7, 1), (7, 2)]) -> [0]my_join;
         source_iter([(7, 3), (7, 4)]) -> [1]my_join;
         my_join = join::<'static, 'static>()

@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use hydroflow::lattices::set_union::SetUnionSingletonSet;
 use hydroflow::scheduled::ticks::TickInstant;
-use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
+use hydroflow::{assert_graphvis_snapshots, dfir_syntax};
 use lattices::set_union::SetUnionHashSet;
 use lattices::Merge;
 use multiplatform_test::multiplatform_test;
@@ -27,7 +27,7 @@ pub fn tick_tick_lhs_blocking_rhs_streaming() {
     let results = Rc::new(RefCell::new(HashMap::<TickInstant, Vec<_>>::new()));
     let results_inner = Rc::clone(&results);
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([(7, 1), (7, 2)])
             -> map(|(k, v)| (k, SetUnionSingletonSet::new_from(v)))
             -> [0]my_join;
@@ -56,7 +56,7 @@ pub fn static_tick_lhs_blocking_rhs_streaming() {
     let results = Rc::new(RefCell::new(HashMap::<TickInstant, Vec<_>>::new()));
     let results_inner = Rc::clone(&results);
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([(7, 1), (7, 2)])
             -> map(|(k, v)| (k, SetUnionSingletonSet::new_from(v)))
             -> [0]my_join;
@@ -95,7 +95,7 @@ pub fn static_static_lhs_blocking_rhs_streaming() {
     let results = Rc::new(RefCell::new(HashMap::<TickInstant, Vec<_>>::new()));
     let results_inner = Rc::clone(&results);
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([(7, 1), (7, 2)])
             -> map(|(k, v)| (k, SetUnionSingletonSet::new_from(v)))
             -> [0]my_join;
@@ -125,7 +125,7 @@ pub fn tick_tick_lhs_streaming_rhs_blocking() {
     let results = Rc::new(RefCell::new(HashMap::<TickInstant, Vec<_>>::new()));
     let results_inner = Rc::clone(&results);
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([(7, 1), (7, 2)])
             -> map(|(k, v)| (k, SetUnionSingletonSet::new_from(v)))
             -> [1]my_join;
@@ -154,7 +154,7 @@ pub fn static_tick_lhs_streaming_rhs_blocking() {
     let results = Rc::new(RefCell::new(HashMap::<TickInstant, Vec<_>>::new()));
     let results_inner = Rc::clone(&results);
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([(7, 1), (7, 2)])
             -> map(|(k, v)| (k, SetUnionSingletonSet::new_from(v)))
             -> [1]my_join;
@@ -193,7 +193,7 @@ pub fn static_static_lhs_streaming_rhs_blocking() {
     let results = Rc::new(RefCell::new(HashMap::<TickInstant, Vec<_>>::new()));
     let results_inner = Rc::clone(&results);
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([(7, 1), (7, 2)])
             -> map(|(k, v)| (k, SetUnionSingletonSet::new_from(v)))
             -> [1]my_join;
@@ -224,7 +224,7 @@ pub fn tick_tick_lhs_fold_rhs_reduce() {
     let results = Rc::new(RefCell::new(HashMap::<TickInstant, Vec<_>>::new()));
     let results_inner = Rc::clone(&results);
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         source_iter([(7, 1), (7, 2)])
             -> map(|(k, v)| (k, SetUnionSingletonSet::new_from(v)))
             -> [0]my_join;

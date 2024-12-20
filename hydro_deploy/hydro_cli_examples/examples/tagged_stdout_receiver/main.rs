@@ -1,4 +1,4 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::util::deploy::{ConnectedDirect, ConnectedSource, ConnectedTagged};
 
 #[hydroflow::main]
@@ -10,7 +10,7 @@ async fn main() {
         .await
         .into_source();
 
-    let df = hydroflow_syntax! {
+    let df = dfir_syntax! {
         source_stream(echo_recv) ->
             map(|x| {
                 let x = x.unwrap();

@@ -1,5 +1,5 @@
 use hydroflow::util::demux_enum::DemuxEnum;
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 fn main() {
     #[derive(DemuxEnum)]
@@ -9,7 +9,7 @@ fn main() {
         Circle { r: f64 },
     }
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         my_demux = source_iter(0..5) -> demux_enum::<Shape>();
         my_demux[Rectangle] -> for_each(std::mem::drop);
         my_demux[Circle] -> for_each(std::mem::drop);

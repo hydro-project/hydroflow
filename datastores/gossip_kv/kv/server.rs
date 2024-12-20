@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
 
+use hydroflow::dfir_syntax;
 use hydroflow::futures::{Sink, Stream};
-use hydroflow::hydroflow_syntax;
 use hydroflow::itertools::Itertools;
 use hydroflow::lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap};
 use hydroflow::lattices::set_union::SetUnionHashSet;
@@ -102,7 +102,7 @@ where
     let member_id_5 = my_member_id.clone();
     let member_id_6 = my_member_id.clone();
 
-    hydroflow_syntax! {
+    dfir_syntax! {
 
         on_start = initialize() -> tee();
         on_start -> for_each(|_| info!("{:?}: Transducer {} started.", context.current_tick(), member_id_6));
@@ -413,7 +413,7 @@ mod tests {
             let client_tx = ctx.new_outbox::<ClientRequest>("client".to_string());
             let client_rx = ctx.new_inbox::<ClientResponse>("client".to_string());
 
-            hydroflow_syntax! {
+            dfir_syntax! {
 
                 client_output = dest_sink(client_tx);
 
@@ -520,7 +520,7 @@ mod tests {
 
         fleet.add_host(writer_name.clone(), |ctx| {
             let client_tx = ctx.new_outbox::<ClientRequest>("client".to_string());
-            hydroflow_syntax! {
+            dfir_syntax! {
                 client_output = dest_sink(client_tx);
 
                 source_stream(writer_trigger_rx)
@@ -557,7 +557,7 @@ mod tests {
             let client_tx = ctx.new_outbox::<ClientRequest>("client".to_string());
             let client_rx = ctx.new_inbox::<ClientResponse>("client".to_string());
 
-            hydroflow_syntax! {
+            dfir_syntax! {
                 client_output = dest_sink(client_tx);
 
                 source_stream(reader_trigger_rx)
@@ -703,7 +703,7 @@ mod tests {
 
         fleet.add_host(writer_name.clone(), |ctx| {
             let client_tx = ctx.new_outbox::<ClientRequest>("client".to_string());
-            hydroflow_syntax! {
+            dfir_syntax! {
                 client_output = dest_sink(client_tx);
 
                 source_stream(writer_trigger_rx)
@@ -724,7 +724,7 @@ mod tests {
             let client_tx = ctx.new_outbox::<ClientRequest>("client".to_string());
             let client_rx = ctx.new_inbox::<ClientResponse>("client".to_string());
 
-            hydroflow_syntax! {
+            dfir_syntax! {
                 client_output = dest_sink(client_tx);
 
                 source_stream(reader_trigger_rx)

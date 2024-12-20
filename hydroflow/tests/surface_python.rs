@@ -1,12 +1,12 @@
 #![cfg(feature = "python")]
 
-use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
+use hydroflow::{assert_graphvis_snapshots, dfir_syntax};
 use multiplatform_test::multiplatform_test;
 use pyo3::prelude::*;
 
 #[multiplatform_test(test)]
 pub fn test_python_basic() {
-    let mut hf = hydroflow_syntax! {
+    let mut hf = dfir_syntax! {
         source_iter(0..10)
             -> map(|x| (x,))
             -> py_udf("
@@ -28,7 +28,7 @@ def fib(n):
 
 #[multiplatform_test(test)]
 pub fn test_python_too_many_args() {
-    let mut hf = hydroflow_syntax! {
+    let mut hf = dfir_syntax! {
         source_iter([(5,)])
             -> py_udf("
 def add(a, b):
@@ -45,7 +45,7 @@ def add(a, b):
 
 #[multiplatform_test(test)]
 pub fn test_python_two_args() {
-    let mut hf = hydroflow_syntax! {
+    let mut hf = dfir_syntax! {
         source_iter([(5,1)])
             -> py_udf("
 def add(a, b):

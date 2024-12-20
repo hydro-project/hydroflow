@@ -46,7 +46,7 @@ use super::{
 /// Example using `'tick` persistence:
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
-/// let mut flow = hydroflow::hydroflow_syntax! {
+/// let mut flow = hydroflow::dfir_syntax! {
 ///     source_stream(input_recv)
 ///         -> fold_keyed::<'tick, &str, String>(String::new, |old: &mut _, val| {
 ///             *old += val;

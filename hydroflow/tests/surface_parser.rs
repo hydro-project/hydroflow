@@ -1,9 +1,9 @@
-use hydroflow::hydroflow_parser;
+use hydroflow::dfir_parser;
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
 pub fn test_parser_basic() {
-    hydroflow_parser! {
+    dfir_parser! {
         reached_vertices = (union() -> map(|v| (v, ())));
         (source_iter([0]) -> [0]reached_vertices);
 
@@ -15,7 +15,7 @@ pub fn test_parser_basic() {
         (my_join[1] -> for_each(|x| println!("Reached: {}", x)));
     }
 
-    hydroflow_parser! {
+    dfir_parser! {
         shuffle = (union() -> tee());
         (shuffle[0] -> [0]shuffle);
         (shuffle[1] -> [1]shuffle);
@@ -23,12 +23,12 @@ pub fn test_parser_basic() {
         (shuffle[3] -> [3]shuffle);
     }
 
-    hydroflow_parser! {
+    dfir_parser! {
         x = (map(a) -> map(b));
         (x -> x);
     }
 
-    hydroflow_parser! {
+    dfir_parser! {
         a = map(a); // 0
         b = (union() -> tee()); // 1
         c = union(); // 2
@@ -64,21 +64,21 @@ pub fn test_parser_basic() {
 
 #[multiplatform_test]
 pub fn test_parser_port_reassign() {
-    hydroflow_parser! {
+    dfir_parser! {
         id = identity();
         inn = id;
         out = id;
         out -> inn;
     };
 
-    hydroflow_parser! {
+    dfir_parser! {
         id = identity();
         inn = id;
         out = id;
         out[0] -> [0]inn;
     };
 
-    hydroflow_parser! {
+    dfir_parser! {
         id = identity();
         inn = id;
         out = id;
@@ -88,7 +88,7 @@ pub fn test_parser_port_reassign() {
 
 #[multiplatform_test]
 pub fn test_parser_port_naked_basic() {
-    hydroflow_parser! {
+    dfir_parser! {
         id = identity();
         inn = [0]id;
         out = id[0];
@@ -98,7 +98,7 @@ pub fn test_parser_port_naked_basic() {
 
 #[multiplatform_test]
 pub fn test_parser_port_naked_knot() {
-    hydroflow_parser! {
+    dfir_parser! {
         pivot = union() -> tee();
 
         inn_0 = [0]pivot;
@@ -111,7 +111,7 @@ pub fn test_parser_port_naked_knot() {
         out_1 -> inn_1;
     };
 
-    hydroflow_parser! {
+    dfir_parser! {
         pivot = union() -> tee();
 
         x_0 = [0]pivot[0];
@@ -121,7 +121,7 @@ pub fn test_parser_port_naked_knot() {
         x_1 -> x_1;
     };
 
-    hydroflow_parser! {
+    dfir_parser! {
         pivot = union() -> tee();
 
         x_0 = pivot[0];
@@ -131,7 +131,7 @@ pub fn test_parser_port_naked_knot() {
         x_1 -> [1]x_1;
     };
 
-    hydroflow_parser! {
+    dfir_parser! {
         pivot = union() -> tee();
 
         x_0 = pivot;
@@ -144,7 +144,7 @@ pub fn test_parser_port_naked_knot() {
 
 #[multiplatform_test]
 pub fn test_parser_forwardref_basic() {
-    hydroflow_parser! {
+    dfir_parser! {
         source_iter(0..10) -> c;
         c = for_each(std::mem::drop);
     };
@@ -152,7 +152,7 @@ pub fn test_parser_forwardref_basic() {
 
 #[multiplatform_test]
 pub fn test_parser_forwardref_chain() {
-    hydroflow_parser! {
+    dfir_parser! {
         source_iter(0..10) -> c;
         c = d;
         d = e;
@@ -168,21 +168,21 @@ pub fn test_parser_forwardref_chain() {
 
 #[multiplatform_test]
 pub fn test_parser_forwardref_cycle_right() {
-    hydroflow_parser! {
+    dfir_parser! {
         c = identity() -> c;
     };
 }
 
 #[multiplatform_test]
 pub fn test_parser_forwardref_cycle_left() {
-    hydroflow_parser! {
+    dfir_parser! {
         c = c -> identity();
     };
 }
 
 #[multiplatform_test]
 pub fn test_parser_forwardref_mutual() {
-    hydroflow_parser! {
+    dfir_parser! {
         a = identity() -> b;
         b = identity() -> a;
     };
@@ -193,14 +193,14 @@ pub fn test_parser_forwardref_degen() {
     // TODO(mingwei):
     // This works because no links are created, so it does nothing.
     // But it would obviously be a mistake to write seriously...
-    hydroflow_parser! {
+    dfir_parser! {
         c = c;
     };
 }
 
 #[multiplatform_test]
 pub fn test_parser_forwardref_tee() {
-    hydroflow_parser! {
+    dfir_parser! {
         c = c -> tee();
         c -> for_each(std::mem::drop);
     };
@@ -208,7 +208,7 @@ pub fn test_parser_forwardref_tee() {
 
 #[multiplatform_test]
 pub fn test_parser_forwardref_union() {
-    hydroflow_parser! {
+    dfir_parser! {
         c = union() -> c;
         source_iter(0..10) -> c;
     };
@@ -216,7 +216,7 @@ pub fn test_parser_forwardref_union() {
 
 #[multiplatform_test]
 pub fn test_parser_forwardref_knot() {
-    hydroflow_parser! {
+    dfir_parser! {
         inn_0 = [0]pivot;
         inn_1 = [1]pivot;
 
@@ -232,14 +232,14 @@ pub fn test_parser_forwardref_knot() {
 
 #[multiplatform_test]
 pub fn test_parser_forwardref_self_middle() {
-    hydroflow_parser! {
+    dfir_parser! {
         self_ref = map(|a: usize| a) -> [0]self_ref[1] -> map(|b: usize| b);
     };
 }
 
 #[multiplatform_test]
 pub fn test_flo_syntax() {
-    hydroflow_parser! {
+    dfir_parser! {
         users = source_stream(0..);
         messages = source_stream(0..);
         loop {

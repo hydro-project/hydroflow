@@ -1,7 +1,7 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 fn main() {
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         my_demux = source_iter(0..10) -> demux(std::mem::drop);
         my_demux[a] -> for_each(std::mem::drop);
         my_demux[b] -> for_each(std::mem::drop);

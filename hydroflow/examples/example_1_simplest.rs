@@ -1,10 +1,10 @@
 //[use]//
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 //[/use]//
 
 //[macro_call]//
 pub fn main() {
-    let mut flow = hydroflow_syntax! {
+    let mut flow = dfir_syntax! {
         source_iter(0..10) -> for_each(|n| println!("Hello {}", n));
     };
     //[/macro_call]//

@@ -23,7 +23,7 @@ use crate::diagnostic::{Diagnostic, Level};
 ///
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<usize>();
-/// let mut flow = hydroflow::hydroflow_syntax! {
+/// let mut flow = hydroflow::dfir_syntax! {
 ///     source_stream(input_recv)
 ///         -> unique::<'tick>()
 ///         -> for_each(|n| println!("{}", n));

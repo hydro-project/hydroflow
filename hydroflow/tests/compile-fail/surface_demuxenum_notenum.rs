@@ -1,11 +1,11 @@
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 
 fn main() {
     struct Shape {
         area: f64,
     }
 
-    let mut df = hydroflow_syntax! {
+    let mut df = dfir_syntax! {
         my_demux = source_iter([
             Shape { area: 10.0 },
             Shape { area: 9.0 },

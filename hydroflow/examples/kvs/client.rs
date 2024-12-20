@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use hydroflow::hydroflow_syntax;
+use hydroflow::dfir_syntax;
 use hydroflow::util::{UdpSink, UdpStream};
 
 use crate::helpers::parse_command;
@@ -15,7 +15,7 @@ pub(crate) async fn run_client(
 ) {
     println!("Client live!");
 
-    let mut hf = hydroflow_syntax! {
+    let mut hf = dfir_syntax! {
         // set up channels
         outbound_chan = dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound) -> map(Result::unwrap);
