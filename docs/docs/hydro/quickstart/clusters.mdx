@@ -7,7 +7,7 @@ import firstTenClusterExample from '!!raw-loader!../../../../template/hydroflow_
 import { getLines, highlightLines, extractOutput } from '../../../src/util';
 
 # Scaling with Clusters
-So far, we have looked at distributed systems where each process is running a different piece of the compute graph -- **compute parallelism**. However, we can also use Hydroflow+ to run the same computation on multiple processes -- achieving **data parallelism** (e.g. partitioning). This is done by creating a **cluster** of processes that all run the same subgraph of code.
+So far, we have looked at distributed systems where each process is running a different piece of the compute graph -- **compute parallelism**. However, we can also use Hydro to run the same computation on multiple processes -- achieving **data parallelism** (e.g. partitioning). This is done by creating a **cluster** of processes that all run the same subgraph of code.
 
 ## Dataflow with Clusters
 Just like we use the `Process` type to represent a virtual handle to a single node, we can use the **`Cluster`** type to represent a handle to a **set of nodes** (with size unknown at compile-time).

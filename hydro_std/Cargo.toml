@@ -5,7 +5,7 @@ version = "0.10.0"
 edition = "2021"
 license = "Apache-2.0"
 documentation = "https://docs.rs/hydroflow_plus_std/"
-description = "Standard library of distributed systems building blocks for Hydroflow+"
+description = "Standard library of distributed systems building blocks for Hydro"
 
 [lints]
 workspace = true

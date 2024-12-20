@@ -236,7 +236,7 @@ fn bench_client<'a>(
         .flatten_ordered()
         .fold_commutative(
             // Create window with ring buffer using vec + wraparound index
-            // TODO: Would be nice if I could use vec![] instead, but that doesn't work in HF+ with RuntimeData *median_latency_window_size
+            // TODO: Would be nice if I could use vec![] instead, but that doesn't work in Hydro with RuntimeData *median_latency_window_size
             q!(move || (
                 Rc::new(RefCell::new(Vec::<Duration>::with_capacity(
                     median_latency_window_size

@@ -6,6 +6,6 @@ pub mod distributed;
 #[doc(hidden)]
 #[stageleft::runtime]
 mod docs {
-    #[doc = include_str!("../../docs/docs/hydroflow_plus/consistency.md")]
+    #[doc = include_str!("../../docs/docs/hydro/consistency.md")]
     mod consistency {}
 }

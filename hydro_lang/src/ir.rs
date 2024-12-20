@@ -60,7 +60,7 @@ impl Debug for DebugInstantiate {
     }
 }
 
-/// A source in a Hydroflow+ graph, where data enters the graph.
+/// A source in a Hydro graph, where data enters the graph.
 #[derive(Debug)]
 pub enum HfPlusSource {
     Stream(DebugExpr),
@@ -69,7 +69,7 @@ pub enum HfPlusSource {
     Spin(),
 }
 
-/// An leaf in a Hydroflow+ graph, which is an pipeline that doesn't emit
+/// An leaf in a Hydro graph, which is an pipeline that doesn't emit
 /// any downstream values. Traversals over the dataflow graph and
 /// generating Hydroflow IR start from leaves.
 #[derive(Debug)]
@@ -261,7 +261,7 @@ impl Debug for TeeNode {
     }
 }
 
-/// An intermediate node in a Hydroflow+ graph, which consumes data
+/// An intermediate node in a Hydro graph, which consumes data
 /// from upstream nodes and emits data to downstream nodes.
 #[derive(Debug)]
 pub enum HfPlusNode {
