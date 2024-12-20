@@ -1,6 +1,6 @@
+use dfir_datalog::datalog;
 use hydroflow::util::deploy::{ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
-use hydroflow_datalog::datalog;
 
 #[hydroflow::main]
 async fn main() {

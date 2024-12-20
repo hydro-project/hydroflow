@@ -32,13 +32,13 @@ pub use {
 
 /// `#[macro_use]` automagically brings the declarative macro export to the crate-level.
 mod declarative_macro;
+#[cfg(feature = "dfir_datalog")]
+pub use dfir_datalog::*;
 #[cfg(feature = "dfir_macro")]
 pub use dfir_macro::{
     dfir_main as main, dfir_parser, dfir_syntax, dfir_syntax_noemit, dfir_test as test,
     monotonic_fn, morphism, DemuxEnum,
 };
-#[cfg(feature = "hydroflow_datalog")]
-pub use hydroflow_datalog::*;
 
 // TODO(mingwei): Use the [nightly "never" type `!`](https://doc.rust-lang.org/std/primitive.never.html)
 /// Stand-in for the [nightly "never" type `!`](https://doc.rust-lang.org/std/primitive.never.html)

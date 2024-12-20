@@ -14,7 +14,7 @@ Relative to the repository root:
   layer" while the surface syntax compiler is the "compiled layer".
 * `hydro_lang` and related (hydro_*) packages contain Hydro, which is a functional syntax built on
   top of `hydroflow`.
-* `hydroflow_datalog` provides a datalog compiler, based on top of the Hydroflow surface syntax.
+* `dfir_datalog` provides a datalog compiler, based on top of the Hydroflow surface syntax.
 * `docs` is the [Hydro.run](https://hydro.run/) website. `website_playground` contains the
   playground portion of the website, used for compiling Hydroflow in-browser via WASM.
 * `benches` contains some microbenchmarks for Hydroflow and other frameworks.
@@ -33,7 +33,7 @@ There are auxillary repositories as well:
 
 * [`hydro-project/rust-sitter`](https://github.com/hydro-project/rust-sitter) provides a
   [Tree-sitter](https://tree-sitter.github.io/tree-sitter/)-based parser generator interface, used
-  by `hydroflow_datalog`.
+  by `dfir_datalog`.
 
 ## Rust
 

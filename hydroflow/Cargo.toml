@@ -14,9 +14,9 @@ workspace = true
 default = [ "macros", "debugging", "meta" ]
 
 meta = [ "dep:hydroflow_lang" ]
-macros = [ "dfir_macro", "hydroflow_datalog" ]
+macros = [ "dfir_macro", "dfir_datalog" ]
 dfir_macro = [ "dep:dfir_macro" ]
-hydroflow_datalog = [ "dep:hydroflow_datalog" ]
+dfir_datalog = [ "dep:dfir_datalog" ]
 deploy_integration = [ "dep:hydroflow_deploy_integration" ]
 python = [ "dep:pyo3" ]
 debugging = [ "hydroflow_lang/debugging" ]
@@ -35,7 +35,7 @@ byteorder = "1.3.2"
 bytes = "1.1.0"
 futures = "0.3.0"
 hydroflow_deploy_integration = { optional = true, path = "../hydro_deploy/hydroflow_deploy_integration", version = "^0.10.0" }
-hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "^0.10.0" }
+dfir_datalog = { optional = true, path = "../dfir_datalog", version = "^0.10.0" }
 hydroflow_lang = { path = "../hydroflow_lang", version = "^0.10.0", optional = true }
 dfir_macro = { optional = true, path = "../dfir_macro", version = "^0.10.0" }
 itertools = "0.10.0"

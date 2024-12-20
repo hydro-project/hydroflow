@@ -25,7 +25,7 @@ path = "src/latency_measure.rs"
 
 [dependencies]
 hydroflow = { path = "../hydroflow", features = [ "deploy_integration" ] }
-hydroflow_datalog = { path = "../hydroflow_datalog" }
+dfir_datalog = { path = "../dfir_datalog" }
 
 tokio = { version = "1.29.0", features = [ "full" ] }
 serde = { version = "1.0.197", features = ["rc"] }

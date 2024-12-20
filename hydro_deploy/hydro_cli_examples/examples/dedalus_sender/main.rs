@@ -1,7 +1,7 @@
+use dfir_datalog::datalog;
 use hydroflow::tokio_stream::wrappers::IntervalStream;
 use hydroflow::util::deploy::{ConnectedDemux, ConnectedDirect, ConnectedSink};
 use hydroflow::util::serialize_to_bytes;
-use hydroflow_datalog::datalog;
 
 #[hydroflow::main]
 async fn main() {
