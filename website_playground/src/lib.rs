@@ -98,7 +98,7 @@ pub struct HydroflowOutput {
 }
 
 #[wasm_bindgen]
-pub fn compile_hydroflow(
+pub fn compile_dfir(
     program: String,
     no_subgraphs: bool,
     no_varnames: bool,

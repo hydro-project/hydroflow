@@ -169,8 +169,8 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Hydroflow',
-                to: '/docs/hydroflow/',
+                label: 'DFIR',
+                to: '/docs/dfir/',
               },
               {
                 label: 'Hydro',

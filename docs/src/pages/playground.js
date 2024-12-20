@@ -14,7 +14,7 @@ let compile_DFIR = null;
 let compile_datalog = null;
 
 if (siteConfig.customFields.LOAD_PLAYGROUND === '1') {
-  compile_DFIR = playgroundJS.compile_DFIR;
+  compile_DFIR = playgroundJS.compile_dfir;
   compile_datalog = playgroundJS.compile_datalog;
 
   if (ExecutionEnvironment.canUseDOM) {
@@ -53,11 +53,11 @@ function MermaidGraph({ id, source }) {
 
 const DFIRExamples = {
   "Simplest": `\
-// https://hydro.run/docs/hydroflow/quickstart/example_1_simplest
+// https://hydro.run/docs/dfir/quickstart/example_1_simplest
 source_iter(0..10) -> for_each(|n| println!("Hello {}", n));`,
 
   "Simple": `\
-// https://hydro.run/docs/hydroflow/quickstart/example_2_simple
+// https://hydro.run/docs/dfir/quickstart/example_2_simple
 source_iter(0..10)
   -> map(|n| n * n)
   -> filter(|n| *n > 10)
@@ -115,7 +115,7 @@ inbound_chan[acks] -> [1]msg_send;
 inbound_chan[msgs] -> for_each(pretty_print_msg);`,
 
   "Graph Neighbors": `\
-// https://hydro.run/docs/hydroflow/quickstart/example_4_neighbors
+// https://hydro.run/docs/dfir/quickstart/example_4_neighbors
 // inputs: the origin vertex (vertex 0) and stream of input edges
 origin = source_iter(vec![0]);
 stream_of_edges = source_stream(edges_recv);
@@ -127,7 +127,7 @@ stream_of_edges -> [1]my_join;
 my_join -> unique() -> for_each(|n| println!("Reached: {}", n));`,
 
   "Graph Reachability": `\
-// https://hydro.run/docs/hydroflow/quickstart/example_5_reachability
+// https://hydro.run/docs/dfir/quickstart/example_5_reachability
 // inputs: the origin vertex (vertex 0) and stream of input edges
 origin = source_iter(vec![0]);
 stream_of_edges = source_stream(edges_recv);
@@ -142,7 +142,7 @@ my_join_tee[0] -> [1]reached_vertices;
 my_join_tee[1] -> unique() -> for_each(|x| println!("Reached: {}", x));`,
 
   "Graph Un-Reachability": `\
-// https://hydro.run/docs/hydroflow/quickstart/example_6_unreachability
+// https://hydro.run/docs/dfir/quickstart/example_6_unreachability
 origin = source_iter(vec![0]);
 stream_of_edges = source_stream(pairs_recv) -> tee();
 reached_vertices = union()->tee();
