@@ -28,7 +28,7 @@ To (dry) run the command locally to spot-check for errors and warnings:
 cargo smart-release --update-crates-index \
    --no-changelog-preview --allow-fully-generated-changelogs \
    --bump-dependencies auto --bump minor \ # or `patch`, `major`, `keep`, `auto`
-   hydroflow hydroflow_lang hydroflow_macro hydroflow_plus \
+   hydroflow hydroflow_lang hydroflow_macro hydro_lang \
    hydroflow_datalog hydroflow_datalog_core \
    hydro_deploy hydro_cli hydroflow_cli_integration \
    hydroflow_plus_cli_integration \

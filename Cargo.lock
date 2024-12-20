@@ -1460,6 +1460,89 @@ dependencies = [
 ]
 
 [[package]]
+name = "hydro_lang"
+version = "0.10.0"
+dependencies = [
+ "async-ssh2-lite",
+ "bincode",
+ "ctor",
+ "hydro_deploy",
+ "hydroflow",
+ "hydroflow_lang",
+ "insta",
+ "match_box",
+ "nameof",
+ "prettyplease",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "sealed 0.6.0",
+ "serde",
+ "sha2",
+ "stageleft",
+ "stageleft_tool",
+ "syn 2.0.75",
+ "tokio",
+ "toml",
+ "trybuild",
+ "trybuild-internals-api",
+]
+
+[[package]]
+name = "hydro_std"
+version = "0.10.0"
+dependencies = [
+ "async-ssh2-lite",
+ "ctor",
+ "hydro_deploy",
+ "hydro_lang",
+ "insta",
+ "stageleft",
+ "stageleft_tool",
+]
+
+[[package]]
+name = "hydro_test"
+version = "0.0.0"
+dependencies = [
+ "async-ssh2-lite",
+ "futures",
+ "hydro_deploy",
+ "hydro_lang",
+ "hydro_std",
+ "insta",
+ "rand",
+ "serde",
+ "stageleft",
+ "stageleft_tool",
+ "tokio",
+]
+
+[[package]]
+name = "hydro_test_local"
+version = "0.0.0"
+dependencies = [
+ "futures",
+ "hydro_lang",
+ "hydro_test_local_macro",
+ "hydroflow",
+ "insta",
+ "rand",
+ "stageleft",
+ "stageleft_tool",
+]
+
+[[package]]
+name = "hydro_test_local_macro"
+version = "0.0.0"
+dependencies = [
+ "hydro_lang",
+ "rand",
+ "stageleft",
+ "stageleft_tool",
+]
+
+[[package]]
 name = "hydroflow"
 version = "0.10.0"
 dependencies = [
@@ -1579,89 +1662,6 @@ dependencies = [
  "quote",
  "rustc_version 0.4.1",
  "syn 2.0.75",
-]
-
-[[package]]
-name = "hydroflow_plus"
-version = "0.10.0"
-dependencies = [
- "async-ssh2-lite",
- "bincode",
- "ctor",
- "hydro_deploy",
- "hydroflow",
- "hydroflow_lang",
- "insta",
- "match_box",
- "nameof",
- "prettyplease",
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "sealed 0.6.0",
- "serde",
- "sha2",
- "stageleft",
- "stageleft_tool",
- "syn 2.0.75",
- "tokio",
- "toml",
- "trybuild",
- "trybuild-internals-api",
-]
-
-[[package]]
-name = "hydroflow_plus_std"
-version = "0.10.0"
-dependencies = [
- "async-ssh2-lite",
- "ctor",
- "hydro_deploy",
- "hydroflow_plus",
- "insta",
- "stageleft",
- "stageleft_tool",
-]
-
-[[package]]
-name = "hydroflow_plus_test"
-version = "0.0.0"
-dependencies = [
- "async-ssh2-lite",
- "futures",
- "hydro_deploy",
- "hydroflow_plus",
- "hydroflow_plus_std",
- "insta",
- "rand",
- "serde",
- "stageleft",
- "stageleft_tool",
- "tokio",
-]
-
-[[package]]
-name = "hydroflow_plus_test_local"
-version = "0.0.0"
-dependencies = [
- "futures",
- "hydroflow",
- "hydroflow_plus",
- "hydroflow_plus_test_local_macro",
- "insta",
- "rand",
- "stageleft",
- "stageleft_tool",
-]
-
-[[package]]
-name = "hydroflow_plus_test_local_macro"
-version = "0.0.0"
-dependencies = [
- "hydroflow_plus",
- "rand",
- "stageleft",
- "stageleft_tool",
 ]
 
 [[package]]
