@@ -173,7 +173,7 @@ const config = {
                 to: '/docs/hydroflow/',
               },
               {
-                label: 'Hydroflow+',
+                label: 'Hydro',
                 to: '/docs/hydroflow_plus/',
               },
               {
