@@ -9,7 +9,7 @@ use stageleft::{q, QuotedWithContext};
 
 use super::builder::FlowState;
 use crate::cycle::{CycleCollection, ForwardRef, ForwardRefMarker};
-use crate::ir::{HfPlusNode, HfPlusSource};
+use crate::ir::{HydroNode, HydroSource};
 use crate::{Singleton, Stream, Unbounded};
 
 pub mod external_process;
@@ -88,8 +88,8 @@ pub trait Location<'a>: Clone {
     {
         Stream::new(
             self.clone(),
-            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
-                source: HfPlusSource::Spin(),
+            HydroNode::Persist(Box::new(HydroNode::Source {
+                source: HydroSource::Spin(),
                 location_kind: self.id(),
             })),
         )
@@ -106,8 +106,8 @@ pub trait Location<'a>: Clone {
 
         Stream::new(
             self.clone(),
-            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
-                source: HfPlusSource::Stream(e.into()),
+            HydroNode::Persist(Box::new(HydroNode::Source {
+                source: HydroSource::Stream(e.into()),
                 location_kind: self.id(),
             })),
         )
@@ -126,8 +126,8 @@ pub trait Location<'a>: Clone {
 
         Stream::new(
             self.clone(),
-            HfPlusNode::Persist(Box::new(HfPlusNode::Source {
-                source: HfPlusSource::Iter(e.into()),
+            HydroNode::Persist(Box::new(HydroNode::Source {
+                source: HydroSource::Iter(e.into()),
                 location_kind: self.id(),
             })),
         )
@@ -151,12 +151,10 @@ pub trait Location<'a>: Clone {
         // so that it grows every tick
         Singleton::new(
             self.clone(),
-            HfPlusNode::Persist(Box::new(HfPlusNode::Persist(Box::new(
-                HfPlusNode::Source {
-                    source: HfPlusSource::Iter(e.into()),
-                    location_kind: self.id(),
-                },
-            )))),
+            HydroNode::Persist(Box::new(HydroNode::Persist(Box::new(HydroNode::Source {
+                source: HydroSource::Iter(e.into()),
+                location_kind: self.id(),
+            })))),
         )
     }
 

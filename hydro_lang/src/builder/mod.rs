@@ -11,7 +11,7 @@ use stageleft::*;
 
 #[cfg(feature = "build")]
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDeploy};
-use crate::ir::HfPlusLeaf;
+use crate::ir::HydroLeaf;
 use crate::location::{Cluster, ExternalProcess, Process};
 use crate::staging_util::Invariant;
 
@@ -26,7 +26,7 @@ pub struct FlowStateInner {
     /// Tracks the leaves of the dataflow IR. This is referenced by
     /// `Stream` and `HfCycle` to build the IR. The inner option will
     /// be set to `None` when this builder is finalized.
-    pub(crate) leaves: Option<Vec<HfPlusLeaf>>,
+    pub(crate) leaves: Option<Vec<HydroLeaf>>,
 
     /// Counter for generating unique external output identifiers.
     pub(crate) next_external_out: usize,
@@ -116,7 +116,7 @@ impl<'a> FlowBuilder<'a> {
     #[cfg(feature = "build")]
     pub fn optimize_with(
         self,
-        f: impl FnOnce(Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf>,
+        f: impl FnOnce(Vec<HydroLeaf>) -> Vec<HydroLeaf>,
     ) -> built::BuiltFlow<'a> {
         self.finalize().optimize_with(f)
     }

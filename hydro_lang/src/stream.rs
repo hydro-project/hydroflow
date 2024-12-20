@@ -14,7 +14,7 @@ use tokio::time::Instant;
 
 use crate::builder::FLOW_USED_MESSAGE;
 use crate::cycle::{CycleCollection, CycleComplete, DeferTick, ForwardRefMarker, TickCycleMarker};
-use crate::ir::{DebugInstantiate, HfPlusLeaf, HfPlusNode, TeeNode};
+use crate::ir::{DebugInstantiate, HydroLeaf, HydroNode, TeeNode};
 use crate::location::cluster::CLUSTER_SELF_ID;
 use crate::location::external_process::{ExternalBincodeStream, ExternalBytesPort};
 use crate::location::tick::{NoTimestamp, Timestamped};
@@ -69,7 +69,7 @@ impl MinOrder<TotalOrder> for NoOrder {
 ///   or [`NoOrder`] (default is [`TotalOrder`])
 pub struct Stream<T, L, B, Order = TotalOrder> {
     location: L,
-    pub(crate) ir_node: RefCell<HfPlusNode>,
+    pub(crate) ir_node: RefCell<HydroNode>,
 
     _phantom: PhantomData<(T, L, B, Order)>,
 }
@@ -105,7 +105,7 @@ impl<'a, T, L: Location<'a>, Order> CycleCollection<'a, TickCycleMarker>
         let location_id = location.id();
         Stream::new(
             location,
-            HfPlusNode::CycleSource {
+            HydroNode::CycleSource {
                 ident,
                 location_kind: location_id,
             },
@@ -128,7 +128,7 @@ impl<'a, T, L: Location<'a>, Order> CycleComplete<'a, TickCycleMarker>
             .leaves
             .as_mut()
             .expect(FLOW_USED_MESSAGE)
-            .push(HfPlusLeaf::CycleSink {
+            .push(HydroLeaf::CycleSink {
                 ident,
                 location_kind: self.location_kind(),
                 input: Box::new(self.ir_node.into_inner()),
@@ -145,7 +145,7 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> CycleCollection<'a, ForwardRefMa
         let location_id = location.id();
         Stream::new(
             location,
-            HfPlusNode::Persist(Box::new(HfPlusNode::CycleSource {
+            HydroNode::Persist(Box::new(HydroNode::CycleSource {
                 ident,
                 location_kind: location_id,
             })),
@@ -168,16 +168,16 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> CycleComplete<'a, ForwardRefMark
             .leaves
             .as_mut()
             .expect(FLOW_USED_MESSAGE)
-            .push(HfPlusLeaf::CycleSink {
+            .push(HydroLeaf::CycleSink {
                 ident,
                 location_kind: self.location_kind(),
-                input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
+                input: Box::new(HydroNode::Unpersist(Box::new(self.ir_node.into_inner()))),
             });
     }
 }
 
 impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
-    pub(crate) fn new(location: L, ir_node: HfPlusNode) -> Self {
+    pub(crate) fn new(location: L, ir_node: HydroNode) -> Self {
         Stream {
             location,
             ir_node: RefCell::new(ir_node),
@@ -188,17 +188,17 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
 
 impl<'a, T: Clone, L: Location<'a>, B, Order> Clone for Stream<T, L, B, Order> {
     fn clone(&self) -> Self {
-        if !matches!(self.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
-            let orig_ir_node = self.ir_node.replace(HfPlusNode::Placeholder);
-            *self.ir_node.borrow_mut() = HfPlusNode::Tee {
+        if !matches!(self.ir_node.borrow().deref(), HydroNode::Tee { .. }) {
+            let orig_ir_node = self.ir_node.replace(HydroNode::Placeholder);
+            *self.ir_node.borrow_mut() = HydroNode::Tee {
                 inner: TeeNode(Rc::new(RefCell::new(orig_ir_node))),
             };
         }
 
-        if let HfPlusNode::Tee { inner } = self.ir_node.borrow().deref() {
+        if let HydroNode::Tee { inner } = self.ir_node.borrow().deref() {
             Stream {
                 location: self.location.clone(),
-                ir_node: HfPlusNode::Tee {
+                ir_node: HydroNode::Tee {
                     inner: TeeNode(inner.0.clone()),
                 }
                 .into(),
@@ -218,7 +218,7 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
         let f = f.splice_fn1_ctx(&self.location).into();
         Stream::new(
             self.location,
-            HfPlusNode::Map {
+            HydroNode::Map {
                 f,
                 input: Box::new(self.ir_node.into_inner()),
             },
@@ -239,7 +239,7 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
         let f = f.splice_fn1_ctx(&self.location).into();
         Stream::new(
             self.location,
-            HfPlusNode::FlatMap {
+            HydroNode::FlatMap {
                 f,
                 input: Box::new(self.ir_node.into_inner()),
             },
@@ -253,7 +253,7 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
         let f = f.splice_fn1_ctx(&self.location).into();
         Stream::new(
             self.location,
-            HfPlusNode::FlatMap {
+            HydroNode::FlatMap {
                 f,
                 input: Box::new(self.ir_node.into_inner()),
             },
@@ -281,7 +281,7 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
         let f = f.splice_fn1_borrow_ctx(&self.location).into();
         Stream::new(
             self.location,
-            HfPlusNode::Filter {
+            HydroNode::Filter {
                 f,
                 input: Box::new(self.ir_node.into_inner()),
             },
@@ -295,7 +295,7 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
         let f = f.splice_fn1_ctx(&self.location).into();
         Stream::new(
             self.location,
-            HfPlusNode::FilterMap {
+            HydroNode::FilterMap {
                 f,
                 input: Box::new(self.ir_node.into_inner()),
             },
@@ -314,7 +314,7 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
 
         Stream::new(
             self.location,
-            HfPlusNode::CrossSingleton(
+            HydroNode::CrossSingleton(
                 Box::new(self.ir_node.into_inner()),
                 Box::new(other.ir_node.into_inner()),
             ),
@@ -341,7 +341,7 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
 
         Stream::new(
             self.location,
-            HfPlusNode::CrossProduct(
+            HydroNode::CrossProduct(
                 Box::new(self.ir_node.into_inner()),
                 Box::new(other.ir_node.into_inner()),
             ),
@@ -354,7 +354,7 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
     {
         Stream::new(
             self.location,
-            HfPlusNode::Unique(Box::new(self.ir_node.into_inner())),
+            HydroNode::Unique(Box::new(self.ir_node.into_inner())),
         )
     }
 
@@ -366,7 +366,7 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
 
         Stream::new(
             self.location,
-            HfPlusNode::Difference(
+            HydroNode::Difference(
                 Box::new(self.ir_node.into_inner()),
                 Box::new(other.ir_node.into_inner()),
             ),
@@ -382,15 +382,15 @@ impl<'a, T, L: Location<'a>, B, Order> Stream<T, L, B, Order> {
         if L::is_top_level() {
             Stream::new(
                 self.location,
-                HfPlusNode::Persist(Box::new(HfPlusNode::Inspect {
+                HydroNode::Persist(Box::new(HydroNode::Inspect {
                     f,
-                    input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
+                    input: Box::new(HydroNode::Unpersist(Box::new(self.ir_node.into_inner()))),
                 })),
             )
         } else {
             Stream::new(
                 self.location,
-                HfPlusNode::Inspect {
+                HydroNode::Inspect {
                     f,
                     input: Box::new(self.ir_node.into_inner()),
                 },
@@ -423,7 +423,7 @@ where
         let init = init.splice_fn0_ctx(&self.location).into();
         let comb = comb.splice_fn2_borrow_mut_ctx(&self.location).into();
 
-        let mut core = HfPlusNode::Fold {
+        let mut core = HydroNode::Fold {
             init,
             acc: comb,
             input: Box::new(self.ir_node.into_inner()),
@@ -433,7 +433,7 @@ where
             // top-level (possibly unbounded) singletons are represented as
             // a stream which produces all values from all ticks every tick,
             // so Unpersist will always give the lastest aggregation
-            core = HfPlusNode::Persist(Box::new(core));
+            core = HydroNode::Persist(Box::new(core));
         }
 
         Singleton::new(self.location, core)
@@ -444,13 +444,13 @@ where
         comb: impl IntoQuotedMut<'a, F, L>,
     ) -> Optional<T, L, B> {
         let f = comb.splice_fn2_borrow_mut_ctx(&self.location).into();
-        let mut core = HfPlusNode::Reduce {
+        let mut core = HydroNode::Reduce {
             f,
             input: Box::new(self.ir_node.into_inner()),
         };
 
         if L::is_top_level() {
-            core = HfPlusNode::Persist(Box::new(core));
+            core = HydroNode::Persist(Box::new(core));
         }
 
         Optional::new(self.location, core)
@@ -482,13 +482,13 @@ where
             }
         });
 
-        let mut core = HfPlusNode::Reduce {
+        let mut core = HydroNode::Reduce {
             f: wrapped.into(),
             input: Box::new(self.ir_node.into_inner()),
         };
 
         if L::is_top_level() {
-            core = HfPlusNode::Persist(Box::new(core));
+            core = HydroNode::Persist(Box::new(core));
         }
 
         Optional::new(self.location, core)
@@ -515,15 +515,15 @@ impl<'a, T, L: Location<'a>, B> Stream<T, L, B, TotalOrder> {
         if L::is_top_level() {
             Stream::new(
                 self.location,
-                HfPlusNode::Persist(Box::new(HfPlusNode::Enumerate {
+                HydroNode::Persist(Box::new(HydroNode::Enumerate {
                     is_static: true,
-                    input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
+                    input: Box::new(HydroNode::Unpersist(Box::new(self.ir_node.into_inner()))),
                 })),
             )
         } else {
             Stream::new(
                 self.location,
-                HfPlusNode::Enumerate {
+                HydroNode::Enumerate {
                     is_static: false,
                     input: Box::new(self.ir_node.into_inner()),
                 },
@@ -547,7 +547,7 @@ impl<'a, T, L: Location<'a>, B> Stream<T, L, B, TotalOrder> {
         let init = init.splice_fn0_ctx(&self.location).into();
         let comb = comb.splice_fn2_borrow_mut_ctx(&self.location).into();
 
-        let mut core = HfPlusNode::Fold {
+        let mut core = HydroNode::Fold {
             init,
             acc: comb,
             input: Box::new(self.ir_node.into_inner()),
@@ -557,7 +557,7 @@ impl<'a, T, L: Location<'a>, B> Stream<T, L, B, TotalOrder> {
             // top-level (possibly unbounded) singletons are represented as
             // a stream which produces all values from all ticks every tick,
             // so Unpersist will always give the lastest aggregation
-            core = HfPlusNode::Persist(Box::new(core));
+            core = HydroNode::Persist(Box::new(core));
         }
 
         Singleton::new(self.location, core)
@@ -568,13 +568,13 @@ impl<'a, T, L: Location<'a>, B> Stream<T, L, B, TotalOrder> {
         comb: impl IntoQuotedMut<'a, F, L>,
     ) -> Optional<T, L, B> {
         let f = comb.splice_fn2_borrow_mut_ctx(&self.location).into();
-        let mut core = HfPlusNode::Reduce {
+        let mut core = HydroNode::Reduce {
             f,
             input: Box::new(self.ir_node.into_inner()),
         };
 
         if L::is_top_level() {
-            core = HfPlusNode::Persist(Box::new(core));
+            core = HydroNode::Persist(Box::new(core));
         }
 
         Optional::new(self.location, core)
@@ -590,7 +590,7 @@ impl<'a, T, L: Location<'a>> Stream<T, L, Bounded, TotalOrder> {
 
         Stream::new(
             self.location,
-            HfPlusNode::Chain(
+            HydroNode::Chain(
                 Box::new(self.ir_node.into_inner()),
                 Box::new(other.ir_node.into_inner()),
             ),
@@ -623,7 +623,7 @@ impl<'a, T, L: Location<'a>, Order> Stream<T, L, Bounded, Order> {
     {
         Stream::new(
             self.location,
-            HfPlusNode::Sort(Box::new(self.ir_node.into_inner())),
+            HydroNode::Sort(Box::new(self.ir_node.into_inner())),
         )
     }
 
@@ -635,7 +635,7 @@ impl<'a, T, L: Location<'a>, Order> Stream<T, L, Bounded, Order> {
 
         Stream::new(
             self.location,
-            HfPlusNode::Chain(
+            HydroNode::Chain(
                 Box::new(self.ir_node.into_inner()),
                 Box::new(other.ir_node.into_inner()),
             ),
@@ -652,7 +652,7 @@ impl<'a, K, V1, L: Location<'a>, B, Order> Stream<(K, V1), L, B, Order> {
 
         Stream::new(
             self.location,
-            HfPlusNode::Join(
+            HydroNode::Join(
                 Box::new(self.ir_node.into_inner()),
                 Box::new(n.ir_node.into_inner()),
             ),
@@ -667,7 +667,7 @@ impl<'a, K, V1, L: Location<'a>, B, Order> Stream<(K, V1), L, B, Order> {
 
         Stream::new(
             self.location,
-            HfPlusNode::AntiJoin(
+            HydroNode::AntiJoin(
                 Box::new(self.ir_node.into_inner()),
                 Box::new(n.ir_node.into_inner()),
             ),
@@ -686,7 +686,7 @@ impl<'a, K: Eq + Hash, V, L: Location<'a>> Stream<(K, V), Tick<L>, Bounded> {
 
         Stream::new(
             self.location,
-            HfPlusNode::FoldKeyed {
+            HydroNode::FoldKeyed {
                 init,
                 acc: comb,
                 input: Box::new(self.ir_node.into_inner()),
@@ -702,7 +702,7 @@ impl<'a, K: Eq + Hash, V, L: Location<'a>> Stream<(K, V), Tick<L>, Bounded> {
 
         Stream::new(
             self.location,
-            HfPlusNode::ReduceKeyed {
+            HydroNode::ReduceKeyed {
                 f,
                 input: Box::new(self.ir_node.into_inner()),
             },
@@ -721,7 +721,7 @@ impl<'a, K: Eq + Hash, V, L: Location<'a>, Order> Stream<(K, V), Tick<L>, Bounde
 
         Stream::new(
             self.location,
-            HfPlusNode::FoldKeyed {
+            HydroNode::FoldKeyed {
                 init,
                 acc: comb,
                 input: Box::new(self.ir_node.into_inner()),
@@ -742,7 +742,7 @@ impl<'a, K: Eq + Hash, V, L: Location<'a>, Order> Stream<(K, V), Tick<L>, Bounde
 
         Stream::new(
             self.location,
-            HfPlusNode::ReduceKeyed {
+            HydroNode::ReduceKeyed {
                 f,
                 input: Box::new(self.ir_node.into_inner()),
             },
@@ -760,7 +760,7 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, Timestamped<L>, B, Ord
     pub unsafe fn tick_batch(self) -> Stream<T, Tick<L>, Bounded, Order> {
         Stream::new(
             self.location.tick,
-            HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner())),
+            HydroNode::Unpersist(Box::new(self.ir_node.into_inner())),
         )
     }
 
@@ -864,8 +864,8 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
             .leaves
             .as_mut()
             .expect(FLOW_USED_MESSAGE)
-            .push(HfPlusLeaf::ForEach {
-                input: Box::new(HfPlusNode::Unpersist(Box::new(self.ir_node.into_inner()))),
+            .push(HydroLeaf::ForEach {
+                input: Box::new(HydroNode::Unpersist(Box::new(self.ir_node.into_inner()))),
                 f,
             });
     }
@@ -880,7 +880,7 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
             .leaves
             .as_mut()
             .expect(FLOW_USED_MESSAGE)
-            .push(HfPlusLeaf::DestSink {
+            .push(HydroLeaf::DestSink {
                 sink: sink.splice_typed_ctx(&self.location).into(),
                 input: Box::new(self.ir_node.into_inner()),
             });
@@ -893,7 +893,7 @@ impl<'a, T, L: Location<'a>, Order> Stream<T, Tick<L>, Bounded, Order> {
             Timestamped {
                 tick: self.location.clone(),
             },
-            HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
+            HydroNode::Persist(Box::new(self.ir_node.into_inner())),
         )
     }
 
@@ -903,21 +903,21 @@ impl<'a, T, L: Location<'a>, Order> Stream<T, Tick<L>, Bounded, Order> {
     {
         Stream::new(
             self.location,
-            HfPlusNode::Persist(Box::new(self.ir_node.into_inner())),
+            HydroNode::Persist(Box::new(self.ir_node.into_inner())),
         )
     }
 
     pub fn defer_tick(self) -> Stream<T, Tick<L>, Bounded, Order> {
         Stream::new(
             self.location,
-            HfPlusNode::DeferTick(Box::new(self.ir_node.into_inner())),
+            HydroNode::DeferTick(Box::new(self.ir_node.into_inner())),
         )
     }
 
     pub fn delta(self) -> Stream<T, Tick<L>, Bounded, Order> {
         Stream::new(
             self.location,
-            HfPlusNode::Delta(Box::new(self.ir_node.into_inner())),
+            HydroNode::Delta(Box::new(self.ir_node.into_inner())),
         )
     }
 }
@@ -1021,7 +1021,7 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
 
         Stream::new(
             other.clone(),
-            HfPlusNode::Network {
+            HydroNode::Network {
                 from_location: self.location.root().id(),
                 from_key: None,
                 to_location: other.id(),
@@ -1054,9 +1054,9 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
 
         let dummy_f: syn::Expr = syn::parse_quote!(());
 
-        leaves.push(HfPlusLeaf::ForEach {
+        leaves.push(HydroLeaf::ForEach {
             f: dummy_f.into(),
-            input: Box::new(HfPlusNode::Network {
+            input: Box::new(HydroNode::Network {
                 from_location: self.location.root().id(),
                 from_key: None,
                 to_location: other.id(),
@@ -1086,7 +1086,7 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
         let root = get_this_crate();
         Stream::new(
             other.clone(),
-            HfPlusNode::Network {
+            HydroNode::Network {
                 from_location: self.location.root().id(),
                 from_key: None,
                 to_location: other.id(),
@@ -1117,9 +1117,9 @@ impl<'a, T, L: Location<'a> + NoTick, B, Order> Stream<T, L, B, Order> {
 
         let dummy_f: syn::Expr = syn::parse_quote!(());
 
-        leaves.push(HfPlusLeaf::ForEach {
+        leaves.push(HydroLeaf::ForEach {
             f: dummy_f.into(),
-            input: Box::new(HfPlusNode::Network {
+            input: Box::new(HydroNode::Network {
                 from_location: self.location.root().id(),
                 from_key: None,
                 to_location: other.id(),

@@ -16,7 +16,7 @@ use crate::deploy::{
     ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDeploy, Node, ProcessSpec,
     RegisterPort,
 };
-use crate::ir::HfPlusLeaf;
+use crate::ir::HydroLeaf;
 use crate::location::external_process::{
     ExternalBincodeSink, ExternalBincodeStream, ExternalBytesPort,
 };
@@ -24,7 +24,7 @@ use crate::location::{Cluster, ExternalProcess, Location, LocationId, Process};
 use crate::staging_util::Invariant;
 
 pub struct DeployFlow<'a, D: LocalDeploy<'a>> {
-    pub(super) ir: Vec<HfPlusLeaf>,
+    pub(super) ir: Vec<HydroLeaf>,
     pub(super) nodes: HashMap<usize, D::Process>,
     pub(super) externals: HashMap<usize, D::ExternalProcess>,
     pub(super) clusters: HashMap<usize, D::Cluster>,
@@ -42,7 +42,7 @@ impl<'a, D: LocalDeploy<'a>> Drop for DeployFlow<'a, D> {
 }
 
 impl<'a, D: LocalDeploy<'a>> DeployFlow<'a, D> {
-    pub fn ir(&self) -> &Vec<HfPlusLeaf> {
+    pub fn ir(&self) -> &Vec<HydroLeaf> {
         &self.ir
     }
 
@@ -93,7 +93,7 @@ impl<'a, D: Deploy<'a>> DeployFlow<'a, D> {
         self.used = true;
 
         let mut seen_tees: HashMap<_, _> = HashMap::new();
-        let mut flow_state_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
+        let mut flow_state_networked: Vec<HydroLeaf> = std::mem::take(&mut self.ir)
             .into_iter()
             .map(|leaf| {
                 leaf.compile_network::<D>(
@@ -156,7 +156,7 @@ impl<'a, D: Deploy<'a, CompileEnv = ()>> DeployFlow<'a, D> {
         self.used = true;
 
         let mut seen_tees_instantiate: HashMap<_, _> = HashMap::new();
-        let mut flow_state_networked: Vec<HfPlusLeaf> = std::mem::take(&mut self.ir)
+        let mut flow_state_networked: Vec<HydroLeaf> = std::mem::take(&mut self.ir)
             .into_iter()
             .map(|leaf| {
                 leaf.compile_network::<D>(

@@ -16,7 +16,7 @@ fn quoted_any_fn<'a, F: Fn(&usize) + 'a, Q: IntoQuotedMut<'a, F, ()>>(q: Q) -> Q
 
 /// Add a profiling node before each node to count the cardinality of its input
 fn add_profiling_node<'a>(
-    node: &mut HfPlusNode,
+    node: &mut HydroNode,
     counters: RuntimeData<&'a RefCell<Vec<u64>>>,
     counter_queue: RuntimeData<&'a RefCell<UnboundedSender<(usize, u64)>>>,
     id: &mut u32,
@@ -29,8 +29,8 @@ fn add_profiling_node<'a>(
         |node, seen_tees| add_profiling_node(node, counters, counter_queue, id, seen_tees),
         seen_tees,
     );
-    let orig_node = std::mem::replace(node, HfPlusNode::Placeholder);
-    *node = HfPlusNode::Inspect {
+    let orig_node = std::mem::replace(node, HydroNode::Placeholder);
+    *node = HydroNode::Inspect {
         f: quoted_any_fn(q!({
             // Put counters on queue
             counter_queue
@@ -50,10 +50,10 @@ fn add_profiling_node<'a>(
 
 /// Count the cardinality of each input and periodically output to a file
 pub fn profiling<'a>(
-    ir: Vec<HfPlusLeaf>,
+    ir: Vec<HydroLeaf>,
     counters: RuntimeData<&'a RefCell<Vec<u64>>>,
     counter_queue: RuntimeData<&'a RefCell<UnboundedSender<(usize, u64)>>>,
-) -> Vec<HfPlusLeaf> {
+) -> Vec<HydroLeaf> {
     let mut id = 0;
     let mut seen_tees = Default::default();
     ir.into_iter()

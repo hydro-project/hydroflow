@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use stageleft::*;
 
-use crate::ir::{HfPlusLeaf, HfPlusNode, SeenTees};
+use crate::ir::{HydroLeaf, HydroNode, SeenTees};
 
 /// Structure for tracking expressions known to have particular algebraic properties.
 ///
@@ -59,24 +59,20 @@ impl PropertyDatabase {
 // Dataflow graph optimization rewrite rules based on algebraic property tags
 // TODO add a test that verifies the space of possible graphs after rewrites is correct for each property
 
-fn properties_optimize_node(
-    node: &mut HfPlusNode,
-    db: &PropertyDatabase,
-    seen_tees: &mut SeenTees,
-) {
+fn properties_optimize_node(node: &mut HydroNode, db: &PropertyDatabase, seen_tees: &mut SeenTees) {
     node.transform_children(
         |node, seen_tees| properties_optimize_node(node, db, seen_tees),
         seen_tees,
     );
     match node {
-        HfPlusNode::ReduceKeyed { f, .. } if db.is_tagged_commutative(&f.0) => {
+        HydroNode::ReduceKeyed { f, .. } if db.is_tagged_commutative(&f.0) => {
             dbg!("IDENTIFIED COMMUTATIVE OPTIMIZATION for {:?}", &f);
         }
         _ => {}
     }
 }
 
-pub fn properties_optimize(ir: Vec<HfPlusLeaf>, db: &PropertyDatabase) -> Vec<HfPlusLeaf> {
+pub fn properties_optimize(ir: Vec<HydroLeaf>, db: &PropertyDatabase) -> Vec<HydroLeaf> {
     let mut seen_tees = Default::default();
     ir.into_iter()
         .map(|l| {

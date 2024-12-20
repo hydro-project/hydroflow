@@ -6,7 +6,7 @@ use serde::Serialize;
 
 use super::{Location, LocationId, NoTick};
 use crate::builder::FlowState;
-use crate::ir::{HfPlusNode, HfPlusSource};
+use crate::ir::{HydroNode, HydroSource};
 use crate::staging_util::Invariant;
 use crate::{Stream, Unbounded};
 
@@ -110,7 +110,7 @@ impl<'a, P> ExternalProcess<'a, P> {
             },
             Stream::new(
                 to.clone(),
-                HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+                HydroNode::Persist(Box::new(HydroNode::Network {
                     from_location: LocationId::ExternalProcess(self.id),
                     from_key: Some(next_external_port_id),
                     to_location: to.id(),
@@ -118,8 +118,8 @@ impl<'a, P> ExternalProcess<'a, P> {
                     serialize_fn: None,
                     instantiate_fn: crate::ir::DebugInstantiate::Building(),
                     deserialize_fn: Some(deser_expr.into()),
-                    input: Box::new(HfPlusNode::Source {
-                        source: HfPlusSource::ExternalNetwork(),
+                    input: Box::new(HydroNode::Source {
+                        source: HydroSource::ExternalNetwork(),
                         location_kind: LocationId::ExternalProcess(self.id),
                     }),
                 })),
@@ -146,7 +146,7 @@ impl<'a, P> ExternalProcess<'a, P> {
             },
             Stream::new(
                 to.clone(),
-                HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+                HydroNode::Persist(Box::new(HydroNode::Network {
                     from_location: LocationId::ExternalProcess(self.id),
                     from_key: Some(next_external_port_id),
                     to_location: to.id(),
@@ -154,8 +154,8 @@ impl<'a, P> ExternalProcess<'a, P> {
                     serialize_fn: None,
                     instantiate_fn: crate::ir::DebugInstantiate::Building(),
                     deserialize_fn: Some(crate::stream::deserialize_bincode::<T>(None).into()),
-                    input: Box::new(HfPlusNode::Source {
-                        source: HfPlusSource::ExternalNetwork(),
+                    input: Box::new(HydroNode::Source {
+                        source: HydroSource::ExternalNetwork(),
                         location_kind: LocationId::ExternalProcess(self.id),
                     }),
                 })),

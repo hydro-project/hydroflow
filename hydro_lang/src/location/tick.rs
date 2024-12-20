@@ -10,7 +10,7 @@ use crate::cycle::{
     CycleCollection, CycleCollectionWithInitial, DeferTick, ForwardRef, ForwardRefMarker,
     TickCycle, TickCycleMarker,
 };
-use crate::ir::{HfPlusNode, HfPlusSource};
+use crate::ir::{HydroNode, HydroSource};
 use crate::{Bounded, Optional, Singleton, Stream};
 
 #[sealed]
@@ -135,8 +135,8 @@ impl<'a, L: Location<'a>> Tick<L> {
 
         Optional::new(
             self.clone(),
-            HfPlusNode::Source {
-                source: HfPlusSource::Iter(e.into()),
+            HydroNode::Source {
+                source: HydroSource::Iter(e.into()),
                 location_kind: self.l.id(),
             },
         )

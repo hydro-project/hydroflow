@@ -104,7 +104,7 @@ pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>
         use hydro_lang::*;
 
         #[allow(unused)]
-        fn __hfplus_runtime<'a>(__hydro_lang_trybuild_cli: &'a hydro_lang::hydroflow::util::deploy::DeployPorts<hydro_lang::deploy_runtime::HydroflowPlusMeta>) -> hydro_lang::hydroflow::scheduled::graph::Hydroflow<'a> {
+        fn __hydro_runtime<'a>(__hydro_lang_trybuild_cli: &'a hydro_lang::hydroflow::util::deploy::DeployPorts<hydro_lang::deploy_runtime::HydroflowPlusMeta>) -> hydro_lang::hydroflow::scheduled::graph::Hydroflow<'a> {
             #(#extra_stmts)*
             #tokens
         }
@@ -112,7 +112,7 @@ pub fn compile_graph_trybuild(graph: HydroflowGraph, extra_stmts: Vec<syn::Stmt>
         #[tokio::main]
         async fn main() {
             let ports = hydro_lang::hydroflow::util::deploy::init_no_ack_start().await;
-            let flow = __hfplus_runtime(&ports);
+            let flow = __hydro_runtime(&ports);
             println!("ack start");
             hydro_lang::hydroflow::util::deploy::launch_flow(flow).await;
         }
@@ -158,10 +158,10 @@ pub fn create_trybuild(
         .collect();
 
     let crate_name = source_manifest.package.name.clone();
-    let project_dir = path!(target_dir / "hfplus_trybuild" / crate_name /);
+    let project_dir = path!(target_dir / "hydro_trybuild" / crate_name /);
     fs::create_dir_all(&project_dir)?;
 
-    let project_name = format!("{}-hfplus-trybuild", crate_name);
+    let project_name = format!("{}-hydro-trybuild", crate_name);
     let mut manifest = Runner::make_manifest(
         &workspace,
         &project_name,
@@ -235,7 +235,7 @@ pub fn create_trybuild(
 
     Ok((
         project.dir.as_ref().into(),
-        path!(project.target_dir / "hfplus_trybuild"),
+        path!(project.target_dir / "hydro_trybuild"),
         project.features,
     ))
 }

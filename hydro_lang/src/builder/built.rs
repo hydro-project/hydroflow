@@ -6,12 +6,12 @@ use hydroflow_lang::graph::{eliminate_extra_unions_tees, HydroflowGraph};
 use super::compiled::CompiledFlow;
 use super::deploy::{DeployFlow, DeployResult};
 use crate::deploy::{ClusterSpec, Deploy, ExternalSpec, IntoProcessSpec, LocalDeploy};
-use crate::ir::HfPlusLeaf;
+use crate::ir::HydroLeaf;
 use crate::location::{Cluster, ExternalProcess, Process};
 use crate::staging_util::Invariant;
 
 pub struct BuiltFlow<'a> {
-    pub(super) ir: Vec<HfPlusLeaf>,
+    pub(super) ir: Vec<HydroLeaf>,
     pub(super) processes: Vec<usize>,
     pub(super) clusters: Vec<usize>,
     pub(super) used: bool,
@@ -27,7 +27,7 @@ impl Drop for BuiltFlow<'_> {
     }
 }
 
-pub(crate) fn build_inner(ir: &mut Vec<HfPlusLeaf>) -> BTreeMap<usize, HydroflowGraph> {
+pub(crate) fn build_inner(ir: &mut Vec<HydroLeaf>) -> BTreeMap<usize, HydroflowGraph> {
     let mut builders = BTreeMap::new();
     let mut built_tees = HashMap::new();
     let mut next_stmt_id = 0;
@@ -46,11 +46,11 @@ pub(crate) fn build_inner(ir: &mut Vec<HfPlusLeaf>) -> BTreeMap<usize, Hydroflow
 }
 
 impl<'a> BuiltFlow<'a> {
-    pub fn ir(&self) -> &Vec<HfPlusLeaf> {
+    pub fn ir(&self) -> &Vec<HydroLeaf> {
         &self.ir
     }
 
-    pub fn optimize_with(mut self, f: impl FnOnce(Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf>) -> Self {
+    pub fn optimize_with(mut self, f: impl FnOnce(Vec<HydroLeaf>) -> Vec<HydroLeaf>) -> Self {
         self.used = true;
         BuiltFlow {
             ir: f(std::mem::take(&mut self.ir)),

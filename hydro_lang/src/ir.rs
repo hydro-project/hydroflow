@@ -62,7 +62,7 @@ impl Debug for DebugInstantiate {
 
 /// A source in a Hydro graph, where data enters the graph.
 #[derive(Debug)]
-pub enum HfPlusSource {
+pub enum HydroSource {
     Stream(DebugExpr),
     ExternalNetwork(),
     Iter(DebugExpr),
@@ -73,23 +73,23 @@ pub enum HfPlusSource {
 /// any downstream values. Traversals over the dataflow graph and
 /// generating Hydroflow IR start from leaves.
 #[derive(Debug)]
-pub enum HfPlusLeaf {
+pub enum HydroLeaf {
     ForEach {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HydroNode>,
     },
     DestSink {
         sink: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HydroNode>,
     },
     CycleSink {
         ident: syn::Ident,
         location_kind: LocationId,
-        input: Box<HfPlusNode>,
+        input: Box<HydroNode>,
     },
 }
 
-impl HfPlusLeaf {
+impl HydroLeaf {
     #[cfg(feature = "build")]
     pub fn compile_network<'a, D: Deploy<'a>>(
         self,
@@ -98,7 +98,7 @@ impl HfPlusLeaf {
         nodes: &HashMap<usize, D::Process>,
         clusters: &HashMap<usize, D::Cluster>,
         externals: &HashMap<usize, D::ExternalProcess>,
-    ) -> HfPlusLeaf {
+    ) -> HydroLeaf {
         self.transform_children(
             |n, s| {
                 n.compile_network::<D>(compile_env, s, nodes, clusters, externals);
@@ -107,7 +107,7 @@ impl HfPlusLeaf {
         )
     }
 
-    pub fn connect_network(self, seen_tees: &mut SeenTees) -> HfPlusLeaf {
+    pub fn connect_network(self, seen_tees: &mut SeenTees) -> HydroLeaf {
         self.transform_children(
             |n, s| {
                 n.connect_network(s);
@@ -118,25 +118,25 @@ impl HfPlusLeaf {
 
     pub fn transform_children(
         self,
-        mut transform: impl FnMut(&mut HfPlusNode, &mut SeenTees),
+        mut transform: impl FnMut(&mut HydroNode, &mut SeenTees),
         seen_tees: &mut SeenTees,
-    ) -> HfPlusLeaf {
+    ) -> HydroLeaf {
         match self {
-            HfPlusLeaf::ForEach { f, mut input } => {
+            HydroLeaf::ForEach { f, mut input } => {
                 transform(&mut input, seen_tees);
-                HfPlusLeaf::ForEach { f, input }
+                HydroLeaf::ForEach { f, input }
             }
-            HfPlusLeaf::DestSink { sink, mut input } => {
+            HydroLeaf::DestSink { sink, mut input } => {
                 transform(&mut input, seen_tees);
-                HfPlusLeaf::DestSink { sink, input }
+                HydroLeaf::DestSink { sink, input }
             }
-            HfPlusLeaf::CycleSink {
+            HydroLeaf::CycleSink {
                 ident,
                 location_kind,
                 mut input,
             } => {
                 transform(&mut input, seen_tees);
-                HfPlusLeaf::CycleSink {
+                HydroLeaf::CycleSink {
                     ident,
                     location_kind,
                     input,
@@ -149,11 +149,11 @@ impl HfPlusLeaf {
     pub fn emit(
         &self,
         graph_builders: &mut BTreeMap<usize, FlatGraphBuilder>,
-        built_tees: &mut HashMap<*const RefCell<HfPlusNode>, (syn::Ident, usize)>,
+        built_tees: &mut HashMap<*const RefCell<HydroNode>, (syn::Ident, usize)>,
         next_stmt_id: &mut usize,
     ) {
         match self {
-            HfPlusLeaf::ForEach { f, input } => {
+            HydroLeaf::ForEach { f, input } => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -165,7 +165,7 @@ impl HfPlusLeaf {
                     });
             }
 
-            HfPlusLeaf::DestSink { sink, input } => {
+            HydroLeaf::DestSink { sink, input } => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -177,7 +177,7 @@ impl HfPlusLeaf {
                     });
             }
 
-            HfPlusLeaf::CycleSink {
+            HydroLeaf::CycleSink {
                 ident,
                 location_kind,
                 input,
@@ -208,7 +208,7 @@ impl HfPlusLeaf {
     }
 }
 
-type PrintedTees = RefCell<Option<(usize, HashMap<*const RefCell<HfPlusNode>, usize>)>>;
+type PrintedTees = RefCell<Option<(usize, HashMap<*const RefCell<HydroNode>, usize>)>>;
 thread_local! {
     static PRINTED_TEES: PrintedTees = const { RefCell::new(None) };
 }
@@ -228,7 +228,7 @@ pub fn dbg_dedup_tee<T>(f: impl FnOnce() -> T) -> T {
     })
 }
 
-pub struct TeeNode(pub Rc<RefCell<HfPlusNode>>);
+pub struct TeeNode(pub Rc<RefCell<HydroNode>>);
 
 impl Debug for TeeNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -239,7 +239,7 @@ impl Debug for TeeNode {
             if let Some(printed_tees_mut) = printed_tees_mut {
                 if let Some(existing) = printed_tees_mut
                     .1
-                    .get(&(self.0.as_ref() as *const RefCell<HfPlusNode>))
+                    .get(&(self.0.as_ref() as *const RefCell<HydroNode>))
                 {
                     write!(f, "<tee {}>", existing)
                 } else {
@@ -247,7 +247,7 @@ impl Debug for TeeNode {
                     printed_tees_mut.0 += 1;
                     printed_tees_mut
                         .1
-                        .insert(self.0.as_ref() as *const RefCell<HfPlusNode>, next_id);
+                        .insert(self.0.as_ref() as *const RefCell<HydroNode>, next_id);
                     drop(printed_tees_mut_borrow);
                     write!(f, "<tee {}>: ", next_id)?;
                     Debug::fmt(&self.0.borrow(), f)
@@ -264,11 +264,11 @@ impl Debug for TeeNode {
 /// An intermediate node in a Hydro graph, which consumes data
 /// from upstream nodes and emits data to downstream nodes.
 #[derive(Debug)]
-pub enum HfPlusNode {
+pub enum HydroNode {
     Placeholder,
 
     Source {
-        source: HfPlusSource,
+        source: HydroSource,
         location_kind: LocationId,
     },
 
@@ -281,65 +281,65 @@ pub enum HfPlusNode {
         inner: TeeNode,
     },
 
-    Persist(Box<HfPlusNode>),
-    Unpersist(Box<HfPlusNode>),
-    Delta(Box<HfPlusNode>),
+    Persist(Box<HydroNode>),
+    Unpersist(Box<HydroNode>),
+    Delta(Box<HydroNode>),
 
-    Chain(Box<HfPlusNode>, Box<HfPlusNode>),
-    CrossProduct(Box<HfPlusNode>, Box<HfPlusNode>),
-    CrossSingleton(Box<HfPlusNode>, Box<HfPlusNode>),
-    Join(Box<HfPlusNode>, Box<HfPlusNode>),
-    Difference(Box<HfPlusNode>, Box<HfPlusNode>),
-    AntiJoin(Box<HfPlusNode>, Box<HfPlusNode>),
+    Chain(Box<HydroNode>, Box<HydroNode>),
+    CrossProduct(Box<HydroNode>, Box<HydroNode>),
+    CrossSingleton(Box<HydroNode>, Box<HydroNode>),
+    Join(Box<HydroNode>, Box<HydroNode>),
+    Difference(Box<HydroNode>, Box<HydroNode>),
+    AntiJoin(Box<HydroNode>, Box<HydroNode>),
 
     Map {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HydroNode>,
     },
     FlatMap {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HydroNode>,
     },
     Filter {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HydroNode>,
     },
     FilterMap {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HydroNode>,
     },
 
-    DeferTick(Box<HfPlusNode>),
+    DeferTick(Box<HydroNode>),
     Enumerate {
         is_static: bool,
-        input: Box<HfPlusNode>,
+        input: Box<HydroNode>,
     },
     Inspect {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HydroNode>,
     },
 
-    Unique(Box<HfPlusNode>),
+    Unique(Box<HydroNode>),
 
-    Sort(Box<HfPlusNode>),
+    Sort(Box<HydroNode>),
     Fold {
         init: DebugExpr,
         acc: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HydroNode>,
     },
     FoldKeyed {
         init: DebugExpr,
         acc: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HydroNode>,
     },
 
     Reduce {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HydroNode>,
     },
     ReduceKeyed {
         f: DebugExpr,
-        input: Box<HfPlusNode>,
+        input: Box<HydroNode>,
     },
 
     Network {
@@ -350,13 +350,13 @@ pub enum HfPlusNode {
         serialize_fn: Option<DebugExpr>,
         instantiate_fn: DebugInstantiate,
         deserialize_fn: Option<DebugExpr>,
-        input: Box<HfPlusNode>,
+        input: Box<HydroNode>,
     },
 }
 
-pub type SeenTees = HashMap<*const RefCell<HfPlusNode>, Rc<RefCell<HfPlusNode>>>;
+pub type SeenTees = HashMap<*const RefCell<HydroNode>, Rc<RefCell<HydroNode>>>;
 
-impl<'a> HfPlusNode {
+impl<'a> HydroNode {
     #[cfg(feature = "build")]
     pub fn compile_network<D: Deploy<'a>>(
         &mut self,
@@ -371,7 +371,7 @@ impl<'a> HfPlusNode {
             seen_tees,
         );
 
-        if let HfPlusNode::Network {
+        if let HydroNode::Network {
             from_location,
             from_key,
             to_location,
@@ -401,7 +401,7 @@ impl<'a> HfPlusNode {
 
     pub fn connect_network(&mut self, seen_tees: &mut SeenTees) {
         self.transform_children(|n, s| n.connect_network(s), seen_tees);
-        if let HfPlusNode::Network { instantiate_fn, .. } = self {
+        if let HydroNode::Network { instantiate_fn, .. } = self {
             match instantiate_fn {
                 DebugInstantiate::Building() => panic!("network not built"),
 
@@ -414,7 +414,7 @@ impl<'a> HfPlusNode {
 
     pub fn transform_bottom_up<C>(
         &mut self,
-        mut transform: impl FnMut(&mut HfPlusNode, &mut C) + Copy,
+        mut transform: impl FnMut(&mut HydroNode, &mut C) + Copy,
         seen_tees: &mut SeenTees,
         ctx: &mut C,
     ) {
@@ -426,109 +426,109 @@ impl<'a> HfPlusNode {
     #[inline(always)]
     pub fn transform_children(
         &mut self,
-        mut transform: impl FnMut(&mut HfPlusNode, &mut SeenTees),
+        mut transform: impl FnMut(&mut HydroNode, &mut SeenTees),
         seen_tees: &mut SeenTees,
     ) {
         match self {
-            HfPlusNode::Placeholder => {
+            HydroNode::Placeholder => {
                 panic!();
             }
 
-            HfPlusNode::Source { .. } => {}
+            HydroNode::Source { .. } => {}
 
-            HfPlusNode::CycleSource { .. } => {}
+            HydroNode::CycleSource { .. } => {}
 
-            HfPlusNode::Tee { inner } => {
+            HydroNode::Tee { inner } => {
                 if let Some(transformed) =
-                    seen_tees.get(&(inner.0.as_ref() as *const RefCell<HfPlusNode>))
+                    seen_tees.get(&(inner.0.as_ref() as *const RefCell<HydroNode>))
                 {
                     *inner = TeeNode(transformed.clone());
                 } else {
-                    let transformed_cell = Rc::new(RefCell::new(HfPlusNode::Placeholder));
+                    let transformed_cell = Rc::new(RefCell::new(HydroNode::Placeholder));
                     seen_tees.insert(
-                        inner.0.as_ref() as *const RefCell<HfPlusNode>,
+                        inner.0.as_ref() as *const RefCell<HydroNode>,
                         transformed_cell.clone(),
                     );
-                    let mut orig = inner.0.replace(HfPlusNode::Placeholder);
+                    let mut orig = inner.0.replace(HydroNode::Placeholder);
                     transform(&mut orig, seen_tees);
                     *transformed_cell.borrow_mut() = orig;
                     *inner = TeeNode(transformed_cell);
                 }
             }
 
-            HfPlusNode::Persist(inner) => transform(inner.as_mut(), seen_tees),
-            HfPlusNode::Unpersist(inner) => transform(inner.as_mut(), seen_tees),
-            HfPlusNode::Delta(inner) => transform(inner.as_mut(), seen_tees),
+            HydroNode::Persist(inner) => transform(inner.as_mut(), seen_tees),
+            HydroNode::Unpersist(inner) => transform(inner.as_mut(), seen_tees),
+            HydroNode::Delta(inner) => transform(inner.as_mut(), seen_tees),
 
-            HfPlusNode::Chain(left, right) => {
+            HydroNode::Chain(left, right) => {
                 transform(left.as_mut(), seen_tees);
                 transform(right.as_mut(), seen_tees);
             }
-            HfPlusNode::CrossProduct(left, right) => {
+            HydroNode::CrossProduct(left, right) => {
                 transform(left.as_mut(), seen_tees);
                 transform(right.as_mut(), seen_tees);
             }
-            HfPlusNode::CrossSingleton(left, right) => {
+            HydroNode::CrossSingleton(left, right) => {
                 transform(left.as_mut(), seen_tees);
                 transform(right.as_mut(), seen_tees);
             }
-            HfPlusNode::Join(left, right) => {
+            HydroNode::Join(left, right) => {
                 transform(left.as_mut(), seen_tees);
                 transform(right.as_mut(), seen_tees);
             }
-            HfPlusNode::Difference(left, right) => {
+            HydroNode::Difference(left, right) => {
                 transform(left.as_mut(), seen_tees);
                 transform(right.as_mut(), seen_tees);
             }
-            HfPlusNode::AntiJoin(left, right) => {
+            HydroNode::AntiJoin(left, right) => {
                 transform(left.as_mut(), seen_tees);
                 transform(right.as_mut(), seen_tees);
             }
 
-            HfPlusNode::Map { input, .. } => {
+            HydroNode::Map { input, .. } => {
                 transform(input.as_mut(), seen_tees);
             }
-            HfPlusNode::FlatMap { input, .. } => {
+            HydroNode::FlatMap { input, .. } => {
                 transform(input.as_mut(), seen_tees);
             }
-            HfPlusNode::Filter { input, .. } => {
+            HydroNode::Filter { input, .. } => {
                 transform(input.as_mut(), seen_tees);
             }
-            HfPlusNode::FilterMap { input, .. } => {
+            HydroNode::FilterMap { input, .. } => {
                 transform(input.as_mut(), seen_tees);
             }
-            HfPlusNode::Sort(input) => {
+            HydroNode::Sort(input) => {
                 transform(input.as_mut(), seen_tees);
             }
-            HfPlusNode::DeferTick(input) => {
+            HydroNode::DeferTick(input) => {
                 transform(input.as_mut(), seen_tees);
             }
-            HfPlusNode::Enumerate { input, .. } => {
+            HydroNode::Enumerate { input, .. } => {
                 transform(input.as_mut(), seen_tees);
             }
-            HfPlusNode::Inspect { input, .. } => {
-                transform(input.as_mut(), seen_tees);
-            }
-
-            HfPlusNode::Unique(input) => {
+            HydroNode::Inspect { input, .. } => {
                 transform(input.as_mut(), seen_tees);
             }
 
-            HfPlusNode::Fold { input, .. } => {
-                transform(input.as_mut(), seen_tees);
-            }
-            HfPlusNode::FoldKeyed { input, .. } => {
+            HydroNode::Unique(input) => {
                 transform(input.as_mut(), seen_tees);
             }
 
-            HfPlusNode::Reduce { input, .. } => {
+            HydroNode::Fold { input, .. } => {
                 transform(input.as_mut(), seen_tees);
             }
-            HfPlusNode::ReduceKeyed { input, .. } => {
+            HydroNode::FoldKeyed { input, .. } => {
                 transform(input.as_mut(), seen_tees);
             }
 
-            HfPlusNode::Network { input, .. } => {
+            HydroNode::Reduce { input, .. } => {
+                transform(input.as_mut(), seen_tees);
+            }
+            HydroNode::ReduceKeyed { input, .. } => {
+                transform(input.as_mut(), seen_tees);
+            }
+
+            HydroNode::Network { input, .. } => {
                 transform(input.as_mut(), seen_tees);
             }
         }
@@ -538,15 +538,15 @@ impl<'a> HfPlusNode {
     pub fn emit(
         &self,
         graph_builders: &mut BTreeMap<usize, FlatGraphBuilder>,
-        built_tees: &mut HashMap<*const RefCell<HfPlusNode>, (syn::Ident, usize)>,
+        built_tees: &mut HashMap<*const RefCell<HydroNode>, (syn::Ident, usize)>,
         next_stmt_id: &mut usize,
     ) -> (syn::Ident, usize) {
         match self {
-            HfPlusNode::Placeholder => {
+            HydroNode::Placeholder => {
                 panic!()
             }
 
-            HfPlusNode::Persist(inner) => {
+            HydroNode::Persist(inner) => {
                 let (inner_ident, location) = inner.emit(graph_builders, built_tees, next_stmt_id);
 
                 let persist_id = *next_stmt_id;
@@ -563,11 +563,11 @@ impl<'a> HfPlusNode {
                 (persist_ident, location)
             }
 
-            HfPlusNode::Unpersist(_) => {
+            HydroNode::Unpersist(_) => {
                 panic!("Unpersist is a marker node and should have been optimized away. This is likely a compiler bug.")
             }
 
-            HfPlusNode::Delta(inner) => {
+            HydroNode::Delta(inner) => {
                 let (inner_ident, location) = inner.emit(graph_builders, built_tees, next_stmt_id);
 
                 let delta_id = *next_stmt_id;
@@ -584,7 +584,7 @@ impl<'a> HfPlusNode {
                 (delta_ident, location)
             }
 
-            HfPlusNode::Source {
+            HydroNode::Source {
                 source,
                 location_kind,
             } => {
@@ -595,7 +595,7 @@ impl<'a> HfPlusNode {
                     LocationId::ExternalProcess(id) => id,
                 };
 
-                if let HfPlusSource::ExternalNetwork() = source {
+                if let HydroSource::ExternalNetwork() = source {
                     (syn::Ident::new("DUMMY", Span::call_site()), *location_id)
                 } else {
                     let source_id = *next_stmt_id;
@@ -605,23 +605,23 @@ impl<'a> HfPlusNode {
                         syn::Ident::new(&format!("stream_{}", source_id), Span::call_site());
 
                     let source_stmt = match source {
-                        HfPlusSource::Stream(expr) => {
+                        HydroSource::Stream(expr) => {
                             parse_quote! {
                                 #source_ident = source_stream(#expr);
                             }
                         }
 
-                        HfPlusSource::ExternalNetwork() => {
+                        HydroSource::ExternalNetwork() => {
                             unreachable!()
                         }
 
-                        HfPlusSource::Iter(expr) => {
+                        HydroSource::Iter(expr) => {
                             parse_quote! {
                                 #source_ident = source_iter(#expr);
                             }
                         }
 
-                        HfPlusSource::Spin() => {
+                        HydroSource::Spin() => {
                             parse_quote! {
                                 #source_ident = spin();
                             }
@@ -637,7 +637,7 @@ impl<'a> HfPlusNode {
                 }
             }
 
-            HfPlusNode::CycleSource {
+            HydroNode::CycleSource {
                 ident,
                 location_kind,
             } => {
@@ -651,8 +651,8 @@ impl<'a> HfPlusNode {
                 (ident.clone(), *location_id)
             }
 
-            HfPlusNode::Tee { inner } => {
-                if let Some(ret) = built_tees.get(&(inner.0.as_ref() as *const RefCell<HfPlusNode>))
+            HydroNode::Tee { inner } => {
+                if let Some(ret) = built_tees.get(&(inner.0.as_ref() as *const RefCell<HydroNode>))
                 {
                     ret.clone()
                 } else {
@@ -674,7 +674,7 @@ impl<'a> HfPlusNode {
                     });
 
                     built_tees.insert(
-                        inner.0.as_ref() as *const RefCell<HfPlusNode>,
+                        inner.0.as_ref() as *const RefCell<HydroNode>,
                         (tee_ident.clone(), inner_location_id),
                     );
 
@@ -682,7 +682,7 @@ impl<'a> HfPlusNode {
                 }
             }
 
-            HfPlusNode::Chain(left, right) => {
+            HydroNode::Chain(left, right) => {
                 let (left_ident, left_location_id) =
                     left.emit(graph_builders, built_tees, next_stmt_id);
                 let (right_ident, right_location_id) =
@@ -715,7 +715,7 @@ impl<'a> HfPlusNode {
                 (chain_ident, left_location_id)
             }
 
-            HfPlusNode::CrossSingleton(left, right) => {
+            HydroNode::CrossSingleton(left, right) => {
                 let (left_ident, left_location_id) =
                     left.emit(graph_builders, built_tees, next_stmt_id);
                 let (right_ident, right_location_id) =
@@ -748,27 +748,27 @@ impl<'a> HfPlusNode {
                 (cross_ident, left_location_id)
             }
 
-            HfPlusNode::CrossProduct(..) | HfPlusNode::Join(..) => {
-                let operator: syn::Ident = if matches!(self, HfPlusNode::CrossProduct(..)) {
+            HydroNode::CrossProduct(..) | HydroNode::Join(..) => {
+                let operator: syn::Ident = if matches!(self, HydroNode::CrossProduct(..)) {
                     parse_quote!(cross_join_multiset)
                 } else {
                     parse_quote!(join_multiset)
                 };
 
-                let (HfPlusNode::CrossProduct(left, right) | HfPlusNode::Join(left, right)) = self
+                let (HydroNode::CrossProduct(left, right) | HydroNode::Join(left, right)) = self
                 else {
                     unreachable!()
                 };
 
-                let (left_inner, left_was_persist) =
-                    if let HfPlusNode::Persist(left) = left.as_ref() {
-                        (left, true)
-                    } else {
-                        (left, false)
-                    };
+                let (left_inner, left_was_persist) = if let HydroNode::Persist(left) = left.as_ref()
+                {
+                    (left, true)
+                } else {
+                    (left, false)
+                };
 
                 let (right_inner, right_was_persist) =
-                    if let HfPlusNode::Persist(right) = right.as_ref() {
+                    if let HydroNode::Persist(right) = right.as_ref() {
                         (right, true)
                     } else {
                         (right, false)
@@ -826,21 +826,19 @@ impl<'a> HfPlusNode {
                 (stream_ident, left_location_id)
             }
 
-            HfPlusNode::Difference(..) | HfPlusNode::AntiJoin(..) => {
-                let operator: syn::Ident = if matches!(self, HfPlusNode::Difference(..)) {
+            HydroNode::Difference(..) | HydroNode::AntiJoin(..) => {
+                let operator: syn::Ident = if matches!(self, HydroNode::Difference(..)) {
                     parse_quote!(difference_multiset)
                 } else {
                     parse_quote!(anti_join_multiset)
                 };
 
-                let (HfPlusNode::Difference(left, right) | HfPlusNode::AntiJoin(left, right)) =
-                    self
+                let (HydroNode::Difference(left, right) | HydroNode::AntiJoin(left, right)) = self
                 else {
                     unreachable!()
                 };
 
-                let (right, right_was_persist) = if let HfPlusNode::Persist(right) = right.as_ref()
-                {
+                let (right, right_was_persist) = if let HydroNode::Persist(right) = right.as_ref() {
                     (right, true)
                 } else {
                     (right, false)
@@ -885,7 +883,7 @@ impl<'a> HfPlusNode {
                 (stream_ident, left_location_id)
             }
 
-            HfPlusNode::Map { f, input } => {
+            HydroNode::Map { f, input } => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -902,7 +900,7 @@ impl<'a> HfPlusNode {
                 (map_ident, input_location_id)
             }
 
-            HfPlusNode::FlatMap { f, input } => {
+            HydroNode::FlatMap { f, input } => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -920,7 +918,7 @@ impl<'a> HfPlusNode {
                 (flat_map_ident, input_location_id)
             }
 
-            HfPlusNode::Filter { f, input } => {
+            HydroNode::Filter { f, input } => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -938,7 +936,7 @@ impl<'a> HfPlusNode {
                 (filter_ident, input_location_id)
             }
 
-            HfPlusNode::FilterMap { f, input } => {
+            HydroNode::FilterMap { f, input } => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -956,7 +954,7 @@ impl<'a> HfPlusNode {
                 (filter_map_ident, input_location_id)
             }
 
-            HfPlusNode::Sort(input) => {
+            HydroNode::Sort(input) => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -973,7 +971,7 @@ impl<'a> HfPlusNode {
                 (sort_ident, input_location_id)
             }
 
-            HfPlusNode::DeferTick(input) => {
+            HydroNode::DeferTick(input) => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -991,7 +989,7 @@ impl<'a> HfPlusNode {
                 (defer_tick_ident, input_location_id)
             }
 
-            HfPlusNode::Enumerate { is_static, input } => {
+            HydroNode::Enumerate { is_static, input } => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -1016,7 +1014,7 @@ impl<'a> HfPlusNode {
                 (enumerate_ident, input_location_id)
             }
 
-            HfPlusNode::Inspect { f, input } => {
+            HydroNode::Inspect { f, input } => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -1034,7 +1032,7 @@ impl<'a> HfPlusNode {
                 (inspect_ident, input_location_id)
             }
 
-            HfPlusNode::Unique(input) => {
+            HydroNode::Unique(input) => {
                 let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
@@ -1052,21 +1050,20 @@ impl<'a> HfPlusNode {
                 (unique_ident, input_location_id)
             }
 
-            HfPlusNode::Fold { .. } | HfPlusNode::FoldKeyed { .. } => {
-                let operator: syn::Ident = if matches!(self, HfPlusNode::Fold { .. }) {
+            HydroNode::Fold { .. } | HydroNode::FoldKeyed { .. } => {
+                let operator: syn::Ident = if matches!(self, HydroNode::Fold { .. }) {
                     parse_quote!(fold)
                 } else {
                     parse_quote!(fold_keyed)
                 };
 
-                let (HfPlusNode::Fold { init, acc, input }
-                | HfPlusNode::FoldKeyed { init, acc, input }) = self
+                let (HydroNode::Fold { init, acc, input }
+                | HydroNode::FoldKeyed { init, acc, input }) = self
                 else {
                     unreachable!()
                 };
 
-                let (input, input_was_persist) = if let HfPlusNode::Persist(input) = input.as_ref()
-                {
+                let (input, input_was_persist) = if let HydroNode::Persist(input) = input.as_ref() {
                     (input, true)
                 } else {
                     (input, false)
@@ -1095,20 +1092,19 @@ impl<'a> HfPlusNode {
                 (fold_ident, input_location_id)
             }
 
-            HfPlusNode::Reduce { .. } | HfPlusNode::ReduceKeyed { .. } => {
-                let operator: syn::Ident = if matches!(self, HfPlusNode::Reduce { .. }) {
+            HydroNode::Reduce { .. } | HydroNode::ReduceKeyed { .. } => {
+                let operator: syn::Ident = if matches!(self, HydroNode::Reduce { .. }) {
                     parse_quote!(reduce)
                 } else {
                     parse_quote!(reduce_keyed)
                 };
 
-                let (HfPlusNode::Reduce { f, input } | HfPlusNode::ReduceKeyed { f, input }) = self
+                let (HydroNode::Reduce { f, input } | HydroNode::ReduceKeyed { f, input }) = self
                 else {
                     unreachable!()
                 };
 
-                let (input, input_was_persist) = if let HfPlusNode::Persist(input) = input.as_ref()
-                {
+                let (input, input_was_persist) = if let HydroNode::Persist(input) = input.as_ref() {
                     (input, true)
                 } else {
                     (input, false)
@@ -1137,7 +1133,7 @@ impl<'a> HfPlusNode {
                 (reduce_ident, input_location_id)
             }
 
-            HfPlusNode::Network {
+            HydroNode::Network {
                 from_location: _,
                 from_key: _,
                 to_location,

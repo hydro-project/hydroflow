@@ -4,71 +4,71 @@ use std::collections::HashSet;
 use crate::ir::*;
 
 fn persist_pullup_node(
-    node: &mut HfPlusNode,
-    persist_pulled_tees: &mut HashSet<*const RefCell<HfPlusNode>>,
+    node: &mut HydroNode,
+    persist_pulled_tees: &mut HashSet<*const RefCell<HydroNode>>,
 ) {
     *node = match_box::match_box! {
-        match std::mem::replace(node, HfPlusNode::Placeholder) {
-            HfPlusNode::Unpersist(mb!(* HfPlusNode::Persist(mb!(* behind_persist)))) => behind_persist,
+        match std::mem::replace(node, HydroNode::Placeholder) {
+            HydroNode::Unpersist(mb!(* HydroNode::Persist(mb!(* behind_persist)))) => behind_persist,
 
-            HfPlusNode::Delta(mb!(* HfPlusNode::Persist(mb!(* behind_persist)))) => behind_persist,
+            HydroNode::Delta(mb!(* HydroNode::Persist(mb!(* behind_persist)))) => behind_persist,
 
-            HfPlusNode::Tee { inner } => {
-                if persist_pulled_tees.contains(&(inner.0.as_ref() as *const RefCell<HfPlusNode>)) {
-                    HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
+            HydroNode::Tee { inner } => {
+                if persist_pulled_tees.contains(&(inner.0.as_ref() as *const RefCell<HydroNode>)) {
+                    HydroNode::Persist(Box::new(HydroNode::Tee {
                         inner: TeeNode(inner.0.clone()),
                     }))
-                } else if matches!(*inner.0.borrow(), HfPlusNode::Persist(_)) {
-                    persist_pulled_tees.insert(inner.0.as_ref() as *const RefCell<HfPlusNode>);
-                    if let HfPlusNode::Persist(behind_persist) =
-                        inner.0.replace(HfPlusNode::Placeholder)
+                } else if matches!(*inner.0.borrow(), HydroNode::Persist(_)) {
+                    persist_pulled_tees.insert(inner.0.as_ref() as *const RefCell<HydroNode>);
+                    if let HydroNode::Persist(behind_persist) =
+                        inner.0.replace(HydroNode::Placeholder)
                     {
                         *inner.0.borrow_mut() = *behind_persist;
                     } else {
                         unreachable!()
                     }
 
-                    HfPlusNode::Persist(Box::new(HfPlusNode::Tee {
+                    HydroNode::Persist(Box::new(HydroNode::Tee {
                         inner: TeeNode(inner.0.clone()),
                     }))
                 } else {
-                    HfPlusNode::Tee { inner }
+                    HydroNode::Tee { inner }
                 }
             }
 
-            HfPlusNode::Map {
+            HydroNode::Map {
                 f,
-                input: mb!(* HfPlusNode::Persist(behind_persist)),
-            } => HfPlusNode::Persist(Box::new(HfPlusNode::Map {
-                f,
-                input: behind_persist,
-            })),
-
-            HfPlusNode::FilterMap {
-                f,
-                input: mb!(* HfPlusNode::Persist(behind_persist)),
-            } => HfPlusNode::Persist(Box::new(HfPlusNode::FilterMap {
+                input: mb!(* HydroNode::Persist(behind_persist)),
+            } => HydroNode::Persist(Box::new(HydroNode::Map {
                 f,
                 input: behind_persist,
             })),
 
-            HfPlusNode::FlatMap {
+            HydroNode::FilterMap {
                 f,
-                input: mb!(* HfPlusNode::Persist(behind_persist)),
-            } => HfPlusNode::Persist(Box::new(HfPlusNode::FlatMap {
-                f,
-                input: behind_persist,
-            })),
-
-            HfPlusNode::Filter {
-                f,
-                input: mb!(* HfPlusNode::Persist(behind_persist)),
-            } => HfPlusNode::Persist(Box::new(HfPlusNode::Filter {
+                input: mb!(* HydroNode::Persist(behind_persist)),
+            } => HydroNode::Persist(Box::new(HydroNode::FilterMap {
                 f,
                 input: behind_persist,
             })),
 
-            HfPlusNode::Network {
+            HydroNode::FlatMap {
+                f,
+                input: mb!(* HydroNode::Persist(behind_persist)),
+            } => HydroNode::Persist(Box::new(HydroNode::FlatMap {
+                f,
+                input: behind_persist,
+            })),
+
+            HydroNode::Filter {
+                f,
+                input: mb!(* HydroNode::Persist(behind_persist)),
+            } => HydroNode::Persist(Box::new(HydroNode::Filter {
+                f,
+                input: behind_persist,
+            })),
+
+            HydroNode::Network {
                 from_location,
                 from_key,
                 to_location,
@@ -76,9 +76,9 @@ fn persist_pullup_node(
                 serialize_fn,
                 instantiate_fn,
                 deserialize_fn,
-                input: mb!(* HfPlusNode::Persist(behind_persist)),
+                input: mb!(* HydroNode::Persist(behind_persist)),
                 ..
-            } => HfPlusNode::Persist(Box::new(HfPlusNode::Network {
+            } => HydroNode::Persist(Box::new(HydroNode::Network {
                 from_location,
                 from_key,
                 to_location,
@@ -89,29 +89,29 @@ fn persist_pullup_node(
                 input: behind_persist,
             })),
 
-            HfPlusNode::Chain(mb!(* HfPlusNode::Persist(left)), mb!(* HfPlusNode::Persist(right))) => {
-                HfPlusNode::Persist(Box::new(HfPlusNode::Chain(left, right)))
+            HydroNode::Chain(mb!(* HydroNode::Persist(left)), mb!(* HydroNode::Persist(right))) => {
+                HydroNode::Persist(Box::new(HydroNode::Chain(left, right)))
             }
 
-            HfPlusNode::CrossProduct(mb!(* HfPlusNode::Persist(left)), mb!(* HfPlusNode::Persist(right))) => {
-                HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(
-                    HfPlusNode::CrossProduct(
-                        Box::new(HfPlusNode::Persist(left)),
-                        Box::new(HfPlusNode::Persist(right)),
+            HydroNode::CrossProduct(mb!(* HydroNode::Persist(left)), mb!(* HydroNode::Persist(right))) => {
+                HydroNode::Persist(Box::new(HydroNode::Delta(Box::new(
+                    HydroNode::CrossProduct(
+                        Box::new(HydroNode::Persist(left)),
+                        Box::new(HydroNode::Persist(right)),
                     ),
                 ))))
             }
 
-            HfPlusNode::Join(mb!(* HfPlusNode::Persist(left)), mb!(* HfPlusNode::Persist(right))) => {
-                HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Join(
-                    Box::new(HfPlusNode::Persist(left)),
-                    Box::new(HfPlusNode::Persist(right)),
+            HydroNode::Join(mb!(* HydroNode::Persist(left)), mb!(* HydroNode::Persist(right))) => {
+                HydroNode::Persist(Box::new(HydroNode::Delta(Box::new(HydroNode::Join(
+                    Box::new(HydroNode::Persist(left)),
+                    Box::new(HydroNode::Persist(right)),
                 )))))
             }
 
-            HfPlusNode::Unique(mb!(* HfPlusNode::Persist(inner))) => {
-                HfPlusNode::Persist(Box::new(HfPlusNode::Delta(Box::new(HfPlusNode::Unique(
-                    Box::new(HfPlusNode::Persist(inner)),
+            HydroNode::Unique(mb!(* HydroNode::Persist(inner))) => {
+                HydroNode::Persist(Box::new(HydroNode::Delta(Box::new(HydroNode::Unique(
+                    Box::new(HydroNode::Persist(inner)),
                 )))))
             }
 
@@ -120,7 +120,7 @@ fn persist_pullup_node(
     };
 }
 
-pub fn persist_pullup(ir: Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf> {
+pub fn persist_pullup(ir: Vec<HydroLeaf>) -> Vec<HydroLeaf> {
     let mut seen_tees = Default::default();
     let mut persist_pulled_tees = Default::default();
     ir.into_iter()
