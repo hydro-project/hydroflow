@@ -4,9 +4,9 @@ use std::collections::HashMap;
 use std::task::{Context, Poll};
 use std::thread_local;
 
+use dfir_datalog_core::gen_hydroflow_graph;
 use hydroflow::datalog;
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow_datalog_core::gen_hydroflow_graph;
 use hydroflow_lang::diagnostic::{Diagnostic, Level};
 use hydroflow_lang::graph::{build_hfcode, partition_graph, WriteConfig};
 use proc_macro2::{LineColumn, Span};

@@ -1,5 +1,5 @@
-use hydroflow_datalog_core::diagnostic::Diagnostic;
-use hydroflow_datalog_core::{gen_hydroflow_graph, hydroflow_graph_to_program};
+use dfir_datalog_core::diagnostic::Diagnostic;
+use dfir_datalog_core::{gen_hydroflow_graph, hydroflow_graph_to_program};
 use proc_macro2::Span;
 use quote::{quote, ToTokens};
 

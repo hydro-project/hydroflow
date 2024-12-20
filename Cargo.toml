@@ -10,7 +10,7 @@ members = [
     "hydro_deploy/hydroflow_deploy_integration",
     "hydroflow",
     "hydroflow_datalog",
-    "hydroflow_datalog_core",
+    "dfir_datalog_core",
     "hydroflow_lang",
     "dfir_macro",
     "hydro_lang",

@@ -872,6 +872,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "dfir_datalog_core"
+version = "0.10.0"
+dependencies = [
+ "hydroflow_lang",
+ "insta",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "rust-sitter",
+ "rust-sitter-tool",
+ "slotmap",
+ "syn 2.0.75",
+ "tempfile",
+]
+
+[[package]]
 name = "dfir_macro"
 version = "0.10.0"
 dependencies = [
@@ -1606,27 +1622,11 @@ dependencies = [
 name = "hydroflow_datalog"
 version = "0.10.0"
 dependencies = [
- "hydroflow_datalog_core",
+ "dfir_datalog_core",
  "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn 2.0.75",
-]
-
-[[package]]
-name = "hydroflow_datalog_core"
-version = "0.10.0"
-dependencies = [
- "hydroflow_lang",
- "insta",
- "prettyplease",
- "proc-macro2",
- "quote",
- "rust-sitter",
- "rust-sitter-tool",
- "slotmap",
- "syn 2.0.75",
- "tempfile",
 ]
 
 [[package]]
@@ -4343,9 +4343,9 @@ name = "website_playground"
 version = "0.0.0"
 dependencies = [
  "console_error_panic_hook",
+ "dfir_datalog_core",
  "futures",
  "hydroflow",
- "hydroflow_datalog_core",
  "hydroflow_lang",
  "prettyplease",
  "proc-macro2",
