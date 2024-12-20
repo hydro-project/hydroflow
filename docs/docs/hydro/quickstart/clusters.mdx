@@ -2,8 +2,8 @@
 sidebar_position: 3
 ---
 import CodeBlock from '@theme/CodeBlock';
-import firstTenClusterSrc from '!!raw-loader!../../../../template/hydroflow_plus/src/first_ten_cluster.rs';
-import firstTenClusterExample from '!!raw-loader!../../../../template/hydroflow_plus/examples/first_ten_cluster.rs';
+import firstTenClusterSrc from '!!raw-loader!../../../../template/hydro/src/first_ten_cluster.rs';
+import firstTenClusterExample from '!!raw-loader!../../../../template/hydro/examples/first_ten_cluster.rs';
 import { getLines, highlightLines, extractOutput } from '../../../src/util';
 
 # Scaling with Clusters
@@ -22,7 +22,7 @@ We start by materializing a stream of numbers on the `leader`, as before. But ra
 
 :::info
 
-There are a [variety of APIs](pathname:///rustdoc/hydroflow_plus/stream/struct.Stream.html#impl-Stream%3CT,+L,+B%3E-2) for sending data to and receiving data from clusters. For example, we `broadcast_bincode` to send copies to all members (e.g. for replication), or use `send_bincode` if we have a custom partitioning algorithm.
+There are a [variety of APIs](pathname:///rustdoc/hydro/stream/struct.Stream.html#impl-Stream%3CT,+L,+B%3E-2) for sending data to and receiving data from clusters. For example, we `broadcast_bincode` to send copies to all members (e.g. for replication), or use `send_bincode` if we have a custom partitioning algorithm.
 
 :::
 
@@ -46,28 +46,28 @@ We can then launch the program:
 #shell-command-next-line
 cargo run --example first_ten_cluster
 #highlight-next-line
-[hydroflow_plus_template::first_ten_cluster::Worker (cluster 1) / 0] 0
-[hydroflow_plus_template::first_ten_cluster::Worker (cluster 1) / 2] 4
-[hydroflow_plus_template::first_ten_cluster::Worker (cluster 1) / 2] 12
+[hydro_template::first_ten_cluster::Worker (cluster 1) / 0] 0
+[hydro_template::first_ten_cluster::Worker (cluster 1) / 2] 4
+[hydro_template::first_ten_cluster::Worker (cluster 1) / 2] 12
 #highlight-next-line
-[hydroflow_plus_template::first_ten_cluster::Worker (cluster 1) / 0] 8
-[hydroflow_plus_template::first_ten_cluster::Worker (cluster 1) / 3] 6
-[hydroflow_plus_template::first_ten_cluster::Worker (cluster 1) / 1] 2
-[hydroflow_plus_template::first_ten_cluster::Worker (cluster 1) / 1] 10
-[hydroflow_plus_template::first_ten_cluster::Worker (cluster 1) / 1] 18
-[hydroflow_plus_template::first_ten_cluster::Leader (process 0)] 0
+[hydro_template::first_ten_cluster::Worker (cluster 1) / 0] 8
+[hydro_template::first_ten_cluster::Worker (cluster 1) / 3] 6
+[hydro_template::first_ten_cluster::Worker (cluster 1) / 1] 2
+[hydro_template::first_ten_cluster::Worker (cluster 1) / 1] 10
+[hydro_template::first_ten_cluster::Worker (cluster 1) / 1] 18
+[hydro_template::first_ten_cluster::Leader (process 0)] 0
 #highlight-next-line
-[hydroflow_plus_template::first_ten_cluster::Worker (cluster 1) / 0] 16
-[hydroflow_plus_template::first_ten_cluster::Worker (cluster 1) / 3] 14
-[hydroflow_plus_template::first_ten_cluster::Leader (process 0)] 8
-[hydroflow_plus_template::first_ten_cluster::Leader (process 0)] 16
-[hydroflow_plus_template::first_ten_cluster::Leader (process 0)] 2
-[hydroflow_plus_template::first_ten_cluster::Leader (process 0)] 10
-[hydroflow_plus_template::first_ten_cluster::Leader (process 0)] 18
-[hydroflow_plus_template::first_ten_cluster::Leader (process 0)] 4
-[hydroflow_plus_template::first_ten_cluster::Leader (process 0)] 12
-[hydroflow_plus_template::first_ten_cluster::Leader (process 0)] 6
-[hydroflow_plus_template::first_ten_cluster::Leader (process 0)] 14
+[hydro_template::first_ten_cluster::Worker (cluster 1) / 0] 16
+[hydro_template::first_ten_cluster::Worker (cluster 1) / 3] 14
+[hydro_template::first_ten_cluster::Leader (process 0)] 8
+[hydro_template::first_ten_cluster::Leader (process 0)] 16
+[hydro_template::first_ten_cluster::Leader (process 0)] 2
+[hydro_template::first_ten_cluster::Leader (process 0)] 10
+[hydro_template::first_ten_cluster::Leader (process 0)] 18
+[hydro_template::first_ten_cluster::Leader (process 0)] 4
+[hydro_template::first_ten_cluster::Leader (process 0)] 12
+[hydro_template::first_ten_cluster::Leader (process 0)] 6
+[hydro_template::first_ten_cluster::Leader (process 0)] 14
 ```
 
 You'll notice the round-robin distribution in action here, as each cluster log is tagged with the ID of the member (e.g. `/ 0`). In our deployment, we are sending data round-robin across 4 members of the cluster, numbered `0` through `3`.  Hence cluster member `0` receives values `0`, `4`, `8` (corresponding to the highlighted lines),  member `1`  receives values `1`, `5`, `9`, and so on.

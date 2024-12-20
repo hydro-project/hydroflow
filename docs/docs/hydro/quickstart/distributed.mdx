@@ -2,8 +2,8 @@
 sidebar_position: 2
 ---
 import CodeBlock from '@theme/CodeBlock';
-import firstTenDistSrc from '!!raw-loader!../../../../template/hydroflow_plus/src/first_ten_distributed.rs';
-import firstTenDistExample from '!!raw-loader!../../../../template/hydroflow_plus/examples/first_ten_distributed.rs';
+import firstTenDistSrc from '!!raw-loader!../../../../template/hydro/src/first_ten_distributed.rs';
+import firstTenDistExample from '!!raw-loader!../../../../template/hydro/examples/first_ten_distributed.rs';
 import { getLines, extractOutput } from '../../../src/util';
 
 # Adding Distribution
@@ -13,7 +13,7 @@ We'll start by updating our dataflow function signature to take two processes (i
 
 
 ```rust title="src/first_ten_distributed.rs"
-use hydroflow_plus::*;
+use hydro::*;
 
 pub fn first_ten_distributed<'a>(p1: &Process<'a>, p2: &Process<'a>)
 ```
