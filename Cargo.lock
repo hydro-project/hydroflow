@@ -317,8 +317,8 @@ name = "benches"
 version = "0.0.0"
 dependencies = [
  "criterion",
+ "dfir_rs",
  "differential-dataflow-master",
- "hydroflow",
  "nameof",
  "rand",
  "rand_distr",
@@ -872,6 +872,112 @@ dependencies = [
 ]
 
 [[package]]
+name = "dfir_datalog"
+version = "0.10.0"
+dependencies = [
+ "dfir_datalog_core",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.75",
+]
+
+[[package]]
+name = "dfir_datalog_core"
+version = "0.10.0"
+dependencies = [
+ "dfir_lang",
+ "insta",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "rust-sitter",
+ "rust-sitter-tool",
+ "slotmap",
+ "syn 2.0.75",
+ "tempfile",
+]
+
+[[package]]
+name = "dfir_lang"
+version = "0.10.0"
+dependencies = [
+ "auto_impl",
+ "clap",
+ "data-encoding",
+ "itertools",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "rustc_version 0.4.1",
+ "serde",
+ "serde_json",
+ "slotmap",
+ "syn 2.0.75",
+ "webbrowser",
+]
+
+[[package]]
+name = "dfir_macro"
+version = "0.10.0"
+dependencies = [
+ "dfir_lang",
+ "itertools",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "rustc_version 0.4.1",
+ "syn 2.0.75",
+]
+
+[[package]]
+name = "dfir_rs"
+version = "0.10.0"
+dependencies = [
+ "bincode",
+ "byteorder",
+ "bytes",
+ "chrono",
+ "clap",
+ "colored",
+ "criterion",
+ "dfir_datalog",
+ "dfir_lang",
+ "dfir_macro",
+ "futures",
+ "getrandom",
+ "hydroflow_deploy_integration",
+ "insta",
+ "itertools",
+ "lattices",
+ "multiplatform_test",
+ "pusherator",
+ "pyo3",
+ "rand",
+ "rand_distr",
+ "ref-cast",
+ "regex",
+ "rustc-hash 1.1.0",
+ "sealed 0.5.0",
+ "serde",
+ "serde_json",
+ "slotmap",
+ "smallvec",
+ "static_assertions",
+ "time",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+ "trybuild",
+ "variadics",
+ "wasm-bindgen-test",
+ "web-time",
+ "zipf",
+]
+
+[[package]]
 name = "differential-dataflow-master"
 version = "0.13.0-dev.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1187,9 +1293,9 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "config",
+ "dfir_rs",
  "governor",
  "hostname",
- "hydroflow",
  "lattices",
  "lazy_static",
  "notify",
@@ -1417,9 +1523,9 @@ dependencies = [
 name = "hydro_cli_examples"
 version = "0.0.0"
 dependencies = [
+ "dfir_datalog",
+ "dfir_rs",
  "futures",
- "hydroflow",
- "hydroflow_datalog",
  "rand",
  "serde",
  "serde_json",
@@ -1466,9 +1572,9 @@ dependencies = [
  "async-ssh2-lite",
  "bincode",
  "ctor",
+ "dfir_lang",
+ "dfir_rs",
  "hydro_deploy",
- "hydroflow",
- "hydroflow_lang",
  "insta",
  "match_box",
  "nameof",
@@ -1522,10 +1628,10 @@ dependencies = [
 name = "hydro_test_local"
 version = "0.0.0"
 dependencies = [
+ "dfir_rs",
  "futures",
  "hydro_lang",
  "hydro_test_local_macro",
- "hydroflow",
  "insta",
  "rand",
  "stageleft",
@@ -1543,80 +1649,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hydroflow"
-version = "0.10.0"
-dependencies = [
- "bincode",
- "byteorder",
- "bytes",
- "chrono",
- "clap",
- "colored",
- "criterion",
- "futures",
- "getrandom",
- "hydroflow_datalog",
- "hydroflow_deploy_integration",
- "hydroflow_lang",
- "hydroflow_macro",
- "insta",
- "itertools",
- "lattices",
- "multiplatform_test",
- "pusherator",
- "pyo3",
- "rand",
- "rand_distr",
- "ref-cast",
- "regex",
- "rustc-hash 1.1.0",
- "sealed 0.5.0",
- "serde",
- "serde_json",
- "slotmap",
- "smallvec",
- "static_assertions",
- "time",
- "tokio",
- "tokio-stream",
- "tokio-util",
- "tracing",
- "tracing-subscriber",
- "trybuild",
- "variadics",
- "wasm-bindgen-test",
- "web-time",
- "zipf",
-]
-
-[[package]]
-name = "hydroflow_datalog"
-version = "0.10.0"
-dependencies = [
- "hydroflow_datalog_core",
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "syn 2.0.75",
-]
-
-[[package]]
-name = "hydroflow_datalog_core"
-version = "0.10.0"
-dependencies = [
- "hydroflow_lang",
- "insta",
- "prettyplease",
- "proc-macro2",
- "quote",
- "rust-sitter",
- "rust-sitter-tool",
- "slotmap",
- "syn 2.0.75",
- "tempfile",
-]
-
-[[package]]
 name = "hydroflow_deploy_integration"
 version = "0.10.0"
 dependencies = [
@@ -1630,38 +1662,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util",
-]
-
-[[package]]
-name = "hydroflow_lang"
-version = "0.10.0"
-dependencies = [
- "auto_impl",
- "clap",
- "data-encoding",
- "itertools",
- "prettyplease",
- "proc-macro2",
- "quote",
- "rustc_version 0.4.1",
- "serde",
- "serde_json",
- "slotmap",
- "syn 2.0.75",
- "webbrowser",
-]
-
-[[package]]
-name = "hydroflow_macro"
-version = "0.10.0"
-dependencies = [
- "hydroflow_lang",
- "itertools",
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "rustc_version 0.4.1",
- "syn 2.0.75",
 ]
 
 [[package]]
@@ -2955,7 +2955,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "datadriven",
- "hydroflow",
+ "dfir_rs",
  "prettyplease",
  "proc-macro2",
  "quote",
@@ -3788,9 +3788,9 @@ dependencies = [
 name = "topolotree"
 version = "0.0.0"
 dependencies = [
+ "dfir_datalog",
+ "dfir_rs",
  "futures",
- "hydroflow",
- "hydroflow_datalog",
  "procinfo",
  "rand",
  "serde",
@@ -4343,10 +4343,10 @@ name = "website_playground"
 version = "0.0.0"
 dependencies = [
  "console_error_panic_hook",
+ "dfir_datalog_core",
+ "dfir_lang",
+ "dfir_rs",
  "futures",
- "hydroflow",
- "hydroflow_datalog_core",
- "hydroflow_lang",
  "prettyplease",
  "proc-macro2",
  "quote",

@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use hydroflow::futures::channel::mpsc::UnboundedSender;
+use dfir_rs::futures::channel::mpsc::UnboundedSender;
 use stageleft::*;
 
 use super::profiler as myself; // TODO(shadaj): stageleft does not support `self::...`

@@ -120,7 +120,7 @@ const config = {
             items: [
               {
                 type: 'docSidebar',
-                sidebarId: 'hydroflowSidebar',
+                sidebarId: 'dfirSidebar',
                 label: 'Hydroflow',
               },
               {
@@ -169,8 +169,8 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Hydroflow',
-                to: '/docs/hydroflow/',
+                label: 'DFIR',
+                to: '/docs/dfir/',
               },
               {
                 label: 'Hydro',

@@ -11,7 +11,7 @@ workspace = true
 stageleft_devel = []
 
 [dependencies]
-hydroflow = { path = "../hydroflow", version = "^0.10.0", default-features = false } # , features = ["debugging"] }
+dfir_rs = { path = "../dfir_rs", version = "^0.10.0", default-features = false } # , features = ["debugging"] }
 hydro_lang = { path = "../hydro_lang", version = "^0.10.0", features = ["build"] }
 stageleft = { path = "../stageleft", version = "^0.5.0" }
 rand = "0.8.0"

@@ -1,4 +1,4 @@
-use hydroflow_lang::graph::HydroflowGraph;
+use dfir_lang::graph::DfirGraph;
 
 use super::{LocalDeploy, Node, ProcessSpec};
 
@@ -48,7 +48,7 @@ impl Node for SingleNode {
         &self,
         _env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
-        _graph: HydroflowGraph,
+        _graph: DfirGraph,
         _extra_stmts: Vec<syn::Stmt>,
     ) {
     }
@@ -100,7 +100,7 @@ impl Node for MultiNode {
         &self,
         _env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
-        _graph: HydroflowGraph,
+        _graph: DfirGraph,
         _extra_stmts: Vec<syn::Stmt>,
     ) {
     }

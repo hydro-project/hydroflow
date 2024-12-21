@@ -1,5 +1,5 @@
 use hydro_lang::deploy::SingleProcessGraph;
-use hydro_lang::hydroflow::scheduled::graph::Hydroflow;
+use hydro_lang::dfir_rs::scheduled::graph::Dfir;
 use hydro_lang::*;
 use stageleft::Quoted;
 
@@ -10,7 +10,7 @@ pub fn first_ten(flow: &FlowBuilder) {
 }
 
 #[stageleft::entry]
-pub fn first_ten_runtime<'a>(flow: FlowBuilder<'a>) -> impl Quoted<'a, Hydroflow<'a>> {
+pub fn first_ten_runtime<'a>(flow: FlowBuilder<'a>) -> impl Quoted<'a, Dfir<'a>> {
     first_ten(&flow);
     flow.compile_no_network::<SingleProcessGraph>()
 }

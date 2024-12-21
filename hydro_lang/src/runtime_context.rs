@@ -1,4 +1,4 @@
-use hydroflow::scheduled::context::Context;
+use dfir_rs::scheduled::context::Context;
 use proc_macro2::TokenStream;
 use quote::quote;
 use stageleft::runtime_support::FreeVariableWithContext;
@@ -22,8 +22,8 @@ impl<'a, L: Location<'a>> FreeVariableWithContext<L> for RuntimeContext<'a> {
 
 #[cfg(test)]
 mod tests {
+    use dfir_rs::futures::StreamExt;
     use hydro_deploy::Deployment;
-    use hydroflow::futures::StreamExt;
 
     use crate::*;
 
