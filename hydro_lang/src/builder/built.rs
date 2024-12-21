@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 
-use hydroflow_lang::graph::{eliminate_extra_unions_tees, HydroflowGraph};
+use dfir_lang::graph::{eliminate_extra_unions_tees, DfirGraph};
 
 use super::compiled::CompiledFlow;
 use super::deploy::{DeployFlow, DeployResult};
@@ -27,7 +27,7 @@ impl Drop for BuiltFlow<'_> {
     }
 }
 
-pub(crate) fn build_inner(ir: &mut Vec<HydroLeaf>) -> BTreeMap<usize, HydroflowGraph> {
+pub(crate) fn build_inner(ir: &mut Vec<HydroLeaf>) -> BTreeMap<usize, DfirGraph> {
     let mut builders = BTreeMap::new();
     let mut built_tees = HashMap::new();
     let mut next_stmt_id = 0;

@@ -17,7 +17,7 @@ pub fn first_ten_cluster<'a>(leader: &Process<'a, Leader>, workers: &Cluster<'a,
 mod tests {
     use hydro_deploy::Deployment;
     use hydro_lang::deploy::DeployCrateWrapper;
-    use hydro_lang::hydroflow::futures::StreamExt;
+    use hydro_lang::dfir_rs::futures::StreamExt;
     use tokio_stream::wrappers::UnboundedReceiverStream;
 
     #[tokio::test]

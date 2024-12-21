@@ -8,7 +8,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 #[cfg(feature = "build")]
-use hydroflow_lang::graph::FlatGraphBuilder;
+use dfir_lang::graph::FlatGraphBuilder;
 #[cfg(feature = "build")]
 use proc_macro2::Span;
 use proc_macro2::TokenStream;

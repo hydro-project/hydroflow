@@ -6,6 +6,10 @@ use std::pin::Pin;
 use std::rc::Rc;
 use std::sync::Arc;
 
+use dfir_lang::graph::DfirGraph;
+use dfir_rs::bytes::Bytes;
+use dfir_rs::futures::{Sink, SinkExt, Stream, StreamExt};
+use dfir_rs::util::deploy::{ConnectedSink, ConnectedSource};
 use hydro_deploy::custom_service::CustomClientPort;
 use hydro_deploy::hydroflow_crate::ports::{
     DemuxSink, HydroflowSink, HydroflowSource, TaggedSource,
@@ -13,10 +17,6 @@ use hydro_deploy::hydroflow_crate::ports::{
 use hydro_deploy::hydroflow_crate::tracing_options::TracingOptions;
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{CustomService, Deployment, Host, HydroflowCrate};
-use hydroflow::bytes::Bytes;
-use hydroflow::futures::{Sink, SinkExt, Stream, StreamExt};
-use hydroflow::util::deploy::{ConnectedSink, ConnectedSource};
-use hydroflow_lang::graph::HydroflowGraph;
 use nameof::name_of;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -596,7 +596,7 @@ impl Node for DeployExternal {
         &self,
         env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
-        _graph: HydroflowGraph,
+        _graph: DfirGraph,
         _extra_stmts: Vec<syn::Stmt>,
     ) {
         let service = env.CustomService(self.host.clone(), vec![]);
@@ -675,7 +675,7 @@ impl Node for DeployNode {
         &self,
         env: &mut Self::InstantiateEnv,
         _meta: &mut Self::Meta,
-        graph: HydroflowGraph,
+        graph: DfirGraph,
         extra_stmts: Vec<syn::Stmt>,
     ) {
         let service = match self.service_spec.borrow_mut().take().unwrap() {
@@ -733,7 +733,7 @@ impl Node for DeployCluster {
         &self,
         env: &mut Self::InstantiateEnv,
         meta: &mut Self::Meta,
-        graph: HydroflowGraph,
+        graph: DfirGraph,
         extra_stmts: Vec<syn::Stmt>,
     ) {
         let has_trybuild = self

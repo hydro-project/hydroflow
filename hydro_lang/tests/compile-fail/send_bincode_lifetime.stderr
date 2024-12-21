@@ -46,10 +46,10 @@ help: consider importing this struct
 1 + use hydro_lang::Process;
   |
 
-warning: unused import: `hydroflow_lang::*`
+warning: unused import: `dfir_lang::*`
  --> tests/compile-fail/send_bincode_lifetime.rs:1:5
   |
-1 | use hydroflow_lang::*;
-  |     ^^^^^^^^^^^^^^^^^
+1 | use dfir_lang::*;
+  |     ^^^^^^^^^^^^
   |
   = note: `#[warn(unused_imports)]` on by default

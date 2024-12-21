@@ -37,9 +37,9 @@ hydroflow_deploy_integration = "0.1.1"
 Let's open up `src/main.rs` in the generated project and write a new `main` function that initializes Hydro Deploy:
 
 ```rust
-#[hydroflow::main]
+#[dfir_rs::main]
 async fn main() {
-    let ports = hydroflow::util::deploy::init().await;
+    let ports = dfir_rs::util::deploy::init().await;
 }
 ```
 
@@ -78,11 +78,11 @@ Returning briefly to our Hydroflow code, we can then load these ports and use th
 
 ```rust
 use hydroflow_deploy_integration::ConnectedDirect;
-use hydroflow::hydroflow_syntax;
+use dfir_rs::dfir_syntax;
 
-#[hydroflow::main]
+#[dfir_rs::main]
 async fn main() {
-    let ports = hydroflow::util::deploy::init().await;
+    let ports = dfir_rs::util::deploy::init().await;
 
     let input_recv = ports
         .port("input")
@@ -97,7 +97,7 @@ async fn main() {
         .await
         .into_sink();
 
-    hydroflow::util::deploy::launch_flow(hydroflow_syntax! {
+    dfir_rs::util::deploy::launch_flow(dfir_syntax! {
         source_iter(["hello".to_string()]) -> dest_sink(output_send);
         input = source_stream(input_recv) -> tee();
         input -> dest_sink(output_send);
