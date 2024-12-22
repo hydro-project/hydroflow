@@ -14,7 +14,7 @@ use super::{
 /// be scheduled as soon as possible.
 ///
 /// Note that this requires the dfir instance be run within a [Tokio `Runtime`](https://docs.rs/tokio/1/tokio/runtime/struct.Runtime.html).
-/// The easiest way to do this is with a [`#[dfir_rs::main]`](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.hydroflow_main.html)
+/// The easiest way to do this is with a [`#[dfir_rs::main]`](https://hydro.run/rustdoc/dfir_rs/attr.main)
 /// annotation on `async fn main() { ... }` as in the example below.
 ///
 /// ```rustbook

@@ -5,7 +5,7 @@ version = "0.10.0"
 edition = "2021"
 license = "Apache-2.0"
 documentation = "https://docs.rs/hydro_lang/"
-description = "Functional programming API for hydroflow"
+description = "Choreographic programming  for Hydro, built on DFIR"
 
 [lints]
 workspace = true

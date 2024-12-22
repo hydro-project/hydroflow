@@ -228,8 +228,8 @@ const PREFIX: &str = "\
 sidebar_position: 4
 ---
 
-# Hydroflow's Operators
+# DFIR Operators
 
-In our previous examples we made use of some of Hydroflow's operators.
-Here we document each operator in more detail. Most of these operators
+In our previous examples we made use of some of DFIR's operators.
+Here we document each operator in more detail. Many of these operators
 are based on the Rust equivalents for iterators; see the [Rust documentation](https://doc.rust-lang.org/std/iter/trait.Iterator.html).";

@@ -1,6 +1,6 @@
 # Releasing Guide
 
-This is a guide on how to create releases for Hydroflow and all the other crates in this workspace.
+This is a guide on how to create releases for all Hydro crates in this workspace.
 
 We use the [`cargo-smart-release` crate](https://github.com/Byron/cargo-smart-release) for our
 release workflow. Originally, cargo-smart-release [was part of gitoxide](https://github.com/Byron/gitoxide/pull/998)

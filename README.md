@@ -6,12 +6,12 @@
     <a href="https://docs.rs/hydroflow/"><img src="https://img.shields.io/badge/docs.rs-Hydroflow-blue?style=flat-square&logo=read-the-docs&logoColor=white" alt="Docs.rs"></a>
 </p>
 
-Hydro is a novel distributed programming library for standard Rust. Hydro allows developers to build distributed systems that are efficient, scalable, and correct. 
+Hydro is a novel distributed programming library for standard Rust. Hydro allows developers to build distributed systems that are efficient, scalable, and correct.
 
-Hydro integrates naturally into standard Rust constructs and IDEs, providing types and programming constructs for ensuring distributed correctness. Under the covers it provides a metaprogrammed compiler that optimizes for cross-node issues of scaling and data movement while leveraging Rust and LLVM for per-node performance. 
+Hydro integrates naturally into standard Rust constructs and IDEs, providing types and programming constructs for ensuring distributed correctness. Under the covers it provides a metaprogrammed compiler that optimizes for cross-node issues of scaling and data movement while leveraging Rust and LLVM for per-node performance.
 
-We often describe Hydro via a metaphor: *LLVM for the cloud*. Like LLVM, Hydro is a layered compilation framework with a low-level Internal Representation language. In contrast to LLVM, Hydro focuses on distributed aspects of modern software. 
-  
+We often describe Hydro via a metaphor: *LLVM for the cloud*. Like LLVM, Hydro is a layered compilation framework with a low-level Internal Representation language. In contrast to LLVM, Hydro focuses on distributed aspects of modern software.
+
 <div align="center">
   <img src="docs/static/img/hydro-stack.png" alt="Image description" width="200">
 </div>
@@ -43,14 +43,14 @@ What's wanted, we believe, is a proper language stack addressing distributed con
 - **Distributed Typechecking**: The type system of the language should enforce distributed correctness in the compiler, in ways that are visible in an IDE at time of authoring. For example, the types of data items should include their abstract locations, so that two items materialized at different nodes cannot be referenced together without an intervening construct for (async) communication.
 - **Distributed Optimizations**: The compiler should be able to correctly optimize (transform) programs for distributed concerns: removing bottlenecks by flexibly assigning compute and data to different processes or clusters, while preserving program semantics.
 - **Modularity**: The standard modularity of traditional programming—e.g. function calling abstractions—should work for distributed logic. For example, it should be possible to wrap a common cross-node construct like "heartbeats and timeouts", and invoke it as simply as one invokes a sequential function.
-- **Native Testing Tools** for correctness. In today's standard practice, formal specification languages for testing (e.g. [TLA+](https://en.wikipedia.org/wiki/TLA%2B)) are separate from languages of implementation. We believe it should be possible to perform many kinds of formal testing (e.g. model checking) on the same code that is used in deployment. 
+- **Native Testing Tools** for correctness. In today's standard practice, formal specification languages for testing (e.g. [TLA+](https://en.wikipedia.org/wiki/TLA%2B)) are separate from languages of implementation. We believe it should be possible to perform many kinds of formal testing (e.g. model checking) on the same code that is used in deployment.
 
-[Hydro](https://hydro.run) is a Rust library for distributed programming that is designed to address these goals.
+[Hydro](https://hydro.run) is a Rust framework for distributed programming that is designed to address these goals.
 
 # Learning More
 The Hydro project's main website is at [https://hydro.run](https://hydro.run).
 
-- **Docs**: There are docs for the [high-level Hydro language](https://hydro.run/docs/hydro/) and the low-level dataflow IR, [DFIR](https://hydro.run/docs/dfir), as well as the [HydroDeploy](https://hydro.run/docs/deploy) framework for launching Hydroflow+ programs.
+- **Docs**: There are docs for the [high-level Hydro language](https://hydro.run/docs/hydro/) and the low-level dataflow IR, [DFIR](https://hydro.run/docs/dfir), as well as the [Hydro Deploy](https://hydro.run/docs/deploy) framework for launching Hydro programs.
 
 - **Research Papers**: Our [research publications](https://hydro.run/research) are available on the project website. Some notable selections:
     - The original Hydro vision paper from CIDR 2021: [New Directions in Cloud Programming](https://hydro.run/papers/new-directions.pdf)

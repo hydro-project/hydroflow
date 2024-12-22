@@ -72,7 +72,7 @@ item passed in.
 
 The DFIR surface syntax is merely a *specification*; it does not actually do anything
 until we run it.
-We can run this flow from within Rust via the [`run_available()` method](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_available).
+We can run this flow from within Rust via the [`run_available()` method](https://hydro.run/rustdoc/dfir_rs/scheduled/graph/struct.Dfir#method.run_available).
 
 <CodeBlock language="rust">{getLines(exampleCode, 'run')}</CodeBlock>
 
@@ -82,7 +82,7 @@ more work will *ever* be available. In future examples we will use external inpu
 network ingress, in which case more work might appear at any time.
 
 In server applications that use network ingress for inputs, new work can appear at any time. In these application
-we may need a different method than `run_available()`, e.g. the [`run_async()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Dfir.html#method.run_async) method, check [the networking
+we may need a different method than `run_available()`, e.g. the [`run_async()`](https://hydro.run/rustdoc/dfir_rs/scheduled/graph/struct.Dfir.html#method.run_async) method, check [the networking
 examples](./example_7_networking) for more.
 
 ### A Note on Project Structure

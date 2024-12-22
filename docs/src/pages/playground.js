@@ -51,7 +51,7 @@ function MermaidGraph({ id, source }) {
   }} dangerouslySetInnerHTML={svg}></div>;
 }
 
-const DFIRExamples = {
+const DfirExamples = {
   "Simplest": `\
 // https://hydro.run/docs/dfir/quickstart/example_1_simplest
 source_iter(0..10) -> for_each(|n| println!("Hello {}", n));`,
@@ -177,8 +177,8 @@ reachable(x) :- seed_reachable(x)
 reachable(y) :- reachable(x), edges(x, y)`
 };
 
-export function DFIRSurfaceDemo() {
-  return <EditorDemo compileFn={compile_DFIR} examples={DFIRExamples} mermaidId="mermaid-hydroflow"></EditorDemo>
+export function DfirSurfaceDemo() {
+  return <EditorDemo compileFn={compile_DFIR} examples={DfirExamples} mermaidId="mermaid-dfir"></EditorDemo>
 }
 export function DatalogDemo() {
   return <EditorDemo compileFn={compile_datalog} examples={datalogExamples} mermaidId="mermaid-datalog"></EditorDemo>
@@ -310,7 +310,7 @@ export function EditorDemo({ compileFn, examples, mermaidId }) {
 export default function Playground() {
   return (
     <Layout
-      description="Playground for the Hydroflow compiler">
+      description="Playground for the DFIR compiler">
       <main>
         <div style={{
           maxWidth: "calc(min(1600px, 100vw - 60px))",
@@ -326,7 +326,7 @@ export default function Playground() {
           <h1 style={{
             fontSize: "2.5rem"
           }}>DFIR</h1>
-          <DFIRSurfaceDemo />
+          <DfirSurfaceDemo />
           <h1 style={{
             fontSize: "2.5rem"
           }}>Datalog</h1>

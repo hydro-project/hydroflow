@@ -120,11 +120,6 @@ const config = {
             items: [
               {
                 type: 'docSidebar',
-                sidebarId: 'dfirSidebar',
-                label: 'Hydroflow',
-              },
-              {
-                type: 'docSidebar',
                 sidebarId: 'hydroSidebar',
                 label: 'Hydro',
               },
@@ -134,9 +129,14 @@ const config = {
                 label: 'Hydro Deploy',
               },
               {
-                href: 'pathname:///rustdoc/hydroflow/',
+                href: 'pathname:///rustdoc/hydro/',
                 label: 'Rustdoc',
-              }
+              },
+              {
+                type: 'docSidebar',
+                sidebarId: 'dfirSidebar',
+                label: 'DFIR',
+              },
             ]
           },
           {

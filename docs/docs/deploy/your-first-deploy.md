@@ -5,7 +5,7 @@ sidebar_position: 3
 # Your First Deploy
 Now that we have Hydro Deploy installed, let's deploy our first app. We'll start with a simple app that echoes packets.
 
-First, we need to write the Hydroflow application, which will intergrate with Hydro Deploy to initialize connections to other services. We can create a project using the Cargo template:
+First, we need to write the DFIR application, which will intergrate with Hydro Deploy to initialize connections to other services. We can create a project using the Cargo template:
 
 ```bash
 # if you don't already have cargo-generate installed
@@ -13,7 +13,7 @@ First, we need to write the Hydroflow application, which will intergrate with Hy
 cargo install --locked cargo-generate
 
 #shell-command-next-line
-cargo generate gh:hydro-project/hydroflow template/hydroflow
+cargo generate gh:hydro-project/hydroflow template/dfir
 ```
 
 `cd` into the generated folder, ensure the correct nightly version of rust is installed, and test the generated project:
@@ -67,14 +67,14 @@ Next, we pick out the host we want to run the service on (localhost for now), an
     )
 ```
 
-Now, we need to wire up the ports. Hydro Deploy uses _named ports_, which can then be loaded in our Hydroflow logic. In our example, each echo service will have an "input" and "output" port. We can wire them up using the `send_to` method:
+Now, we need to wire up the ports. Hydro Deploy uses _named ports_, which can then be loaded in our DFIR logic. In our example, each echo service will have an "input" and "output" port. We can wire them up using the `send_to` method:
 
 ```python
     echo_service_1.ports.output.send_to(echo_service_2.ports.input)
     echo_service_2.ports.output.send_to(echo_service_1.ports.input)
 ```
 
-Returning briefly to our Hydroflow code, we can then load these ports and use them to send and receive packets:
+Returning briefly to our DFIR code, we can then load these ports and use them to send and receive packets:
 
 ```rust
 use hydroflow_deploy_integration::ConnectedDirect;
