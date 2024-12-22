@@ -52,7 +52,7 @@ use super::{
 ///
 /// If we only want to write a stream of bytes without delineation we can use the [`BytesCodec`](https://docs.rs/tokio-util/latest/tokio_util/codec/struct.BytesCodec.html).
 ///
-/// In this example we use a [`duplex`](crate::tokio::io::duplex) as our `AsyncWrite` with a
+/// In this example we use a [`duplex`](https://docs.rs/tokio/latest/tokio/io/fn.duplex.html) as our `AsyncWrite` with a
 /// `BytesCodec`.
 ///
 /// ```rustbook

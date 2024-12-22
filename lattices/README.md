@@ -21,7 +21,7 @@ For more information on the underlying mathematics of lattices and monotonicity,
 [Lattice Math section of the Hydroflow Book](https://hydro.run/docs/dfir/lattices_crate/lattice_math)
 and Section 2 of the [Hydroflow Thesis (2021)](https://hydro.run/papers/hydroflow-thesis.pdf).
 
-Take a look at the [`lattice` rustdocs](https://hydro-project.github.io/hydroflow/doc/lattices/index.html).
+Take a look at the [`lattice` rustdocs](https://hydro.run/rustdoc/lattices/index.html).
 
 ## Lattices
 

@@ -5,7 +5,7 @@ version = "0.10.0"
 edition = "2021"
 license = "Apache-2.0"
 documentation = "https://docs.rs/dfir_lang/"
-description = "Hydro's Data Flow Intermediate Representation (DFIR) implementation"
+description = "Hydro's Dataflow Intermediate Representation (DFIR) implementation"
 
 [lints]
 workspace = true

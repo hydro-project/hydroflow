@@ -14,7 +14,7 @@ use crate::pretty_span::PrettySpan;
 
 // TODO(mingwei): Preprocess rustdoc links in mdbook or in the `operator_docgen` macro.
 /// > Arguments: A Rust closure, the first argument is a received item and the
-/// > second argument is a variadic [`var_args!` tuple list](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.var_args.html)
+/// > second argument is a variadic [`var_args!` tuple list](https://hydro.run/rustdoc/dfir_rs/macro.var_args.html)
 /// > where each item name is an output port.
 ///
 /// Takes the input stream and allows the user to determine which items to
@@ -22,8 +22,8 @@ use crate::pretty_span::PrettySpan;
 ///
 /// > Note: Downstream operators may need explicit type annotations.
 ///
-/// > Note: The [`Pusherator`](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html)
-/// > trait is automatically imported to enable the [`.give(...)` method](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give).
+/// > Note: The [`Pusherator`](https://hydro.run/rustdoc/pusherator/trait.Pusherator.html)
+/// > trait is automatically imported to enable the [`.give(...)` method](https://hydro.run/rustdoc/pusherator/trait.Pusherator.html#tymethod.give).
 ///
 /// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///

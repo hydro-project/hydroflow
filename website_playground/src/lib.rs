@@ -87,12 +87,12 @@ impl From<Diagnostic> for JsDiagnostic {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct HydroflowResult {
-    pub output: Option<HydroflowOutput>,
+pub struct DfirResult {
+    pub output: Option<DfirOutput>,
     pub diagnostics: Vec<JsDiagnostic>,
 }
 #[derive(Serialize, Deserialize)]
-pub struct HydroflowOutput {
+pub struct DfirOutput {
     pub compiled: String,
     pub mermaid: String,
 }
@@ -129,14 +129,14 @@ pub fn compile_dfir(
                     }
                 };
                 let compiled = prettyplease::unparse(&file);
-                HydroflowOutput { mermaid, compiled }
+                DfirOutput { mermaid, compiled }
             });
-            HydroflowResult {
+            DfirResult {
                 output,
                 diagnostics: diagnostics.into_iter().map(Into::into).collect(),
             }
         }
-        Err(errors) => HydroflowResult {
+        Err(errors) => DfirResult {
             output: None,
             diagnostics: errors
                 .into_iter()
@@ -191,7 +191,7 @@ pub fn compile_datalog(
                             }
                         };
 
-                        Some(HydroflowOutput {
+                        Some(DfirOutput {
                             compiled: prettyplease::unparse(&file),
                             mermaid: part_graph.to_mermaid(&write_config),
                         })
@@ -201,17 +201,17 @@ pub fn compile_datalog(
                         None
                     }
                 };
-                HydroflowResult {
+                DfirResult {
                     output,
                     diagnostics: diagnostics.into_iter().map(Into::into).collect(),
                 }
             }
-            Err(diagnostics) => HydroflowResult {
+            Err(diagnostics) => DfirResult {
                 output: None,
                 diagnostics: diagnostics.into_iter().map(Into::into).collect(),
             },
         },
-        Err(err) => HydroflowResult {
+        Err(err) => DfirResult {
             output: None,
             diagnostics: vec![Diagnostic {
                 span: Span::call_site(),
@@ -225,13 +225,13 @@ pub fn compile_datalog(
     serde_wasm_bindgen::to_value(&out).unwrap()
 }
 
-struct HydroflowInstance<'a, In, Out> {
+struct DfirInstance<'a, In, Out> {
     dfir: Dfir<'a>,
     input: tokio::sync::mpsc::UnboundedSender<In>,
     output: tokio::sync::mpsc::UnboundedReceiver<Out>,
 }
 
-type DatalogBooleanDemoInstance = HydroflowInstance<'static, (i32,), (i32,)>;
+type DatalogBooleanDemoInstance = DfirInstance<'static, (i32,), (i32,)>;
 
 thread_local! {
     static DATALOG_BOOLEAN_DEMO_INSTANCES: RefCell<HashMap<String, DatalogBooleanDemoInstance>> =

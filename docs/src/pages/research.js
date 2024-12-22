@@ -135,12 +135,12 @@ const papers = [
   },
   {
     title: "Hydroflow: A Model and Runtime for Distributed Systems Programming",
-    pdf: "pathname:///papers/dfir_rs-thesis.pdf",
+    pdf: "pathname:///papers/hydroflow-thesis.pdf",
     thumb: require("./img/papers/hydroflow-thesis.png"),
     authors: <>Mingwei Samuel, Alvin Cheung, Joseph M. Hellerstein</>,
     description: [
-      <>In this paper we present our ongoing work on DFIR, a new cloud programming model used to create constructively correct distributed systems. The model is a refinement and unification of the existing dataflow and reactive programming models.</>,
-      <>DFIR is primarily a low-level compilation target for future declarative cloud programming languages, but developers can use it directly to precisely control program execution or fine-tune and debug compiled programs.</>
+      <>In this paper we present our ongoing work on Hydroflow, a new cloud programming model used to create constructively correct distributed systems. The model is a refinement and unification of the existing dataflow and reactive programming models.</>,
+      <>Hydroflow is primarily a low-level compilation target for future declarative cloud programming languages, but developers can use it directly to precisely control program execution or fine-tune and debug compiled programs.</>
     ],
     conf: "UC Berkeley Technical Report",
     links: <><Link href="pathname:///papers/hydroflow-thesis.pdf">PDF</Link> / <Link href="https://github.com/hydro-project/hydroflow">GitHub</Link></>

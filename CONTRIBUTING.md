@@ -1,28 +1,28 @@
-# Contributing to Hydroflow
+# Contributing to Hydro
 
-Thanks for your interest in contributing to Hydroflow! This is an experimental, research-driven
+Thanks for your interest in contributing to Hydro! This is an experimental, research-driven
 project which can make getting started a bit tricky. This guide will explain the project structure,
 code style, commit messages, testing setups, and more to help you get started.
 
 ## Repository Structure
 
-The Hydroflow repo is set up as a monorepo and [Cargo workspace](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html).
+The Hydro repo is set up as a monorepo and [Cargo workspace](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html).
 Relative to the repository root:
 
-* `hydroflow` is the main Hydroflow package, containing the Hydroflow runtime. It re-exports the
-  surface syntax macros in `dfir_macro` and `dfir_lang`. The runtime is the "scheduled
-  layer" while the surface syntax compiler is the "compiled layer".
-* `hydro_lang` and related (hydro_*) packages contain Hydro, which is a functional syntax built on
-  top of `hydroflow`.
-* `dfir_datalog` provides a datalog compiler, based on top of the Hydroflow surface syntax.
+* `dfir_rs` is the main DFIR package, containing the DFIR runtime. It re-exports the
+  flow syntax macros in `dfir_macro` and `dfir_lang`. The runtime is the "scheduled
+  layer" while the flow syntax compiler is the "compiled layer".
+* `hydro_lang` and related (`hydro_*`) packages contain Hydro, which is a functional syntax built on
+  top of `DFIR`.
+* `dfir_datalog` provides a datalog compiler, based on top of the DFIR flow syntax.
 * `docs` is the [Hydro.run](https://hydro.run/) website. `website_playground` contains the
-  playground portion of the website, used for compiling Hydroflow in-browser via WASM.
-* `benches` contains some microbenchmarks for Hydroflow and other frameworks.
-* `design_docs` contains old point-in-time design docs for Hydroflow's architecture.
+  playground portion of the website, used for compiling DFIR in-browser via WASM.
+* `benches` contains some microbenchmarks for DFIR and other frameworks.
+* `design_docs` contains old point-in-time design docs for DFIR's architecture.
 
-There are several subpackages included that are used by Hydroflow but are more general-purpose:
+There are several subpackages included that are used by Hydro but are more general-purpose:
 
-* `stageleft` is a framework for staged programming in Rust, used by `hydroflow_plus`.
+* `stageleft` is a framework for staged programming in Rust, used by `hydro_lang`.
 * `lattices` is a abstract algebra library, originally for lattice types.
 * `variadics` is a crate for emulating variadic generics using tuple lists.
 * `pusherator` is a rudimentary library providing push-based iterators.
@@ -37,13 +37,13 @@ There are auxillary repositories as well:
 
 ## Rust
 
-Hydroflow should build on latest stable releases of Rust. However we develop on a pinned nightly
-version, bumped up every month or two. The version is in `rust-toolchain.toml` which is
+Hydro should build on latest stable releases of Rust. However we develop on a pinned nightly
+version, which is updated every month or two. The version is in `rust-toolchain.toml` which is
 automatically detected by `cargo`, so no special setup should be needed.
 
 ## Python
 
-Some parts of the Hydroflow repo require a relatively recent version of Python 3, maybe 3.10 or
+Some parts of the Hydro repo require a relatively recent version of Python 3, maybe 3.10 or
 later. On Mac, installing directly from python.org may work if `brew install` doesn't.
 
 ### `wasm-bindgen`
@@ -70,7 +70,7 @@ git checkout -b $BRANCH_NAME `feature/$FEATURE_NAME`
 .. make changes ..
 git add ... # Add all changes
 git commit # Commit changes
-git push origin HEAD 
+git push origin HEAD
 ```
 
 ### Commit Messages
@@ -90,13 +90,13 @@ failing-- you should double-check that the snapshot diff matches what you expect
 
 ## Snapshot Testing
 
-Hydroflow uses two types of snapshot testing: [`insta`](https://insta.rs/) and [`trybuild`](https://github.com/dtolnay/trybuild).
-Insta provides general snapshot testing in Rust, and we mainly use it to test the Hydroflow graphs
-generated from the surface syntax. These snapshots are of the [Mermaid](https://mermaid.js.org/) or
+Hydro uses two types of snapshot testing: [`insta`](https://insta.rs/) and [`trybuild`](https://github.com/dtolnay/trybuild).
+Insta provides general snapshot testing in Rust, and we mainly use it to test the DFIR graphs
+generated from the flow syntax. These snapshots are of the [Mermaid](https://mermaid.js.org/) or
 [DOT](https://graphviz.org/) graph visualizations rather than the graph datastructures themselves;
-see `hydroflow/tests/snapshots`. The snapshots can be useful not just to track changes but also as
+see `dfir_rs/tests/snapshots`. The snapshots can be useful not just to track changes but also as
 a quick reference to view the visualizations (i.e. by pasting into [mermaid.live](https://mermaid.live/)).
-`trybuild` is used to test the error messages in Hydroflow's surface syntax; see `hydroflow/tests/compile-fail`.
+`trybuild` is used to test the error messages in DFIR's flow syntax; see `dfir_rs/tests/compile-fail`.
 
 `insta` provides a CLI, `cargo insta` to run tests and review changes:
 ```shell
