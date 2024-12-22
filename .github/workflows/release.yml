@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       bump:
-        description: "Specify how to bump the version for `hydroflow` crates. Does not affect dependencies."
+        description: "Specify how to bump the version for Hydro crates. Does not affect dependencies."
         required: true
         default: "patch"
         type: choice
@@ -86,8 +86,9 @@ jobs:
           --no-changelog-preview --allow-fully-generated-changelogs
           --bump ${{ inputs.bump }} --bump-dependencies auto
           ${{ inputs.execute && '--execute' || '--no-publish' }}
-          hydroflow dfir_lang dfir_macro hydroflow_plus
-          hydroflow_plus_std dfir_datalog dfir_datalog_core
+          dfir_rs dfir_lang dfir_macro
+          dfir_datalog dfir_datalog_core
+          hydro_lang hydro_std
           hydro_deploy hydro_cli hydroflow_deploy_integration
           stageleft stageleft_macro stageleft_tool
           multiplatform_test

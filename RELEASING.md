@@ -28,10 +28,10 @@ To (dry) run the command locally to spot-check for errors and warnings:
 cargo smart-release --update-crates-index \
    --no-changelog-preview --allow-fully-generated-changelogs \
    --bump-dependencies auto --bump minor \ # or `patch`, `major`, `keep`, `auto`
-   dfir_rs dfir_lang dfir_macro hydro_lang \
+   dfir_rs dfir_lang dfir_macro \
    dfir_datalog dfir_datalog_core \
-   hydro_deploy hydro_cli hydroflow_cli_integration \
-   hydroflow_plus_cli_integration \
+   hydro_lang hydro_std \
+   hydro_deploy hydro_cli hydroflow_deploy_integration \
    stageleft stageleft_macro stageleft_tool \
    multiplatform_test
 ```
@@ -63,20 +63,20 @@ showing that all the changelogs can be modified. Make sure the version bumps loo
 [INFO ] WOULD auto-bump dependent package 'dfir_lang' from 0.4.0 to 0.5.0 for publishing
 [INFO ] WOULD auto-bump dependent package 'dfir_datalog_core' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'dfir_lang'
 [INFO ] WOULD auto-bump dependent package 'dfir_datalog' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'dfir_datalog_core'
-[INFO ] WOULD auto-bump dependent package 'hydroflow_macro' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'dfir_lang'
+[INFO ] WOULD auto-bump dependent package 'dfir_macro' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'dfir_lang'
 [INFO ] WOULD auto-bump dependent package 'lattices' from 0.4.0 to 0.5.0 for publishing
-[INFO ] WOULD minor-bump provided package 'hydroflow' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'dfir_datalog'
+[INFO ] WOULD minor-bump provided package 'dfir_rs' from 0.4.0 to 0.5.0 for publishing, for SAFETY due to breaking package 'dfir_datalog'
 [INFO ] WOULD minor-bump provided package 'hydro_cli' from 0.4.0 to 0.5.0 for publishing
-[INFO ] WOULD adjust 2 manifest versions due to breaking change in 'dfir_lang': 'dfir_datalog_core' 0.4.0 ➡ 0.5.0, 'hydroflow_macro' 0.4.0 ➡ 0.5.0
+[INFO ] WOULD adjust 2 manifest versions due to breaking change in 'dfir_lang': 'dfir_datalog_core' 0.4.0 ➡ 0.5.0, 'dfir_macro' 0.4.0 ➡ 0.5.0
 [INFO ] WOULD adjust 1 manifest version due to breaking change in 'dfir_datalog_core': 'dfir_datalog' 0.4.0 ➡ 0.5.0
-[INFO ] WOULD adjust 1 manifest version due to breaking change in 'dfir_datalog': 'hydroflow' 0.4.0 ➡ 0.5.0
+[INFO ] WOULD adjust 1 manifest version due to breaking change in 'dfir_datalog': 'dfir_rs' 0.4.0 ➡ 0.5.0
 [INFO ] WOULD adjust version constraints in manifests of 2 packages as direct dependencies are changing: relalg, website_playground
 [INFO ] WOULD modify existing changelog for 'dfir_lang'.
 [INFO ] WOULD modify existing changelog for 'dfir_datalog_core'.
 [INFO ] WOULD modify existing changelog for 'dfir_datalog'.
-[INFO ] WOULD modify existing changelog for 'hydroflow_macro'.
+[INFO ] WOULD modify existing changelog for 'dfir_macro'.
 [INFO ] WOULD modify existing changelog for 'lattices'.
-[INFO ] WOULD modify existing changelog for 'hydroflow'.
+[INFO ] WOULD modify existing changelog for 'dfir_rs'.
 [INFO ] WOULD modify existing changelog for 'hydro_cli'.
 ```
 
@@ -85,11 +85,10 @@ showing that all the changelogs can be modified. Make sure the version bumps loo
 If the job does not succeed or succeeds but fails to generate changelogs for certain packages, then you will
 need to do a bit of manual work. That looks like this in the log (check for this!):
 ```log
-[WARN ] WOULD ask for review after commit as the changelog entry is empty for crates: dfir_datalog, hydroflow_macro
+[WARN ] WOULD ask for review after commit as the changelog entry is empty for crates: dfir_datalog, dfir_macro
 ```
 In this case, you will need to create a commit to each package's `CHANGELOG.md` to mark it as
-unchanged (or minimally changed). For example, [hydro_datalog 0.4](https://github.com/hydro-project/hydroflow/commit/5faee64ab82eeb7a24f62a1b55c46d72d8eb5320)
-or [hydro_cli 0.3](https://github.com/hydro-project/hydroflow/commit/4c2cf81411835529b5d7daa35717834e46e28b9b).
+unchanged (or minimally changed). For example, [hydro_cli 0.3](https://github.com/hydro-project/hydroflow/commit/4c2cf81411835529b5d7daa35717834e46e28b9b).
 
 Once all changelogs are ok to autogenerate, we can move on to the real-deal run.
 
@@ -124,8 +123,9 @@ When adding a new crate which is published, you need to:
    (substitute correct version).
 3. You must commit a new (empty) file `my_crate/CHANGELOG.md` to ensure the file will be tracked
    by git and pushed by `cargo-smart-release`
-4. If you want your package to be lockstep-versioned alongside hydroflow then make sure to add it
+4. If you want your package to be lockstep-versioned alongside hydro then make sure to add it
    to the [command in the `release.yml` workflow](https://github.com/hydro-project/hydroflow/blob/main/.github/workflows/release.yml#L82).
+   (also update the `cargo smart-release` test command above in this file).
 
 Then just run the release workflow as normal.
 
