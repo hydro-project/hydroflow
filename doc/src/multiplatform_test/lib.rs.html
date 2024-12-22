@@ -246,7 +246,7 @@
     Default,
     Tokio,
     AsyncStd,
-    Hydroflow,
+    Dfir,
     Wasm,
     EnvLogging,
     EnvTracing,
@@ -257,7 +257,7 @@
         <span class="self">Self</span>::Default,
         <span class="self">Self</span>::Tokio,
         <span class="self">Self</span>::AsyncStd,
-        <span class="self">Self</span>::Hydroflow,
+        <span class="self">Self</span>::Dfir,
         <span class="self">Self</span>::Wasm,
         <span class="self">Self</span>::EnvLogging,
         <span class="self">Self</span>::EnvTracing,
@@ -271,7 +271,7 @@
             <span class="self">Self</span>::Default =&gt; <span class="string">"test"</span>,
             <span class="self">Self</span>::Tokio =&gt; <span class="string">"tokio"</span>,
             <span class="self">Self</span>::AsyncStd =&gt; <span class="string">"async_std"</span>,
-            <span class="self">Self</span>::Hydroflow =&gt; <span class="string">"hydroflow"</span>,
+            <span class="self">Self</span>::Dfir =&gt; <span class="string">"dfir"</span>,
             <span class="self">Self</span>::Wasm =&gt; <span class="string">"wasm"</span>,
             <span class="self">Self</span>::EnvLogging =&gt; <span class="string">"env_logging"</span>,
             <span class="self">Self</span>::EnvTracing =&gt; <span class="string">"env_tracing"</span>,
@@ -288,7 +288,7 @@
             Platform::Default =&gt; <span class="macro">quote!</span> { <span class="attr">#[test] </span>},
             Platform::Tokio =&gt; <span class="macro">quote!</span> { <span class="attr">#[tokio::test ] </span>},
             Platform::AsyncStd =&gt; <span class="macro">quote!</span> { <span class="attr">#[async_std::test] </span>},
-            Platform::Hydroflow =&gt; <span class="macro">quote!</span> { <span class="attr">#[hydroflow::test] </span>},
+            Platform::Dfir =&gt; <span class="macro">quote!</span> { <span class="attr">#[dfir_rs::test] </span>},
             Platform::Wasm =&gt; {
                 <span class="macro">quote!</span> { <span class="attr">#[wasm_bindgen_test::wasm_bindgen_test] </span>}
             }

@@ -7,7 +7,7 @@
     member_info: <a class="struct" href="../membership/struct.MemberData.html" title="struct gossip_kv::membership::MemberData">MemberData</a>&lt;Addr&gt;,
     seed_nodes: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="struct.SeedNode.html" title="struct gossip_kv::server::SeedNode">SeedNode</a>&lt;Addr&gt;&gt;,
     seed_node_stream: SeedNodeStream,
-) -&gt; Hydroflow&lt;'static&gt;<div class="where">where
+) -&gt; Dfir&lt;'static&gt;<div class="where">where
     ClientInput: Stream&lt;Item = (<a class="enum" href="../enum.ClientRequest.html" title="enum gossip_kv::ClientRequest">ClientRequest</a>, Addr)&gt; + <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Unpin.html" title="trait core::marker::Unpin">Unpin</a> + 'static,
     ClientOutput: Sink&lt;(<a class="enum" href="../enum.ClientResponse.html" title="enum gossip_kv::ClientResponse">ClientResponse</a>, Addr), Error = ClientOutputError&gt; + <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Unpin.html" title="trait core::marker::Unpin">Unpin</a> + 'static,
     GossipInput: Stream&lt;Item = (<a class="enum" href="../enum.GossipMessage.html" title="enum gossip_kv::GossipMessage">GossipMessage</a>, Addr)&gt; + <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Unpin.html" title="trait core::marker::Unpin">Unpin</a> + 'static,

@@ -250,7 +250,7 @@
 <span class="kw">use </span>std::collections::HashSet;
 <span class="kw">use </span>std::hash::Hash;
 
-<span class="kw">use </span>hydroflow::lattices::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+<span class="kw">use </span>dfir_rs::lattices::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
 <span class="doccomment">/// A bounded set union lattice with a fixed size N.
@@ -439,7 +439,7 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>hydroflow::lattices::test::check_all;
+    <span class="kw">use </span>dfir_rs::lattices::test::check_all;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 

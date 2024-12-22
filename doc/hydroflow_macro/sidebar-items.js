@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"attr":["hydroflow_main","hydroflow_test"],"derive":["DemuxEnum"],"macro":["hydroflow_parser","hydroflow_syntax","hydroflow_syntax_noemit","monotonic_fn","morphism"]};

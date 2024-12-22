@@ -758,20 +758,17 @@
 <a href="#758" id="758">758</a>
 <a href="#759" id="759">759</a>
 <a href="#760" id="760">760</a>
-<a href="#761" id="761">761</a>
-<a href="#762" id="762">762</a>
-<a href="#763" id="763">763</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
 <span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::hash::Hash;
 
-<span class="kw">use </span>hydroflow::futures::{Sink, Stream};
-<span class="kw">use </span>hydroflow::hydroflow_syntax;
-<span class="kw">use </span>hydroflow::itertools::Itertools;
-<span class="kw">use </span>hydroflow::lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap};
-<span class="kw">use </span>hydroflow::lattices::set_union::SetUnionHashSet;
-<span class="kw">use </span>hydroflow::lattices::{Lattice, PairBimorphism};
-<span class="kw">use </span>hydroflow::scheduled::graph::Hydroflow;
+<span class="kw">use </span>dfir_rs::dfir_syntax;
+<span class="kw">use </span>dfir_rs::futures::{Sink, Stream};
+<span class="kw">use </span>dfir_rs::itertools::Itertools;
+<span class="kw">use </span>dfir_rs::lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap};
+<span class="kw">use </span>dfir_rs::lattices::set_union::SetUnionHashSet;
+<span class="kw">use </span>dfir_rs::lattices::{Lattice, PairBimorphism};
+<span class="kw">use </span>dfir_rs::scheduled::graph::Dfir;
 <span class="kw">use </span>lattices::set_union::SetUnion;
 <span class="kw">use </span>lattices::{IsTop, Max, Pair};
 <span class="kw">use </span>lazy_static::lazy_static;
@@ -845,7 +842,7 @@
     member_info: MemberData&lt;Addr&gt;,
     seed_nodes: Vec&lt;SeedNode&lt;Addr&gt;&gt;,
     seed_node_stream: SeedNodeStream,
-) -&gt; Hydroflow&lt;<span class="lifetime">'static</span>&gt;
+) -&gt; Dfir&lt;<span class="lifetime">'static</span>&gt;
 <span class="kw">where
     </span>ClientInput: Stream&lt;Item = (ClientRequest, Addr)&gt; + Unpin + <span class="lifetime">'static</span>,
     ClientOutput: Sink&lt;(ClientResponse, Addr), Error = ClientOutputError&gt; + Unpin + <span class="lifetime">'static</span>,
@@ -865,7 +862,7 @@
     <span class="kw">let </span>member_id_5 = my_member_id.clone();
     <span class="kw">let </span>member_id_6 = my_member_id.clone();
 
-    <span class="macro">hydroflow_syntax!</span> {
+    <span class="macro">dfir_syntax!</span> {
 
         on_start = initialize() -&gt; tee();
         on_start -&gt; for_each(|<span class="kw">_</span>| <span class="macro">info!</span>(<span class="string">"{:?}: Transducer {} started."</span>, context.current_tick(), member_id_6));
@@ -1114,13 +1111,13 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>std::collections::HashSet;
 
-    <span class="kw">use </span>hydroflow::tokio_stream::empty;
-    <span class="kw">use </span>hydroflow::util::simulation::{Address, Fleet, Hostname};
+    <span class="kw">use </span>dfir_rs::tokio_stream::empty;
+    <span class="kw">use </span>dfir_rs::util::simulation::{Address, Fleet, Hostname};
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::membership::{MemberDataBuilder, Protocol};
 
-    <span class="attr">#[hydroflow::test]
+    <span class="attr">#[dfir_rs::test]
     </span><span class="kw">async fn </span>test_member_init() {
         <span class="kw">let </span><span class="kw-2">mut </span>fleet = Fleet::new();
 
@@ -1129,7 +1126,7 @@
         <span class="kw">let </span>server_client_address = Address::new(server_name.clone(), <span class="string">"client"</span>.to_string());
         <span class="kw">let </span>server_gossip_address = Address::new(server_name.clone(), <span class="string">"gossip"</span>.to_string());
 
-        <span class="kw">let </span>(<span class="kw">_</span>, gossip_trigger_rx) = hydroflow::util::unbounded_channel::&lt;()&gt;();
+        <span class="kw">let </span>(<span class="kw">_</span>, gossip_trigger_rx) = dfir_rs::util::unbounded_channel::&lt;()&gt;();
 
         <span class="comment">// Create the kv server
         </span>fleet.add_host(server_name.clone(), |ctx| {
@@ -1166,8 +1163,8 @@
 
         <span class="kw">let </span>key = <span class="string">"/sys/members/server"</span>.parse::&lt;Key&gt;().unwrap();
 
-        <span class="kw">let </span>(trigger_tx, trigger_rx) = hydroflow::util::unbounded_channel::&lt;()&gt;();
-        <span class="kw">let </span>(response_tx, <span class="kw-2">mut </span>response_rx) = hydroflow::util::unbounded_channel::&lt;ClientResponse&gt;();
+        <span class="kw">let </span>(trigger_tx, trigger_rx) = dfir_rs::util::unbounded_channel::&lt;()&gt;();
+        <span class="kw">let </span>(response_tx, <span class="kw-2">mut </span>response_rx) = dfir_rs::util::unbounded_channel::&lt;ClientResponse&gt;();
 
         <span class="kw">let </span>key_clone = key.clone();
         <span class="kw">let </span>server_client_address_clone = server_client_address.clone();
@@ -1176,7 +1173,7 @@
             <span class="kw">let </span>client_tx = ctx.new_outbox::&lt;ClientRequest&gt;(<span class="string">"client"</span>.to_string());
             <span class="kw">let </span>client_rx = ctx.new_inbox::&lt;ClientResponse&gt;(<span class="string">"client"</span>.to_string());
 
-            <span class="macro">hydroflow_syntax!</span> {
+            <span class="macro">dfir_syntax!</span> {
 
                 client_output = dest_sink(client_tx);
 
@@ -1207,8 +1204,7 @@
         <span class="kw">loop </span>{
             fleet.run_single_tick_all_hosts().<span class="kw">await</span>;
 
-            <span class="kw">let </span>responses =
-                hydroflow::util::collect_ready_async::&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut </span>response_rx).<span class="kw">await</span>;
+            <span class="kw">let </span>responses = dfir_rs::util::collect_ready_async::&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut </span>response_rx).<span class="kw">await</span>;
 
             <span class="kw">if </span>!responses.is_empty() {
                 <span class="macro">assert_eq!</span>(
@@ -1225,7 +1221,7 @@
         }
     }
 
-    <span class="attr">#[hydroflow::test]
+    <span class="attr">#[dfir_rs::test]
     </span><span class="kw">async fn </span>test_multiple_values_same_tick() {
         <span class="kw">let </span><span class="kw-2">mut </span>fleet = Fleet::new();
 
@@ -1233,7 +1229,7 @@
 
         <span class="kw">let </span>server_client_address = Address::new(server_name.clone(), <span class="string">"client"</span>.to_string());
 
-        <span class="kw">let </span>(<span class="kw">_</span>, gossip_trigger_rx) = hydroflow::util::unbounded_channel::&lt;()&gt;();
+        <span class="kw">let </span>(<span class="kw">_</span>, gossip_trigger_rx) = dfir_rs::util::unbounded_channel::&lt;()&gt;();
 
         <span class="comment">// Create the kv server
         </span>fleet.add_host(server_name.clone(), |ctx| {
@@ -1277,13 +1273,13 @@
 
         <span class="kw">let </span>writer_name: Hostname = <span class="string">"writer"</span>.to_string();
 
-        <span class="kw">let </span>(writer_trigger_tx, writer_trigger_rx) = hydroflow::util::unbounded_channel::&lt;String&gt;();
+        <span class="kw">let </span>(writer_trigger_tx, writer_trigger_rx) = dfir_rs::util::unbounded_channel::&lt;String&gt;();
         <span class="kw">let </span>key_clone = key.clone();
         <span class="kw">let </span>server_client_address_clone = server_client_address.clone();
 
         fleet.add_host(writer_name.clone(), |ctx| {
             <span class="kw">let </span>client_tx = ctx.new_outbox::&lt;ClientRequest&gt;(<span class="string">"client"</span>.to_string());
-            <span class="macro">hydroflow_syntax!</span> {
+            <span class="macro">dfir_syntax!</span> {
                 client_output = dest_sink(client_tx);
 
                 source_stream(writer_trigger_rx)
@@ -1310,8 +1306,8 @@
         <span class="comment">// Read the value back.
         </span><span class="kw">let </span>reader_name: Hostname = <span class="string">"reader"</span>.to_string();
 
-        <span class="kw">let </span>(reader_trigger_tx, reader_trigger_rx) = hydroflow::util::unbounded_channel::&lt;()&gt;();
-        <span class="kw">let </span>(response_tx, <span class="kw-2">mut </span>response_rx) = hydroflow::util::unbounded_channel::&lt;ClientResponse&gt;();
+        <span class="kw">let </span>(reader_trigger_tx, reader_trigger_rx) = dfir_rs::util::unbounded_channel::&lt;()&gt;();
+        <span class="kw">let </span>(response_tx, <span class="kw-2">mut </span>response_rx) = dfir_rs::util::unbounded_channel::&lt;ClientResponse&gt;();
 
         <span class="kw">let </span>key_clone = key.clone();
         <span class="kw">let </span>server_client_address_clone = server_client_address.clone();
@@ -1320,7 +1316,7 @@
             <span class="kw">let </span>client_tx = ctx.new_outbox::&lt;ClientRequest&gt;(<span class="string">"client"</span>.to_string());
             <span class="kw">let </span>client_rx = ctx.new_inbox::&lt;ClientResponse&gt;(<span class="string">"client"</span>.to_string());
 
-            <span class="macro">hydroflow_syntax!</span> {
+            <span class="macro">dfir_syntax!</span> {
                 client_output = dest_sink(client_tx);
 
                 source_stream(reader_trigger_rx)
@@ -1338,8 +1334,7 @@
         <span class="kw">loop </span>{
             fleet.run_single_tick_all_hosts().<span class="kw">await</span>;
 
-            <span class="kw">let </span>responses =
-                hydroflow::util::collect_ready_async::&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut </span>response_rx).<span class="kw">await</span>;
+            <span class="kw">let </span>responses = dfir_rs::util::collect_ready_async::&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut </span>response_rx).<span class="kw">await</span>;
 
             <span class="kw">if </span>!responses.is_empty() {
                 <span class="macro">assert_eq!</span>(
@@ -1354,7 +1349,7 @@
         }
     }
 
-    <span class="attr">#[hydroflow::test]
+    <span class="attr">#[dfir_rs::test]
     </span><span class="kw">async fn </span>test_gossip() {
         <span class="kw">let </span>subscriber = tracing_subscriber::FmtSubscriber::builder()
             .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
@@ -1385,7 +1380,7 @@
             },
         ];
 
-        <span class="kw">let </span>(gossip_trigger_tx_a, gossip_trigger_rx_a) = hydroflow::util::unbounded_channel::&lt;()&gt;();
+        <span class="kw">let </span>(gossip_trigger_tx_a, gossip_trigger_rx_a) = dfir_rs::util::unbounded_channel::&lt;()&gt;();
 
         <span class="kw">let </span>seed_nodes_clone = seed_nodes.clone();
         fleet.add_host(server_a.clone(), |ctx| {
@@ -1418,7 +1413,7 @@
             )
         });
 
-        <span class="kw">let </span>(<span class="kw">_</span>, gossip_trigger_rx_b) = hydroflow::util::unbounded_channel::&lt;()&gt;();
+        <span class="kw">let </span>(<span class="kw">_</span>, gossip_trigger_rx_b) = dfir_rs::util::unbounded_channel::&lt;()&gt;();
 
         <span class="kw">let </span>seed_nodes_clone = seed_nodes.clone();
         fleet.add_host(server_b.clone(), |ctx| {
@@ -1459,14 +1454,14 @@
 
         <span class="kw">let </span>writer_name: Hostname = <span class="string">"writer"</span>.to_string();
 
-        <span class="kw">let </span>(writer_trigger_tx, writer_trigger_rx) = hydroflow::util::unbounded_channel::&lt;String&gt;();
+        <span class="kw">let </span>(writer_trigger_tx, writer_trigger_rx) = dfir_rs::util::unbounded_channel::&lt;String&gt;();
 
         <span class="kw">let </span>key_clone = key.clone();
         <span class="kw">let </span>server_a_client_address_clone = server_a_client_address.clone();
 
         fleet.add_host(writer_name.clone(), |ctx| {
             <span class="kw">let </span>client_tx = ctx.new_outbox::&lt;ClientRequest&gt;(<span class="string">"client"</span>.to_string());
-            <span class="macro">hydroflow_syntax!</span> {
+            <span class="macro">dfir_syntax!</span> {
                 client_output = dest_sink(client_tx);
 
                 source_stream(writer_trigger_rx)
@@ -1477,8 +1472,8 @@
 
         <span class="kw">let </span>reader_name: Hostname = <span class="string">"reader"</span>.to_string();
 
-        <span class="kw">let </span>(reader_trigger_tx, reader_trigger_rx) = hydroflow::util::unbounded_channel::&lt;()&gt;();
-        <span class="kw">let </span>(response_tx, <span class="kw-2">mut </span>response_rx) = hydroflow::util::unbounded_channel::&lt;ClientResponse&gt;();
+        <span class="kw">let </span>(reader_trigger_tx, reader_trigger_rx) = dfir_rs::util::unbounded_channel::&lt;()&gt;();
+        <span class="kw">let </span>(response_tx, <span class="kw-2">mut </span>response_rx) = dfir_rs::util::unbounded_channel::&lt;ClientResponse&gt;();
 
         <span class="kw">let </span>key_clone = key.clone();
         <span class="kw">let </span>server_b_client_address_clone = server_b_client_address.clone();
@@ -1487,7 +1482,7 @@
             <span class="kw">let </span>client_tx = ctx.new_outbox::&lt;ClientRequest&gt;(<span class="string">"client"</span>.to_string());
             <span class="kw">let </span>client_rx = ctx.new_inbox::&lt;ClientResponse&gt;(<span class="string">"client"</span>.to_string());
 
-            <span class="macro">hydroflow_syntax!</span> {
+            <span class="macro">dfir_syntax!</span> {
                 client_output = dest_sink(client_tx);
 
                 source_stream(reader_trigger_rx)
@@ -1506,8 +1501,7 @@
         <span class="kw">loop </span>{
             reader_trigger_tx.send(()).unwrap();
             fleet.run_single_tick_all_hosts().<span class="kw">await</span>;
-            <span class="kw">let </span>responses =
-                hydroflow::util::collect_ready_async::&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut </span>response_rx).<span class="kw">await</span>;
+            <span class="kw">let </span>responses = dfir_rs::util::collect_ready_async::&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut </span>response_rx).<span class="kw">await</span>;
 
             <span class="kw">if </span>!responses.is_empty() {
                 <span class="macro">assert_eq!</span>(

@@ -105,7 +105,7 @@
 <a href="#105" id="105">105</a>
 <a href="#106" id="106">106</a>
 <a href="#107" id="107">107</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
+</pre></div><pre class="rust"><code><span class="kw">use </span>dfir_lang::graph::DfirGraph;
 
 <span class="kw">use super</span>::{LocalDeploy, Node, ProcessSpec};
 
@@ -155,7 +155,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         _env: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::InstantiateEnv,
         _meta: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Meta,
-        _graph: HydroflowGraph,
+        _graph: DfirGraph,
         _extra_stmts: Vec&lt;syn::Stmt&gt;,
     ) {
     }
@@ -207,7 +207,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         _env: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::InstantiateEnv,
         _meta: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Meta,
-        _graph: HydroflowGraph,
+        _graph: DfirGraph,
         _extra_stmts: Vec&lt;syn::Stmt&gt;,
     ) {
     }

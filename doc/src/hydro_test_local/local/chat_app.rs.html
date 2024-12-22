@@ -148,11 +148,11 @@
 <a href="#148" id="148">148</a>
 <a href="#149" id="149">149</a>
 <a href="#150" id="150">150</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydro_lang::deploy::SingleProcessGraph;
-<span class="kw">use </span>hydro_lang::hydroflow::scheduled::graph::Hydroflow;
+</pre></div><pre class="rust"><code><span class="kw">use </span>dfir_rs::tokio::sync::mpsc::UnboundedSender;
+<span class="kw">use </span>dfir_rs::tokio_stream::wrappers::UnboundedReceiverStream;
+<span class="kw">use </span>hydro_lang::deploy::SingleProcessGraph;
+<span class="kw">use </span>hydro_lang::dfir_rs::scheduled::graph::Dfir;
 <span class="kw">use </span>hydro_lang::<span class="kw-2">*</span>;
-<span class="kw">use </span>hydroflow::tokio::sync::mpsc::UnboundedSender;
-<span class="kw">use </span>hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 <span class="kw">use </span>stageleft::{Quoted, RuntimeData};
 
 <span class="attr">#[stageleft::entry]
@@ -162,7 +162,7 @@
     messages: RuntimeData&lt;UnboundedReceiverStream&lt;String&gt;&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;(u32, String)&gt;&gt;,
     replay_messages: bool,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Dfir&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
     <span class="kw">let </span>tick = process.tick();
 
@@ -207,14 +207,14 @@
 <span class="attr">#[stageleft::runtime]
 #[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>hydroflow::assert_graphvis_snapshots;
-    <span class="kw">use </span>hydroflow::util::collect_ready;
+    <span class="kw">use </span>dfir_rs::assert_graphvis_snapshots;
+    <span class="kw">use </span>dfir_rs::util::collect_ready;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_chat_app_no_replay() {
-        <span class="kw">let </span>(users_send, users) = hydroflow::util::unbounded_channel();
-        <span class="kw">let </span>(messages_send, messages) = hydroflow::util::unbounded_channel();
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
+        <span class="kw">let </span>(users_send, users) = dfir_rs::util::unbounded_channel();
+        <span class="kw">let </span>(messages_send, messages) = dfir_rs::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = dfir_rs::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>chat_server = <span class="macro">super::chat_app!</span>(users, messages, <span class="kw-2">&amp;</span>out, <span class="bool-val">false</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(chat_server);
@@ -255,9 +255,9 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_chat_app_replay() {
-        <span class="kw">let </span>(users_send, users) = hydroflow::util::unbounded_channel();
-        <span class="kw">let </span>(messages_send, messages) = hydroflow::util::unbounded_channel();
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
+        <span class="kw">let </span>(users_send, users) = dfir_rs::util::unbounded_channel();
+        <span class="kw">let </span>(messages_send, messages) = dfir_rs::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = dfir_rs::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>chat_server = <span class="macro">super::chat_app!</span>(users, messages, <span class="kw-2">&amp;</span>out, <span class="bool-val">true</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(chat_server);

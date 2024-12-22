@@ -138,7 +138,7 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">use </span>hydroflow_lang::graph::{eliminate_extra_unions_tees, HydroflowGraph};
+<span class="kw">use </span>dfir_lang::graph::{eliminate_extra_unions_tees, DfirGraph};
 
 <span class="kw">use </span><span class="kw">super</span>::compiled::CompiledFlow;
 <span class="kw">use </span><span class="kw">super</span>::deploy::{DeployFlow, DeployResult};
@@ -164,7 +164,7 @@
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>build_inner(ir: <span class="kw-2">&amp;mut </span>Vec&lt;HydroLeaf&gt;) -&gt; BTreeMap&lt;usize, HydroflowGraph&gt; {
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>build_inner(ir: <span class="kw-2">&amp;mut </span>Vec&lt;HydroLeaf&gt;) -&gt; BTreeMap&lt;usize, DfirGraph&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>builders = BTreeMap::new();
     <span class="kw">let </span><span class="kw-2">mut </span>built_tees = HashMap::new();
     <span class="kw">let </span><span class="kw-2">mut </span>next_stmt_id = <span class="number">0</span>;

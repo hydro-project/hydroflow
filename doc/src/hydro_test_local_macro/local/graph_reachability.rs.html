@@ -78,11 +78,11 @@
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydro_lang::deploy::SingleProcessGraph;
-<span class="kw">use </span>hydro_lang::hydroflow::scheduled::graph::Hydroflow;
+</pre></div><pre class="rust"><code><span class="kw">use </span>dfir_rs::tokio::sync::mpsc::UnboundedSender;
+<span class="kw">use </span>dfir_rs::tokio_stream::wrappers::UnboundedReceiverStream;
+<span class="kw">use </span>hydro_lang::deploy::SingleProcessGraph;
+<span class="kw">use </span>hydro_lang::dfir_rs::scheduled::graph::Dfir;
 <span class="kw">use </span>hydro_lang::<span class="kw-2">*</span>;
-<span class="kw">use </span>hydroflow::tokio::sync::mpsc::UnboundedSender;
-<span class="kw">use </span>hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 <span class="kw">use </span>stageleft::{Quoted, RuntimeData};
 
 <span class="attr">#[stageleft::entry]
@@ -91,7 +91,7 @@
     roots: RuntimeData&lt;UnboundedReceiverStream&lt;u32&gt;&gt;,
     edges: RuntimeData&lt;UnboundedReceiverStream&lt;(u32, u32)&gt;&gt;,
     reached_out: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Dfir&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
 
     <span class="kw">let </span>roots = process.source_stream(roots);
@@ -127,14 +127,14 @@
 <span class="attr">#[stageleft::runtime]
 #[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>hydroflow::assert_graphvis_snapshots;
-    <span class="kw">use </span>hydroflow::util::collect_ready;
+    <span class="kw">use </span>dfir_rs::assert_graphvis_snapshots;
+    <span class="kw">use </span>dfir_rs::util::collect_ready;
 
     <span class="attr">#[test]
     </span><span class="kw">pub fn </span>test_reachability() {
-        <span class="kw">let </span>(roots_send, roots) = hydroflow::util::unbounded_channel();
-        <span class="kw">let </span>(edges_send, edges) = hydroflow::util::unbounded_channel();
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
+        <span class="kw">let </span>(roots_send, roots) = dfir_rs::util::unbounded_channel();
+        <span class="kw">let </span>(edges_send, edges) = dfir_rs::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = dfir_rs::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>reachability = <span class="macro">super::graph_reachability!</span>(roots, edges, <span class="kw-2">&amp;</span>out);
         <span class="macro">assert_graphvis_snapshots!</span>(reachability);

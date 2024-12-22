@@ -131,8 +131,8 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span>config::{Config, ConfigError, File};
-<span class="kw">use </span>hydroflow::futures::future::ready;
-<span class="kw">use </span>hydroflow::futures::{Stream, StreamExt};
+<span class="kw">use </span>dfir_rs::futures::future::ready;
+<span class="kw">use </span>dfir_rs::futures::{Stream, StreamExt};
 <span class="kw">use </span>notify::{Event, EventHandler, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>tokio::sync::mpsc::UnboundedSender;
@@ -206,7 +206,7 @@
     ServerSettings,
     <span class="kw">impl </span>Stream&lt;Item = ServerSettings&gt;,
 ) {
-    <span class="kw">let </span>(tx, rx) = hydroflow::util::unbounded_channel();
+    <span class="kw">let </span>(tx, rx) = dfir_rs::util::unbounded_channel();
 
     <span class="comment">// Setup the watcher
     </span><span class="kw">let </span><span class="kw-2">mut </span>watcher = notify::RecommendedWatcher::new(

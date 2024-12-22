@@ -110,12 +110,12 @@
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
 <a href="#112" id="112">112</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydro_lang::deploy::MultiGraph;
-<span class="kw">use </span>hydro_lang::hydroflow::scheduled::graph::Hydroflow;
+</pre></div><pre class="rust"><code><span class="kw">use </span>dfir_rs::futures::stream::Stream;
+<span class="kw">use </span>dfir_rs::tokio::sync::mpsc::UnboundedSender;
+<span class="kw">use </span>dfir_rs::tokio_stream::wrappers::UnboundedReceiverStream;
+<span class="kw">use </span>hydro_lang::deploy::MultiGraph;
+<span class="kw">use </span>hydro_lang::dfir_rs::scheduled::graph::Dfir;
 <span class="kw">use </span>hydro_lang::<span class="kw-2">*</span>;
-<span class="kw">use </span>hydroflow::futures::stream::Stream;
-<span class="kw">use </span>hydroflow::tokio::sync::mpsc::UnboundedSender;
-<span class="kw">use </span>hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 <span class="kw">use </span>stageleft::{Quoted, RuntimeData};
 
 <span class="kw">struct </span>N0 {}
@@ -128,7 +128,7 @@
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
     send_twice: bool,
     subgraph_id: RuntimeData&lt;usize&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Dfir&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>node_zero = flow.process::&lt;N0&gt;();
     <span class="kw">let </span>node_one = flow.process::&lt;N1&gt;();
     <span class="kw">let </span>n0_tick = node_zero.tick();
@@ -167,13 +167,13 @@
 <span class="attr">#[stageleft::runtime]
 #[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>hydroflow::assert_graphvis_snapshots;
-    <span class="kw">use </span>hydroflow::util::collect_ready;
+    <span class="kw">use </span>dfir_rs::assert_graphvis_snapshots;
+    <span class="kw">use </span>dfir_rs::util::collect_ready;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_teed_join() {
-        <span class="kw">let </span>(in_send, input) = hydroflow::util::unbounded_channel();
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
+        <span class="kw">let </span>(in_send, input) = dfir_rs::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = dfir_rs::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>joined = <span class="macro">super::teed_join!</span>(input, <span class="kw-2">&amp;</span>out, <span class="bool-val">false</span>, <span class="number">0</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(joined);
@@ -190,8 +190,8 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_teed_join_twice() {
-        <span class="kw">let </span>(in_send, input) = hydroflow::util::unbounded_channel();
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
+        <span class="kw">let </span>(in_send, input) = dfir_rs::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = dfir_rs::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>joined = <span class="macro">super::teed_join!</span>(input, <span class="kw-2">&amp;</span>out, <span class="bool-val">true</span>, <span class="number">0</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(joined);
@@ -208,8 +208,8 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_teed_join_multi_node() {
-        <span class="kw">let </span>(<span class="kw">_</span>, input) = hydroflow::util::unbounded_channel();
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
+        <span class="kw">let </span>(<span class="kw">_</span>, input) = dfir_rs::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = dfir_rs::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>joined = <span class="macro">super::teed_join!</span>(input, <span class="kw-2">&amp;</span>out, <span class="bool-val">true</span>, <span class="number">1</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(joined);

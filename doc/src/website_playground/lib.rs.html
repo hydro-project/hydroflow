@@ -285,11 +285,11 @@
 <span class="kw">use </span>std::task::{Context, Poll};
 <span class="kw">use </span>std::thread_local;
 
-<span class="kw">use </span>hydroflow::datalog;
-<span class="kw">use </span>hydroflow::scheduled::graph::Hydroflow;
-<span class="kw">use </span>hydroflow_datalog_core::gen_hydroflow_graph;
-<span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span>hydroflow_lang::graph::{build_hfcode, partition_graph, WriteConfig};
+<span class="kw">use </span>dfir_datalog_core::gen_hydroflow_graph;
+<span class="kw">use </span>dfir_lang::diagnostic::{Diagnostic, Level};
+<span class="kw">use </span>dfir_lang::graph::{build_hfcode, partition_graph, WriteConfig};
+<span class="kw">use </span>dfir_rs::datalog;
+<span class="kw">use </span>dfir_rs::scheduled::graph::Dfir;
 <span class="kw">use </span>proc_macro2::{LineColumn, Span};
 <span class="kw">use </span>quote::quote;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
@@ -379,7 +379,7 @@
 }
 
 <span class="attr">#[wasm_bindgen]
-</span><span class="kw">pub fn </span>compile_hydroflow(
+</span><span class="kw">pub fn </span>compile_dfir(
     program: String,
     no_subgraphs: bool,
     no_varnames: bool,
@@ -507,7 +507,7 @@
 }
 
 <span class="kw">struct </span>HydroflowInstance&lt;<span class="lifetime">'a</span>, In, Out&gt; {
-    hydroflow: Hydroflow&lt;<span class="lifetime">'a</span>&gt;,
+    dfir: Dfir&lt;<span class="lifetime">'a</span>&gt;,
     input: tokio::sync::mpsc::UnboundedSender&lt;In&gt;,
     output: tokio::sync::mpsc::UnboundedReceiver&lt;Out&gt;,
 }
@@ -522,9 +522,9 @@
 <span class="attr">#[wasm_bindgen]
 </span><span class="kw">pub fn </span>init_datalog_boolean_demo(instance_name: <span class="kw-2">&amp;</span>str) {
     DATALOG_BOOLEAN_DEMO_INSTANCES.with(|map| {
-        <span class="kw">let </span>(in_send, input) = hydroflow::util::unbounded_channel::&lt;(i32,)&gt;();
-        <span class="kw">let </span>(out, out_recv) = hydroflow::util::unbounded_channel::&lt;(i32,)&gt;();
-        <span class="kw">let </span>hydroflow = <span class="macro">datalog!</span>(
+        <span class="kw">let </span>(in_send, input) = dfir_rs::util::unbounded_channel::&lt;(i32,)&gt;();
+        <span class="kw">let </span>(out, out_recv) = dfir_rs::util::unbounded_channel::&lt;(i32,)&gt;();
+        <span class="kw">let </span>dfir = <span class="macro">datalog!</span>(
             <span class="string">r#"
               .input ints `source_stream(input)`
               .output result `for_each(|v| out.send(v).unwrap())`
@@ -536,7 +536,7 @@
         map.borrow_mut().insert(
             instance_name.into(),
             DatalogBooleanDemoInstance {
-                hydroflow,
+                dfir,
                 input: in_send,
                 output: out_recv.into_inner(),
             },
@@ -550,7 +550,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>map = map.borrow_mut();
         <span class="kw">let </span>instance = map.get_mut(instance_name)<span class="question-mark">?</span>;
         instance.input.send((input,)).unwrap();
-        instance.hydroflow.run_tick();
+        instance.dfir.run_tick();
         <span class="kw">match </span>instance
             .output
             .poll_recv(<span class="kw-2">&amp;mut </span>Context::from_waker(futures::task::noop_waker_ref()))

@@ -1382,8 +1382,8 @@
 <span class="kw">use </span>std::ops::Deref;
 <span class="kw">use </span>std::rc::Rc;
 
-<span class="kw">use </span>hydroflow::bytes::Bytes;
-<span class="kw">use </span>hydroflow::futures;
+<span class="kw">use </span>dfir_rs::bytes::Bytes;
+<span class="kw">use </span>dfir_rs::futures;
 <span class="kw">use </span>serde::de::DeserializeOwned;
 <span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>stageleft::{q, IntoQuotedMut, QuotedWithContext};
@@ -2706,8 +2706,8 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
+    <span class="kw">use </span>dfir_rs::futures::StreamExt;
     <span class="kw">use </span>hydro_deploy::Deployment;
-    <span class="kw">use </span>hydroflow::futures::StreamExt;
     <span class="kw">use </span>serde::{Deserialize, Serialize};
     <span class="kw">use </span>stageleft::q;
 

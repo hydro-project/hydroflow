@@ -199,12 +199,12 @@
 <span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>clap::Parser;
+<span class="kw">use </span>dfir_rs::futures::{Sink, SinkExt, StreamExt};
+<span class="kw">use </span>dfir_rs::tokio_stream::wrappers::IntervalStream;
+<span class="kw">use </span>dfir_rs::util::{bind_udp_bytes, ipv4_resolve};
+<span class="kw">use </span>dfir_rs::{bincode, bytes, tokio};
 <span class="kw">use </span>gossip_kv::membership::{MemberDataBuilder, Protocol};
 <span class="kw">use </span>gossip_kv::server::{server, SeedNode};
-<span class="kw">use </span>hydroflow::futures::{Sink, SinkExt, StreamExt};
-<span class="kw">use </span>hydroflow::tokio_stream::wrappers::IntervalStream;
-<span class="kw">use </span>hydroflow::util::{bind_udp_bytes, ipv4_resolve};
-<span class="kw">use </span>hydroflow::{bincode, bytes, tokio};
 <span class="kw">use </span>prometheus::{gather, Encoder, TextEncoder};
 <span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>tracing::{error, info, trace};
@@ -273,7 +273,7 @@
 {
     outbound.with(|(msg, addr): (Message, SocketAddr)| {
         ready(<span class="prelude-val">Ok</span>::&lt;(bytes::Bytes, SocketAddr), Error&gt;((
-            hydroflow::util::serialize_to_bytes(msg),
+            dfir_rs::util::serialize_to_bytes(msg),
             addr,
         )))
     })
@@ -282,15 +282,15 @@
 <span class="doccomment">/// Setup deserialization for inbound networking messages.
 </span><span class="kw">fn </span>setup_inbound_deserialization&lt;Inbound, Message&gt;(
     inbound: Inbound,
-) -&gt; <span class="kw">impl </span>hydroflow::futures::Stream&lt;Item = (Message, SocketAddr)&gt;
+) -&gt; <span class="kw">impl </span>dfir_rs::futures::Stream&lt;Item = (Message, SocketAddr)&gt;
 <span class="kw">where
-    </span>Inbound: hydroflow::futures::Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;(bytes::BytesMut, SocketAddr), Error&gt;&gt;,
+    </span>Inbound: dfir_rs::futures::Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;(bytes::BytesMut, SocketAddr), Error&gt;&gt;,
     Message: <span class="kw">for</span>&lt;<span class="lifetime">'de</span>&gt; serde::Deserialize&lt;<span class="lifetime">'de</span>&gt; + Debug + Send + <span class="lifetime">'static</span>,
 {
     inbound.filter_map(|input| {
         <span class="kw">let </span>mapped = <span class="kw">match </span>input {
             <span class="prelude-val">Ok</span>((bytes, addr)) =&gt; {
-                <span class="kw">let </span>msg: bincode::Result&lt;Message&gt; = hydroflow::util::deserialize_from_bytes(<span class="kw-2">&amp;</span>bytes);
+                <span class="kw">let </span>msg: bincode::Result&lt;Message&gt; = dfir_rs::util::deserialize_from_bytes(<span class="kw-2">&amp;</span>bytes);
                 <span class="kw">match </span>msg {
                     <span class="prelude-val">Ok</span>(msg) =&gt; <span class="prelude-val">Some</span>((msg, addr)),
                     <span class="prelude-val">Err</span>(e) =&gt; {
@@ -308,7 +308,7 @@
     })
 }
 
-<span class="attr">#[hydroflow::main]
+<span class="attr">#[dfir_rs::main]
 </span><span class="kw">async fn </span>main() {
     tracing_subscriber::fmt::init();
 

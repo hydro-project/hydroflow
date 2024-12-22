@@ -60,18 +60,18 @@
 <a href="#60" id="60">60</a>
 <a href="#61" id="61">61</a>
 <a href="#62" id="62">62</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydro_lang::deploy::SingleProcessGraph;
-<span class="kw">use </span>hydro_lang::hydroflow::scheduled::graph::Hydroflow;
+</pre></div><pre class="rust"><code><span class="kw">use </span>dfir_rs::tokio::sync::mpsc::UnboundedSender;
+<span class="kw">use </span>dfir_rs::tokio_stream::wrappers::UnboundedReceiverStream;
+<span class="kw">use </span>hydro_lang::deploy::SingleProcessGraph;
+<span class="kw">use </span>hydro_lang::dfir_rs::scheduled::graph::Dfir;
 <span class="kw">use </span>hydro_lang::<span class="kw-2">*</span>;
-<span class="kw">use </span>hydroflow::tokio::sync::mpsc::UnboundedSender;
-<span class="kw">use </span>hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 <span class="kw">use </span>stageleft::{Quoted, RuntimeData};
 
 <span class="kw">pub fn </span>count_elems_generic&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt;(
     flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
     input_stream: RuntimeData&lt;UnboundedReceiverStream&lt;T&gt;&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Dfir&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>process = flow.process::&lt;()&gt;();
     <span class="kw">let </span>tick = process.tick();
 
@@ -95,20 +95,20 @@
     flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
     input_stream: RuntimeData&lt;UnboundedReceiverStream&lt;usize&gt;&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Dfir&lt;<span class="lifetime">'a</span>&gt;&gt; {
     count_elems_generic(flow, input_stream, output)
 }
 
 <span class="attr">#[stageleft::runtime]
 #[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>hydroflow::assert_graphvis_snapshots;
-    <span class="kw">use </span>hydroflow::util::collect_ready;
+    <span class="kw">use </span>dfir_rs::assert_graphvis_snapshots;
+    <span class="kw">use </span>dfir_rs::util::collect_ready;
 
     <span class="attr">#[test]
     </span><span class="kw">pub fn </span>test_count() {
-        <span class="kw">let </span>(in_send, input) = hydroflow::util::unbounded_channel();
-        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow::util::unbounded_channel();
+        <span class="kw">let </span>(in_send, input) = dfir_rs::util::unbounded_channel();
+        <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = dfir_rs::util::unbounded_channel();
 
         <span class="kw">let </span><span class="kw-2">mut </span>count = <span class="macro">super::count_elems!</span>(input, <span class="kw-2">&amp;</span>out);
         <span class="macro">assert_graphvis_snapshots!</span>(count);

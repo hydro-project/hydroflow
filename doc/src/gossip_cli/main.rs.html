@@ -120,9 +120,9 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::net::SocketAddr;
 
 <span class="kw">use </span>clap::{CommandFactory, Parser, Subcommand};
+<span class="kw">use </span>dfir_rs::util::{bind_udp_bytes, ipv4_resolve};
+<span class="kw">use </span>dfir_rs::{dfir_syntax, tokio, DemuxEnum};
 <span class="kw">use </span>gossip_kv::{ClientRequest, ClientResponse, Key};
-<span class="kw">use </span>hydroflow::util::{bind_udp_bytes, ipv4_resolve};
-<span class="kw">use </span>hydroflow::{hydroflow_syntax, tokio, DemuxEnum};
 <span class="kw">use </span>tracing::error;
 
 <span class="doccomment">/// CLI program to interact with Layer 0 gossip store.
@@ -199,7 +199,7 @@
     }
 }
 
-<span class="attr">#[hydroflow::main]
+<span class="attr">#[dfir_rs::main]
 </span><span class="kw">async fn </span>main() {
     tracing_subscriber::fmt::init();
 
@@ -217,7 +217,7 @@
     <span class="comment">// Setup UDP sockets for communication.
     </span><span class="kw">let </span>(outbound, inbound, <span class="kw">_</span>) = bind_udp_bytes(address).<span class="kw">await</span>;
 
-    <span class="kw">let </span><span class="kw-2">mut </span>cli = <span class="macro">hydroflow_syntax!</span> {
+    <span class="kw">let </span><span class="kw-2">mut </span>cli = <span class="macro">dfir_syntax!</span> {
         inbound_messages = source_stream_serde(inbound) -&gt; map(Result::unwrap) -&gt; for_each(|(response, _addr): (ClientResponse, SocketAddr)| <span class="macro">println!</span>(<span class="string">"{:?}"</span>, response));
 
         outbound_messages = union() -&gt; dest_sink_serde(outbound);

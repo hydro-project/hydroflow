@@ -65,15 +65,15 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::rc::Rc;
 
-<span class="kw">use </span>hydroflow::scheduled::graph::Hydroflow;
-<span class="kw">use </span>hydroflow::scheduled::graph_ext::GraphExt;
-<span class="kw">use </span>hydroflow::scheduled::handoff::{Iter, VecHandoff};
-<span class="kw">use </span>hydroflow::scheduled::port::RecvPort;
+<span class="kw">use </span>dfir_rs::scheduled::graph::Dfir;
+<span class="kw">use </span>dfir_rs::scheduled::graph_ext::GraphExt;
+<span class="kw">use </span>dfir_rs::scheduled::handoff::{Iter, VecHandoff};
+<span class="kw">use </span>dfir_rs::scheduled::port::RecvPort;
 
 <span class="kw">use crate</span>::{Datum, RelExpr};
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>run_dataflow(r: RelExpr) -&gt; Vec&lt;Vec&lt;Datum&gt;&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>df = Hydroflow::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>df = Dfir::new();
 
     <span class="kw">let </span>output_port = render_relational(<span class="kw-2">&amp;mut </span>df, r);
 
@@ -92,7 +92,7 @@
     v.clone()
 }
 
-<span class="kw">fn </span>render_relational(df: <span class="kw-2">&amp;mut </span>Hydroflow, r: RelExpr) -&gt; RecvPort&lt;VecHandoff&lt;Vec&lt;Datum&gt;&gt;&gt; {
+<span class="kw">fn </span>render_relational(df: <span class="kw-2">&amp;mut </span>Dfir, r: RelExpr) -&gt; RecvPort&lt;VecHandoff&lt;Vec&lt;Datum&gt;&gt;&gt; {
     <span class="kw">let </span>(send_port, recv_port) = df.make_edge(<span class="string">"handoff"</span>);
     <span class="kw">match </span>r {
         RelExpr::Values(<span class="kw-2">mut </span>v) =&gt; {

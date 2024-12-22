@@ -57,7 +57,7 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydro_lang::deploy::SingleProcessGraph;
-<span class="kw">use </span>hydro_lang::hydroflow::scheduled::graph::Hydroflow;
+<span class="kw">use </span>hydro_lang::dfir_rs::scheduled::graph::Dfir;
 <span class="kw">use </span>hydro_lang::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::{Quoted, RuntimeData};
 
@@ -106,7 +106,7 @@
 </span><span class="kw">pub fn </span>compute_pi_runtime&lt;<span class="lifetime">'a</span>&gt;(
     flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;,
     batch_size: RuntimeData&lt;usize&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Dfir&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let _ </span>= compute_pi(<span class="kw-2">&amp;</span>flow, batch_size);
     flow.compile_no_network::&lt;SingleProcessGraph&gt;()
 }

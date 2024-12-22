@@ -273,9 +273,9 @@
 <span class="kw">use </span>std::io::Error;
 <span class="kw">use </span>std::pin::Pin;
 
-<span class="kw">use </span>hydroflow::bytes::Bytes;
-<span class="kw">use </span>hydroflow::futures::{Sink, Stream};
-<span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
+<span class="kw">use </span>dfir_lang::graph::DfirGraph;
+<span class="kw">use </span>dfir_rs::bytes::Bytes;
+<span class="kw">use </span>dfir_rs::futures::{Sink, Stream};
 <span class="kw">use </span>serde::de::DeserializeOwned;
 <span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>stageleft::QuotedWithContext;
@@ -511,7 +511,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         env: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::InstantiateEnv,
         meta: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Meta,
-        graph: HydroflowGraph,
+        graph: DfirGraph,
         extra_stmts: Vec&lt;syn::Stmt&gt;,
     );
 }

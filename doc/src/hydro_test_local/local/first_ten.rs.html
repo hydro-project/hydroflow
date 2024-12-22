@@ -24,7 +24,7 @@
 <a href="#24" id="24">24</a>
 <a href="#25" id="25">25</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydro_lang::deploy::SingleProcessGraph;
-<span class="kw">use </span>hydro_lang::hydroflow::scheduled::graph::Hydroflow;
+<span class="kw">use </span>hydro_lang::dfir_rs::scheduled::graph::Dfir;
 <span class="kw">use </span>hydro_lang::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::Quoted;
 
@@ -35,7 +35,7 @@
 }
 
 <span class="attr">#[stageleft::entry]
-</span><span class="kw">pub fn </span>first_ten_runtime&lt;<span class="lifetime">'a</span>&gt;(flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
+</span><span class="kw">pub fn </span>first_ten_runtime&lt;<span class="lifetime">'a</span>&gt;(flow: FlowBuilder&lt;<span class="lifetime">'a</span>&gt;) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Dfir&lt;<span class="lifetime">'a</span>&gt;&gt; {
     first_ten(<span class="kw-2">&amp;</span>flow);
     flow.compile_no_network::&lt;SingleProcessGraph&gt;()
 }
