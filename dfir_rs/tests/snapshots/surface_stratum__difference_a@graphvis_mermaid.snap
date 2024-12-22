@@ -1,6 +1,6 @@
 ---
-source: hydroflow/tests/surface_stratum.rs
-expression: "df.meta_graph().unwrap().to_mermaid(&Default::default())"
+source: dfir_rs/tests/surface_stratum.rs
+expression: "df.meta_graph().unwrap().to_mermaid(& Default :: default())"
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
@@ -28,4 +28,3 @@ subgraph sg_2v1 ["sg_2v1 stratum 1"]
         1v1
     end
 end
-

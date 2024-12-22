@@ -1,6 +1,6 @@
 ---
-source: hydroflow/tests/surface_codegen.rs
-expression: "df.meta_graph().unwrap().to_dot(&Default::default())"
+source: dfir_rs/tests/surface_codegen.rs
+expression: "df.meta_graph().unwrap().to_dot(& Default :: default())"
 ---
 digraph {
     node [fontname="Monaco,Menlo,Consolas,&quot;Droid Sans Mono&quot;,Inconsolata,&quot;Courier New&quot;,monospace", style=filled];
@@ -26,4 +26,3 @@ digraph {
         n3v1
     }
 }
-

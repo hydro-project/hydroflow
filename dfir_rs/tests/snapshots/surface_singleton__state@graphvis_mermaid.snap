@@ -1,5 +1,5 @@
 ---
-source: hydroflow/tests/surface_singleton.rs
+source: dfir_rs/tests/surface_singleton.rs
 expression: "df.meta_graph().unwrap().to_mermaid(& Default :: default())"
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
@@ -57,4 +57,3 @@ subgraph sg_2v1 ["sg_2v1 stratum 0"]
         3v1
     end
 end
-

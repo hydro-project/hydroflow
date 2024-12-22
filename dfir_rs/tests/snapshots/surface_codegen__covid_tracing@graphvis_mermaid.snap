@@ -1,6 +1,6 @@
 ---
-source: hydroflow/tests/surface_codegen.rs
-expression: "hydroflow.meta_graph().unwrap().to_mermaid(&Default::default())"
+source: dfir_rs/tests/surface_codegen.rs
+expression: "hydroflow.meta_graph().unwrap().to_mermaid(& Default :: default())"
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
@@ -80,4 +80,3 @@ subgraph sg_2v1 ["sg_2v1 stratum 0"]
         12v1
     end
 end
-

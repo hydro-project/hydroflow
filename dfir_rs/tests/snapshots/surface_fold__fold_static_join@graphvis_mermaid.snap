@@ -1,5 +1,5 @@
 ---
-source: hydroflow/tests/surface_fold.rs
+source: dfir_rs/tests/surface_fold.rs
 expression: "df.meta_graph().unwrap().to_mermaid(& Default :: default())"
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%

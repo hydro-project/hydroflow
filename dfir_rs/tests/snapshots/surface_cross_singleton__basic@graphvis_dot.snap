@@ -1,5 +1,5 @@
 ---
-source: hydroflow/tests/surface_cross_singleton.rs
+source: dfir_rs/tests/surface_cross_singleton.rs
 expression: "df.meta_graph().unwrap().to_dot(& Default :: default())"
 ---
 digraph {
@@ -36,4 +36,3 @@ digraph {
         }
     }
 }
-
