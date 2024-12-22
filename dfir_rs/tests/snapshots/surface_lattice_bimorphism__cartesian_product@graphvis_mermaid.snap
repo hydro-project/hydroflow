@@ -1,5 +1,5 @@
 ---
-source: hydroflow/tests/surface_lattice_bimorphism.rs
+source: dfir_rs/tests/surface_lattice_bimorphism.rs
 expression: "df.meta_graph().unwrap().to_mermaid(& Default :: default())"
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%

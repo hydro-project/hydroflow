@@ -1,6 +1,6 @@
 ---
-source: hydroflow/tests/surface_scheduling.rs
-expression: "df.meta_graph().unwrap().to_mermaid(&Default::default())"
+source: dfir_rs/tests/surface_scheduling.rs
+expression: "df.meta_graph().unwrap().to_mermaid(& Default :: default())"
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
@@ -48,4 +48,3 @@ end
 subgraph sg_3v1 ["sg_3v1 stratum 1"]
     10v1
 end
-

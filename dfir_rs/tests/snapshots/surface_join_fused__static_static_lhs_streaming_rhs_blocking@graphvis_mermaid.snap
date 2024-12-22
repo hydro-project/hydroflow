@@ -1,6 +1,6 @@
 ---
-source: hydroflow/tests/surface_join_fused.rs
-expression: "df.meta_graph().unwrap().to_mermaid(&Default::default())"
+source: dfir_rs/tests/surface_join_fused.rs
+expression: "df.meta_graph().unwrap().to_mermaid(& Default :: default())"
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
@@ -90,4 +90,3 @@ end
 subgraph sg_8v1 ["sg_8v1 stratum 2"]
     21v1
 end
-

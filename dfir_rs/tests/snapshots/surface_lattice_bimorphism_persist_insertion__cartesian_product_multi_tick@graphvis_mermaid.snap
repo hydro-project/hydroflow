@@ -1,5 +1,5 @@
 ---
-source: hydroflow/tests/surface_lattice_bimorphism_persist_insertion.rs
+source: dfir_rs/tests/surface_lattice_bimorphism_persist_insertion.rs
 expression: "df.meta_graph().unwrap().to_mermaid(& Default :: default())"
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
@@ -67,4 +67,3 @@ subgraph sg_4v1 ["sg_4v1 stratum 1"]
         9v1
     end
 end
-
