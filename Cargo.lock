@@ -873,7 +873,7 @@ dependencies = [
 
 [[package]]
 name = "dfir_datalog"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "dfir_datalog_core",
  "proc-macro-crate",
@@ -884,7 +884,7 @@ dependencies = [
 
 [[package]]
 name = "dfir_datalog_core"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "dfir_lang",
  "insta",
@@ -900,7 +900,7 @@ dependencies = [
 
 [[package]]
 name = "dfir_lang"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "auto_impl",
  "clap",
@@ -919,7 +919,7 @@ dependencies = [
 
 [[package]]
 name = "dfir_macro"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "dfir_lang",
  "itertools",
@@ -932,7 +932,7 @@ dependencies = [
 
 [[package]]
 name = "dfir_rs"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "bincode",
  "byteorder",
@@ -1567,7 +1567,7 @@ dependencies = [
 
 [[package]]
 name = "hydro_lang"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-ssh2-lite",
  "bincode",
@@ -1596,7 +1596,7 @@ dependencies = [
 
 [[package]]
 name = "hydro_std"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-ssh2-lite",
  "ctor",
