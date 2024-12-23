@@ -129,7 +129,7 @@ const config = {
                 label: 'Hydro Deploy',
               },
               {
-                href: 'pathname:///rustdoc/hydro/',
+                href: 'pathname:///rustdoc/hydro_lang/',
                 label: 'Rustdoc',
               },
               {
