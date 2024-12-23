@@ -14,7 +14,7 @@
 //! hf.run_available();
 //! ```
 //!
-//! For more examples, check out the [`examples` folder on Github](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples).
+//! For more examples, check out the [`examples` folder on Github](https://github.com/hydro-project/hydroflow/tree/main/dfir_rs/examples).
 
 pub mod compiled;
 pub mod scheduled;

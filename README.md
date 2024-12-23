@@ -18,9 +18,9 @@ We often describe Hydro via a metaphor: *LLVM for the cloud*. Like LLVM, Hydro i
 
 
 ## The Language (and the Low-Level IR)
-Hydro provides a [high-level language](https://hydro.run/docs/hydro) that allows you to program an entire fleet of processes from a single program, and then launch your fleet locally or in the cloud via [Hydro Deploy](https://hydro.run/docs/deploy). Get started with Hydro via the language [documentation](https://hydro.run/docs/hydro) and [examples](https://github.com/hydro-project/hydroflow/tree/main/hydroflow_plus_test/examples).
+Hydro provides a [high-level language](https://hydro.run/docs/hydro) that allows you to program an entire fleet of processes from a single program, and then launch your fleet locally or in the cloud via [Hydro Deploy](https://hydro.run/docs/deploy). Get started with Hydro via the language [documentation](https://hydro.run/docs/hydro) and [examples](https://github.com/hydro-project/hydroflow/tree/main/hydro_test/examples).
 
-> Internally, the Hydro stack compiles Hydro programs into a low-level Dataflow Internal Representation (IR) language called [DFIR](https://hydro.run/docs/dfir); each process corresponds to a separate DFIR program. In rare cases you may want to compose one or more processes in DFIR by hand; see the DFIR [documentation](https://hydro.run/docs/dfir) or [examples](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples) for details.
+> Internally, the Hydro stack compiles Hydro programs into a low-level Dataflow Internal Representation (IR) language called [DFIR](https://hydro.run/docs/dfir); each process corresponds to a separate DFIR program. In rare cases you may want to compose one or more processes in DFIR by hand; see the DFIR [documentation](https://hydro.run/docs/dfir) or [examples](https://github.com/hydro-project/hydroflow/tree/main/dfir_rs/examples) for details.
 
 ## Development Setup
 

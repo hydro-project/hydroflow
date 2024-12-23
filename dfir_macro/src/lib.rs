@@ -15,8 +15,8 @@ use syn::{
 
 /// Create a Hydroflow instance using Hydroflow's custom "surface syntax."
 ///
-/// For example usage, take a look at the [`surface_*` tests in the `tests` folder](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/tests)
-/// or the [`examples` folder](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples)
+/// For example usage, take a look at the [`surface_*` tests in the `tests` folder](https://github.com/hydro-project/hydroflow/tree/main/dfir_rs/tests)
+/// or the [`examples` folder](https://github.com/hydro-project/hydroflow/tree/main/dfir_rs/examples)
 /// in the [Hydroflow repo](https://github.com/hydro-project/hydroflow).
 // TODO(mingwei): rustdoc examples inline.
 #[proc_macro]
