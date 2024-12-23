@@ -136,10 +136,12 @@ package's _current_ directory, so if you move a package to a different directory
 may lose old commit info if you're not careful.
 
 On the commit immediately _before_ you move the package(s) and run the following:
+(This command is provided by `cargo install cargo-smart-release`; don't use any other `cargo changelog` command)
 ```
 cargo changelog --write <crate_to_be_moved> <other_crate_to_be_moved> ...
 ```
-(This command is provided by `cargo install cargo-smart-release`; don't use any other `cargo changelog` command)
+Note that this may [error if your git is in a 'detached HEAD' state](https://github.com/Byron/cargo-smart-release/issues/34),
+so `git checkout -b new-branch-name` to fix this.
 
 Next (even if there are no changes), go through the modified `CHANGELOG.md` files and add a prefix
 to **all** (not just the new) the `Commit Statistics` and `Commit Details` headers, for example:
