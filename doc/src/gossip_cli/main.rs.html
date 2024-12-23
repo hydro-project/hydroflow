@@ -230,7 +230,7 @@
         commands[Get] -&gt; map(|(key,)| (ClientRequest::Get {key}, server_address)) -&gt; outbound_messages;
         commands[Set] -&gt; map(|(key, value)| (ClientRequest::Set {key, value}, server_address)) -&gt; outbound_messages;
         commands[Delete] -&gt; map(|(key,)| (ClientRequest::Delete {key}, server_address)) -&gt; outbound_messages;
-        commands[Exit] -&gt; for_each(|()| std::process::exit(<span class="number">0</span>)); <span class="comment">// TODO: Graceful shutdown https://github.com/hydro-project/hydroflow/issues/1253
+        commands[Exit] -&gt; for_each(|()| std::process::exit(<span class="number">0</span>)); <span class="comment">// TODO: Graceful shutdown https://github.com/hydro-project/hydro/issues/1253
 
     </span>};
 

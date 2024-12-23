@@ -999,7 +999,7 @@
         reads -&gt; [<span class="number">1</span>]process_system_table_reads;
 
         process_system_table_reads = lattice_bimorphism(KeyedBimorphism::&lt;HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;::new(KeyedBimorphism::&lt;HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;::new(KeyedBimorphism::&lt;HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;::new(PairBimorphism))), #namespaces, #reads)
-            -&gt; lattice_reduce::&lt;<span class="lifetime">'tick</span>&gt;() <span class="comment">// TODO: This can be removed if we fix https://github.com/hydro-project/hydroflow/issues/1401. Otherwise the result can be returned twice if get &amp; gossip arrive in the same tick.
+            -&gt; lattice_reduce::&lt;<span class="lifetime">'tick</span>&gt;() <span class="comment">// TODO: This can be removed if we fix https://github.com/hydro-project/hydro/issues/1401. Otherwise the result can be returned twice if get &amp; gossip arrive in the same tick.
             </span>-&gt; flat_map(|result: NamespaceMap&lt;Pair&lt;RowValue&lt;Clock&gt;, SetUnion&lt;HashSet&lt;Addr&gt;&gt;&gt;&gt;| {
 
                 <span class="kw">let </span><span class="kw-2">mut </span>response: Vec&lt;(ClientResponse, Addr)&gt; = <span class="macro">vec!</span>[];

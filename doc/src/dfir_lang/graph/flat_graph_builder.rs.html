@@ -1607,7 +1607,7 @@
     }
 
     <span class="doccomment">/// Warns about unused port indexing referenced in [`Self::varname_ends`].
-    /// https://github.com/hydro-project/hydroflow/issues/1108
+    /// https://github.com/hydro-project/hydro/issues/1108
     </span><span class="kw">fn </span>warn_unused_port_indexing(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">for </span>(_ident, varname_info) <span class="kw">in </span><span class="self">self</span>.varname_ends.iter() {
             <span class="kw">if </span>!varname_info.inn_used {

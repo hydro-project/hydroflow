@@ -981,7 +981,7 @@
             DelayType::Stratum =&gt; {
                 <span class="comment">// Any negative edges which go onto the same or previous stratum are bad.
                 // Indicates an unbroken negative cycle.
-                // TODO(mingwei): This check is insufficient: https://github.com/hydro-project/hydroflow/issues/1115#issuecomment-2018385033
+                // TODO(mingwei): This check is insufficient: https://github.com/hydro-project/hydro/issues/1115#issuecomment-2018385033
                 </span><span class="kw">if </span>dst_stratum &lt;= src_stratum {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic::spanned(dst_port.span(), Level::Error, <span class="string">"Negative edge creates a negative cycle which must be broken with a `defer_tick()` operator."</span>));
                 }
