@@ -55,7 +55,7 @@ The easiest way to get started with DFIR is to begin with a template project.
 Create a directory where you'd like to put that project, direct your terminal there and run:
 ```bash
 #shell-command-next-line
-cargo generate gh:hydro-project/hydroflow template/dfir
+cargo generate gh:hydro-project/dfir-template
 ```
 You will be prompted to name your project. The `cargo generate` command will create a subdirectory
 with the relevant files and folders.

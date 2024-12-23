@@ -3,7 +3,7 @@ This is a template for a Rust project that uses [Hydro](http://github.com/hydro-
 
 ```bash
 cargo install cargo-generate
-cargo generate gh:hydro-project/hydroflow template/hydro
+cargo generate gh:hydro-project/hydro-template
 cd <myproject>
 ```
 

@@ -4,7 +4,7 @@ distributed services. It implements a simple echo server and client over UDP.
 
 ## Using the Template
 ```bash
-cargo generate gh:hydro-project/hydroflow template/hydroflow
+cargo generate gh:hydro-project/dfir-template
 ```
 
 You will be prompted to name your project. Once the command completes, you can `cd` into the project.

@@ -12,7 +12,7 @@ DFIR provides a robust framework for developing networked services. The best way
 the DFIR template.
 
 ```bash
-cargo generate gh:hydro-project/hydroflow template/dfir
+cargo generate gh:hydro-project/dfir-template
 ```
 
 `cd` into the generated folder, ensure the correct nightly version of rust is installed, and test the generated project:
@@ -29,11 +29,11 @@ The template contains a chat server & client implementation using UDP. You can s
 the client and connect to the same server.
 
 ## Things to Check
-* [README](https://github.com/hydro-project/hydroflow/tree/main/template/dfir#readme) - Contains instructions on building the template and
+* [README](https://github.com/hydro-project/dfir-template/tree/main/#readme) - Contains instructions on building the template and
 running the client and server examples.
-* [server.rs](https://github.com/hydro-project/hydroflow/blob/main/template/dfir/src/server.rs) - Contains the chat server
+* [server.rs](https://github.com/hydro-project/dfir-template/tree/main/src/server.rs) - Contains the chat server
 implementation. The inline rust documentation explains the networking-related DFIR operators and their usage.
-* [client.rs](https://github.com/hydro-project/hydroflow/blob/main/template/dfir/src/client.rs) - Contains the chat client
+* [client.rs](https://github.com/hydro-project/dfir-template/tree/main/src/client.rs) - Contains the chat client
 implementation. The inline rust documentation explains the networking-related DFIR operators and their usage.
 
 DFIR also supports TCP for reliable, connection-oriented communication. Understanding the differences and use

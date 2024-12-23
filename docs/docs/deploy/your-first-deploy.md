@@ -13,7 +13,7 @@ First, we need to write the DFIR application, which will intergrate with Hydro D
 cargo install --locked cargo-generate
 
 #shell-command-next-line
-cargo generate gh:hydro-project/hydroflow template/dfir
+cargo generate gh:hydro-project/dfir-template
 ```
 
 `cd` into the generated folder, ensure the correct nightly version of rust is installed, and test the generated project:
