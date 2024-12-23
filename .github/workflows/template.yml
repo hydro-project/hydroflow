@@ -189,7 +189,7 @@ jobs:
           git -C "$DIR" config core.autocrlf input
           git -C "$DIR" config core.safecrlf false
           git -C "$DIR" config user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
-          git -C "$DIR" config user.email "$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)[bot]@users.noreply.github.com"
+          git -C "$DIR" config user.email "$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com"
           git -C "$DIR" add -A
           git -C "$DIR" commit -m "Update template $(date -I) $(git rev-parse HEAD)"
           git -C "$DIR" push -f -u origin HEAD:main --quiet
@@ -232,7 +232,7 @@ jobs:
           git -C "$DIR" config core.autocrlf input
           git -C "$DIR" config core.safecrlf false
           git -C "$DIR" config user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
-          git -C "$DIR" config user.email "$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)[bot]@users.noreply.github.com"
+          git -C "$DIR" config user.email "$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com"
           git -C "$DIR" add -A
           git -C "$DIR" commit -m "Update template $(date -I) $(git rev-parse HEAD)"
           git -C "$DIR" push -f -u origin HEAD:main --quiet
