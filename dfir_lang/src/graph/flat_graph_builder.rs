@@ -687,7 +687,7 @@ impl FlatGraphBuilder {
     }
 
     /// Warns about unused port indexing referenced in [`Self::varname_ends`].
-    /// https://github.com/hydro-project/hydroflow/issues/1108
+    /// https://github.com/hydro-project/hydro/issues/1108
     fn warn_unused_port_indexing(&mut self) {
         for (_ident, varname_info) in self.varname_ends.iter() {
             if !varname_info.inn_used {

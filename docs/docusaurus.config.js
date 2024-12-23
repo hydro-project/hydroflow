@@ -67,7 +67,7 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/hydro-project/hydroflow/tree/main/docs/',
+            'https://github.com/hydro-project/hydro/tree/main/docs/',
           remarkPlugins: [math],
           rehypePlugins: [katex],
         },
@@ -76,7 +76,7 @@ const config = {
         //   // Please change this to your repo.
         //   // Remove this to remove the "edit this page" links.
         //   editUrl:
-        //     'https://github.com/hydro-project/hydroflow/tree/main/docs/',
+        //     'https://github.com/hydro-project/hydro/tree/main/docs/',
         // },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
@@ -156,7 +156,7 @@ const config = {
           },
           // {to: '/blog', label: 'Blog', position: 'left'},
           {
-            href: 'https://github.com/hydro-project/hydroflow',
+            href: 'https://github.com/hydro-project/hydro',
             label: 'GitHub',
             position: 'right',
           },
@@ -204,7 +204,7 @@ const config = {
               // },
               {
                 label: 'GitHub',
-                href: 'https://github.com/hydro-project/hydroflow',
+                href: 'https://github.com/hydro-project/hydro',
               },
             ],
           },

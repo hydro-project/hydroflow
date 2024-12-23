@@ -68,7 +68,7 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     // If this is set to true, the state will need to be cleared using `#context.set_state_tick_hook`
     // to prevent reading uncleared data if this subgraph doesn't run.
-    // https://github.com/hydro-project/hydroflow/issues/1298
+    // https://github.com/hydro-project/hydro/issues/1298
     has_singleton_output: false,
     flo_type: None,
     ports_inn: None,

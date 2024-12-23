@@ -31,7 +31,7 @@ jobs:
       # and tags to `main` in the normal way. Instead we have an app:
       # https://github.com/organizations/hydro-project/settings/apps/hydro-project-bot
       # Which is added the the users allowed to bypass branch protections:
-      # https://github.com/hydro-project/hydroflow/settings/branches
+      # https://github.com/hydro-project/hydro/settings/branches
       # We grab a token from the app using this action via the `APP_ID` ("App ID") and an
       # `APP_PRIVATE_KEY` ("Generate a private key").
       - name: Generate token

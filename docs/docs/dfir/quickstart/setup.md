@@ -110,7 +110,7 @@ Hello!
 2023-06-01 00:19:53.906635 UTC: Got Echo { payload: "Hello!", ts: 2023-06-01T00:19:53.906123Z } from 127.0.0.1:61019
 ```
 
-## Alternative: Checking out the Hydroflow Repository
+## Alternative: Checking out the Hydro Repository
 
 This book will assume you are using the template project, but some
 Rust experts may want to get started with DFIR by cloning and working in the
@@ -120,7 +120,7 @@ changes.
 
 To clone the repo, run:
 ```bash
-git clone git@github.com:hydro-project/hydroflow.git
+git clone git@github.com:hydro-project/hydro.git
 ```
 DFIR requires nightly Rust, but the repo is already configured for it via
 `rust-toolchain.toml`.
@@ -129,14 +129,14 @@ You can then open the repo in VS Code or IDE of your choice. In VS Code, `rust-a
 will provide inline type and error messages, code completion, etc.
 
 To work with the repository, it's best to start with an "example", found in the
-[`dfir/examples` folder](https://github.com/hydro-project/hydroflow/tree/main/dfir_rs/examples).
+[`dfir/examples` folder](https://github.com/hydro-project/hydro/tree/main/dfir_rs/examples).
 The simplest example is the
-['hello world'](https://github.com/hydro-project/hydroflow/blob/main/dfir_rs/examples/hello_world/main.rs) example;
+['hello world'](https://github.com/hydro-project/hydro/blob/main/dfir_rs/examples/hello_world/main.rs) example;
 the simplest example with networking is the
-[`echo server`](https://github.com/hydro-project/hydroflow/blob/main/dfir_rs/examples/echoserver/main.rs).
+[`echo server`](https://github.com/hydro-project/hydro/blob/main/dfir_rs/examples/echoserver/main.rs).
 
 The DFIR repository is set up as a [workspace](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html),
 i.e. a repo containing a bunch of separate packages, `dfir_rs` is just the
 main one. So if you want to work in a proper separate cargo package, you can
-create one and add it into the [root `Cargo.toml`](https://github.com/hydro-project/hydroflow/blob/main/Cargo.toml),
-much like the [provided template](https://github.com/hydro-project/hydroflow/tree/main/template/dfir#readme).
+create one and add it into the [root `Cargo.toml`](https://github.com/hydro-project/hydro/blob/main/Cargo.toml),
+much like the [provided template](https://github.com/hydro-project/hydro/tree/main/template/dfir#readme).

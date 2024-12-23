@@ -27,7 +27,7 @@ pub type NamespaceMap<V> = MapUnionHashMap<Namespace, TableMap<V>>;
 pub type Namespaces<C> = NamespaceMap<RowValue<C>>;
 
 /// Timestamps used in the model.
-// TODO: This will be updated to use a more sophisticated clock type with https://github.com/hydro-project/hydroflow/issues/1207.
+// TODO: This will be updated to use a more sophisticated clock type with https://github.com/hydro-project/hydro/issues/1207.
 pub type Clock = Max<u64>;
 
 /// TableMap element to upsert a row in an existing TableMap.
