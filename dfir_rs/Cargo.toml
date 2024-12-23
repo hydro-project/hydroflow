@@ -5,7 +5,8 @@ version = "0.11.0"
 edition = "2021"
 license = "Apache-2.0"
 documentation = "https://docs.rs/dfir_rs/"
-description = "Hydro's low-level dataflow runtime and IR"
+repository = "https://github.com/hydro-project/hydro"
+description = "DFIR runtime for Rust, used by Hydro."
 
 [lints]
 workspace = true

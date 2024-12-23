@@ -5,8 +5,8 @@ version = "0.11.0"
 edition = "2021"
 license = "Apache-2.0"
 documentation = "https://docs.rs/dfir_macro/"
+repository = "https://github.com/hydro-project/hydro"
 description = "Macro for using Hydro's Data Flow Intermediate Representation (DFIR)."
-
 [lints]
 workspace = true
 
