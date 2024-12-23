@@ -8,10 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 0.5.0 (2024-12-23)
 
 <csr-id-0dc709ed5a53c723f47fa1d10063e57bb50a63c8/>
+<csr-id-162e49cf8a8cf944cded7f775d6f78afe4a89837/>
 
 ### Chore
 
  - <csr-id-0dc709ed5a53c723f47fa1d10063e57bb50a63c8/> use same hashing library everywhere
+
+### Bug Fixes
+
+ - <csr-id-b14d6522a29188b5306b47e32a3af24391ae8b2a/> syn missing features
 
 ### Documentation
 
@@ -40,9 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release.
+ - 7 commits contributed to the release.
  - 45 days passed between releases.
- - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1501](https://github.com/hydro-project/hydro/issues/1501), [#1574](https://github.com/hydro-project/hydro/issues/1574), [#1590](https://github.com/hydro-project/hydro/issues/1590), [#1617](https://github.com/hydro-project/hydro/issues/1617)
 
 ### Commit Details
@@ -60,6 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#1617](https://github.com/hydro-project/hydro/issues/1617)**
     - Rename HydroflowPlus to Hydro ([`162e49c`](https://github.com/hydro-project/hydro/commit/162e49cf8a8cf944cded7f775d6f78afe4a89837))
  * **Uncategorized**
+    - Syn missing features ([`b14d652`](https://github.com/hydro-project/hydro/commit/b14d6522a29188b5306b47e32a3af24391ae8b2a))
+    - Release dfir_lang v0.11.0, dfir_datalog_core v0.11.0, dfir_datalog v0.11.0, dfir_macro v0.11.0, hydroflow_deploy_integration v0.11.0, lattices_macro v0.5.8, variadics v0.0.8, variadics_macro v0.5.6, lattices v0.5.9, multiplatform_test v0.4.0, pusherator v0.0.10, dfir_rs v0.11.0, hydro_deploy v0.11.0, stageleft_macro v0.5.0, stageleft v0.6.0, stageleft_tool v0.5.0, hydro_lang v0.11.0, hydro_std v0.11.0, hydro_cli v0.11.0, safety bump 6 crates ([`9a7e486`](https://github.com/hydro-project/hydro/commit/9a7e48693fce0face0f8ad16349258cdbe26395f))
     - Update `CHANGELOG.md`s for big rename ([`e1a08e5`](https://github.com/hydro-project/hydro/commit/e1a08e5d165fbc80da2ae695e507078a97a9031f))
 </details>
 

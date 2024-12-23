@@ -80,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release.
+ - 8 commits contributed to the release.
  - 45 days passed between releases.
  - 7 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 6 unique issues were worked on: [#1501](https://github.com/hydro-project/hydro/issues/1501), [#1559](https://github.com/hydro-project/hydro/issues/1559), [#1574](https://github.com/hydro-project/hydro/issues/1574), [#1583](https://github.com/hydro-project/hydro/issues/1583), [#1584](https://github.com/hydro-project/hydro/issues/1584), [#1591](https://github.com/hydro-project/hydro/issues/1591)
@@ -104,6 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#1591](https://github.com/hydro-project/hydro/issues/1591)**
     - Extract initial Hydroflow+ utilities into a standard library ([`53da4c1`](https://github.com/hydro-project/hydro/commit/53da4c1c9b18562e7806adcaf3a3838f56b8ef1b))
  * **Uncategorized**
+    - Release dfir_lang v0.11.0, dfir_datalog_core v0.11.0, dfir_datalog v0.11.0, dfir_macro v0.11.0, hydroflow_deploy_integration v0.11.0, lattices_macro v0.5.8, variadics v0.0.8, variadics_macro v0.5.6, lattices v0.5.9, multiplatform_test v0.4.0, pusherator v0.0.10, dfir_rs v0.11.0, hydro_deploy v0.11.0, stageleft_macro v0.5.0, stageleft v0.6.0, stageleft_tool v0.5.0, hydro_lang v0.11.0, hydro_std v0.11.0, hydro_cli v0.11.0, safety bump 6 crates ([`9a7e486`](https://github.com/hydro-project/hydro/commit/9a7e48693fce0face0f8ad16349258cdbe26395f))
     - Update `CHANGELOG.md`s for big rename ([`e1a08e5`](https://github.com/hydro-project/hydro/commit/e1a08e5d165fbc80da2ae695e507078a97a9031f))
 </details>
 
