@@ -5,7 +5,93 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### New Features
+
+ - <csr-id-53da4c1c9b18562e7806adcaf3a3838f56b8ef1b/> extract initial Hydroflow+ utilities into a standard library
+
+### Bug Fixes
+
+ - <csr-id-f6989baf12631cf43a814123e274466740c2f159/> restrict lifetime parameters to be actually invariant
+   Our lifetimes were accidentally made covariant when the lifetime `'a`
+   was removed from the process/cluster tag type. This fixes that typing
+   hole, and also loosens some restrictions on the lifetime of deploy
+   environments.
+
+### Refactor
+
+ - <csr-id-ec55910f5a41d4f08059b5feda4b96fbd058c959/> generalize quorum logic
+
+### New Features (BREAKING)
+
+ - <csr-id-939389953875bf5f94ea84503a7a35efd7342282/> mark non-deterministic operators as unsafe and introduce timestamped streams
+   Big PR.
+   
+   First big change is we introduce a `Timestamped` location. This is a bit
+   of a hybrid between top-level locations and `Tick` locations. The idea
+   is that you choose where timestamps are generated, and then have a
+   guarantee that everything after that will be atomically computed (useful
+   for making sure we add payloads to the log before ack-ing).
+   
+   The contract is that an operator or module that takes a `Timestamped`
+   input must still be deterministic regardless of the stamps on messages
+   (which are hidden unless you `tick_batch`). But unlike a top-level
+   stream (which has the same constraints), you have the atomicity
+   guarantee. Right now the guarantee is trivial since we have one global
+   tick for everything. But in the future when we want to apply
+   @davidchuyaya's optimizations this will be helpful to know when there
+   are causal dependencies on when data can be sent to others.
+   
+   Second change is we mark every non-deterministic operator (modulo
+   explicit annotations such as `NoOrder`) with Rust's `unsafe` keyword.
+   This makes it super clear where non-determinism is taking place.
+   
+   I've used this to put `unsafe` blocks throughout our example code and
+   add `SAFETY` annotations that argue why the non-determinism is safe (or
+   point out that we've explicitly documented / expect non-determinism). I
+   also added `#![warn(unsafe_op_in_unsafe_fn)]` to the examples and the
+   template, since this forces good hygiene of annotating sources of
+   non-determinism even inside a module that is intentionally
+   non-deterministic.
+   
+   Paxos changes are mostly refactors, and I verified that the performance
+   is the same as before.
+ - <csr-id-a93a5e59e1681d325b3433193bb86254d23bdc77/> allow cluster self ID to be referenced as a global constant
+   This eliminates the need to store `cluster.self_id()` in a local
+   variable first, instead you can directly reference `CLUSTER_SELF_ID`.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 5 commits contributed to the release.
+ - 38 days passed between releases.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 5 unique issues were worked on: [#1559](https://github.com/hydro-project/hydroflow/issues/1559), [#1574](https://github.com/hydro-project/hydroflow/issues/1574), [#1583](https://github.com/hydro-project/hydroflow/issues/1583), [#1584](https://github.com/hydro-project/hydroflow/issues/1584), [#1591](https://github.com/hydro-project/hydroflow/issues/1591)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1559](https://github.com/hydro-project/hydroflow/issues/1559)**
+    - Restrict lifetime parameters to be actually invariant ([`f6989ba`](https://github.com/hydro-project/hydroflow/commit/f6989baf12631cf43a814123e274466740c2f159))
+ * **[#1574](https://github.com/hydro-project/hydroflow/issues/1574)**
+    - Allow cluster self ID to be referenced as a global constant ([`a93a5e5`](https://github.com/hydro-project/hydroflow/commit/a93a5e59e1681d325b3433193bb86254d23bdc77))
+ * **[#1583](https://github.com/hydro-project/hydroflow/issues/1583)**
+    - Generalize quorum logic ([`ec55910`](https://github.com/hydro-project/hydroflow/commit/ec55910f5a41d4f08059b5feda4b96fbd058c959))
+ * **[#1584](https://github.com/hydro-project/hydroflow/issues/1584)**
+    - Mark non-deterministic operators as unsafe and introduce timestamped streams ([`9393899`](https://github.com/hydro-project/hydroflow/commit/939389953875bf5f94ea84503a7a35efd7342282))
+ * **[#1591](https://github.com/hydro-project/hydroflow/issues/1591)**
+    - Extract initial Hydroflow+ utilities into a standard library ([`53da4c1`](https://github.com/hydro-project/hydroflow/commit/53da4c1c9b18562e7806adcaf3a3838f56b8ef1b))
+</details>
+
 ## v0.5.0 (2024-11-08)
+
+<csr-id-d5677604e93c07a5392f4229af94a0b736eca382/>
+<csr-id-47cb703e771f7d1c451ceb9d185ada96410949da/>
 
 ### Chore
 
@@ -29,7 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release.
+ - 5 commits contributed to the release.
  - 69 days passed between releases.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1434](https://github.com/hydro-project/hydroflow/issues/1434), [#1444](https://github.com/hydro-project/hydroflow/issues/1444), [#1449](https://github.com/hydro-project/hydroflow/issues/1449), [#1505](https://github.com/hydro-project/hydroflow/issues/1505)
@@ -48,6 +134,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Add API for external network inputs ([`8a80931`](https://github.com/hydro-project/hydroflow/commit/8a809315cd37929687fcabc34a12042db25d5767))
  * **[#1505](https://github.com/hydro-project/hydroflow/issues/1505)**
     - Fixes for nightly clippy ([`47cb703`](https://github.com/hydro-project/hydroflow/commit/47cb703e771f7d1c451ceb9d185ada96410949da))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.10.0, hydroflow_datalog_core v0.10.0, hydroflow_datalog v0.10.0, hydroflow_deploy_integration v0.10.0, hydroflow_macro v0.10.0, lattices_macro v0.5.7, variadics v0.0.7, variadics_macro v0.5.5, lattices v0.5.8, multiplatform_test v0.3.0, pusherator v0.0.9, hydroflow v0.10.0, hydro_deploy v0.10.0, stageleft_macro v0.4.0, stageleft v0.5.0, stageleft_tool v0.4.0, hydroflow_plus v0.10.0, hydro_cli v0.10.0, safety bump 8 crates ([`dcd48fc`](https://github.com/hydro-project/hydroflow/commit/dcd48fc7ee805898d9b5ef0d082870e30615e95b))
 </details>
 
 ## v0.4.0 (2024-08-30)

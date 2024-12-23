@@ -5,7 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Chore
+
+ - <csr-id-0dc709ed5a53c723f47fa1d10063e57bb50a63c8/> use same hashing library everywhere
+
+### New Features (BREAKING)
+
+ - <csr-id-a93a5e59e1681d325b3433193bb86254d23bdc77/> allow cluster self ID to be referenced as a global constant
+   This eliminates the need to store `cluster.self_id()` in a local
+   variable first, instead you can directly reference `CLUSTER_SELF_ID`.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release.
+ - 38 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 2 unique issues were worked on: [#1574](https://github.com/hydro-project/hydroflow/issues/1574), [#1590](https://github.com/hydro-project/hydroflow/issues/1590)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1574](https://github.com/hydro-project/hydroflow/issues/1574)**
+    - Allow cluster self ID to be referenced as a global constant ([`a93a5e5`](https://github.com/hydro-project/hydroflow/commit/a93a5e59e1681d325b3433193bb86254d23bdc77))
+ * **[#1590](https://github.com/hydro-project/hydroflow/issues/1590)**
+    - Use same hashing library everywhere ([`0dc709e`](https://github.com/hydro-project/hydroflow/commit/0dc709ed5a53c723f47fa1d10063e57bb50a63c8))
+</details>
+
 ## v0.4.0 (2024-11-08)
+
+<csr-id-d5677604e93c07a5392f4229af94a0b736eca382/>
 
 ### Chore
 
@@ -46,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release.
+ - 5 commits contributed to the release.
  - 69 days passed between releases.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1434](https://github.com/hydro-project/hydroflow/issues/1434), [#1444](https://github.com/hydro-project/hydroflow/issues/1444), [#1445](https://github.com/hydro-project/hydroflow/issues/1445), [#1450](https://github.com/hydro-project/hydroflow/issues/1450)
@@ -65,6 +100,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Support tuple patterns ([`486dfbe`](https://github.com/hydro-project/hydroflow/commit/486dfbe1fab51f1b7c7aa03a51e6e9e4e427b912))
  * **[#1450](https://github.com/hydro-project/hydroflow/issues/1450)**
     - Add ability to have staged flows inside unit tests ([`afe78c3`](https://github.com/hydro-project/hydroflow/commit/afe78c343658472513b34d28658634b253148aee))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.10.0, hydroflow_datalog_core v0.10.0, hydroflow_datalog v0.10.0, hydroflow_deploy_integration v0.10.0, hydroflow_macro v0.10.0, lattices_macro v0.5.7, variadics v0.0.7, variadics_macro v0.5.5, lattices v0.5.8, multiplatform_test v0.3.0, pusherator v0.0.9, hydroflow v0.10.0, hydro_deploy v0.10.0, stageleft_macro v0.4.0, stageleft v0.5.0, stageleft_tool v0.4.0, hydroflow_plus v0.10.0, hydro_cli v0.10.0, safety bump 8 crates ([`dcd48fc`](https://github.com/hydro-project/hydroflow/commit/dcd48fc7ee805898d9b5ef0d082870e30615e95b))
 </details>
 
 ## v0.3.0 (2024-08-30)

@@ -5,22 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Refactor (BREAKING)
+
+ - <csr-id-251b1039c71d45d3f86123dba1926026ded80824/> use `cfg(nightly)` instead of feature, remove `-Z` flag, use `Diagnostic::try_emit`
+   Previous PR (#1587) website build did not work because `panic = "abort"`
+   is set on wasm, leading to aborts for `proc_macro2::Span::unwrap()`
+   calls.
+   
+   All tests except trybuild seem to pass on stable, WIP #1587 next
+
+### `hydroflow_datalog` Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 38 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#1606](https://github.com/hydro-project/hydroflow/issues/1606)
+
+### `hydroflow_datalog` Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1606](https://github.com/hydro-project/hydroflow/issues/1606)**
+    - Use `cfg(nightly)` instead of feature, remove `-Z` flag, use `Diagnostic::try_emit` ([`251b103`](https://github.com/hydro-project/hydroflow/commit/251b1039c71d45d3f86123dba1926026ded80824))
+</details>
+
 ## 0.10.0 (2024-11-08)
+
+<csr-id-d5677604e93c07a5392f4229af94a0b736eca382/>
 
 ### Chore
 
  - <csr-id-d5677604e93c07a5392f4229af94a0b736eca382/> update pinned rust version, clippy lints, remove some dead code
 
-### Commit Statistics
+### `hydroflow_datalog` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 1 commit contributed to the release.
+ - 2 commits contributed to the release.
  - 69 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#1444](https://github.com/hydro-project/hydroflow/issues/1444)
 
-### Commit Details
+### `hydroflow_datalog` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -28,6 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  * **[#1444](https://github.com/hydro-project/hydroflow/issues/1444)**
     - Update pinned rust version, clippy lints, remove some dead code ([`d567760`](https://github.com/hydro-project/hydroflow/commit/d5677604e93c07a5392f4229af94a0b736eca382))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.10.0, hydroflow_datalog_core v0.10.0, hydroflow_datalog v0.10.0, hydroflow_deploy_integration v0.10.0, hydroflow_macro v0.10.0, lattices_macro v0.5.7, variadics v0.0.7, variadics_macro v0.5.5, lattices v0.5.8, multiplatform_test v0.3.0, pusherator v0.0.9, hydroflow v0.10.0, hydro_deploy v0.10.0, stageleft_macro v0.4.0, stageleft v0.5.0, stageleft_tool v0.4.0, hydroflow_plus v0.10.0, hydro_cli v0.10.0, safety bump 8 crates ([`dcd48fc`](https://github.com/hydro-project/hydroflow/commit/dcd48fc7ee805898d9b5ef0d082870e30615e95b))
 </details>
 
 ## 0.9.0 (2024-08-30)
@@ -41,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    
    ---------
 
-### Commit Statistics
+### `hydroflow_datalog` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -50,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#1423](https://github.com/hydro-project/hydroflow/issues/1423)
 
-### Commit Details
+### `hydroflow_datalog` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -72,7 +106,7 @@ Unchanged from previous release.
 
  - <csr-id-186310f453f6a935ac5f53fdcaf07fe1337833bf/> mark `hydroflow_datalog` and `hydroflow_macro` as unchanged for 0.8.0 release
 
-### Commit Statistics
+### `hydroflow_datalog` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -81,7 +115,7 @@ Unchanged from previous release.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
-### Commit Details
+### `hydroflow_datalog` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -102,7 +136,7 @@ Unchanged from previous release.
 
  - <csr-id-f21fe6f896a2eac2118fe5da9c71e051365473a6/> mark `hydroflow_datalog` as unchanged for 0.7 release
 
-### Commit Statistics
+### `hydroflow_datalog` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -111,7 +145,7 @@ Unchanged from previous release.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
-### Commit Details
+### `hydroflow_datalog` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -132,7 +166,7 @@ Unchanged from previous release.
 
  - <csr-id-83cac6bb7fccd7589a5b3fcc36c465496b33bf2b/> mark hydroflow_datalog, hydroflow_macro as unchanged for release
 
-### Commit Statistics
+### `hydroflow_datalog` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -141,7 +175,7 @@ Unchanged from previous release.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
-### Commit Details
+### `hydroflow_datalog` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -163,7 +197,7 @@ Unchanged from previous release.
    https://github.com/frewsxcv/rust-crates-index/issues/159 is messing with
    smart-release
 
-### Commit Statistics
+### `hydroflow_datalog` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -172,7 +206,7 @@ Unchanged from previous release.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
-### Commit Details
+### `hydroflow_datalog` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -191,7 +225,7 @@ Unchanged from previous release.
 
  - <csr-id-f19eccc79d6d7c88de7ba1ef6a0abf1caaef377f/> bump proc-macro2 min version to 1.0.63
 
-### Commit Statistics
+### `hydroflow_datalog` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -200,7 +234,7 @@ Unchanged from previous release.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
-### Commit Details
+### `hydroflow_datalog` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -221,7 +255,7 @@ Unchanged from previous release.
 
  - <csr-id-5faee64ab82eeb7a24f62a1b55c46d72d8eb5320/> mark hydro_datalog as unchanged for 0.4 release
 
-### Commit Statistics
+### `hydroflow_datalog` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -230,7 +264,7 @@ Unchanged from previous release.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
-### Commit Details
+### `hydroflow_datalog` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -254,7 +288,7 @@ Unchanged from previous release.
    
    *latest = 2023-06-28 or something
 
-### Commit Statistics
+### `hydroflow_datalog` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -263,7 +297,7 @@ Unchanged from previous release.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#780](https://github.com/hydro-project/hydroflow/issues/780), [#801](https://github.com/hydro-project/hydroflow/issues/801)
 
-### Commit Details
+### `hydroflow_datalog` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -285,7 +319,7 @@ Unchanged from previous release.
 
  - <csr-id-fd896fbe925fbd8ef1d16be7206ac20ba585081a/> manually bump versions for v0.2.0 release
 
-### Commit Statistics
+### `hydroflow_datalog` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -294,7 +328,7 @@ Unchanged from previous release.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
-### Commit Details
+### `hydroflow_datalog` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -318,7 +352,7 @@ Unchanged from previous release.
 
  - <csr-id-a8957ec4457aae1cfd6fae031bede5e3f4fcc75d/> Add rustdocs to hydroflow's proc macros
 
-### Commit Statistics
+### `hydroflow_datalog` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -327,7 +361,7 @@ Unchanged from previous release.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#677](https://github.com/hydro-project/hydroflow/issues/677), [#684](https://github.com/hydro-project/hydroflow/issues/684)
 
-### Commit Details
+### `hydroflow_datalog` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -349,7 +383,7 @@ Unchanged from previous release.
 
  - <csr-id-20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9/> rustfmt group imports
 
-### Commit Statistics
+### `hydroflow_datalog` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -358,7 +392,7 @@ Unchanged from previous release.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#660](https://github.com/hydro-project/hydroflow/issues/660)
 
-### Commit Details
+### `hydroflow_datalog` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -372,7 +406,7 @@ Unchanged from previous release.
 
 ## 0.0.0 (2023-04-25)
 
-### Commit Statistics
+### `hydroflow_datalog` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -380,7 +414,7 @@ Unchanged from previous release.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 17 unique issues were worked on: [#155](https://github.com/hydro-project/hydroflow/issues/155), [#184](https://github.com/hydro-project/hydroflow/issues/184), [#187](https://github.com/hydro-project/hydroflow/issues/187), [#204](https://github.com/hydro-project/hydroflow/issues/204), [#223](https://github.com/hydro-project/hydroflow/issues/223), [#232](https://github.com/hydro-project/hydroflow/issues/232), [#284](https://github.com/hydro-project/hydroflow/issues/284), [#302](https://github.com/hydro-project/hydroflow/issues/302), [#320](https://github.com/hydro-project/hydroflow/issues/320), [#321](https://github.com/hydro-project/hydroflow/issues/321), [#329](https://github.com/hydro-project/hydroflow/issues/329), [#360](https://github.com/hydro-project/hydroflow/issues/360), [#371](https://github.com/hydro-project/hydroflow/issues/371), [#467](https://github.com/hydro-project/hydroflow/issues/467), [#518](https://github.com/hydro-project/hydroflow/issues/518), [#609](https://github.com/hydro-project/hydroflow/issues/609), [#617](https://github.com/hydro-project/hydroflow/issues/617)
 
-### Commit Details
+### `hydroflow_datalog` Commit Details
 
 <csr-read-only-do-not-edit/>
 

@@ -5,7 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### New Features
+
+ - <csr-id-b8acd843bdbcfb445bf942e697447f6bf58a10da/> initial flo implementation
+   Basic first pass implementation, without changing the current scheduler,
+   no breaking behavior. Adds the flo syntax (`loop { ... }`), basic graph
+   structure checks, nested loop blocks, and two basic windowing operators
+   (`batch()` and `all_once()`).
+   
+   Next steps:
+   - Needs scheduler changes:
+     - Implement un-windowing operators
+     - Implement windowing operator `repeat_n()` - 
+   - Pipeline flags: Needs checking of bounded vs unbounded for `batch()`
+   vs `all_once()`
+   - Needs checking that all inputs into a loop agree
+   - State type negotiations (for `batch()` and handoffs (?) - don't always
+   use `Vec`)
+   - Dag performance optimizations (lots of things)
+
+### Refactor (BREAKING)
+
+ - <csr-id-251b1039c71d45d3f86123dba1926026ded80824/> use `cfg(nightly)` instead of feature, remove `-Z` flag, use `Diagnostic::try_emit`
+   Previous PR (#1587) website build did not work because `panic = "abort"`
+   is set on wasm, leading to aborts for `proc_macro2::Span::unwrap()`
+   calls.
+   
+   All tests except trybuild seem to pass on stable, WIP #1587 next
+
+### `hydroflow_datalog_core` Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release.
+ - 38 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 2 unique issues were worked on: [#1585](https://github.com/hydro-project/hydroflow/issues/1585), [#1606](https://github.com/hydro-project/hydroflow/issues/1606)
+
+### `hydroflow_datalog_core` Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1585](https://github.com/hydro-project/hydroflow/issues/1585)**
+    - Initial flo implementation ([`b8acd84`](https://github.com/hydro-project/hydroflow/commit/b8acd843bdbcfb445bf942e697447f6bf58a10da))
+ * **[#1606](https://github.com/hydro-project/hydroflow/issues/1606)**
+    - Use `cfg(nightly)` instead of feature, remove `-Z` flag, use `Diagnostic::try_emit` ([`251b103`](https://github.com/hydro-project/hydroflow/commit/251b1039c71d45d3f86123dba1926026ded80824))
+</details>
+
 ## 0.10.0 (2024-11-08)
+
+<csr-id-4f6d400d0992594f8f12992fb6939378b12fadd6/>
+<csr-id-d5677604e93c07a5392f4229af94a0b736eca382/>
+<csr-id-8442d1b524621a9f8b43372a9c25991efb33c25e/>
 
 ### Chore
 
@@ -18,16 +73,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-8442d1b524621a9f8b43372a9c25991efb33c25e/> fixes for latest nightly clippy
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
+ - 4 commits contributed to the release.
  - 69 days passed between releases.
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#1444](https://github.com/hydro-project/hydroflow/issues/1444), [#1495](https://github.com/hydro-project/hydroflow/issues/1495), [#1537](https://github.com/hydro-project/hydroflow/issues/1537)
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -39,6 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Update rust-sitter ([`4f6d400`](https://github.com/hydro-project/hydroflow/commit/4f6d400d0992594f8f12992fb6939378b12fadd6))
  * **[#1537](https://github.com/hydro-project/hydroflow/issues/1537)**
     - Fixes for latest nightly clippy ([`8442d1b`](https://github.com/hydro-project/hydroflow/commit/8442d1b524621a9f8b43372a9c25991efb33c25e))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.10.0, hydroflow_datalog_core v0.10.0, hydroflow_datalog v0.10.0, hydroflow_deploy_integration v0.10.0, hydroflow_macro v0.10.0, lattices_macro v0.5.7, variadics v0.0.7, variadics_macro v0.5.5, lattices v0.5.8, multiplatform_test v0.3.0, pusherator v0.0.9, hydroflow v0.10.0, hydro_deploy v0.10.0, stageleft_macro v0.4.0, stageleft v0.5.0, stageleft_tool v0.4.0, hydroflow_plus v0.10.0, hydro_cli v0.10.0, safety bump 8 crates ([`dcd48fc`](https://github.com/hydro-project/hydroflow/commit/dcd48fc7ee805898d9b5ef0d082870e30615e95b))
 </details>
 
 ## 0.9.0 (2024-08-30)
@@ -63,7 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-9c352f50a5a8d1b2187b34d5847a23b7397fe6ec/> cleanup handling of span locations #1268, workaround fix #729
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -72,7 +129,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1417](https://github.com/hydro-project/hydroflow/issues/1417), [#1420](https://github.com/hydro-project/hydroflow/issues/1420), [#1423](https://github.com/hydro-project/hydroflow/issues/1423), [#1432](https://github.com/hydro-project/hydroflow/issues/1432)
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -156,7 +213,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-67c0e51fb25ea1a2e3aae197c1984920b46759fa/> require lifetime on `perist*()` operators
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -165,7 +222,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1250](https://github.com/hydro-project/hydroflow/issues/1250), [#1295](https://github.com/hydro-project/hydroflow/issues/1295), [#1300](https://github.com/hydro-project/hydroflow/issues/1300), [#1332](https://github.com/hydro-project/hydroflow/issues/1332)
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -209,7 +266,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-c9dc66db2bde34aa1385c8847d0ba7c16472f75d/> add detupling syntax and allow interleaving with flattening
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -218,7 +275,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 5 unique issues were worked on: [#1160](https://github.com/hydro-project/hydroflow/issues/1160), [#1166](https://github.com/hydro-project/hydroflow/issues/1166), [#1168](https://github.com/hydro-project/hydroflow/issues/1168), [#1176](https://github.com/hydro-project/hydroflow/issues/1176), [#1192](https://github.com/hydro-project/hydroflow/issues/1192)
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -272,7 +329,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-88e2ca44fed2d54b969e54a948c41d3bcd9a2ab5/> add `#[repr(transparent)]` to type guard codegen
    theoretically could help performance but is probably negligible
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -281,7 +338,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 7 unique issues were worked on: [#1086](https://github.com/hydro-project/hydroflow/issues/1086), [#1091](https://github.com/hydro-project/hydroflow/issues/1091), [#1094](https://github.com/hydro-project/hydroflow/issues/1094), [#1132](https://github.com/hydro-project/hydroflow/issues/1132), [#1135](https://github.com/hydro-project/hydroflow/issues/1135), [#1136](https://github.com/hydro-project/hydroflow/issues/1136), [#1137](https://github.com/hydro-project/hydroflow/issues/1137)
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -314,7 +371,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-b391447ec13f1f79c99142f296dc2fa8640034f4/> fix imports
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -323,7 +380,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -348,7 +405,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-175cc20e15b90627ae86d488e31ec91278c8beeb/> ensure other graph methods handle edge types
    (#929)
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -357,7 +414,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#1041](https://github.com/hydro-project/hydroflow/issues/1041)
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -398,7 +455,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    Before, prologue code would be emitted before its subgraph, resulting in
    interleaving between subgraphs.
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -407,7 +464,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 5 unique issues were worked on: [#1016](https://github.com/hydro-project/hydroflow/issues/1016), [#1023](https://github.com/hydro-project/hydroflow/issues/1023), [#1033](https://github.com/hydro-project/hydroflow/issues/1033), [#945](https://github.com/hydro-project/hydroflow/issues/945), [#989](https://github.com/hydro-project/hydroflow/issues/989)
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -455,7 +512,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-9144dd96b915e1b807ef14f40d963cdbd47e9078/> update snapshots
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -464,7 +521,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 10 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 7 unique issues were worked on: [#882](https://github.com/hydro-project/hydroflow/issues/882), [#893](https://github.com/hydro-project/hydroflow/issues/893), [#896](https://github.com/hydro-project/hydroflow/issues/896), [#898](https://github.com/hydro-project/hydroflow/issues/898), [#906](https://github.com/hydro-project/hydroflow/issues/906), [#924](https://github.com/hydro-project/hydroflow/issues/924), [#926](https://github.com/hydro-project/hydroflow/issues/926)
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -523,7 +580,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-6a2ad6b770c2ccf470548320d8753025b3a66c0a/> fix new clippy lints on latest nightly 1.73.0-nightly (db7ff98a7 2023-07-31)
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -532,7 +589,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#833](https://github.com/hydro-project/hydroflow/issues/833), [#845](https://github.com/hydro-project/hydroflow/issues/845), [#870](https://github.com/hydro-project/hydroflow/issues/870), [#872](https://github.com/hydro-project/hydroflow/issues/872)
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -564,7 +621,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    
    *latest = 2023-06-28 or something
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -573,7 +630,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#780](https://github.com/hydro-project/hydroflow/issues/780), [#801](https://github.com/hydro-project/hydroflow/issues/801)
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -595,7 +652,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-fd896fbe925fbd8ef1d16be7206ac20ba585081a/> manually bump versions for v0.2.0 release
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -604,7 +661,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -641,7 +698,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    
    * remove group_by
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -650,7 +707,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#697](https://github.com/hydro-project/hydroflow/issues/697), [#702](https://github.com/hydro-project/hydroflow/issues/702), [#714](https://github.com/hydro-project/hydroflow/issues/714), [#716](https://github.com/hydro-project/hydroflow/issues/716)
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -682,7 +739,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-faab58f855e4d6f2ad885c6f39f57ebc5662ec20/> remove `hydroflow::lang` module, move `Clear`, `MonotonicMap` to `hydroflow::util` instead
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -691,7 +748,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#673](https://github.com/hydro-project/hydroflow/issues/673), [#677](https://github.com/hydro-project/hydroflow/issues/677), [#684](https://github.com/hydro-project/hydroflow/issues/684)
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -719,7 +776,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9/> rustfmt group imports
  - <csr-id-1eda91a2ef8794711ef037240f15284e8085d863/> rustfmt prescribe flat-module `use` format
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -728,7 +785,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#639](https://github.com/hydro-project/hydroflow/issues/639), [#642](https://github.com/hydro-project/hydroflow/issues/642), [#660](https://github.com/hydro-project/hydroflow/issues/660)
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -748,7 +805,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.0.0 (2023-04-25)
 
-### Commit Statistics
+### `hydroflow_datalog_core` Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -756,7 +813,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 59 unique issues were worked on: [#209](https://github.com/hydro-project/hydroflow/issues/209), [#254](https://github.com/hydro-project/hydroflow/issues/254), [#329](https://github.com/hydro-project/hydroflow/issues/329), [#371](https://github.com/hydro-project/hydroflow/issues/371), [#374](https://github.com/hydro-project/hydroflow/issues/374), [#376](https://github.com/hydro-project/hydroflow/issues/376), [#383](https://github.com/hydro-project/hydroflow/issues/383), [#388](https://github.com/hydro-project/hydroflow/issues/388), [#403](https://github.com/hydro-project/hydroflow/issues/403), [#413](https://github.com/hydro-project/hydroflow/issues/413), [#419](https://github.com/hydro-project/hydroflow/issues/419), [#425](https://github.com/hydro-project/hydroflow/issues/425), [#431](https://github.com/hydro-project/hydroflow/issues/431), [#441 11/14](https://github.com/hydro-project/hydroflow/issues/441 11/14), [#441 12/14](https://github.com/hydro-project/hydroflow/issues/441 12/14), [#441 14/14](https://github.com/hydro-project/hydroflow/issues/441 14/14), [#442](https://github.com/hydro-project/hydroflow/issues/442), [#443](https://github.com/hydro-project/hydroflow/issues/443), [#444](https://github.com/hydro-project/hydroflow/issues/444), [#455](https://github.com/hydro-project/hydroflow/issues/455), [#459](https://github.com/hydro-project/hydroflow/issues/459), [#467](https://github.com/hydro-project/hydroflow/issues/467), [#469](https://github.com/hydro-project/hydroflow/issues/469), [#470](https://github.com/hydro-project/hydroflow/issues/470), [#475](https://github.com/hydro-project/hydroflow/issues/475), [#486](https://github.com/hydro-project/hydroflow/issues/486), [#499](https://github.com/hydro-project/hydroflow/issues/499), [#500](https://github.com/hydro-project/hydroflow/issues/500), [#501](https://github.com/hydro-project/hydroflow/issues/501), [#502](https://github.com/hydro-project/hydroflow/issues/502), [#505](https://github.com/hydro-project/hydroflow/issues/505), [#507](https://github.com/hydro-project/hydroflow/issues/507), [#509](https://github.com/hydro-project/hydroflow/issues/509), [#516](https://github.com/hydro-project/hydroflow/issues/516), [#518](https://github.com/hydro-project/hydroflow/issues/518), [#522](https://github.com/hydro-project/hydroflow/issues/522), [#540](https://github.com/hydro-project/hydroflow/issues/540), [#543](https://github.com/hydro-project/hydroflow/issues/543), [#547](https://github.com/hydro-project/hydroflow/issues/547), [#549](https://github.com/hydro-project/hydroflow/issues/549), [#551](https://github.com/hydro-project/hydroflow/issues/551), [#554](https://github.com/hydro-project/hydroflow/issues/554), [#555](https://github.com/hydro-project/hydroflow/issues/555), [#556](https://github.com/hydro-project/hydroflow/issues/556), [#558](https://github.com/hydro-project/hydroflow/issues/558), [#559](https://github.com/hydro-project/hydroflow/issues/559), [#565](https://github.com/hydro-project/hydroflow/issues/565), [#566](https://github.com/hydro-project/hydroflow/issues/566), [#567](https://github.com/hydro-project/hydroflow/issues/567), [#568](https://github.com/hydro-project/hydroflow/issues/568), [#571](https://github.com/hydro-project/hydroflow/issues/571), [#572](https://github.com/hydro-project/hydroflow/issues/572), [#573](https://github.com/hydro-project/hydroflow/issues/573), [#576](https://github.com/hydro-project/hydroflow/issues/576), [#598](https://github.com/hydro-project/hydroflow/issues/598), [#604](https://github.com/hydro-project/hydroflow/issues/604), [#609](https://github.com/hydro-project/hydroflow/issues/609), [#617](https://github.com/hydro-project/hydroflow/issues/617), [#618](https://github.com/hydro-project/hydroflow/issues/618)
 
-### Commit Details
+### `hydroflow_datalog_core` Commit Details
 
 <csr-read-only-do-not-edit/>
 
