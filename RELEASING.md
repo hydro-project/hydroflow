@@ -136,10 +136,12 @@ package's _current_ directory, so if you move a package to a different directory
 may lose old commit info if you're not careful.
 
 On the commit immediately _before_ you move the package(s) and run the following:
+(This command is provided by `cargo install cargo-smart-release`; don't use any other `cargo changelog` command)
 ```
 cargo changelog --write <crate_to_be_moved> <other_crate_to_be_moved> ...
 ```
-(This command is provided by `cargo install cargo-smart-release`; don't use any other `cargo changelog` command)
+Note that this may [error if your git is in a 'detached HEAD' state](https://github.com/Byron/cargo-smart-release/issues/34),
+so run `git checkout -b new-branch-name` to fix this.
 
 Next (even if there are no changes), go through the modified `CHANGELOG.md` files and add a prefix
 to **all** (not just the new) the `Commit Statistics` and `Commit Details` headers, for example:
@@ -179,7 +181,12 @@ crate_old_name = { path = "../crate_old_path", version = "^0.8.0" }
 crate_new_name = { path = "../crate_new_path", version = "^0.9.0" }
 ```
 
-Commit those changes, then continue as normal.
+Commit those changes, then continue as normal. E.g. for a minor version bump, update only the
+renamed crates' versions, then continue with a `minor` release which will bump all the other crates.
+The release run will have log outputs as follows for each renamed crate:
+```log
+[INFO ] Manifest version of dependent package 'dfir_lang' at 0.11.0 is sufficient, creating a new release 🎉, ignoring computed version 0.12.
+```
 
 (There may be other issues with the `git tag`s `cargo-smart-release` uses to track versions if you
 are renaming a crate _back to an old name_).
