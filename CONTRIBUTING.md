@@ -117,4 +117,4 @@ in the latest version of `clippy`. See [Setup#Rust](#rust) above.
 
 ## Releasing
 
-See [`RELEASING.md`](https://github.com/hydro-project/hydroflow/blob/main/RELEASING.md).
+See [`RELEASING.md`](https://github.com/hydro-project/hydro/blob/main/RELEASING.md).

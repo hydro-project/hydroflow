@@ -1,5 +1,5 @@
 ## Getting Started
-This is a template for a Rust project that uses [Hydroflow](http://github.com/hydro-project/hydroflow) for 
+This is a template for a Rust project that uses [Hydroflow](http://github.com/hydro-project/hydro) for 
 distributed services. It implements a simple echo server and client over UDP. 
 
 ## Using the Template
@@ -50,7 +50,7 @@ The `src` directory contains the following files:
 ## Communication Patterns
 No particular communication pattern is assumed by Hydroflow. The unmodified template application is designed to be used in a "star topology": 
 multiple independent clients talking to a single server. However, the template can be easily modified to support other topologies. 
-Additional examples are provided in the [hydroflow](https://github.com/hydro-project/hydroflow) repository in the `hydroflow/examples` directory.
+Additional examples are provided in the [hydroflow](https://github.com/hydro-project/hydro) repository in the `hydroflow/examples` directory.
 
 ## Where do you go from here?
 This template is intended to be a starting point for your own project. You'll undoubtedly want to change it.

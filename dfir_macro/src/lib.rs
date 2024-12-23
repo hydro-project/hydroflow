@@ -15,9 +15,9 @@ use syn::{
 
 /// Create a Hydroflow instance using Hydroflow's custom "surface syntax."
 ///
-/// For example usage, take a look at the [`surface_*` tests in the `tests` folder](https://github.com/hydro-project/hydroflow/tree/main/dfir_rs/tests)
-/// or the [`examples` folder](https://github.com/hydro-project/hydroflow/tree/main/dfir_rs/examples)
-/// in the [Hydroflow repo](https://github.com/hydro-project/hydroflow).
+/// For example usage, take a look at the [`surface_*` tests in the `tests` folder](https://github.com/hydro-project/hydro/tree/main/dfir_rs/tests)
+/// or the [`examples` folder](https://github.com/hydro-project/hydro/tree/main/dfir_rs/examples)
+/// in the [Hydroflow repo](https://github.com/hydro-project/hydro).
 // TODO(mingwei): rustdoc examples inline.
 #[proc_macro]
 pub fn dfir_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStream {

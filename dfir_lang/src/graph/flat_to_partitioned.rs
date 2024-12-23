@@ -450,7 +450,7 @@ fn find_subgraph_strata(
             DelayType::Stratum => {
                 // Any negative edges which go onto the same or previous stratum are bad.
                 // Indicates an unbroken negative cycle.
-                // TODO(mingwei): This check is insufficient: https://github.com/hydro-project/hydroflow/issues/1115#issuecomment-2018385033
+                // TODO(mingwei): This check is insufficient: https://github.com/hydro-project/hydro/issues/1115#issuecomment-2018385033
                 if dst_stratum <= src_stratum {
                     return Err(Diagnostic::spanned(dst_port.span(), Level::Error, "Negative edge creates a negative cycle which must be broken with a `defer_tick()` operator."));
                 }
