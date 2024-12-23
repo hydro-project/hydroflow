@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.11.0 (2024-12-23)
+
+<csr-id-251b1039c71d45d3f86123dba1926026ded80824/>
 
 ### New Features
 
@@ -17,14 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    
    Next steps:
    - Needs scheduler changes:
-     - Implement un-windowing operators
-     - Implement windowing operator `repeat_n()` - 
-   - Pipeline flags: Needs checking of bounded vs unbounded for `batch()`
-   vs `all_once()`
-   - Needs checking that all inputs into a loop agree
-   - State type negotiations (for `batch()` and handoffs (?) - don't always
-   use `Vec`)
-   - Dag performance optimizations (lots of things)
+   - Implement un-windowing operators
+- Implement windowing operator `repeat_n()` -
 
 ### Refactor (BREAKING)
 
@@ -34,6 +30,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    calls.
    
    All tests except trybuild seem to pass on stable, WIP #1587 next
+
+### Documentation
+
+ - <csr-id-28cd220c68e3660d9ebade113949a2346720cd04/> add `repository` field to `Cargo.toml`s, fix #1452
+   #1452 
+   
+   Will trigger new releases of the following:
+   `unchanged = 'hydroflow_deploy_integration', 'variadics',
+   'variadics_macro', 'pusherator'`
+   
+   (All other crates already have changes, so would be released anyway)
+ - <csr-id-e1a08e5d165fbc80da2ae695e507078a97a9031f/> update `CHANGELOG.md`s for big rename
+   Generated before rename per `RELEASING.md` instructions.
+
+### Chore
+
+ - <csr-id-03b3a349013a71b324276bca5329c33d400a73ff/> bump versions manually for renamed crates, per `RELEASING.md`
+ - <csr-id-accb13cad718c99d350e4bafe82e0ca38bf94c62/> cleanup snapshots
+ - <csr-id-3291c07b37c9f9031837a2a32953e8f8854ec298/> Rename Hydroflow -> DFIR
+   Work In Progress:
+   - [x] hydroflow_macro
+   - [x] hydroflow_datalog_core
+   - [x] hydroflow_datalog
+   - [x] hydroflow_lang
+   - [x] hydroflow
 
 ### `hydroflow_datalog_core` Commit Statistics
 
@@ -55,6 +76,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#1606](https://github.com/hydro-project/hydroflow/issues/1606)**
     - Use `cfg(nightly)` instead of feature, remove `-Z` flag, use `Diagnostic::try_emit` ([`251b103`](https://github.com/hydro-project/hydroflow/commit/251b1039c71d45d3f86123dba1926026ded80824))
 </details>
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 5 commits contributed to the release.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 4 unique issues were worked on: [#1501](https://github.com/hydro-project/hydro/issues/1501), [#1620](https://github.com/hydro-project/hydro/issues/1620), [#1623](https://github.com/hydro-project/hydro/issues/1623), [#1627](https://github.com/hydro-project/hydro/issues/1627)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1501](https://github.com/hydro-project/hydro/issues/1501)**
+    - Add `repository` field to `Cargo.toml`s, fix #1452 ([`28cd220`](https://github.com/hydro-project/hydro/commit/28cd220c68e3660d9ebade113949a2346720cd04))
+ * **[#1620](https://github.com/hydro-project/hydro/issues/1620)**
+    - Rename Hydroflow -> DFIR ([`3291c07`](https://github.com/hydro-project/hydro/commit/3291c07b37c9f9031837a2a32953e8f8854ec298))
+ * **[#1623](https://github.com/hydro-project/hydro/issues/1623)**
+    - Cleanup snapshots ([`accb13c`](https://github.com/hydro-project/hydro/commit/accb13cad718c99d350e4bafe82e0ca38bf94c62))
+ * **[#1627](https://github.com/hydro-project/hydro/issues/1627)**
+    - Bump versions manually for renamed crates, per `RELEASING.md` ([`03b3a34`](https://github.com/hydro-project/hydro/commit/03b3a349013a71b324276bca5329c33d400a73ff))
+ * **Uncategorized**
+    - Update `CHANGELOG.md`s for big rename ([`e1a08e5`](https://github.com/hydro-project/hydro/commit/e1a08e5d165fbc80da2ae695e507078a97a9031f))
+</details>
+
+<csr-unknown>
+Pipeline flags: Needs checking of bounded vs unbounded for batch()vs all_once()Needs checking that all inputs into a loop agreeState type negotiations (for batch() and handoffs (?) - don’t alwaysuse Vec)Dag performance optimizations (lots of things)<csr-unknown/>
 
 ## 0.10.0 (2024-11-08)
 

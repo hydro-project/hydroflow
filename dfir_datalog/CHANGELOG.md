@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.11.0 (2024-12-23)
+
+<csr-id-251b1039c71d45d3f86123dba1926026ded80824/>
 
 ### Refactor (BREAKING)
 
@@ -15,6 +17,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    calls.
    
    All tests except trybuild seem to pass on stable, WIP #1587 next
+
+### Documentation
+
+ - <csr-id-28cd220c68e3660d9ebade113949a2346720cd04/> add `repository` field to `Cargo.toml`s, fix #1452
+   #1452 
+   
+   Will trigger new releases of the following:
+   `unchanged = 'hydroflow_deploy_integration', 'variadics',
+   'variadics_macro', 'pusherator'`
+   
+   (All other crates already have changes, so would be released anyway)
+ - <csr-id-c707659afe188a2b46b093ce3438f64c6b0e1e30/> fix some broken github tree/main links
+ - <csr-id-e1a08e5d165fbc80da2ae695e507078a97a9031f/> update `CHANGELOG.md`s for big rename
+   Generated before rename per `RELEASING.md` instructions.
+ - <csr-id-6ab625273d822812e83a333e928c3dea1c3c9ccb/> cleanups for the rename, fixing links
+
+### Chore
+
+ - <csr-id-5196f247e0124a31567af940541044ce1906cdc1/> update links for renamed repo (excluding `CHANGELOG.md`s), fix #1571
+ - <csr-id-03b3a349013a71b324276bca5329c33d400a73ff/> bump versions manually for renamed crates, per `RELEASING.md`
+ - <csr-id-3291c07b37c9f9031837a2a32953e8f8854ec298/> Rename Hydroflow -> DFIR
+   Work In Progress:
+   - [x] hydroflow_macro
+   - [x] hydroflow_datalog_core
+   - [x] hydroflow_datalog
+   - [x] hydroflow_lang
+   - [x] hydroflow
 
 ### `hydroflow_datalog` Commit Statistics
 
@@ -33,6 +62,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  * **[#1606](https://github.com/hydro-project/hydroflow/issues/1606)**
     - Use `cfg(nightly)` instead of feature, remove `-Z` flag, use `Diagnostic::try_emit` ([`251b103`](https://github.com/hydro-project/hydroflow/commit/251b1039c71d45d3f86123dba1926026ded80824))
+</details>
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 7 commits contributed to the release.
+ - 7 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 5 unique issues were worked on: [#1501](https://github.com/hydro-project/hydro/issues/1501), [#1620](https://github.com/hydro-project/hydro/issues/1620), [#1624](https://github.com/hydro-project/hydro/issues/1624), [#1627](https://github.com/hydro-project/hydro/issues/1627), [#1628](https://github.com/hydro-project/hydro/issues/1628)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1501](https://github.com/hydro-project/hydro/issues/1501)**
+    - Add `repository` field to `Cargo.toml`s, fix #1452 ([`28cd220`](https://github.com/hydro-project/hydro/commit/28cd220c68e3660d9ebade113949a2346720cd04))
+ * **[#1620](https://github.com/hydro-project/hydro/issues/1620)**
+    - Rename Hydroflow -> DFIR ([`3291c07`](https://github.com/hydro-project/hydro/commit/3291c07b37c9f9031837a2a32953e8f8854ec298))
+ * **[#1624](https://github.com/hydro-project/hydro/issues/1624)**
+    - Cleanups for the rename, fixing links ([`6ab6252`](https://github.com/hydro-project/hydro/commit/6ab625273d822812e83a333e928c3dea1c3c9ccb))
+ * **[#1627](https://github.com/hydro-project/hydro/issues/1627)**
+    - Bump versions manually for renamed crates, per `RELEASING.md` ([`03b3a34`](https://github.com/hydro-project/hydro/commit/03b3a349013a71b324276bca5329c33d400a73ff))
+ * **[#1628](https://github.com/hydro-project/hydro/issues/1628)**
+    - Update links for renamed repo (excluding `CHANGELOG.md`s), fix #1571 ([`5196f24`](https://github.com/hydro-project/hydro/commit/5196f247e0124a31567af940541044ce1906cdc1))
+ * **Uncategorized**
+    - Fix some broken github tree/main links ([`c707659`](https://github.com/hydro-project/hydro/commit/c707659afe188a2b46b093ce3438f64c6b0e1e30))
+    - Update `CHANGELOG.md`s for big rename ([`e1a08e5`](https://github.com/hydro-project/hydro/commit/e1a08e5d165fbc80da2ae695e507078a97a9031f))
 </details>
 
 ## 0.10.0 (2024-11-08)
